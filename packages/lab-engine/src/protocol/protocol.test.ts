@@ -78,3 +78,19 @@ describe("every MVP experiment", () => {
     expect(r.report.score).toBeLessThanOrEqual(40);
   });
 });
+
+describe("cross-engine fixture", () => {
+  it("writes V8 golden-run hashes for the server (GraalJS) to match", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const out: Record<string, { hash: string; score: number }> = {};
+    for (const [slug, content] of Object.entries(EXPERIMENTS)) {
+      const r = runSession(content, goldenEvents(content.golden), { tailMs: 1000 });
+      out[slug] = { hash: r.hash, score: r.report.score };
+    }
+    const file = path.resolve(__dirname, "../../../../apps/api/src/test/resources/engine-golden-hashes.json");
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(out, null, 2) + "\n");
+    expect(Object.keys(out).length).toBe(7);
+  });
+});

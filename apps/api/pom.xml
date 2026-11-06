@@ -87,6 +87,19 @@
             <artifactId>embedded-postgres</artifactId>
             <version>2.2.2</version>
         </dependency>
+        <!-- Part 2: runs the shared TypeScript lab engine inside the JVM for exact server replay -->
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>polyglot</artifactId>
+            <version>24.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>js-community</artifactId>
+            <version>24.2.2</version>
+            <type>pom</type>
+        </dependency>
+
 
 
         <!-- OpenAPI: generates the spec the web app's TypeScript client is generated from -->

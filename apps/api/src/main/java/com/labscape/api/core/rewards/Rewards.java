@@ -81,6 +81,20 @@ public class Rewards {
     public RewardResult award(UUID userId, ProgressEvent e) {
         validate(e);
         checkSource(e);
+        return doAward(userId, e);
+    }
+
+    /**
+     * For completions the server itself verified (e.g. an experiment attempt it replayed and scored).
+     * Skips the client-facing source checks; idempotency and repeat rules still apply.
+     */
+    @Transactional
+    public RewardResult awardVerified(UUID userId, ProgressEvent e) {
+        validate(e);
+        return doAward(userId, e);
+    }
+
+    private RewardResult doAward(UUID userId, ProgressEvent e) {
         User user = users.lock(userId); // serialises this user's awards
         LocalDate today = user.today();
 

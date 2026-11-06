@@ -1,0 +1,30 @@
+{
+  "ph-indicators": {
+    "hash": "14db789c5c03c8",
+    "score": 100
+  },
+  "acid-base-titration": {
+    "hash": "04cfabcf5a1813",
+    "score": 100
+  },
+  "precipitation-reactions": {
+    "hash": "0413bff378cf39",
+    "score": 100
+  },
+  "hydrogen-pop-test": {
+    "hash": "0dd898c2723513",
+    "score": 100
+  },
+  "iron-nail-copper-sulfate": {
+    "hash": "0647f7bdd19631",
+    "score": 100
+  },
+  "diluting-acid-safely": {
+    "hash": "18cd2b31e33b3f",
+    "score": 100
+  },
+  "flame-tests": {
+    "hash": "1f185411be5b24",
+    "score": 100
+  }
+}
