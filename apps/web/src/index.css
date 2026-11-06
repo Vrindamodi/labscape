@@ -1,0 +1,17 @@
+@import "@labscape/ui/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--ls-bg-base);
+  color: #e6e9f2;
+  font-family: var(--ls-font-body);
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@labscape/playground",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Open Playground sandbox shell, outcome panels and discoveries.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@labscape/contracts": "workspace:*"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@labscape/audio",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sound bus (ui, lab, ambient, alert, voice channels), sprite sheets and haptics.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@labscape/contracts": "workspace:*"
+  }
+}

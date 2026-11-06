@@ -1,0 +1,22 @@
+{
+  "event": {
+    "idempotencyKey": "01JC00000000000000000000PE",
+    "kind": "experiment.completed",
+    "occurredAt": "2026-11-05T10:00:00Z",
+    "subject": "chemistry",
+    "refId": "exp-acid-base-titration",
+    "attemptId": "att-fixture-titration-1",
+    "score": 92
+  },
+  "result": {
+    "idempotencyKey": "01JC00000000000000000000PE",
+    "duplicate": false,
+    "xpAwarded": 100,
+    "adjustments": [],
+    "totalXp": 600,
+    "level": { "index": 1, "name": "Junior Scientist", "xpIntoLevel": 100, "xpForNext": 900 },
+    "levelUp": true,
+    "badgesUnlocked": [{ "id": "first-experiment", "name": "First Experiment" }],
+    "streaks": [{ "kind": "experiment", "days": 1 }]
+  }
+}

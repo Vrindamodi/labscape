@@ -1,0 +1,57 @@
+# Ownership per the LABscape 4-Part Build Plan ("Repository and ownership").
+# Replace the placeholder teams with real GitHub teams/users once the repo is on GitHub.
+#   part-1 = Platform Core and Game Layer
+#   part-2 = Lab Engine and Chemistry Lab
+#   part-3 = Physics and Mathematics Labs
+#   part-4 = Playground, Safety and Intelligence
+
+# Default: Part 1 owns the shell and anything unassigned
+*                                   @labscape/part-1
+
+# Shared contracts: any change needs all four owners
+/packages/contracts/                @labscape/part-1 @labscape/part-2 @labscape/part-3 @labscape/part-4
+/apps/api/src/main/java/com/labscape/api/contracts/  @labscape/part-1 @labscape/part-2 @labscape/part-3 @labscape/part-4
+
+# Part 1
+/packages/ui/                       @labscape/part-1
+/packages/motion/                   @labscape/part-1
+/packages/audio/                    @labscape/part-1
+/apps/web/                          @labscape/part-1
+/apps/api/src/main/java/com/labscape/api/core/  @labscape/part-1
+
+# Part 2
+/packages/lab-engine/               @labscape/part-2
+/packages/chem-view/                @labscape/part-2
+/apps/web/src/routes/lab/chemistry/ @labscape/part-2
+/apps/web/src/routes/periodic-table/ @labscape/part-2
+/apps/web/src/routes/equipment/     @labscape/part-2
+/apps/api/src/main/java/com/labscape/api/lab/   @labscape/part-2
+/content/experiments/               @labscape/part-2
+/content/reactions/                 @labscape/part-2
+
+# Part 3
+/packages/physics/                  @labscape/part-3
+/packages/mathlab/                  @labscape/part-3
+/apps/web/src/routes/lab/physics/   @labscape/part-3
+/apps/web/src/routes/lab/maths/     @labscape/part-3
+/apps/web/src/routes/formulas/      @labscape/part-3
+/apps/api/src/main/java/com/labscape/api/sim/   @labscape/part-3
+
+# Part 4
+/packages/playground/               @labscape/part-4
+/packages/assistant/                @labscape/part-4
+/packages/quiz/                     @labscape/part-4
+/packages/scenarios/                @labscape/part-4
+/apps/web/src/routes/playground/    @labscape/part-4
+/apps/web/src/routes/emergency/     @labscape/part-4
+/apps/web/src/routes/assistant/     @labscape/part-4
+/apps/web/src/routes/quiz/          @labscape/part-4
+/apps/web/src/routes/notebook/      @labscape/part-4
+/apps/web/src/routes/replay/        @labscape/part-4
+/apps/web/src/routes/compare/       @labscape/part-4
+/apps/api/src/main/java/com/labscape/api/intelligence/  @labscape/part-4
+/content/scenarios/                 @labscape/part-4
+/content/quizzes/                   @labscape/part-4
+
+# Migrations: each part owns files with its prefix (p1_, p2_, p3_, p4_)
+/apps/api/src/main/resources/db/migration/  @labscape/part-1

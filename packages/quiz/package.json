@@ -1,0 +1,18 @@
+{
+  "name": "@labscape/quiz",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "QuizRunner and question renderers.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@labscape/contracts": "workspace:*"
+  }
+}

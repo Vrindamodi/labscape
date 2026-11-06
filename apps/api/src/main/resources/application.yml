@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: labscape-api
+  datasource:
+    # Neon in staging/prod (pooled host, ?sslmode=require); local docker compose by default.
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/labscape}
+    username: ${DATABASE_USERNAME:labscape}
+    password: ${DATABASE_PASSWORD:labscape}
+    hikari:
+      # Neon scales to zero; keep the pool small and tolerate cold starts.
+      maximum-pool-size: ${DATABASE_POOL_SIZE:5}
+      connection-timeout: 15000
+  flyway:
+    # Migrations use the direct (non-pooled) Neon host when FLYWAY_URL is set.
+    url: ${FLYWAY_URL:${spring.datasource.url}}
+    user: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+    locations: classpath:db/migration
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  mvc:
+    problemdetails:
+      enabled: true
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: ${PORT:8080}
+
+labscape:
+  web-origin: ${WEB_ORIGIN:http://localhost:5173}
+
+springdoc:
+  api-docs:
+    path: /v1/openapi.json
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

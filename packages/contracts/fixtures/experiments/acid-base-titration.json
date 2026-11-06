@@ -1,0 +1,116 @@
+{
+  "id": "exp-acid-base-titration",
+  "slug": "acid-base-titration",
+  "version": 1,
+  "subject": "chemistry",
+  "topic": "acids-and-bases",
+  "title": "Acid-Base Titration",
+  "summary": "Find the end point of HCl with NaOH using phenolphthalein.",
+  "difficulty": "intermediate",
+  "levels": ["high_school", "undergraduate"],
+  "estimatedMinutes": 15,
+  "xpReward": 100,
+  "release": "MVP",
+  "intro": {
+    "demonstrates": "Neutralisation of a strong acid by a strong base.",
+    "objective": "Determine the titre of 0.100 M NaOH needed to neutralise 10.00 mL of 0.100 M HCl.",
+    "concept": "H+ + OH- -> H2O; phenolphthalein turns faint pink above about pH 8.2.",
+    "realWorld": ["Quality control in pharmaceuticals", "Measuring acidity of foods"],
+    "safety": [
+      "Wear goggles",
+      "NaOH and HCl are corrosive",
+      "Use a pipette filler, never your mouth"
+    ]
+  },
+  "equipment": [
+    { "id": "burette-1", "kind": "burette", "label": "50 mL burette", "capacityMl": 50 },
+    { "id": "pipette-1", "kind": "pipette", "label": "10 mL volumetric pipette", "capacityMl": 10 },
+    {
+      "id": "flask-1",
+      "kind": "conical_flask",
+      "label": "250 mL conical flask",
+      "capacityMl": 250
+    },
+    { "id": "tile-1", "kind": "white_tile", "label": "White tile" }
+  ],
+  "materials": [
+    {
+      "id": "reagent:hcl-0.1M",
+      "name": "Hydrochloric acid",
+      "formula": "HCl",
+      "concentrationM": 0.1,
+      "state": "aq",
+      "hazards": ["corrosive"]
+    },
+    {
+      "id": "reagent:naoh-0.1M",
+      "name": "Sodium hydroxide",
+      "formula": "NaOH",
+      "concentrationM": 0.1,
+      "state": "aq",
+      "hazards": ["corrosive"]
+    },
+    {
+      "id": "reagent:phenolphthalein",
+      "name": "Phenolphthalein indicator",
+      "state": "l",
+      "hazards": ["flammable"]
+    }
+  ],
+  "demo": { "goldenRunId": "golden-acid-base-titration-v1", "durationS": 75 },
+  "protocol": {
+    "scoring": {
+      "equipment": 0.1,
+      "sequence": 0.2,
+      "quantity": 0.25,
+      "technique": 0.25,
+      "measurement": 0.1,
+      "observation": 0.1
+    },
+    "steps": [
+      {
+        "id": "pipette-acid",
+        "instruction": "Use a pipette and filler to transfer 10.00 mL of 0.100 M HCl into the conical flask.",
+        "action": "liquid.draw",
+        "from": "reagent:hcl-0.1M",
+        "to": "flask-1",
+        "quantity": { "target": 10.0, "plusMinus": 0.05, "unit": "mL" },
+        "technique": {
+          "kind": "pipette",
+          "volume": { "target": 10.0, "plusMinus": 0.05, "unit": "mL" }
+        }
+      },
+      {
+        "id": "add-indicator",
+        "instruction": "Add 2 to 3 drops of phenolphthalein.",
+        "requires": ["pipette-acid"],
+        "action": "liquid.drop",
+        "from": "reagent:phenolphthalein",
+        "to": "flask-1",
+        "quantity": { "target": 2.5, "plusMinus": 0.5, "unit": "drops" }
+      },
+      {
+        "id": "titration-accurate-run",
+        "instruction": "Add NaOH dropwise near the end point, swirling after each drop.",
+        "requires": ["add-indicator"],
+        "action": "liquid.drop",
+        "from": "burette-1",
+        "to": "flask-1",
+        "technique": {
+          "kind": "dropwise",
+          "dropVolumeMl": 0.05,
+          "maxRateMlPerS": 0.1,
+          "appliesWithinMlOfEndpoint": 1.0
+        },
+        "mixing": { "kind": "swirl", "during": "each_addition", "withinMs": 2000 },
+        "stopWhen": { "cue": "colour-persists", "forMs": 30000 },
+        "measurement": { "instrument": "burette-1", "readTo": 0.05, "unit": "mL" },
+        "scoring": { "technique": 0.4, "quantity": 0.4, "observation": 0.2 },
+        "onDeviation": { "overshoot": { "severity": "major", "consequence": "modelled" } },
+        "hints": ["hint-slow-down", "hint-use-stopcock", "hint-show-me-dropwise"]
+      }
+    ]
+  },
+  "quizId": "quiz-acid-base-titration",
+  "explanationRefs": ["expl-neutralisation", "expl-phenolphthalein"]
+}

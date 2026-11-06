@@ -1,0 +1,26 @@
+{
+  "requestId": "sim-fixture-1",
+  "outcome": "reaction",
+  "reactionId": "rxn-hcl-naoh",
+  "reactionVersion": 1,
+  "equationLatex": "\\mathrm{HCl_{(aq)} + NaOH_{(aq)} \\rightarrow NaCl_{(aq)} + H_2O_{(l)}}",
+  "species": [
+    { "id": "nacl", "formula": "NaCl", "amountMol": 0.001, "phase": "aq" },
+    { "id": "h2o", "formula": "H2O", "amountMol": 0.001, "phase": "l" }
+  ],
+  "cues": [
+    {
+      "kind": "colour",
+      "target": "flask-1",
+      "from": { "L": 0.99, "a": 0, "b": 0, "alpha": 0.05 },
+      "to": { "L": 0.9, "a": 0.08, "b": -0.02, "alpha": 0.25 },
+      "startMs": 0,
+      "durationMs": 600,
+      "curve": "sigmoid"
+    },
+    { "kind": "temperature", "target": "flask-1", "deltaC": 0.7, "tauMs": 8000 }
+  ],
+  "measurements": [{ "key": "pH", "value": 8.3, "unit": "pH" }],
+  "fidelity": "exact",
+  "explanationRefs": ["expl-neutralisation", "expl-phenolphthalein"]
+}

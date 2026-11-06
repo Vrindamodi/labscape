@@ -1,0 +1,63 @@
+/* LABscape design tokens as CSS custom properties. Mirrors src/tokens.ts. */
+:root {
+  --ls-bg-base: #0b1020;
+  --ls-bg-surface: #121829;
+  --ls-bg-elevated: #1a2236;
+
+  --ls-glass-fill: rgb(255 255 255 / 0.06);
+  --ls-glass-border: rgb(255 255 255 / 0.1);
+  --ls-glass-blur: 16px;
+
+  --ls-accent-primary: #2f80ff;
+  --ls-accent-cyan: #22d3ee;
+  --ls-ai-violet: #8b5cf6;
+  --ls-ai-magenta: #e879f9;
+
+  --ls-state-success: #22c55e;
+  --ls-state-warning: #f59e0b;
+  --ls-state-danger: #ef4444;
+
+  --ls-subject-chemistry: #2dd4bf;
+  --ls-subject-physics: #38bdf8;
+  --ls-subject-maths: #fb923c;
+
+  --ls-font-heading: "Space Grotesk", system-ui, sans-serif;
+  --ls-font-body: "Inter", system-ui, sans-serif;
+  --ls-font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --ls-radius-sm: 8px;
+  --ls-radius-md: 12px;
+  --ls-radius-lg: 16px;
+  --ls-radius-xl: 24px;
+
+  --ls-sidebar-width: 264px;
+  --ls-sidebar-rail-width: 72px;
+  --ls-context-panel-width: 360px;
+
+  /* Motion (see @labscape/motion) */
+  --ls-dur-instant: 80ms;
+  --ls-dur-fast: 150ms;
+  --ls-dur-base: 240ms;
+  --ls-dur-slow: 400ms;
+  --ls-dur-deliberate: 700ms;
+  --ls-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ls-ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ls-ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  /* Animation speed setting (0.5x-2x) scales UI durations via this multiplier. */
+  --ls-anim-speed: 1;
+
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ls-dur-base: 150ms;
+    --ls-dur-slow: 150ms;
+    --ls-dur-deliberate: 150ms;
+  }
+}
+
+.tabular {
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+}

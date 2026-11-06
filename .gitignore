@@ -1,0 +1,29 @@
+# Node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+coverage/
+storybook-static/
+
+# Java / Maven
+apps/api/target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

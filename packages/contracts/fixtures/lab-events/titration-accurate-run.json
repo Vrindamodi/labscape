@@ -1,0 +1,86 @@
+[
+  {
+    "id": "01JC0000000000000000000001",
+    "attemptId": "att-fixture-titration-1",
+    "seq": 1,
+    "t": 0,
+    "actor": "system",
+    "type": "sim.start",
+    "payload": {}
+  },
+  {
+    "id": "01JC0000000000000000000002",
+    "attemptId": "att-fixture-titration-1",
+    "seq": 2,
+    "t": 1200,
+    "actor": "user",
+    "type": "liquid.draw",
+    "payload": { "from": "reagent:hcl-0.1M", "into": "pipette-1", "volumeMl": 10.0 }
+  },
+  {
+    "id": "01JC0000000000000000000003",
+    "attemptId": "att-fixture-titration-1",
+    "seq": 3,
+    "t": 5400,
+    "actor": "user",
+    "type": "liquid.pour",
+    "payload": {
+      "from": "pipette-1",
+      "to": "flask-1",
+      "volumeMl": 10.0,
+      "tiltDegMax": 0,
+      "meanRateMlPerS": 2.5,
+      "peakRateMlPerS": 3.1,
+      "durationMs": 4000
+    }
+  },
+  {
+    "id": "01JC0000000000000000000004",
+    "attemptId": "att-fixture-titration-1",
+    "seq": 4,
+    "t": 9100,
+    "actor": "user",
+    "type": "liquid.drop",
+    "payload": { "from": "reagent:phenolphthalein", "to": "flask-1", "drops": 3, "volumeMl": 0.15 }
+  },
+  {
+    "id": "01JC0000000000000000000005",
+    "attemptId": "att-fixture-titration-1",
+    "seq": 5,
+    "t": 61000,
+    "actor": "user",
+    "type": "liquid.drop",
+    "payload": { "from": "burette-1", "to": "flask-1", "drops": 1, "volumeMl": 0.05 }
+  },
+  {
+    "id": "01JC0000000000000000000006",
+    "attemptId": "att-fixture-titration-1",
+    "seq": 6,
+    "t": 62200,
+    "actor": "user",
+    "type": "mix.swirl",
+    "payload": { "target": "flask-1", "durationMs": 1500 }
+  },
+  {
+    "id": "01JC0000000000000000000007",
+    "attemptId": "att-fixture-titration-1",
+    "seq": 7,
+    "t": 95000,
+    "actor": "user",
+    "type": "measure.read",
+    "payload": {
+      "instrument": "burette-1",
+      "reading": { "key": "final_volume", "value": 10.05, "unit": "mL" },
+      "trueValue": 10.0
+    }
+  },
+  {
+    "id": "01JC0000000000000000000008",
+    "attemptId": "att-fixture-titration-1",
+    "seq": 8,
+    "t": 95100,
+    "actor": "system",
+    "type": "step.completed",
+    "payload": { "stepId": "titration-accurate-run" }
+  }
+]
