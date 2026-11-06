@@ -118,7 +118,7 @@
         "indicator"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "chem-indicators-ph",
@@ -168,7 +168,7 @@
         "colour change"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "chem-salt-preparation",
@@ -268,7 +268,7 @@
         "ionic equations"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "chem-flame-tests",
@@ -320,7 +320,7 @@
         "spectroscopy"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "chem-reactivity-series",
@@ -417,7 +417,7 @@
         "dilution"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "chem-iron-copper-displacement",
@@ -462,7 +462,7 @@
         "time-lapse"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "chem-mg-hcl-hydrogen",
@@ -512,7 +512,7 @@
         "metals"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "chem-electrolysis-brine",

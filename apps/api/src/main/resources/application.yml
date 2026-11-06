@@ -59,7 +59,7 @@ labscape:
     max-events-per-minute: 30
   features:
     # Flip on as each part ships; daily challenges only offer what can actually be completed.
-    experiments: false
+    experiments: true
     quizzes: false
     scenarios: false
     molecular-view: false

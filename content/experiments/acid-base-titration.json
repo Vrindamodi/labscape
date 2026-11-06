@@ -8,236 +8,1199 @@
   "reviewStatus": "draft",
   "bench": {
     "items": [
-      { "id": "naoh-bottle", "kind": "reagent_bottle", "label": "Sodium hydroxide 0.100 M", "x": -330, "z": -60, "fill": { "reagentId": "naoh-0.1", "volumeMl": 200 } },
-      { "id": "hcl-bottle", "kind": "reagent_bottle", "label": "Hydrochloric acid (unknown)", "x": -250, "z": -60, "fill": { "reagentId": "hcl-0.1", "volumeMl": 200 } },
-      { "id": "phph", "kind": "dropper_bottle", "label": "Phenolphthalein", "x": -180, "z": -40, "fill": { "reagentId": "phph", "volumeMl": 20 } },
-      { "id": "stand-1", "kind": "clamp_stand", "x": 0, "z": -90 },
-      { "id": "burette-1", "kind": "burette_50", "x": 0, "z": -40, "socket": "clamp:stand-1" },
-      { "id": "tile-1", "kind": "white_tile", "x": 0, "z": 30 },
-      { "id": "pipette-1", "kind": "pipette_10", "x": -130, "z": 90 },
-      { "id": "flask-1", "kind": "conical_flask_100", "label": "Conical flask (rough)", "x": 120, "z": 80 },
-      { "id": "flask-2", "kind": "conical_flask_100", "label": "Conical flask (accurate)", "x": 200, "z": 80 },
-      { "id": "waste", "kind": "beaker_100", "label": "Waste beaker", "x": 300, "z": -30 }
+      {
+        "id": "naoh-bottle",
+        "kind": "reagent_bottle",
+        "label": "Sodium hydroxide 0.100 M",
+        "x": -330,
+        "z": -60,
+        "fill": {
+          "reagentId": "naoh-0.1",
+          "volumeMl": 200
+        }
+      },
+      {
+        "id": "hcl-bottle",
+        "kind": "reagent_bottle",
+        "label": "Hydrochloric acid (unknown)",
+        "x": -250,
+        "z": -60,
+        "fill": {
+          "reagentId": "hcl-0.1",
+          "volumeMl": 200
+        }
+      },
+      {
+        "id": "phph",
+        "kind": "dropper_bottle",
+        "label": "Phenolphthalein",
+        "x": -180,
+        "z": -40,
+        "fill": {
+          "reagentId": "phph",
+          "volumeMl": 20
+        }
+      },
+      {
+        "id": "stand-1",
+        "kind": "clamp_stand",
+        "x": 0,
+        "z": -30
+      },
+      {
+        "id": "burette-1",
+        "kind": "burette_50",
+        "x": 0,
+        "z": 30,
+        "socket": "clamp:stand-1"
+      },
+      {
+        "id": "tile-1",
+        "kind": "white_tile",
+        "x": 0,
+        "z": 30
+      },
+      {
+        "id": "pipette-1",
+        "kind": "pipette_10",
+        "x": -130,
+        "z": 90
+      },
+      {
+        "id": "flask-1",
+        "kind": "conical_flask_100",
+        "label": "Conical flask (rough)",
+        "x": 120,
+        "z": 80
+      },
+      {
+        "id": "flask-2",
+        "kind": "conical_flask_100",
+        "label": "Conical flask (accurate)",
+        "x": 200,
+        "z": 80
+      },
+      {
+        "id": "waste",
+        "kind": "beaker_100",
+        "label": "Waste beaker",
+        "x": 300,
+        "z": -30
+      }
     ]
   },
   "steps": [
     {
-      "id": "fill-burette", "title": "Fill the burette", "instruction": "Fill the burette with 0.100 M NaOH. Pour slowly through the funnel.",
-      "action": "liquid.pour", "from": "naoh-bottle", "to": "burette-1",
-      "technique": { "kind": "slow_pour", "maxRateMlPerS": 6 },
-      "complete": { "predicate": "volume-at-least:burette-1:45" },
-      "scoring": { "technique": 1, "sequence": 1 },
-      "hints": ["fill-1", "fill-2", "fill-3"]
+      "id": "fill-burette",
+      "title": "Fill the burette",
+      "instruction": "Fill the burette with 0.100 M NaOH. Pour slowly through the funnel.",
+      "action": "liquid.pour",
+      "from": "naoh-bottle",
+      "to": "burette-1",
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 6
+      },
+      "complete": {
+        "predicate": "volume-at-least:burette-1:45"
+      },
+      "scoring": {
+        "technique": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "fill-1",
+        "fill-2",
+        "fill-3"
+      ]
     },
     {
-      "id": "clear-bubble", "title": "Clear the air bubble", "instruction": "Open the stopcock fully and run a little NaOH into the waste beaker to clear the air bubble from the tip.",
-      "requires": ["fill-burette"], "action": "liquid.drop", "from": "burette-1", "to": "waste", "alsoActions": ["liquid.pour"],
-      "complete": { "predicate": "burette-clear:burette-1" },
-      "scoring": { "technique": 1, "sequence": 1 },
-      "hints": ["bubble-1", "bubble-2", "bubble-3"]
+      "id": "clear-bubble",
+      "title": "Clear the air bubble",
+      "instruction": "Open the stopcock fully and run a little NaOH into the waste beaker to clear the air bubble from the tip.",
+      "requires": [
+        "fill-burette"
+      ],
+      "action": "liquid.drop",
+      "from": "burette-1",
+      "to": "waste",
+      "alsoActions": [
+        "liquid.pour"
+      ],
+      "complete": {
+        "predicate": "burette-clear:burette-1"
+      },
+      "scoring": {
+        "technique": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "bubble-1",
+        "bubble-2",
+        "bubble-3"
+      ]
     },
     {
-      "id": "initial-reading", "title": "Read the burette", "instruction": "Read the initial volume at eye level, to the nearest 0.05 mL.",
-      "requires": ["clear-bubble"], "action": "measure.read", "from": "burette-1",
-      "measurement": { "instrument": "burette-1", "readTo": 0.05, "unit": "mL" },
-      "scoring": { "measurement": 1, "sequence": 1 },
-      "hints": ["read-1", "read-2", "read-3"]
+      "id": "initial-reading",
+      "title": "Read the burette",
+      "instruction": "Read the initial volume at eye level, to the nearest 0.05 mL.",
+      "requires": [
+        "clear-bubble"
+      ],
+      "action": "measure.read",
+      "from": "burette-1",
+      "measurement": {
+        "instrument": "burette-1",
+        "readTo": 0.05,
+        "unit": "mL"
+      },
+      "scoring": {
+        "measurement": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "read-1",
+        "read-2",
+        "read-3"
+      ]
     },
     {
-      "id": "pipette-rough", "title": "Pipette 10.00 mL of acid", "instruction": "Use the pipette filler to draw 10.00 mL of HCl, bottom of the meniscus on the mark.",
-      "action": "liquid.draw", "from": "hcl-bottle", "to": "pipette-1",
-      "quantity": { "target": 10, "plusMinus": 0.05, "unit": "mL" }, "technique": { "kind": "pipette", "volume": { "target": 10, "plusMinus": 0.05, "unit": "mL" } },
-      "scoring": { "quantity": 1, "sequence": 1 },
-      "hints": ["pipette-1", "pipette-2", "pipette-3"]
+      "id": "pipette-rough",
+      "title": "Pipette 10.00 mL of acid",
+      "instruction": "Use the pipette filler to draw 10.00 mL of HCl, bottom of the meniscus on the mark.",
+      "action": "liquid.draw",
+      "from": "hcl-bottle",
+      "to": "pipette-1",
+      "quantity": {
+        "target": 10,
+        "plusMinus": 0.05,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "pipette",
+        "volume": {
+          "target": 10,
+          "plusMinus": 0.05,
+          "unit": "mL"
+        }
+      },
+      "scoring": {
+        "quantity": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "pipette-1",
+        "pipette-2",
+        "pipette-3"
+      ]
     },
     {
-      "id": "deliver-rough", "title": "Deliver into the flask", "instruction": "Let the pipette drain into the rough conical flask.",
-      "requires": ["pipette-rough"], "action": "liquid.drop", "from": "pipette-1", "to": "flask-1",
-      "quantity": { "target": 10, "plusMinus": 0.05, "unit": "mL" },
-      "scoring": { "quantity": 1, "sequence": 1 },
-      "hints": ["pipette-1", "pipette-2", "pipette-3"]
+      "id": "deliver-rough",
+      "title": "Deliver into the flask",
+      "instruction": "Let the pipette drain into the rough conical flask.",
+      "requires": [
+        "pipette-rough"
+      ],
+      "action": "liquid.drop",
+      "from": "pipette-1",
+      "to": "flask-1",
+      "quantity": {
+        "target": 10,
+        "plusMinus": 0.05,
+        "unit": "mL"
+      },
+      "scoring": {
+        "quantity": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "pipette-1",
+        "pipette-2",
+        "pipette-3"
+      ]
     },
     {
-      "id": "indicator-rough", "title": "Add phenolphthalein", "instruction": "Add 2 to 3 drops of phenolphthalein.",
-      "requires": ["deliver-rough"], "action": "liquid.drop", "from": "phph", "to": "flask-1",
-      "quantity": { "target": 0.125, "plusMinus": 0.03, "unit": "mL" }, "complete": { "onEvent": true },
-      "scoring": { "quantity": 1, "sequence": 1 },
-      "hints": ["ind-1", "ind-2", "ind-3"]
+      "id": "indicator-rough",
+      "title": "Add phenolphthalein",
+      "instruction": "Add 2 to 3 drops of phenolphthalein.",
+      "requires": [
+        "deliver-rough"
+      ],
+      "action": "liquid.drop",
+      "from": "phph",
+      "to": "flask-1",
+      "quantity": {
+        "target": 0.125,
+        "plusMinus": 0.03,
+        "unit": "mL"
+      },
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "quantity": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "ind-1",
+        "ind-2",
+        "ind-3"
+      ]
     },
     {
-      "id": "tile-rough", "title": "Flask on the white tile", "instruction": "Stand the flask on the white tile under the burette.",
-      "action": "equipment.place", "from": "flask-1", "complete": { "onEvent": true },
-      "scoring": { "equipment": 1 },
-      "hints": ["tile-1", "tile-2", "tile-3"]
+      "id": "tile-rough",
+      "title": "Flask on the white tile",
+      "instruction": "Stand the flask on the white tile under the burette.",
+      "action": "equipment.place",
+      "from": "flask-1",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "tile-1",
+        "tile-2",
+        "tile-3"
+      ]
     },
     {
-      "id": "rough-run", "title": "Rough titration", "instruction": "Add NaOH about 1 mL at a time, swirling, until the pink colour stays.",
-      "requires": ["initial-reading", "indicator-rough"], "action": "liquid.drop", "alsoActions": ["liquid.pour"], "from": "burette-1", "to": "flask-1",
-      "technique": { "kind": "portions", "portionMl": 1, "mixBetween": true },
-      "mixing": { "kind": "swirl", "during": "each_addition", "withinMs": 4000 },
-      "stopWhen": { "cue": "pink-persists:flask-1" },
-      "scoring": { "technique": 1, "sequence": 1 },
-      "hints": ["rough-1", "rough-2", "rough-3"]
+      "id": "rough-run",
+      "title": "Rough titration",
+      "instruction": "Add NaOH about 1 mL at a time, swirling, until the pink colour stays.",
+      "requires": [
+        "initial-reading",
+        "indicator-rough"
+      ],
+      "action": "liquid.drop",
+      "alsoActions": [
+        "liquid.pour"
+      ],
+      "from": "burette-1",
+      "to": "flask-1",
+      "technique": {
+        "kind": "portions",
+        "portionMl": 1,
+        "mixBetween": true
+      },
+      "mixing": {
+        "kind": "swirl",
+        "during": "each_addition",
+        "withinMs": 4000
+      },
+      "stopWhen": {
+        "cue": "pink-persists:flask-1"
+      },
+      "scoring": {
+        "technique": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "rough-1",
+        "rough-2",
+        "rough-3"
+      ]
     },
     {
-      "id": "rough-reading", "title": "Read the rough titre", "instruction": "Read the burette again. Rough titre = final - initial.",
-      "requires": ["rough-run"], "action": "measure.read", "from": "burette-1",
-      "measurement": { "instrument": "burette-1", "readTo": 0.05, "unit": "mL" },
-      "scoring": { "measurement": 1, "sequence": 1 },
-      "hints": ["read-1", "read-2", "read-3"]
+      "id": "rough-reading",
+      "title": "Read the rough titre",
+      "instruction": "Read the burette again. Rough titre = final - initial.",
+      "requires": [
+        "rough-run"
+      ],
+      "action": "measure.read",
+      "from": "burette-1",
+      "measurement": {
+        "instrument": "burette-1",
+        "readTo": 0.05,
+        "unit": "mL"
+      },
+      "scoring": {
+        "measurement": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "read-1",
+        "read-2",
+        "read-3"
+      ]
     },
     {
-      "id": "pipette-accurate", "title": "Pipette 10.00 mL again", "instruction": "Rinse, then pipette another 10.00 mL of HCl.",
-      "requires": ["rough-reading"], "action": "liquid.draw", "from": "hcl-bottle", "to": "pipette-1",
-      "quantity": { "target": 10, "plusMinus": 0.05, "unit": "mL" },
-      "scoring": { "quantity": 1, "sequence": 1 },
-      "hints": ["pipette-1", "pipette-2", "pipette-3"]
+      "id": "pipette-accurate",
+      "title": "Pipette 10.00 mL again",
+      "instruction": "Rinse, then pipette another 10.00 mL of HCl.",
+      "requires": [
+        "rough-reading"
+      ],
+      "action": "liquid.draw",
+      "from": "hcl-bottle",
+      "to": "pipette-1",
+      "quantity": {
+        "target": 10,
+        "plusMinus": 0.05,
+        "unit": "mL"
+      },
+      "scoring": {
+        "quantity": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "pipette-1",
+        "pipette-2",
+        "pipette-3"
+      ]
     },
     {
-      "id": "deliver-accurate", "title": "Deliver into a clean flask", "instruction": "Drain the pipette into the second conical flask.",
-      "requires": ["pipette-accurate"], "action": "liquid.drop", "from": "pipette-1", "to": "flask-2",
-      "quantity": { "target": 10, "plusMinus": 0.05, "unit": "mL" },
-      "scoring": { "quantity": 1, "sequence": 1 },
-      "hints": ["pipette-1", "pipette-2", "pipette-3"]
+      "id": "deliver-accurate",
+      "title": "Deliver into a clean flask",
+      "instruction": "Drain the pipette into the second conical flask.",
+      "requires": [
+        "pipette-accurate"
+      ],
+      "action": "liquid.drop",
+      "from": "pipette-1",
+      "to": "flask-2",
+      "quantity": {
+        "target": 10,
+        "plusMinus": 0.05,
+        "unit": "mL"
+      },
+      "scoring": {
+        "quantity": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "pipette-1",
+        "pipette-2",
+        "pipette-3"
+      ]
     },
     {
-      "id": "indicator-accurate", "title": "Add phenolphthalein", "instruction": "2 to 3 drops of indicator.",
-      "requires": ["deliver-accurate"], "action": "liquid.drop", "from": "phph", "to": "flask-2",
-      "quantity": { "target": 0.125, "plusMinus": 0.03, "unit": "mL" }, "complete": { "onEvent": true },
-      "scoring": { "quantity": 1, "sequence": 1 },
-      "hints": ["ind-1", "ind-2", "ind-3"]
+      "id": "indicator-accurate",
+      "title": "Add phenolphthalein",
+      "instruction": "2 to 3 drops of indicator.",
+      "requires": [
+        "deliver-accurate"
+      ],
+      "action": "liquid.drop",
+      "from": "phph",
+      "to": "flask-2",
+      "quantity": {
+        "target": 0.125,
+        "plusMinus": 0.03,
+        "unit": "mL"
+      },
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "quantity": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "ind-1",
+        "ind-2",
+        "ind-3"
+      ]
     },
     {
-      "id": "tile-accurate", "title": "Swap flasks on the tile", "instruction": "Put the second flask on the white tile.",
-      "action": "equipment.place", "from": "flask-2", "complete": { "onEvent": true },
-      "scoring": { "equipment": 1 },
-      "hints": ["tile-1", "tile-2", "tile-3"]
+      "id": "tile-accurate",
+      "title": "Swap flasks on the tile",
+      "instruction": "Put the second flask on the white tile.",
+      "action": "equipment.place",
+      "from": "flask-2",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "tile-1",
+        "tile-2",
+        "tile-3"
+      ]
     },
     {
-      "id": "accurate-run", "title": "Accurate titration", "instruction": "Run in quickly to about 1 mL before the rough end point, then add dropwise, swirling after every drop, until a faint pink lasts 30 s.",
-      "requires": ["indicator-accurate", "rough-reading"], "action": "liquid.drop", "alsoActions": ["liquid.pour"], "from": "burette-1", "to": "flask-2",
-      "quantity": { "target": 10.0, "plusMinus": 0.1, "unit": "mL" },
-      "technique": { "kind": "dropwise", "dropVolumeMl": 0.05, "maxRateMlPerS": 0.1, "appliesWithinMlOfEndpoint": 1.0 },
-      "mixing": { "kind": "swirl", "during": "each_addition", "withinMs": 2000 },
-      "stopWhen": { "cue": "pink-persists:flask-2", "forMs": 30000 },
-      "scoring": { "technique": 0.4, "quantity": 0.4, "sequence": 0.2 },
-      "onDeviation": { "overshoot": { "severity": "major", "consequence": "modelled" }, "not-dropwise": { "severity": "major", "consequence": "modelled" } },
-      "hints": ["acc-1", "acc-2", "acc-3"]
+      "id": "accurate-run",
+      "title": "Accurate titration",
+      "instruction": "Run in quickly to about 1 mL before the rough end point, then add dropwise, swirling after every drop, until a faint pink lasts 30 s.",
+      "requires": [
+        "indicator-accurate",
+        "rough-reading"
+      ],
+      "action": "liquid.drop",
+      "alsoActions": [
+        "liquid.pour"
+      ],
+      "from": "burette-1",
+      "to": "flask-2",
+      "quantity": {
+        "target": 10,
+        "plusMinus": 0.1,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "dropwise",
+        "dropVolumeMl": 0.05,
+        "maxRateMlPerS": 0.1,
+        "appliesWithinMlOfEndpoint": 1
+      },
+      "mixing": {
+        "kind": "swirl",
+        "during": "each_addition",
+        "withinMs": 2000
+      },
+      "stopWhen": {
+        "cue": "pink-persists:flask-2",
+        "forMs": 30000
+      },
+      "scoring": {
+        "technique": 0.4,
+        "quantity": 0.4,
+        "sequence": 0.2
+      },
+      "onDeviation": {
+        "overshoot": {
+          "severity": "major",
+          "consequence": "modelled"
+        },
+        "not-dropwise": {
+          "severity": "major",
+          "consequence": "modelled"
+        }
+      },
+      "hints": [
+        "acc-1",
+        "acc-2",
+        "acc-3"
+      ]
     },
     {
-      "id": "final-reading", "title": "Final reading", "instruction": "Read the burette. Titre = final - rough final reading.",
-      "requires": ["accurate-run"], "action": "measure.read", "from": "burette-1",
-      "measurement": { "instrument": "burette-1", "readTo": 0.05, "unit": "mL" },
-      "scoring": { "measurement": 1, "sequence": 1 },
-      "hints": ["read-1", "read-2", "read-3"]
+      "id": "final-reading",
+      "title": "Final reading",
+      "instruction": "Read the burette. Titre = final - rough final reading.",
+      "requires": [
+        "accurate-run"
+      ],
+      "action": "measure.read",
+      "from": "burette-1",
+      "measurement": {
+        "instrument": "burette-1",
+        "readTo": 0.05,
+        "unit": "mL"
+      },
+      "scoring": {
+        "measurement": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "read-1",
+        "read-2",
+        "read-3"
+      ]
     }
   ],
   "hints": {
-    "fill-1": { "rung": 1, "text": "What could go wrong if you pour quickly into a narrow tube?" },
-    "fill-2": { "rung": 2, "text": "Tilt the bottle only a little so the pour-rate gauge stays green, below 6 mL/s." },
-    "fill-3": { "rung": 3, "text": "Watch: a slow, steady pour into the funnel." },
-    "bubble-1": { "rung": 1, "text": "Look closely at the tip below the stopcock. Is it full of liquid?" },
-    "bubble-2": { "rung": 2, "text": "Open the stopcock fully for a moment over the waste beaker. The rush of liquid pushes the air out." },
-    "bubble-3": { "rung": 3, "text": "Watch the stopcock open fully, then close." },
-    "read-1": { "rung": 1, "text": "Where should your eye be when you read a scale?" },
-    "read-2": { "rung": 2, "text": "Open the lens, slide to eye level and read the bottom of the meniscus to the nearest 0.05 mL." },
-    "read-3": { "rung": 3, "text": "Watch the reading lens line up with the meniscus." },
-    "pipette-1": { "rung": 1, "text": "A pipette is accurate only to its line. How do you hit it exactly?" },
-    "pipette-2": { "rung": 2, "text": "Draw above the mark with the filler, then let it fall until the bottom of the meniscus sits on the line." },
-    "pipette-3": { "rung": 3, "text": "Watch the meniscus settle on the mark." },
-    "ind-1": { "rung": 1, "text": "Indicators are strong dyes. How much do you need?" },
-    "ind-2": { "rung": 2, "text": "Squeeze the dropper bottle for 2 or 3 drops only." },
-    "ind-3": { "rung": 3, "text": "Watch three drops go in." },
-    "tile-1": { "rung": 1, "text": "How will you spot the first faint pink?" },
-    "tile-2": { "rung": 2, "text": "Drag the flask onto the white tile under the burette tip. It snaps into place." },
-    "tile-3": { "rung": 3, "text": "Watch the flask snap onto the tile." },
-    "rough-1": { "rung": 1, "text": "This run only needs to find roughly where the end point is." },
-    "rough-2": { "rung": 2, "text": "Add about 1 mL, swirl, and repeat until the pink stops fading." },
-    "rough-3": { "rung": 3, "text": "Watch: add, swirl, add, swirl." },
-    "acc-1": { "rung": 1, "text": "What happens if you add too much at once near the end point?" },
-    "acc-2": { "rung": 2, "text": "Slow down! Near the end point add one drop at a time with the stopcock, swirling after each drop." },
-    "acc-3": { "rung": 3, "text": "Watch the last millilitre go in drop by drop." }
+    "fill-1": {
+      "rung": 1,
+      "text": "What could go wrong if you pour quickly into a narrow tube?"
+    },
+    "fill-2": {
+      "rung": 2,
+      "text": "Tilt the bottle only a little so the pour-rate gauge stays green, below 6 mL/s."
+    },
+    "fill-3": {
+      "rung": 3,
+      "text": "Watch: a slow, steady pour into the funnel."
+    },
+    "bubble-1": {
+      "rung": 1,
+      "text": "Look closely at the tip below the stopcock. Is it full of liquid?"
+    },
+    "bubble-2": {
+      "rung": 2,
+      "text": "Open the stopcock fully for a moment over the waste beaker. The rush of liquid pushes the air out."
+    },
+    "bubble-3": {
+      "rung": 3,
+      "text": "Watch the stopcock open fully, then close."
+    },
+    "read-1": {
+      "rung": 1,
+      "text": "Where should your eye be when you read a scale?"
+    },
+    "read-2": {
+      "rung": 2,
+      "text": "Open the lens, slide to eye level and read the bottom of the meniscus to the nearest 0.05 mL."
+    },
+    "read-3": {
+      "rung": 3,
+      "text": "Watch the reading lens line up with the meniscus."
+    },
+    "pipette-1": {
+      "rung": 1,
+      "text": "A pipette is accurate only to its line. How do you hit it exactly?"
+    },
+    "pipette-2": {
+      "rung": 2,
+      "text": "Draw above the mark with the filler, then let it fall until the bottom of the meniscus sits on the line."
+    },
+    "pipette-3": {
+      "rung": 3,
+      "text": "Watch the meniscus settle on the mark."
+    },
+    "ind-1": {
+      "rung": 1,
+      "text": "Indicators are strong dyes. How much do you need?"
+    },
+    "ind-2": {
+      "rung": 2,
+      "text": "Squeeze the dropper bottle for 2 or 3 drops only."
+    },
+    "ind-3": {
+      "rung": 3,
+      "text": "Watch three drops go in."
+    },
+    "tile-1": {
+      "rung": 1,
+      "text": "How will you spot the first faint pink?"
+    },
+    "tile-2": {
+      "rung": 2,
+      "text": "Drag the flask onto the white tile under the burette tip. It snaps into place."
+    },
+    "tile-3": {
+      "rung": 3,
+      "text": "Watch the flask snap onto the tile."
+    },
+    "rough-1": {
+      "rung": 1,
+      "text": "This run only needs to find roughly where the end point is."
+    },
+    "rough-2": {
+      "rung": 2,
+      "text": "Add about 1 mL, swirl, and repeat until the pink stops fading."
+    },
+    "rough-3": {
+      "rung": 3,
+      "text": "Watch: add, swirl, add, swirl."
+    },
+    "acc-1": {
+      "rung": 1,
+      "text": "What happens if you add too much at once near the end point?"
+    },
+    "acc-2": {
+      "rung": 2,
+      "text": "Slow down! Near the end point add one drop at a time with the stopcock, swirling after each drop."
+    },
+    "acc-3": {
+      "rung": 3,
+      "text": "Watch the last millilitre go in drop by drop."
+    }
   },
   "observations": {
     "whatHappened": "Each drop of alkali flashed pink where it landed and faded when you swirled. At the end point a single drop turned the whole flask a faint pink that lasted.",
     "why": "H⁺ ions from the acid and OH⁻ ions from the alkali combine to make water. While acid is left over, any pink is neutralised as soon as it mixes in. When the moles of NaOH added equal the moles of HCl in the flask, the next drop leaves the solution slightly alkaline and phenolphthalein turns pink above about pH 8.2.",
     "equationLatex": "\\mathrm{HCl(aq) + NaOH(aq) \\longrightarrow NaCl(aq) + H_2O(l)}",
-    "realWorld": ["Checking acidity in fruit juice and wine", "Quality control in pharmaceuticals", "Measuring water hardness"],
+    "realWorld": [
+      "Checking acidity in fruit juice and wine",
+      "Quality control in pharmaceuticals",
+      "Measuring water hardness"
+    ],
     "prompts": [
-      { "id": "q-flash", "question": "Why did a pink flash appear where each drop landed, then fade when you swirled?", "choices": ["Locally there was excess alkali until it mixed with the acid", "The indicator evaporated", "The flask warmed up", "Light reflected off the drop"], "answer": 0, "explain": "Right where it lands, the drop of NaOH is in excess, so the indicator turns pink. Swirling mixes it into the acid, which neutralises it." },
-      { "id": "q-moles", "question": "At the end point, the moles of NaOH added are...", "choices": ["Half the moles of HCl", "Equal to the moles of HCl", "Twice the moles of HCl", "Equal to the volume of HCl"], "answer": 1, "explain": "HCl and NaOH react 1 : 1, so at equivalence the moles are equal." },
-      { "id": "q-conc", "question": "Your titre was about 10.0 mL of 0.100 M NaOH for 10.00 mL of HCl. The acid concentration is closest to...", "choices": ["0.050 M", "0.100 M", "0.200 M", "1.00 M"], "answer": 1, "explain": "c(HCl) = 0.100 × 10.0 / 10.00 = 0.100 M." }
+      {
+        "id": "q-flash",
+        "question": "Why did a pink flash appear where each drop landed, then fade when you swirled?",
+        "choices": [
+          "Locally there was excess alkali until it mixed with the acid",
+          "The indicator evaporated",
+          "The flask warmed up",
+          "Light reflected off the drop"
+        ],
+        "answer": 0,
+        "explain": "Right where it lands, the drop of NaOH is in excess, so the indicator turns pink. Swirling mixes it into the acid, which neutralises it."
+      },
+      {
+        "id": "q-moles",
+        "question": "At the end point, the moles of NaOH added are...",
+        "choices": [
+          "Half the moles of HCl",
+          "Equal to the moles of HCl",
+          "Twice the moles of HCl",
+          "Equal to the volume of HCl"
+        ],
+        "answer": 1,
+        "explain": "HCl and NaOH react 1 : 1, so at equivalence the moles are equal."
+      },
+      {
+        "id": "q-conc",
+        "question": "Your titre was about 10.0 mL of 0.100 M NaOH for 10.00 mL of HCl. The acid concentration is closest to...",
+        "choices": [
+          "0.050 M",
+          "0.100 M",
+          "0.200 M",
+          "1.00 M"
+        ],
+        "answer": 1,
+        "explain": "c(HCl) = 0.100 × 10.0 / 10.00 = 0.100 M."
+      }
     ]
   },
   "safety": [],
   "golden": {
     "durationS": 75,
     "captions": [
-      { "t": 0, "text": "Fill the burette slowly with 0.100 M sodium hydroxide." },
-      { "t": 18000, "text": "Run a little through to clear the air bubble from the tip.", "slow": true },
-      { "t": 22000, "text": "Read the starting volume at eye level: 1.00 mL." },
-      { "t": 24000, "text": "Pipette exactly 10.00 mL of the acid into a conical flask and add phenolphthalein." },
-      { "t": 31000, "text": "Rough run: about 1 mL at a time, swirling, until the pink stays." },
-      { "t": 57000, "text": "Accurate run: run in quickly to 9 mL..." },
-      { "t": 67000, "text": "...then drop by drop, swirling after each one.", "slow": true },
-      { "t": 77000, "text": "A faint pink that lasts 30 seconds: the end point." }
+      {
+        "t": 0,
+        "text": "Fill the burette slowly with 0.100 M sodium hydroxide."
+      },
+      {
+        "t": 18000,
+        "text": "Run a little through to clear the air bubble from the tip.",
+        "slow": true
+      },
+      {
+        "t": 22000,
+        "text": "Read the starting volume at eye level: 1.00 mL."
+      },
+      {
+        "t": 24000,
+        "text": "Pipette exactly 10.00 mL of the acid into a conical flask and add phenolphthalein."
+      },
+      {
+        "t": 31000,
+        "text": "Rough run: about 1 mL at a time, swirling, until the pink stays."
+      },
+      {
+        "t": 57000,
+        "text": "Accurate run: run in quickly to 9 mL..."
+      },
+      {
+        "t": 67000,
+        "text": "...then drop by drop, swirling after each one.",
+        "slow": true
+      },
+      {
+        "t": 77000,
+        "text": "A faint pink that lasts 30 seconds: the end point."
+      }
     ],
     "events": [
-      { "t": 16000, "type": "liquid.pour", "payload": { "from": "naoh-bottle", "to": "burette-1", "volumeMl": 50, "tiltDegMax": 52, "meanRateMlPerS": 3.2, "peakRateMlPerS": 4.6, "durationMs": 15500 } },
-      { "t": 20000, "type": "param.set", "payload": { "key": "stopcock:burette-1", "value": 1 } },
-      { "t": 21000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "waste", "drops": 20, "volumeMl": 1.0 } },
-      { "t": 21200, "type": "param.set", "payload": { "key": "stopcock:burette-1", "value": 0 } },
-      { "t": 22500, "type": "measure.read", "payload": { "instrument": "burette-1", "reading": { "key": "burette", "value": 1.0, "unit": "mL" }, "trueValue": 1.0 } },
-      { "t": 25000, "type": "liquid.draw", "payload": { "from": "hcl-bottle", "into": "pipette-1", "volumeMl": 10 } },
-      { "t": 27500, "type": "liquid.drop", "payload": { "from": "pipette-1", "to": "flask-1", "drops": 1, "volumeMl": 10 } },
-      { "t": 29000, "type": "liquid.drop", "payload": { "from": "phph", "to": "flask-1", "drops": 3, "volumeMl": 0.15 } },
-      { "t": 30000, "type": "equipment.place", "payload": { "equipmentId": "flask-1", "x": 0, "y": 30, "socket": "tile:tile-1" } },
-      { "t": 31000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 31600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 33000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 33600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 35000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 35600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 37000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 37600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 39000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 39600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 41000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 41600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 43000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 43600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 45000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 45600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 47000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 47600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 49000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 49600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2000 } },
-      { "t": 51000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-1", "drops": 20, "volumeMl": 1 } },
-      { "t": 51600, "type": "mix.swirl", "payload": { "target": "flask-1", "durationMs": 2400 } },
-      { "t": 54000, "type": "measure.read", "payload": { "instrument": "burette-1", "reading": { "key": "burette", "value": 12.0, "unit": "mL" }, "trueValue": 12.0 } },
-      { "t": 55000, "type": "equipment.place", "payload": { "equipmentId": "flask-1", "x": 120, "y": 80 } },
-      { "t": 55500, "type": "liquid.draw", "payload": { "from": "hcl-bottle", "into": "pipette-1", "volumeMl": 10 } },
-      { "t": 56500, "type": "liquid.drop", "payload": { "from": "pipette-1", "to": "flask-2", "drops": 1, "volumeMl": 10 } },
-      { "t": 57000, "type": "liquid.drop", "payload": { "from": "phph", "to": "flask-2", "drops": 3, "volumeMl": 0.15 } },
-      { "t": 57500, "type": "equipment.place", "payload": { "equipmentId": "flask-2", "x": 0, "y": 30, "socket": "tile:tile-1" } },
-      { "t": 62000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-2", "drops": 180, "volumeMl": 9.0 } },
-      { "t": 62600, "type": "mix.swirl", "payload": { "target": "flask-2", "durationMs": 1500 } },
-      { "t": 65000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-2", "drops": 4, "volumeMl": 0.2 } },
-      { "t": 65600, "type": "mix.swirl", "payload": { "target": "flask-2", "durationMs": 1000 } },
-      { "t": 67000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-2", "drops": 4, "volumeMl": 0.2 } },
-      { "t": 67600, "type": "mix.swirl", "payload": { "target": "flask-2", "durationMs": 1000 } },
-      { "t": 69000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-2", "drops": 4, "volumeMl": 0.2 } },
-      { "t": 69600, "type": "mix.swirl", "payload": { "target": "flask-2", "durationMs": 1000 } },
-      { "t": 71000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-2", "drops": 4, "volumeMl": 0.2 } },
-      { "t": 71600, "type": "mix.swirl", "payload": { "target": "flask-2", "durationMs": 1000 } },
-      { "t": 73000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-2", "drops": 4, "volumeMl": 0.2 } },
-      { "t": 73600, "type": "mix.swirl", "payload": { "target": "flask-2", "durationMs": 1000 } },
-      { "t": 75000, "type": "liquid.drop", "payload": { "from": "burette-1", "to": "flask-2", "drops": 1, "volumeMl": 0.05 } },
-      { "t": 75600, "type": "mix.swirl", "payload": { "target": "flask-2", "durationMs": 1200 } },
-      { "t": 108000, "type": "measure.read", "payload": { "instrument": "burette-1", "reading": { "key": "burette", "value": 22.05, "unit": "mL" }, "trueValue": 22.05 } },
-      { "t": 109000, "type": "param.set", "payload": { "key": "answer:q-flash", "value": 0 } },
-      { "t": 109500, "type": "param.set", "payload": { "key": "answer:q-moles", "value": 1 } },
-      { "t": 110000, "type": "param.set", "payload": { "key": "answer:q-conc", "value": 1 } }
+      {
+        "t": 16000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "naoh-bottle",
+          "to": "burette-1",
+          "volumeMl": 50,
+          "tiltDegMax": 52,
+          "meanRateMlPerS": 3.2,
+          "peakRateMlPerS": 4.6,
+          "durationMs": 15500
+        }
+      },
+      {
+        "t": 20000,
+        "type": "param.set",
+        "payload": {
+          "key": "stopcock:burette-1",
+          "value": 1
+        }
+      },
+      {
+        "t": 21000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "waste",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 21200,
+        "type": "param.set",
+        "payload": {
+          "key": "stopcock:burette-1",
+          "value": 0
+        }
+      },
+      {
+        "t": 22500,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "burette-1",
+          "reading": {
+            "key": "burette",
+            "value": 1,
+            "unit": "mL"
+          },
+          "trueValue": 1
+        }
+      },
+      {
+        "t": 25000,
+        "type": "liquid.draw",
+        "payload": {
+          "from": "hcl-bottle",
+          "into": "pipette-1",
+          "volumeMl": 10
+        }
+      },
+      {
+        "t": 27500,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "pipette-1",
+          "to": "flask-1",
+          "drops": 1,
+          "volumeMl": 10
+        }
+      },
+      {
+        "t": 29000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "phph",
+          "to": "flask-1",
+          "drops": 3,
+          "volumeMl": 0.15
+        }
+      },
+      {
+        "t": 30000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "flask-1",
+          "x": 0,
+          "y": 30,
+          "socket": "tile:tile-1"
+        }
+      },
+      {
+        "t": 31000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 31600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 33000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 33600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 35000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 35600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 37000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 37600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 39000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 39600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 41000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 41600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 43000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 43600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 45000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 45600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 47000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 47600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 49000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 49600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 51000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-1",
+          "drops": 20,
+          "volumeMl": 1
+        }
+      },
+      {
+        "t": 51600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-1",
+          "durationMs": 2400
+        }
+      },
+      {
+        "t": 54000,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "burette-1",
+          "reading": {
+            "key": "burette",
+            "value": 12,
+            "unit": "mL"
+          },
+          "trueValue": 12
+        }
+      },
+      {
+        "t": 55000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "flask-1",
+          "x": 120,
+          "y": 80
+        }
+      },
+      {
+        "t": 55500,
+        "type": "liquid.draw",
+        "payload": {
+          "from": "hcl-bottle",
+          "into": "pipette-1",
+          "volumeMl": 10
+        }
+      },
+      {
+        "t": 56500,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "pipette-1",
+          "to": "flask-2",
+          "drops": 1,
+          "volumeMl": 10
+        }
+      },
+      {
+        "t": 57000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "phph",
+          "to": "flask-2",
+          "drops": 3,
+          "volumeMl": 0.15
+        }
+      },
+      {
+        "t": 57500,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "flask-2",
+          "x": 0,
+          "y": 30,
+          "socket": "tile:tile-1"
+        }
+      },
+      {
+        "t": 62000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-2",
+          "drops": 180,
+          "volumeMl": 9
+        }
+      },
+      {
+        "t": 62600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-2",
+          "durationMs": 1500
+        }
+      },
+      {
+        "t": 65000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-2",
+          "drops": 4,
+          "volumeMl": 0.2
+        }
+      },
+      {
+        "t": 65600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-2",
+          "durationMs": 1000
+        }
+      },
+      {
+        "t": 67000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-2",
+          "drops": 4,
+          "volumeMl": 0.2
+        }
+      },
+      {
+        "t": 67600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-2",
+          "durationMs": 1000
+        }
+      },
+      {
+        "t": 69000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-2",
+          "drops": 4,
+          "volumeMl": 0.2
+        }
+      },
+      {
+        "t": 69600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-2",
+          "durationMs": 1000
+        }
+      },
+      {
+        "t": 71000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-2",
+          "drops": 4,
+          "volumeMl": 0.2
+        }
+      },
+      {
+        "t": 71600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-2",
+          "durationMs": 1000
+        }
+      },
+      {
+        "t": 73000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-2",
+          "drops": 4,
+          "volumeMl": 0.2
+        }
+      },
+      {
+        "t": 73600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-2",
+          "durationMs": 1000
+        }
+      },
+      {
+        "t": 75000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "burette-1",
+          "to": "flask-2",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 75600,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "flask-2",
+          "durationMs": 1200
+        }
+      },
+      {
+        "t": 108000,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "burette-1",
+          "reading": {
+            "key": "burette",
+            "value": 22.05,
+            "unit": "mL"
+          },
+          "trueValue": 22.05
+        }
+      },
+      {
+        "t": 109000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-flash",
+          "value": 0
+        }
+      },
+      {
+        "t": 109500,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-moles",
+          "value": 1
+        }
+      },
+      {
+        "t": 110000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-conc",
+          "value": 1
+        }
+      }
     ]
   }
 }

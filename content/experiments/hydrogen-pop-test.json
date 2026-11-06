@@ -43,10 +43,11 @@
       },
       {
         "id": "mg-ribbon",
-        "kind": "funnel",
+        "kind": "watch_glass",
         "label": "Magnesium ribbon (on a watch glass)",
         "x": 160,
-        "z": 60
+        "z": 60,
+        "reagentId": "mg-ribbon"
       },
       {
         "id": "bunsen",

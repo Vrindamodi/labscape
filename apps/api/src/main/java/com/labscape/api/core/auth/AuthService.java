@@ -183,8 +183,12 @@ public class AuthService {
         db.sql("""
                 INSERT INTO xp_transactions (user_id, idempotency_key, kind, ref_id, subject, score, base_xp, xp,
                                              adjustments, created_at)
-                SELECT :target, idempotency_key, kind, ref_id, subject, score, base_xp, xp, adjustments, created_at
-                  FROM xp_transactions WHERE user_id = :guest
+                SELECT :target,
+                       -- the same key on both accounts (e.g. the same daily challenge) keeps both awards
+                       CASE WHEN EXISTS (SELECT 1 FROM xp_transactions t WHERE t.user_id = :target AND t.idempotency_key = g.idempotency_key)
+                            THEN g.idempotency_key || ':merged:' || CAST(:guest AS text) ELSE g.idempotency_key END,
+                       kind, ref_id, subject, score, base_xp, xp, adjustments, created_at
+                  FROM xp_transactions g WHERE g.user_id = :guest
                 ON CONFLICT (user_id, idempotency_key) DO NOTHING
                 """).param("target", target).param("guest", guest).update();
         db.sql("""

@@ -19,6 +19,7 @@ const Plans = lazy(() => import("./pages/Plans"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Admin = lazy(() => import("./pages/Admin"));
 const ComingSoon = lazy(() => import("./pages/ComingSoon"));
+const ExperimentPlayer = lazy(() => import("./pages/lab/ExperimentPlayer"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 // Part 4 route, lazy so its assets only load on the playground (performance budget).
 const ChemistryPlaygroundRoute = lazy(() => import("./routes/playground/ChemistryPlaygroundRoute"));
@@ -46,7 +47,7 @@ export function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="admin" element={<Gate need="admin"><Admin /></Gate>} />
           <Route path="playground/chemistry" element={<ChemistryPlaygroundRoute />} />
-          <Route path="lab/:subject/:slug" element={<ComingSoon />} />
+          <Route path="lab/:subject/:slug" element={<ExperimentPlayer />} />
           {["emergency", "assistant", "quizzes", "periodic-table", "equipment", "formulas", "notebook", "community", "playground"].map((p) => (
             <Route key={p} path={p} element={<ComingSoon />} />
           ))}

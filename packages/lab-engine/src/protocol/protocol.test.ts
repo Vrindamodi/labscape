@@ -88,7 +88,7 @@ describe("cross-engine fixture", () => {
       const r = runSession(content, goldenEvents(content.golden), { tailMs: 1000 });
       out[slug] = { hash: r.hash, score: r.report.score };
     }
-    const file = path.resolve(__dirname, "../../../../apps/api/src/test/resources/engine-golden-hashes.json");
+    const file = path.resolve(process.cwd(), "../../apps/api/src/test/resources/engine-golden-hashes.json");
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(out, null, 2) + "\n");
     expect(Object.keys(out).length).toBe(7);

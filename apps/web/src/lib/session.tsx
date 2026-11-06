@@ -9,6 +9,11 @@ export type RewardEvent = { result: RewardResult; origin?: { x: number; y: numbe
 
 type Listener = (e: RewardEvent) => void;
 const rewardListeners = new Set<Listener>();
+/** Rewards the server granted on its own (e.g. a scored experiment) still get the full celebration. */
+export function emitReward(e: RewardEvent) {
+  rewardListeners.forEach((l) => l(e));
+}
+
 /** The shell subscribes to show XP flights, badge reveals and level-ups. */
 export function onReward(l: Listener) {
   rewardListeners.add(l);

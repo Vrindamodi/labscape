@@ -35,10 +35,11 @@
       },
       {
         "id": "iron-nail",
-        "kind": "glass_rod",
+        "kind": "watch_glass",
         "label": "Iron nail (cleaned with sandpaper)",
         "x": 180,
-        "z": 70
+        "z": 70,
+        "reagentId": "iron-nail"
       },
       {
         "id": "goggles",

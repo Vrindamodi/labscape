@@ -11,3 +11,8 @@ export * from "./protocol/types";
 export * from "./protocol/evaluator";
 export * from "./protocol/session";
 export * from "./protocol/content";
+// Workbench (React Three Fiber). Not imported by the server bundle (src/server.ts).
+export * from "./bench/useLabSession";
+export * from "./bench/Workbench";
+export * from "./bench/colour";
+export * from "./bench/stages";

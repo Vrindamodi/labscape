@@ -1,0 +1,732 @@
+import { Html, OrbitControls, PerformanceMonitor } from "@react-three/drei";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { heightOf, KINDS, lipHeightMm, type EquipmentKind } from "../engine/equipment";
+import { reagent } from "../engine/reagents";
+import { look, type Item, type LabState } from "../engine/state";
+import { oklabToHex } from "./colour";
+import type { LiveCue } from "./useLabSession";
+
+/** 1 scene unit = 100 mm. */
+const U = 0.01;
+export type Quality = "high" | "lite";
+
+export type PourAnim = { from: string; to: string | null; tiltDeg: number; rateMlPerS: number } | null;
+
+export type BenchProps = {
+  state: LabState;
+  cues: LiveCue[];
+  selected: string | null;
+  targets: string[];
+  onPick: (id: string) => void;
+  onBackground: () => void;
+  /** Drag-to-place: called when an item is dropped; the scene snaps to sockets within 24 px. */
+  onPlace?: (id: string, xMm: number, zMm: number, socket: string | null) => void;
+  draggable?: (id: string) => boolean;
+  pour: PourAnim;
+  quality: Quality;
+  onQuality: (q: Quality) => void;
+  reducedMotion: boolean;
+  children?: ReactNode;
+};
+
+export function Bench3D(props: BenchProps) {
+  return (
+    <Canvas
+      shadows={props.quality === "high"}
+      dpr={props.quality === "high" ? [1, 2] : [1, 1.25]}
+      camera={{ position: [0, 4.4, 7.6], fov: 34, near: 0.1, far: 80 }}
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
+      onPointerMissed={props.onBackground}
+      style={{ touchAction: "none" }}
+    >
+      <PerformanceMonitor onDecline={() => props.onQuality("lite")} flipflops={2} />
+      <Scene {...props} />
+    </Canvas>
+  );
+}
+
+function Scene(p: BenchProps) {
+  const { scene, gl } = useThree();
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = env;
+    scene.environmentIntensity = 0.55;
+    scene.background = new THREE.Color("#0b1530");
+    return () => {
+      env.dispose();
+      pmrem.dispose();
+    };
+  }, [scene, gl]);
+
+  const items = Object.values(p.state.items).filter((it) => it.socket !== "worn");
+  return (
+    <>
+      <OrbitControls
+        makeDefault
+        target={[0, 0.7, 0]}
+        enablePan
+        minDistance={3}
+        maxDistance={12}
+        minPolarAngle={0.35}
+        maxPolarAngle={1.32}
+        enableDamping={!p.reducedMotion}
+      />
+      <hemisphereLight args={["#bcd4ff", "#0b1020", 0.35]} />
+      <directionalLight position={[3, 7, 4]} intensity={1.25} castShadow={p.quality === "high"} shadow-mapSize={[1024, 1024]} shadow-camera-left={-6} shadow-camera-right={6} shadow-camera-top={4} shadow-camera-bottom={-4} />
+      <pointLight position={[-4.5, 4, -3]} intensity={10} color="#3a8cff" distance={12} decay={1.6} />
+      <pointLight position={[4.5, 3.6, -2.5]} intensity={6} color="#c46bff" distance={11} decay={1.6} />
+      <Backdrop />
+      <BenchTop />
+      {items.map((it) => (
+        <ItemNode key={it.id} item={it} {...p} />
+      ))}
+      <DragPlane {...p} />
+      {p.children}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ room */
+
+function Backdrop() {
+  const tex = useMemo(() => {
+    const c = document.createElement("canvas");
+    c.width = 1024;
+    c.height = 512;
+    const g = c.getContext("2d")!;
+    const wall = g.createLinearGradient(0, 0, 0, 512);
+    wall.addColorStop(0, "#14234a");
+    wall.addColorStop(1, "#0c1630");
+    g.fillStyle = wall;
+    g.fillRect(0, 0, 1024, 512);
+    // window glow
+    const win = g.createLinearGradient(0, 60, 0, 300);
+    win.addColorStop(0, "#3f63c7");
+    win.addColorStop(1, "#a8b9ee");
+    g.fillStyle = win;
+    g.fillRect(400, 60, 240, 230);
+    g.fillStyle = "#0f1b38";
+    g.fillRect(515, 60, 10, 230);
+    g.fillRect(400, 170, 240, 8);
+    // shelves with bottles
+    g.fillStyle = "#24365f";
+    g.fillRect(60, 200, 280, 8);
+    g.fillRect(700, 220, 280, 8);
+    const cols = ["#4f7bd9", "#a35bd6", "#3fb3c9", "#d9a83f", "#5a9f6a", "#d2557a"];
+    for (let i = 0; i < 6; i++) {
+      g.fillStyle = cols[i]!;
+      g.globalAlpha = 0.65;
+      g.fillRect(80 + i * 42, 150 - (i % 2) * 10, 26, 50 + (i % 2) * 10);
+      g.fillRect(720 + i * 42, 170 - ((i + 1) % 2) * 12, 26, 50 + ((i + 1) % 2) * 12);
+    }
+    g.globalAlpha = 1;
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, []);
+  return (
+    <mesh position={[0, 3.2, -4.2]}>
+      <planeGeometry args={[18, 9]} />
+      <meshBasicMaterial map={tex} toneMapped={false} />
+    </mesh>
+  );
+}
+
+function BenchTop() {
+  return (
+    <group>
+      <mesh position={[0, -0.13, 0.2]} receiveShadow>
+        <boxGeometry args={[9.2, 0.26, 4.6]} />
+        <meshPhysicalMaterial color="#0a1020" roughness={0.42} clearcoat={0.5} clearcoatRoughness={0.35} metalness={0.1} envMapIntensity={0.25} />
+      </mesh>
+      <mesh position={[0, -0.02, 2.48]}>
+        <boxGeometry args={[9.2, 0.04, 0.04]} />
+        <meshStandardMaterial color="#2f80ff" emissive="#2f80ff" emissiveIntensity={0.9} />
+      </mesh>
+    </group>
+  );
+}
+
+/* ------------------------------------------------------------------ items */
+
+const SOCKET_HEIGHT: Record<string, number> = { clamp: 1.12, rack: 0.06, tile: 0.03, tripod: 0.62 };
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function baseY(item: Item, _state: LabState): number {
+  if (!item.socket) return 0;
+  const kind = item.socket.split(":")[0] ?? "";
+  if (kind === "vessel") return 0.3;
+  return SOCKET_HEIGHT[kind] ?? 0;
+}
+
+function ItemNode({ item, state, cues, selected, targets, onPick, pour, quality, reducedMotion }: BenchProps & { item: Item }) {
+  const group = useRef<THREE.Group>(null);
+  const isSel = selected === item.id;
+  const isTarget = targets.includes(item.id);
+  const pouring = pour?.from === item.id;
+  const target = pouring && pour?.to ? state.items[pour.to] : null;
+  const pos = useMemo(() => new THREE.Vector3(item.x * U, baseY(item, state), item.z * U), [item, state]);
+
+  useFrame((_, dt) => {
+    const g = group.current;
+    if (!g) return;
+    // Lift on selection; carry over the target while pouring; tilt with the pour.
+    const want = pos.clone();
+    let tilt = 0;
+    if (pouring && target) {
+      want.set(target.x * U + 0.42, baseY(target, state) + lipHeightMm(target.kind) * U + 0.55, target.z * U);
+      tilt = THREE.MathUtils.degToRad(pour!.tiltDeg);
+    } else if (isSel) want.y += 0.08;
+    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 10);
+    g.position.lerp(want, k);
+    g.rotation.z += (tilt - g.rotation.z) * k;
+  });
+
+  const click = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    onPick(item.id);
+  };
+
+  return (
+    <group ref={group} position={pos} onClick={click} onPointerOver={(e) => (e.stopPropagation(), (document.body.style.cursor = "pointer"))} onPointerOut={() => (document.body.style.cursor = "")}>
+      <Visual item={item} state={state} cues={cues} quality={quality} reducedMotion={reducedMotion} />
+      {(isSel || isTarget) && <SelectionRing radius={footprint(item.kind)} colour={isSel ? "#2f80ff" : "#22d3ee"} pulse={isTarget} />}
+      {(isSel || isTarget) && (
+        <Html position={[0, Math.max(0.5, lipHeightMm(item.kind) * U + 0.25), 0]} center distanceFactor={9} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+          <div style={{ whiteSpace: "nowrap", padding: "4px 9px", borderRadius: 9, font: "600 12px Inter, sans-serif", color: "#fff", background: isSel ? "rgba(47,128,255,.92)" : "rgba(8,16,38,.85)", border: `1px solid ${isSel ? "#8cbcff" : "#22d3ee"}` }}>
+            {item.label}
+            {item.liquid && item.liquid.volumeMl > 0.001 ? ` · ${fmtMl(item.liquid.volumeMl)}` : ""}
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function fmtMl(v: number) {
+  return v < 10 ? `${v.toFixed(2)} mL` : `${v.toFixed(1)} mL`;
+}
+
+function footprint(kind: EquipmentKind): number {
+  const p = KINDS[kind].profile;
+  const r = p.length ? Math.max(...p.map(([x]) => x)) : 25;
+  return Math.max(0.18, r * U + 0.08);
+}
+
+function SelectionRing({ radius, colour, pulse }: { radius: number; colour: string; pulse: boolean }) {
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => {
+    if (ref.current && pulse) ref.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 5) * 0.06);
+  });
+  return (
+    <mesh ref={ref} rotation-x={-Math.PI / 2} position={[0, 0.006, 0]}>
+      <ringGeometry args={[radius, radius + 0.035, 48]} />
+      <meshBasicMaterial color={colour} transparent opacity={0.9} toneMapped={false} />
+    </mesh>
+  );
+}
+
+/* ------------------------------------------------------------------ materials */
+
+function useGlass(quality: Quality) {
+  return useMemo(
+    () =>
+      quality === "high"
+        ? new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.04, transmission: 1, thickness: 0.05, ior: 1.5, clearcoat: 1, envMapIntensity: 1.3, transparent: true, side: THREE.DoubleSide, depthWrite: false })
+        : new THREE.MeshStandardMaterial({ color: "#dbe8ff", roughness: 0.1, metalness: 0, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }),
+    [quality],
+  );
+}
+
+function lathe(profile: [number, number][], scale = 1, segments = 48) {
+  return new THREE.LatheGeometry(profile.map(([r, h]) => new THREE.Vector2(Math.max(0.0001, r * U * scale), h * U)), segments);
+}
+
+/** The liquid inside a vessel: the profile cut at the fill height, closed with a surface disc. */
+function liquidGeometry(kind: EquipmentKind, volumeMl: number) {
+  const prof = KINDS[kind].profile;
+  const h = heightOf(kind, volumeMl);
+  if (h <= 0.05) return null;
+  const pts: [number, number][] = [[0, 0.6]];
+  for (const [r, y] of prof) {
+    if (y >= h) break;
+    pts.push([r * 0.93, Math.max(0.6, y)]);
+  }
+  // radius at the surface by interpolation
+  let rTop = prof[0]?.[0] ?? 1;
+  for (let i = 1; i < prof.length; i++) {
+    const [r0, y0] = prof[i - 1]!;
+    const [r1, y1] = prof[i]!;
+    if (h <= y1) {
+      rTop = y1 === y0 ? r1 : r0 + ((r1 - r0) * (h - y0)) / (y1 - y0);
+      break;
+    }
+  }
+  pts.push([rTop * 0.93, h]);
+  pts.push([0, h - 0.6]); // a slightly concave meniscus
+  return { geom: lathe(pts), h: h * U, rTop: rTop * 0.93 * U };
+}
+
+/* ------------------------------------------------------------------ visuals per kind */
+
+function Visual({ item, state, cues, quality, reducedMotion }: { item: Item; state: LabState; cues: LiveCue[]; quality: Quality; reducedMotion: boolean }) {
+  const glass = useGlass(quality);
+  const def = KINDS[item.kind];
+  switch (item.kind) {
+    case "white_tile":
+      return (
+        <mesh position={[0, 0.015, 0]} receiveShadow>
+          <boxGeometry args={[0.9, 0.03, 0.9]} />
+          <meshStandardMaterial color="#f4f7fb" roughness={0.25} />
+        </mesh>
+      );
+    case "clamp_stand":
+      return (
+        <group>
+          <mesh position={[0, 0.02, 0]} castShadow>
+            <boxGeometry args={[0.7, 0.04, 0.5]} />
+            <meshStandardMaterial color="#1f2937" metalness={0.6} roughness={0.35} />
+          </mesh>
+          <mesh position={[0, 1.6, -0.12]} castShadow>
+            <cylinderGeometry args={[0.025, 0.025, 3.2, 16]} />
+            <meshStandardMaterial color="#c0c7d4" metalness={0.9} roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 2.2, 0.15]}>
+            <boxGeometry args={[0.08, 0.06, 0.6]} />
+            <meshStandardMaterial color="#374151" metalness={0.5} />
+          </mesh>
+        </group>
+      );
+    case "test_tube_rack":
+      return (
+        <group>
+          <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
+            <boxGeometry args={[1.2, 0.05, 0.32]} />
+            <meshStandardMaterial color="#a8743f" roughness={0.6} />
+          </mesh>
+          <mesh position={[0, 0.04, 0]} receiveShadow>
+            <boxGeometry args={[1.2, 0.05, 0.32]} />
+            <meshStandardMaterial color="#8b5e30" roughness={0.6} />
+          </mesh>
+          {[-0.58, 0.58].map((x) => (
+            <mesh key={x} position={[x, 0.15, 0]}>
+              <boxGeometry args={[0.04, 0.26, 0.3]} />
+              <meshStandardMaterial color="#8b5e30" roughness={0.6} />
+            </mesh>
+          ))}
+        </group>
+      );
+    case "bunsen":
+      return <Bunsen item={item} cues={cues} reducedMotion={reducedMotion} />;
+    case "thermometer":
+      return (
+        <group rotation-z={item.inVessel ? 0.12 : Math.PI / 2} position={[0, item.inVessel ? 0.4 : 0.03, 0]}>
+          <mesh>
+            <cylinderGeometry args={[0.025, 0.025, 1.4, 12]} />
+            <primitive object={glass} attach="material" />
+          </mesh>
+          <mesh position={[0, -0.7 + ((item.readingC ?? 22) + 10) / 120 * 0.7, 0]}>
+            <cylinderGeometry args={[0.009, 0.009, ((item.readingC ?? 22) + 10) / 120 * 1.4, 8]} />
+            <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.4} />
+          </mesh>
+        </group>
+      );
+    case "splint":
+      return (
+        <group rotation-z={Math.PI / 2} position={[0, 0.03, 0]}>
+          <mesh>
+            <cylinderGeometry args={[0.018, 0.018, 1.1, 8]} />
+            <meshStandardMaterial color="#d6a96b" roughness={0.8} />
+          </mesh>
+          {item.lit && <SmallFlame position={[0, 0.6, 0]} colour="#ffb347" reducedMotion={reducedMotion} />}
+        </group>
+      );
+    case "wire_loop":
+      return (
+        <group rotation-z={Math.PI / 2.2} position={[0, 0.05, 0]}>
+          <mesh>
+            <cylinderGeometry args={[0.03, 0.03, 0.6, 10]} />
+            <meshStandardMaterial color="#2a3346" />
+          </mesh>
+          <mesh position={[0, 0.5, 0]}>
+            <cylinderGeometry args={[0.006, 0.006, 0.45, 6]} />
+            <meshStandardMaterial color={(item.inFlameMs ?? 0) > 0 ? "#ff9c4a" : "#9aa3b2"} emissive={(item.inFlameMs ?? 0) > 0 ? "#ff6a00" : "#000"} metalness={0.8} />
+          </mesh>
+          <mesh position={[0, 0.74, 0]}>
+            <torusGeometry args={[0.035, 0.006, 6, 16]} />
+            <meshStandardMaterial color="#9aa3b2" metalness={0.8} />
+          </mesh>
+        </group>
+      );
+    case "goggles":
+      return (
+        <group position={[0, 0.06, 0]}>
+          {[-0.13, 0.13].map((x) => (
+            <mesh key={x} position={[x, 0, 0]} rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.1, 0.03, 10, 24]} />
+              <meshStandardMaterial color="#2f80ff" roughness={0.4} />
+            </mesh>
+          ))}
+        </group>
+      );
+    case "watch_glass":
+      return <WatchGlass item={item} />;
+    case "glass_rod":
+    case "funnel":
+      return (
+        <mesh rotation-z={Math.PI / 2} position={[0, 0.03, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 1, 10]} />
+          <primitive object={glass} attach="material" />
+        </mesh>
+      );
+    case "burette_50":
+      return <Burette item={item} glass={glass} state={state} cues={cues} />;
+    default:
+      if (def.capacityMl > 0) return <Vessel item={item} glass={glass} cues={cues} quality={quality} reducedMotion={reducedMotion} />;
+      return null;
+  }
+}
+
+function WatchGlass({ item }: { item: Item }) {
+  const r = item.reagentId ? reagent(item.reagentId) : null;
+  return (
+    <group position={[0, 0.02, 0]}>
+      <mesh rotation-x={Math.PI}>
+        <sphereGeometry args={[0.28, 24, 8, 0, Math.PI * 2, 0, 0.5]} />
+        <meshStandardMaterial color="#dbe8ff" transparent opacity={0.35} side={THREE.DoubleSide} />
+      </mesh>
+      {r?.metal?.symbol === "Mg" && (
+        <mesh position={[0, 0.03, 0]} rotation-x={-Math.PI / 2}>
+          <planeGeometry args={[0.32, 0.05]} />
+          <meshStandardMaterial color="#c9ccd2" metalness={0.9} roughness={0.3} side={THREE.DoubleSide} />
+        </mesh>
+      )}
+      {r?.metal?.symbol === "Fe" && (
+        <mesh position={[0, 0.04, 0]} rotation-z={Math.PI / 2}>
+          <cylinderGeometry args={[0.018, 0.018, 0.4, 10]} />
+          <meshStandardMaterial color="#8a8f99" metalness={0.85} roughness={0.35} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+function Vessel({ item, glass, quality, reducedMotion }: { item: Item; glass: THREE.Material; cues: LiveCue[]; quality: Quality; reducedMotion: boolean }) {
+  const def = KINDS[item.kind];
+  const glassGeom = useMemo(() => lathe(def.profile, 1.0), [def]);
+  const l = look(item);
+  const vol = item.liquid?.volumeMl ?? 0;
+  const liquid = useMemo(() => liquidGeometry(item.kind, vol), [item.kind, Math.round(vol * 50)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const mat = useRef<THREE.MeshPhysicalMaterial>(null);
+  const plumeMat = useRef<THREE.MeshStandardMaterial>(null);
+  const target = useMemo(() => new THREE.Color(l ? oklabToHex(l.colour) : "#cfe6ff"), [l]);
+
+  useFrame((_, dt) => {
+    // Colour changes interpolate smoothly toward what the engine says (timing stays the engine's).
+    if (mat.current) {
+      mat.current.color.lerp(target, reducedMotion ? 1 : 1 - Math.exp(-dt * 3));
+      mat.current.opacity = THREE.MathUtils.lerp(mat.current.opacity, l ? Math.min(0.95, 0.35 + l.opacity * 0.65) : 0, 0.1);
+    }
+    if (plumeMat.current) plumeMat.current.opacity = THREE.MathUtils.lerp(plumeMat.current.opacity, l?.plume ? l.plume.strength * 0.85 : 0, 0.15);
+  });
+
+  const isTube = item.kind === "test_tube" || item.kind === "boiling_tube";
+  const isBottle = item.kind === "reagent_bottle" || item.kind === "dropper_bottle" || item.kind === "wash_bottle";
+  const sediment = item.liquid ? Object.values(item.liquid.solids).reduce((a, b) => a + (b ?? 0), 0) : 0;
+  const gasActive = item.metals.some((m) => m.symbol === "Mg" && m.mol > 1e-6) || (item.liquid?.tempC ?? 0) > 99;
+  const label = isBottle && item.reagentId ? reagent(item.reagentId) : null;
+
+  return (
+    <group>
+      {liquid && (
+        <mesh geometry={liquid.geom} renderOrder={1}>
+          <meshPhysicalMaterial ref={mat} color={target} transparent opacity={0.5} roughness={0.08} clearcoat={0.6} depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+      )}
+      {liquid && l?.plume && (
+        <mesh position={[0, liquid.h * 0.7, 0]} scale={[liquid.rTop * 0.6, liquid.h * 0.35, liquid.rTop * 0.6]} renderOrder={2}>
+          <sphereGeometry args={[1, 16, 12]} />
+          <meshStandardMaterial ref={plumeMat} color={oklabToHex(l.plume.colour)} transparent opacity={0} depthWrite={false} />
+        </mesh>
+      )}
+      {liquid && sediment > 1e-6 && (
+        <mesh position={[0, 0.012 + Math.min(0.08, sediment * 60) / 2, 0]} renderOrder={1}>
+          <cylinderGeometry args={[liquid.rTop * 0.95, liquid.rTop * 0.95, Math.min(0.08, sediment * 60), 24]} />
+          <meshStandardMaterial color={l?.sedimentColour ? oklabToHex(l.sedimentColour) : "#ffffff"} roughness={0.9} />
+        </mesh>
+      )}
+      {liquid && gasActive && <Bubbles radius={liquid.rTop * 0.8} height={liquid.h} count={quality === "high" ? 70 : 24} reducedMotion={reducedMotion} />}
+      {item.metals.map((m, i) =>
+        m.mol > 1e-7 ? (
+          <mesh key={i} position={[0, 0.05, 0]} rotation-z={m.symbol === "Fe" ? 0.25 : 0}>
+            {m.symbol === "Fe" ? <cylinderGeometry args={[0.018, 0.018, Math.min(1.2, lipHeightMm(item.kind) * U * 0.9), 10]} /> : <boxGeometry args={[0.08 * Math.cbrt(m.mol / m.initialMol), 0.012, 0.04]} />}
+            <meshStandardMaterial color={m.symbol === "Fe" ? new THREE.Color("#8a8f99").lerp(new THREE.Color("#b5673d"), Math.min(1, item.depositMol / 2e-3)) : "#c9ccd2"} metalness={0.8} roughness={0.35} />
+          </mesh>
+        ) : null,
+      )}
+      <mesh geometry={glassGeom} material={glass} renderOrder={3} castShadow={quality === "high"} />
+      {isBottle && (
+        <>
+          <mesh position={[0, lipHeightMm(item.kind) * U + 0.04, 0]}>
+            <cylinderGeometry args={[def.neckMm * U * 1.25 + 0.01, def.neckMm * U * 1.25 + 0.01, 0.12, 20]} />
+            <meshStandardMaterial color={item.kind === "dropper_bottle" ? "#1f2937" : label?.corrosive ? "#dc2626" : "#2f80ff"} roughness={0.5} />
+          </mesh>
+          {label && <BottleLabel text={label.formula} sub={label.name} y={lipHeightMm(item.kind) * U * 0.42} r={def.profile[0]![0] * U + 0.004} hazard={label.corrosive} />}
+        </>
+      )}
+      {isTube && item.gasTo === null && (item.gasMl?.["H2"] ?? 0) > 0 && null}
+    </group>
+  );
+}
+
+function BottleLabel({ text, sub, y, r, hazard }: { text: string; sub: string; y: number; r: number; hazard?: boolean | undefined }) {
+  const tex = useMemo(() => {
+    const c = document.createElement("canvas");
+    c.width = 256;
+    c.height = 128;
+    const g = c.getContext("2d")!;
+    g.fillStyle = "#fbfdff";
+    g.fillRect(0, 0, 256, 128);
+    g.fillStyle = hazard ? "#dc2626" : "#2f80ff";
+    g.fillRect(0, 0, 256, 24);
+    g.fillStyle = "#0f172a";
+    g.font = "800 46px Inter, sans-serif";
+    g.textAlign = "center";
+    g.fillText(text, 128, 78);
+    g.font = "600 15px Inter, sans-serif";
+    g.fillStyle = "#475569";
+    g.fillText(sub.length > 28 ? `${sub.slice(0, 27)}…` : sub, 128, 108);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, [text, sub, hazard]);
+  return (
+    <mesh position={[0, y, 0]}>
+      <cylinderGeometry args={[r, r, 0.32, 32, 1, true, -0.9, 1.8]} />
+      <meshStandardMaterial map={tex} side={THREE.DoubleSide} roughness={0.6} />
+    </mesh>
+  );
+}
+
+function Burette({ item, glass, state }: { item: Item; glass: THREE.Material; state: LabState; cues: LiveCue[] }) {
+  void state;
+  const v = item.liquid?.volumeMl ?? 0;
+  const tube = 5.6;
+  const colourHex = item.liquid && v > 0 ? oklabToHex(look(item)!.colour) : "#cfe6ff";
+  return (
+    <group>
+      <mesh position={[0, tube / 2 + 0.25, 0]}>
+        <cylinderGeometry args={[0.06, 0.06, tube, 20, 1, true]} />
+        <primitive object={glass} attach="material" />
+      </mesh>
+      {v > 0 && (
+        <mesh position={[0, 0.25 + ((v / 52) * tube) / 2, 0]}>
+          <cylinderGeometry args={[0.052, 0.052, (v / 52) * tube, 16]} />
+          <meshStandardMaterial color={colourHex} transparent opacity={0.6} />
+        </mesh>
+      )}
+      {/* stopcock: the handle turns with the opening */}
+      <mesh position={[0, 0.22, 0]} rotation-x={(item.stopcock ?? 0) * (Math.PI / 2)}>
+        <boxGeometry args={[0.32, 0.04, 0.05]} />
+        <meshStandardMaterial color="#2f80ff" />
+      </mesh>
+      <mesh position={[0, 0.1, 0]}>
+        <cylinderGeometry args={[0.012, 0.02, 0.2, 10]} />
+        <primitive object={glass} attach="material" />
+      </mesh>
+      {item.tipBubble && (
+        <mesh position={[0, 0.12, 0]}>
+          <sphereGeometry args={[0.014, 8, 8]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.9} />
+        </mesh>
+      )}
+      {(item.stopcock ?? 0) > 0 && v > 0 && <Drips rate={item.stopcock ?? 0} colour={colourHex} />}
+      {/* graduation ticks */}
+      {Array.from({ length: 11 }, (_, i) => (
+        <mesh key={i} position={[0.062, 0.25 + tube - (i * tube) / 10.4, 0]}>
+          <boxGeometry args={[0.01, 0.006, 0.03]} />
+          <meshBasicMaterial color="#e5edff" />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Drips({ rate, colour }: { rate: number; colour: string }) {
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    if (rate > 0.6) {
+      ref.current.scale.set(1, 1, 1);
+      ref.current.position.y = -0.25;
+      return;
+    }
+    const period = 1 / (0.6 + rate * 6);
+    const ph = (clock.elapsedTime % period) / period;
+    ref.current.position.y = -0.02 - ph * 0.6;
+    ref.current.scale.setScalar(0.6 + ph * 0.4);
+  });
+  return (
+    <mesh ref={ref}>
+      {rate > 0.6 ? <cylinderGeometry args={[0.01, 0.01, 0.5, 8]} /> : <sphereGeometry args={[0.018, 8, 8]} />}
+      <meshStandardMaterial color={colour} transparent opacity={0.85} />
+    </mesh>
+  );
+}
+
+function Bunsen({ item, cues, reducedMotion }: { item: Item; cues: LiveCue[]; reducedMotion: boolean }) {
+  const now = performance.now();
+  const test = [...cues].reverse().find((c) => c.kind === "flame" && c.target === item.id && c.durationMs > 0 && now - c.at < c.durationMs);
+  const colour = test && test.kind === "flame" ? oklabToHex(test.colour) : item.airHoleOpen ? "#5b8cff" : "#ffb347";
+  return (
+    <group>
+      <mesh position={[0, 0.03, 0]} castShadow>
+        <cylinderGeometry args={[0.22, 0.26, 0.06, 24]} />
+        <meshStandardMaterial color="#1f2937" metalness={0.7} roughness={0.3} />
+      </mesh>
+      <mesh position={[0, 0.4, 0]} castShadow>
+        <cylinderGeometry args={[0.055, 0.055, 0.7, 16]} />
+        <meshStandardMaterial color="#c0c7d4" metalness={0.9} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, 0.16, 0]}>
+        <cylinderGeometry args={[0.07, 0.07, 0.1, 16]} />
+        <meshStandardMaterial color={item.airHoleOpen ? "#2f80ff" : "#64748b"} metalness={0.6} />
+      </mesh>
+      {item.gasOn && <SmallFlame position={[0, 0.98, 0]} colour={colour} big open={!!item.airHoleOpen} test={!!test} reducedMotion={reducedMotion} />}
+    </group>
+  );
+}
+
+function SmallFlame({ position, colour, big, open, test, reducedMotion }: { position: [number, number, number]; colour: string; big?: boolean; open?: boolean; test?: boolean; reducedMotion: boolean }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (!ref.current || reducedMotion) return;
+    const t = clock.elapsedTime;
+    ref.current.scale.y = 1 + Math.sin(t * 23) * 0.05 + Math.sin(t * 37) * 0.04;
+    ref.current.scale.x = ref.current.scale.z = 1 + Math.sin(t * 17) * 0.03;
+  });
+  const h = big ? (open ? 0.5 : 0.75) : 0.16;
+  const w = big ? 0.09 : 0.04;
+  return (
+    <group ref={ref} position={position}>
+      <mesh position={[0, 0, 0]}>
+        <coneGeometry args={[w, h, 20, 1, true]} />
+        <meshBasicMaterial color={colour} transparent opacity={test ? 0.95 : open ? 0.55 : 0.85} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      {big && open && !test && (
+        <mesh position={[0, -h * 0.25, 0]}>
+          <coneGeometry args={[w * 0.55, h * 0.45, 16, 1, true]} />
+          <meshBasicMaterial color="#9fd0ff" transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+        </mesh>
+      )}
+      <pointLight color={colour} intensity={big ? 2.5 : 0.8} distance={big ? 2.5 : 1} />
+    </group>
+  );
+}
+
+function Bubbles({ radius, height, count, reducedMotion }: { radius: number; height: number; count: number; reducedMotion: boolean }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const n = reducedMotion ? Math.ceil(count * 0.2) : count;
+  const seeds = useMemo(() => Array.from({ length: n }, (_, i) => ({ a: (i * 2.399) % (Math.PI * 2), r: ((i * 0.618) % 1) * radius, s: 0.25 + ((i * 0.37) % 1) * 0.5, o: (i * 0.173) % 1, size: 0.006 + ((i * 0.53) % 1) * 0.012 })), [n, radius]);
+  const m = useMemo(() => new THREE.Object3D(), []);
+  useFrame(({ clock }) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    seeds.forEach((b, i) => {
+      // larger bubbles rise faster and wobble
+      const y = ((clock.elapsedTime * b.s * (1 + b.size * 30) + b.o) % 1) * height;
+      m.position.set(Math.cos(b.a) * b.r + Math.sin(clock.elapsedTime * 6 + i) * 0.006, y + 0.01, Math.sin(b.a) * b.r);
+      m.scale.setScalar(b.size * (y > height * 0.95 ? 1.6 : 1));
+      m.updateMatrix();
+      mesh.setMatrixAt(i, m.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, n]} renderOrder={2}>
+      <sphereGeometry args={[1, 8, 6]} />
+      <meshStandardMaterial color="#ffffff" transparent opacity={0.75} roughness={0} />
+    </instancedMesh>
+  );
+}
+
+/* ------------------------------------------------------------------ pour stream */
+
+export function PourStream({ state, pour }: { state: LabState; pour: PourAnim }) {
+  const from = pour ? state.items[pour.from] : null;
+  const to = pour?.to ? state.items[pour.to] : null;
+  const colour = from ? oklabToHex(look(from)?.colour ?? { L: 0.9, a: 0, b: 0 }) : "#cfe6ff";
+  const geom = useMemo(() => {
+    if (!from || !to || !pour || pour.rateMlPerS <= 0) return null;
+    const topY = baseY(to, state) + lipHeightMm(to.kind) * U;
+    const start = new THREE.Vector3(to.x * U + 0.22, topY + 0.5, to.z * U);
+    const end = new THREE.Vector3(to.x * U + 0.02, baseY(to, state) + heightOf(to.kind, to.liquid?.volumeMl ?? 0) * U + 0.02, to.z * U);
+    const mid = new THREE.Vector3((start.x + end.x) / 2 + 0.05, (start.y + end.y) / 2 + 0.12, start.z);
+    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    const width = Math.min(0.03, 0.004 + Math.sqrt(pour.rateMlPerS) * 0.006);
+    return new THREE.TubeGeometry(curve, 24, width, 8, false);
+  }, [from, to, pour, state]);
+  if (!geom) return null;
+  return (
+    <mesh geometry={geom} renderOrder={4}>
+      <meshStandardMaterial color={colour} transparent opacity={0.8} roughness={0.05} />
+    </mesh>
+  );
+}
+
+/* ------------------------------------------------------------------ drag to place */
+
+function DragPlane({ state, selected, draggable, onPlace }: BenchProps) {
+  const [drag, setDrag] = useState<{ id: string; x: number; z: number } | null>(null);
+  const can = selected && draggable?.(selected);
+  if (!can || !onPlace) return null;
+  const item = state.items[selected!]!;
+  const providers = Object.values(state.items).filter((i) => (KINDS[i.kind].provides ?? []).some((s) => (KINDS[item.kind].fits as string[]).includes(s)));
+  return (
+    <>
+      <mesh
+        rotation-x={-Math.PI / 2}
+        position={[0, 0.001, 0]}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          setDrag({ id: item.id, x: e.point.x, z: e.point.z });
+        }}
+        onPointerMove={(e) => drag && setDrag({ ...drag, x: e.point.x, z: e.point.z })}
+        onPointerUp={() => {
+          if (!drag) return;
+          // Snap sockets attract within ~24 px (0.35 scene units at this zoom).
+          let snap: { id: string; kind: string; x: number; z: number } | null = null;
+          let best = 0.35;
+          for (const p of providers) {
+            const d = Math.hypot(p.x * U - drag.x, p.z * U - drag.z);
+            if (d < best) {
+              best = d;
+              snap = { id: p.id, kind: (KINDS[p.kind].provides ?? [])[0] ?? "bench", x: p.x, z: p.z };
+            }
+          }
+          onPlace(drag.id, snap ? snap.x : Math.round(drag.x / U), snap ? snap.z : Math.round(drag.z / U), snap ? `${snap.kind}:${snap.id}` : null);
+          setDrag(null);
+        }}
+      >
+        <planeGeometry args={[9, 4.6]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      {drag && (
+        <mesh position={[drag.x, 0.01, drag.z]} rotation-x={-Math.PI / 2}>
+          <ringGeometry args={[0.25, 0.29, 40]} />
+          <meshBasicMaterial color="#22d3ee" transparent opacity={0.8} toneMapped={false} />
+        </mesh>
+      )}
+      {providers.map((p) => (
+        <mesh key={p.id} position={[p.x * U, 0.012, p.z * U]} rotation-x={-Math.PI / 2}>
+          <ringGeometry args={[0.36, 0.4, 40]} />
+          <meshBasicMaterial color="#22d3ee" transparent opacity={0.45} toneMapped={false} />
+        </mesh>
+      ))}
+    </>
+  );
+}

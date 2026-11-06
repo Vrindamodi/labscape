@@ -28,6 +28,7 @@ export type EquipmentKind =
   | "thermometer"
   | "glass_rod"
   | "funnel"
+  | "watch_glass"
   | "goggles";
 
 export type KindDef = {
@@ -80,6 +81,7 @@ export const KINDS: Record<EquipmentKind, KindDef> = {
   thermometer: { label: "Thermometer", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 5, category: "tool" },
   glass_rod: { label: "Glass rod", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 4, category: "tool" },
   funnel: { label: "Filter funnel", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 20, category: "tool" },
+  watch_glass: { label: "Watch glass", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 15, category: "tool" },
   goggles: { label: "Safety goggles", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 0, category: "safety" },
 };
 
