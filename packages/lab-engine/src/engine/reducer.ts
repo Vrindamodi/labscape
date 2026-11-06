@@ -290,7 +290,8 @@ function merge(l: Liquid, fraction: number) {
   const f = Math.min(1, Math.max(0, fraction));
   for (const k in l.plume.ions) l.plume.ions[k as Ion] = (l.plume.ions[k as Ion] ?? 0) * (1 - f);
   l.plume.volumeMl *= 1 - f;
-  if (l.plume.volumeMl < 1e-4 || f >= 0.999) l.plume = null;
+  // Once the unmixed part is a tiny fraction of the vessel it is no longer visible.
+  if (l.plume.volumeMl < Math.max(0.002, 0.001 * l.volumeMl) || f >= 0.999) l.plume = null;
   if (l.plume) l.plume.ph = localPh(l);
 }
 
@@ -533,7 +534,7 @@ function reactMetals(out: StepOutput, it: Item, dt: number) {
       l.ions["Cu2+"] = (l.ions["Cu2+"] ?? 0) - n;
       l.ions["Fe2+"] = (l.ions["Fe2+"] ?? 0) + n;
       it.depositMol += n;
-      if ((out.state.seen["deposit:Cu"] ?? 0) === 0 && it.depositMol > 2e-6) {
+      if ((out.state.seen["deposit:Cu"] ?? 0) === 0 && it.depositMol > 1e-4) {
         out.state.seen["deposit:Cu"] = 1;
         cue(out, { kind: "deposit", target: `solid:${m.symbol}`, colour: { L: 0.6, a: 0.09, b: 0.09 }, durationMs: 60_000 });
         note(out, "A pinky-brown coat of copper starts to form on the nail.", "success", it.id, "deposit");

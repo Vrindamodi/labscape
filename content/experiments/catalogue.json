@@ -2,305 +2,1212 @@
   "version": 1,
   "note": "Library summaries for Part 1's browser. Full protocols (contract 1) are added per experiment by Parts 2 and 3; 'playable' flips to true when a protocol ships.",
   "synonyms": {
-    "neutralisation": ["acid-base", "neutralization", "titration", "acid base"],
-    "acid-base": ["neutralisation", "titration", "ph"],
-    "electrolysis": ["electrochemistry", "electrodes", "cathode", "anode"],
-    "rate": ["kinetics", "speed of reaction", "reaction rate"],
-    "pendulum": ["oscillation", "simple harmonic motion", "shm"],
-    "circuit": ["ohm", "current", "voltage", "resistance", "electricity"],
-    "refraction": ["light", "lens", "snell"],
-    "derivative": ["calculus", "slope", "gradient", "differentiation"],
-    "integral": ["area under curve", "integration", "calculus"],
-    "probability": ["chance", "dice", "random"],
-    "flame test": ["metal ions", "emission", "colour of flame"],
-    "precipitate": ["precipitation", "insoluble", "solid forms"]
+    "neutralisation": [
+      "acid-base",
+      "neutralization",
+      "titration",
+      "acid base"
+    ],
+    "acid-base": [
+      "neutralisation",
+      "titration",
+      "ph"
+    ],
+    "electrolysis": [
+      "electrochemistry",
+      "electrodes",
+      "cathode",
+      "anode"
+    ],
+    "rate": [
+      "kinetics",
+      "speed of reaction",
+      "reaction rate"
+    ],
+    "pendulum": [
+      "oscillation",
+      "simple harmonic motion",
+      "shm"
+    ],
+    "circuit": [
+      "ohm",
+      "current",
+      "voltage",
+      "resistance",
+      "electricity"
+    ],
+    "refraction": [
+      "light",
+      "lens",
+      "snell"
+    ],
+    "derivative": [
+      "calculus",
+      "slope",
+      "gradient",
+      "differentiation"
+    ],
+    "integral": [
+      "area under curve",
+      "integration",
+      "calculus"
+    ],
+    "probability": [
+      "chance",
+      "dice",
+      "random"
+    ],
+    "flame test": [
+      "metal ions",
+      "emission",
+      "colour of flame"
+    ],
+    "precipitate": [
+      "precipitation",
+      "insoluble",
+      "solid forms"
+    ]
   },
   "experiments": [
     {
-      "id": "chem-acid-base-titration", "slug": "acid-base-titration", "subject": "chemistry",
-      "chapter": "Acids, bases and salts", "topic": "Neutralisation",
-      "title": "Acid-base titration", "summary": "Find the exact concentration of hydrochloric acid by neutralising it drop by drop with sodium hydroxide.",
-      "difficulty": "intermediate", "levels": ["high_school", "undergraduate"], "estimatedMinutes": 18, "xpReward": 100,
-      "objectives": ["Use a burette with correct technique", "Spot the phenolphthalein end point", "Calculate an unknown concentration"],
+      "id": "chem-acid-base-titration",
+      "slug": "acid-base-titration",
+      "subject": "chemistry",
+      "chapter": "Acids, bases and salts",
+      "topic": "Neutralisation",
+      "title": "Acid-base titration",
+      "summary": "Find the exact concentration of hydrochloric acid by neutralising it drop by drop with sodium hydroxide.",
+      "difficulty": "intermediate",
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "estimatedMinutes": 18,
+      "xpReward": 100,
+      "objectives": [
+        "Use a burette with correct technique",
+        "Spot the phenolphthalein end point",
+        "Calculate an unknown concentration"
+      ],
       "concept": "Neutralisation: H⁺ + OH⁻ → H₂O. At the equivalence point the moles of acid equal the moles of base.",
-      "realWorld": ["Checking the acidity of wine and fruit juice", "Antacid tablets", "Water treatment"],
-      "equipment": ["Burette", "Conical flask", "Pipette", "Clamp stand", "White tile"],
-      "materials": ["Hydrochloric acid (unknown)", "Sodium hydroxide 0.10 M", "Phenolphthalein"],
-      "safety": ["Wear goggles: both solutions irritate eyes", "Rinse spills with plenty of water"],
-      "premium": false, "featured": true, "tags": ["titration", "indicator"], "release": "MVP", "playable": false
+      "realWorld": [
+        "Checking the acidity of wine and fruit juice",
+        "Antacid tablets",
+        "Water treatment"
+      ],
+      "equipment": [
+        "Burette",
+        "Conical flask",
+        "Pipette",
+        "Clamp stand",
+        "White tile"
+      ],
+      "materials": [
+        "Hydrochloric acid (unknown)",
+        "Sodium hydroxide 0.10 M",
+        "Phenolphthalein"
+      ],
+      "safety": [
+        "Wear goggles: both solutions irritate eyes",
+        "Rinse spills with plenty of water"
+      ],
+      "premium": false,
+      "featured": true,
+      "tags": [
+        "titration",
+        "indicator"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "chem-indicators-ph", "slug": "ph-indicators", "subject": "chemistry",
-      "chapter": "Acids, bases and salts", "topic": "pH scale",
-      "title": "Rainbow of pH", "summary": "Test household liquids with universal indicator and red cabbage juice and build your own pH scale.",
-      "difficulty": "beginner", "levels": ["beginner", "school", "exploring"], "estimatedMinutes": 10, "xpReward": 100,
-      "objectives": ["Read pH from an indicator colour", "Sort liquids into acids, bases and neutral"],
+      "id": "chem-indicators-ph",
+      "slug": "ph-indicators",
+      "subject": "chemistry",
+      "chapter": "Acids, bases and salts",
+      "topic": "pH scale",
+      "title": "Rainbow of pH",
+      "summary": "Test household liquids with universal indicator and red cabbage juice and build your own pH scale.",
+      "difficulty": "beginner",
+      "levels": [
+        "beginner",
+        "school",
+        "exploring"
+      ],
+      "estimatedMinutes": 10,
+      "xpReward": 100,
+      "objectives": [
+        "Read pH from an indicator colour",
+        "Sort liquids into acids, bases and neutral"
+      ],
       "concept": "Indicators are dyes whose colour depends on how many H⁺ ions are in solution.",
-      "realWorld": ["Soil testing for gardening", "Swimming pool care"],
-      "equipment": ["Test tubes", "Test-tube rack", "Dropper"],
-      "materials": ["Universal indicator", "Red cabbage extract", "Vinegar", "Lemon juice", "Soap solution", "Baking soda solution"],
-      "safety": ["Never taste lab samples"],
-      "premium": false, "featured": true, "tags": ["indicator", "colour change"], "release": "MVP", "playable": false
+      "realWorld": [
+        "Soil testing for gardening",
+        "Swimming pool care"
+      ],
+      "equipment": [
+        "Test tubes",
+        "Test-tube rack",
+        "Dropper"
+      ],
+      "materials": [
+        "Universal indicator",
+        "Red cabbage extract",
+        "Vinegar",
+        "Lemon juice",
+        "Soap solution",
+        "Baking soda solution"
+      ],
+      "safety": [
+        "Never taste lab samples"
+      ],
+      "premium": false,
+      "featured": true,
+      "tags": [
+        "indicator",
+        "colour change"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "chem-salt-preparation", "slug": "making-copper-sulfate", "subject": "chemistry",
-      "chapter": "Acids, bases and salts", "topic": "Making salts",
-      "title": "Growing copper sulfate crystals", "summary": "React copper oxide with warm sulfuric acid, filter, evaporate and grow bright blue crystals.",
-      "difficulty": "intermediate", "levels": ["school", "high_school"], "estimatedMinutes": 22, "xpReward": 100,
-      "objectives": ["Add an insoluble base in excess", "Filter and evaporate safely", "Explain crystallisation"],
+      "id": "chem-salt-preparation",
+      "slug": "making-copper-sulfate",
+      "subject": "chemistry",
+      "chapter": "Acids, bases and salts",
+      "topic": "Making salts",
+      "title": "Growing copper sulfate crystals",
+      "summary": "React copper oxide with warm sulfuric acid, filter, evaporate and grow bright blue crystals.",
+      "difficulty": "intermediate",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 22,
+      "xpReward": 100,
+      "objectives": [
+        "Add an insoluble base in excess",
+        "Filter and evaporate safely",
+        "Explain crystallisation"
+      ],
       "concept": "Acid + metal oxide → salt + water. Slow cooling lets ions arrange into large crystals.",
-      "realWorld": ["Fungicides for vineyards", "Salt manufacture"],
-      "equipment": ["Beaker", "Bunsen burner", "Tripod and gauze", "Filter funnel", "Evaporating basin"],
-      "materials": ["Copper(II) oxide", "Sulfuric acid 1 M"],
-      "safety": ["Hot acid: heat gently and never to dryness", "Copper sulfate is harmful if swallowed"],
-      "premium": true, "featured": false, "tags": ["crystals", "heating", "filtration"], "release": "MVP", "playable": false
+      "realWorld": [
+        "Fungicides for vineyards",
+        "Salt manufacture"
+      ],
+      "equipment": [
+        "Beaker",
+        "Bunsen burner",
+        "Tripod and gauze",
+        "Filter funnel",
+        "Evaporating basin"
+      ],
+      "materials": [
+        "Copper(II) oxide",
+        "Sulfuric acid 1 M"
+      ],
+      "safety": [
+        "Hot acid: heat gently and never to dryness",
+        "Copper sulfate is harmful if swallowed"
+      ],
+      "premium": true,
+      "featured": false,
+      "tags": [
+        "crystals",
+        "heating",
+        "filtration"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "chem-precipitation", "slug": "precipitation-reactions", "subject": "chemistry",
-      "chapter": "Chemical reactions", "topic": "Precipitation",
-      "title": "Golden rain and other precipitates", "summary": "Mix clear solutions and watch solids appear: yellow lead iodide, blue copper hydroxide and white silver chloride.",
-      "difficulty": "beginner", "levels": ["school", "high_school"], "estimatedMinutes": 12, "xpReward": 100,
-      "objectives": ["Predict precipitates with solubility rules", "Write ionic equations"],
+      "id": "chem-precipitation",
+      "slug": "precipitation-reactions",
+      "subject": "chemistry",
+      "chapter": "Chemical reactions",
+      "topic": "Precipitation",
+      "title": "Golden rain and other precipitates",
+      "summary": "Mix clear solutions and watch solids appear: yellow lead iodide, blue copper hydroxide and white silver chloride.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 12,
+      "xpReward": 100,
+      "objectives": [
+        "Predict precipitates with solubility rules",
+        "Write ionic equations"
+      ],
       "concept": "When two ions form an insoluble compound, it leaves solution as a solid precipitate.",
-      "realWorld": ["Removing phosphates from waste water", "Testing for chloride in tap water"],
-      "equipment": ["Test tubes", "Dropper", "Test-tube rack"],
-      "materials": ["Lead nitrate", "Potassium iodide", "Copper sulfate", "Sodium hydroxide", "Silver nitrate", "Sodium chloride"],
-      "safety": ["Lead and silver compounds are toxic: wear gloves", "Dispose of heavy-metal waste properly"],
-      "premium": false, "featured": true, "tags": ["precipitate", "ionic equations"], "release": "MVP", "playable": false
+      "realWorld": [
+        "Removing phosphates from waste water",
+        "Testing for chloride in tap water"
+      ],
+      "equipment": [
+        "Test tubes",
+        "Dropper",
+        "Test-tube rack"
+      ],
+      "materials": [
+        "Lead nitrate",
+        "Potassium iodide",
+        "Copper sulfate",
+        "Sodium hydroxide",
+        "Silver nitrate",
+        "Sodium chloride"
+      ],
+      "safety": [
+        "Lead and silver compounds are toxic: wear gloves",
+        "Dispose of heavy-metal waste properly"
+      ],
+      "premium": false,
+      "featured": true,
+      "tags": [
+        "precipitate",
+        "ionic equations"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "chem-flame-tests", "slug": "flame-tests", "subject": "chemistry",
-      "chapter": "Chemical reactions", "topic": "Identifying ions",
-      "title": "Flame tests", "summary": "Identify metal ions from the colour they give a flame: lithium red, sodium orange, copper green.",
-      "difficulty": "beginner", "levels": ["school", "high_school", "exploring"], "estimatedMinutes": 8, "xpReward": 100,
-      "objectives": ["Clean a nichrome loop correctly", "Match flame colours to ions"],
+      "id": "chem-flame-tests",
+      "slug": "flame-tests",
+      "subject": "chemistry",
+      "chapter": "Chemical reactions",
+      "topic": "Identifying ions",
+      "title": "Flame tests",
+      "summary": "Identify metal ions from the colour they give a flame: lithium red, sodium orange, copper green.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "high_school",
+        "exploring"
+      ],
+      "estimatedMinutes": 8,
+      "xpReward": 100,
+      "objectives": [
+        "Clean a nichrome loop correctly",
+        "Match flame colours to ions"
+      ],
       "concept": "Heat excites electrons; as they fall back they emit light of colours unique to each element.",
-      "realWorld": ["Fireworks", "Street lights", "Astronomy spectroscopy"],
-      "equipment": ["Bunsen burner", "Nichrome wire loop", "Watch glass"],
-      "materials": ["Lithium chloride", "Sodium chloride", "Potassium chloride", "Calcium chloride", "Copper chloride", "Hydrochloric acid"],
-      "safety": ["Tie back long hair near the flame", "Use a heat-proof mat"],
-      "premium": false, "featured": false, "tags": ["flame test", "spectroscopy"], "release": "MVP", "playable": false
+      "realWorld": [
+        "Fireworks",
+        "Street lights",
+        "Astronomy spectroscopy"
+      ],
+      "equipment": [
+        "Bunsen burner",
+        "Nichrome wire loop",
+        "Watch glass"
+      ],
+      "materials": [
+        "Lithium chloride",
+        "Sodium chloride",
+        "Potassium chloride",
+        "Calcium chloride",
+        "Copper chloride",
+        "Hydrochloric acid"
+      ],
+      "safety": [
+        "Tie back long hair near the flame",
+        "Use a heat-proof mat"
+      ],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "flame test",
+        "spectroscopy"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "chem-reactivity-series", "slug": "metal-displacement", "subject": "chemistry",
-      "chapter": "Metals and reactivity", "topic": "Reactivity series",
-      "title": "Metal displacement race", "summary": "Drop metals into salt solutions and rank them by which ones push others out.",
-      "difficulty": "intermediate", "levels": ["school", "high_school"], "estimatedMinutes": 15, "xpReward": 100,
-      "objectives": ["Build a reactivity series from evidence", "Explain displacement with electron transfer"],
+      "id": "chem-reactivity-series",
+      "slug": "metal-displacement",
+      "subject": "chemistry",
+      "chapter": "Metals and reactivity",
+      "topic": "Reactivity series",
+      "title": "Metal displacement race",
+      "summary": "Drop metals into salt solutions and rank them by which ones push others out.",
+      "difficulty": "intermediate",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 15,
+      "xpReward": 100,
+      "objectives": [
+        "Build a reactivity series from evidence",
+        "Explain displacement with electron transfer"
+      ],
       "concept": "A more reactive metal gives electrons to the ions of a less reactive metal and displaces it.",
-      "realWorld": ["Extracting copper from scrap iron", "Galvanising and sacrificial protection"],
-      "equipment": ["Spotting tile", "Dropper", "Tweezers"],
-      "materials": ["Magnesium ribbon", "Zinc granules", "Iron filings", "Copper turnings", "Metal sulfate solutions"],
-      "safety": ["Copper sulfate is harmful if swallowed"],
-      "premium": false, "featured": false, "tags": ["displacement", "redox"], "release": "MVP", "playable": false
+      "realWorld": [
+        "Extracting copper from scrap iron",
+        "Galvanising and sacrificial protection"
+      ],
+      "equipment": [
+        "Spotting tile",
+        "Dropper",
+        "Tweezers"
+      ],
+      "materials": [
+        "Magnesium ribbon",
+        "Zinc granules",
+        "Iron filings",
+        "Copper turnings",
+        "Metal sulfate solutions"
+      ],
+      "safety": [
+        "Copper sulfate is harmful if swallowed"
+      ],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "displacement",
+        "redox"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "chem-electrolysis-brine", "slug": "electrolysis-of-brine", "subject": "chemistry",
-      "chapter": "Electrochemistry", "topic": "Electrolysis",
-      "title": "Electrolysis of brine", "summary": "Pass current through salt water and collect hydrogen and chlorine at the electrodes.",
-      "difficulty": "advanced", "levels": ["high_school", "undergraduate"], "estimatedMinutes": 20, "xpReward": 100,
-      "objectives": ["Predict products at each electrode", "Test for hydrogen and chlorine"],
+      "id": "chem-diluting-acid",
+      "slug": "diluting-acid-safely",
+      "subject": "chemistry",
+      "chapter": "Acids, bases and salts",
+      "topic": "Lab safety",
+      "title": "Diluting acid safely",
+      "summary": "Find out why you always add acid to water, never water to acid, by measuring the heat released.",
+      "difficulty": "intermediate",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 9,
+      "xpReward": 100,
+      "objectives": [
+        "Add acid to water slowly while stirring",
+        "Measure the temperature rise",
+        "Explain why the order matters"
+      ],
+      "concept": "Diluting concentrated sulfuric acid is strongly exothermic; water floating on acid boils and spatters.",
+      "realWorld": [
+        "Battery acid",
+        "Lab safety rules"
+      ],
+      "equipment": [
+        "Beaker",
+        "Measuring cylinder",
+        "Glass rod",
+        "Thermometer"
+      ],
+      "materials": [
+        "Concentrated sulfuric acid",
+        "Distilled water"
+      ],
+      "safety": [
+        "Goggles and gloves",
+        "Never add water to concentrated acid"
+      ],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "safety",
+        "heat",
+        "dilution"
+      ],
+      "release": "MVP",
+      "playable": false
+    },
+    {
+      "id": "chem-iron-copper-displacement",
+      "slug": "iron-nail-copper-sulfate",
+      "subject": "chemistry",
+      "chapter": "Metals and reactivity",
+      "topic": "Displacement",
+      "title": "Iron nail in copper sulfate",
+      "summary": "Leave an iron nail in blue copper sulfate and watch copper coat the nail as the blue fades, in time-lapse.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 8,
+      "xpReward": 100,
+      "objectives": [
+        "Observe a displacement reaction over time",
+        "Link it to the reactivity series"
+      ],
+      "concept": "A more reactive metal displaces a less reactive metal from its compounds.",
+      "realWorld": [
+        "Recovering copper with scrap iron",
+        "Corrosion between different metals"
+      ],
+      "equipment": [
+        "Boiling tube",
+        "Test-tube rack"
+      ],
+      "materials": [
+        "Copper(II) sulfate 0.5 M",
+        "Iron nail"
+      ],
+      "safety": [
+        "Copper sulfate is harmful if swallowed"
+      ],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "displacement",
+        "redox",
+        "time-lapse"
+      ],
+      "release": "MVP",
+      "playable": false
+    },
+    {
+      "id": "chem-mg-hcl-hydrogen",
+      "slug": "hydrogen-pop-test",
+      "subject": "chemistry",
+      "chapter": "Metals and reactivity",
+      "topic": "Metals and acids",
+      "title": "Magnesium and acid: the squeaky pop",
+      "summary": "Drop magnesium into hydrochloric acid, trap the fizzing gas and prove it is hydrogen with a lit splint.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "high_school",
+        "exploring"
+      ],
+      "estimatedMinutes": 10,
+      "xpReward": 100,
+      "objectives": [
+        "Collect a gas by upward delivery",
+        "Do the squeaky pop test",
+        "Explain why the tube warms"
+      ],
+      "concept": "Metal + acid → salt + hydrogen. Hydrogen burns with a squeaky pop.",
+      "realWorld": [
+        "Hydrogen fuel",
+        "Acid corrosion of metals"
+      ],
+      "equipment": [
+        "Test tubes",
+        "Test-tube rack",
+        "Bunsen burner",
+        "Wooden splint"
+      ],
+      "materials": [
+        "Hydrochloric acid 1 M",
+        "Magnesium ribbon"
+      ],
+      "safety": [
+        "Goggles on: the acid is corrosive",
+        "Keep the burner away from the reaction tube"
+      ],
+      "premium": false,
+      "featured": true,
+      "tags": [
+        "gas",
+        "gas test",
+        "metals"
+      ],
+      "release": "MVP",
+      "playable": false
+    },
+    {
+      "id": "chem-electrolysis-brine",
+      "slug": "electrolysis-of-brine",
+      "subject": "chemistry",
+      "chapter": "Electrochemistry",
+      "topic": "Electrolysis",
+      "title": "Electrolysis of brine",
+      "summary": "Pass current through salt water and collect hydrogen and chlorine at the electrodes.",
+      "difficulty": "advanced",
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "estimatedMinutes": 20,
+      "xpReward": 100,
+      "objectives": [
+        "Predict products at each electrode",
+        "Test for hydrogen and chlorine"
+      ],
       "concept": "At the cathode, water is reduced to hydrogen; at the anode, chloride is oxidised to chlorine.",
-      "realWorld": ["Chlor-alkali industry", "Making bleach"],
-      "equipment": ["Electrolysis cell", "Carbon electrodes", "DC power pack", "Test tubes"],
-      "materials": ["Saturated sodium chloride solution", "Litmus paper"],
-      "safety": ["Chlorine is toxic: small volumes, good ventilation"],
-      "premium": true, "featured": false, "tags": ["electrolysis", "gas test"], "release": "Later", "playable": false
+      "realWorld": [
+        "Chlor-alkali industry",
+        "Making bleach"
+      ],
+      "equipment": [
+        "Electrolysis cell",
+        "Carbon electrodes",
+        "DC power pack",
+        "Test tubes"
+      ],
+      "materials": [
+        "Saturated sodium chloride solution",
+        "Litmus paper"
+      ],
+      "safety": [
+        "Chlorine is toxic: small volumes, good ventilation"
+      ],
+      "premium": true,
+      "featured": false,
+      "tags": [
+        "electrolysis",
+        "gas test"
+      ],
+      "release": "Later",
+      "playable": false
     },
     {
-      "id": "chem-rates-thiosulfate", "slug": "disappearing-cross", "subject": "chemistry",
-      "chapter": "Rates of reaction", "topic": "Temperature and rate",
-      "title": "The disappearing cross", "summary": "Time how long sodium thiosulfate takes to hide a cross at different temperatures and plot the rate.",
-      "difficulty": "intermediate", "levels": ["school", "high_school"], "estimatedMinutes": 20, "xpReward": 100,
-      "objectives": ["Control variables fairly", "Plot 1/time against temperature"],
+      "id": "chem-rates-thiosulfate",
+      "slug": "disappearing-cross",
+      "subject": "chemistry",
+      "chapter": "Rates of reaction",
+      "topic": "Temperature and rate",
+      "title": "The disappearing cross",
+      "summary": "Time how long sodium thiosulfate takes to hide a cross at different temperatures and plot the rate.",
+      "difficulty": "intermediate",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 20,
+      "xpReward": 100,
+      "objectives": [
+        "Control variables fairly",
+        "Plot 1/time against temperature"
+      ],
       "concept": "Hotter particles collide more often and with more energy, so the reaction speeds up.",
-      "realWorld": ["Refrigerating food", "Industrial reactor design"],
-      "equipment": ["Conical flask", "Stopwatch", "Thermometer", "Measuring cylinder"],
-      "materials": ["Sodium thiosulfate", "Hydrochloric acid"],
-      "safety": ["Sulfur dioxide is produced: ventilate the room"],
-      "premium": false, "featured": false, "tags": ["rate", "graph"], "release": "MVP", "playable": false
+      "realWorld": [
+        "Refrigerating food",
+        "Industrial reactor design"
+      ],
+      "equipment": [
+        "Conical flask",
+        "Stopwatch",
+        "Thermometer",
+        "Measuring cylinder"
+      ],
+      "materials": [
+        "Sodium thiosulfate",
+        "Hydrochloric acid"
+      ],
+      "safety": [
+        "Sulfur dioxide is produced: ventilate the room"
+      ],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "rate",
+        "graph"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "chem-catalase-foam", "slug": "elephant-toothpaste", "subject": "chemistry",
-      "chapter": "Rates of reaction", "topic": "Catalysts",
-      "title": "Elephant toothpaste", "summary": "Use a catalyst to split hydrogen peroxide so fast it erupts as a tower of foam.",
-      "difficulty": "beginner", "levels": ["beginner", "school", "exploring"], "estimatedMinutes": 9, "xpReward": 100,
-      "objectives": ["See a catalyst at work", "Test for oxygen with a glowing splint"],
+      "id": "chem-catalase-foam",
+      "slug": "elephant-toothpaste",
+      "subject": "chemistry",
+      "chapter": "Rates of reaction",
+      "topic": "Catalysts",
+      "title": "Elephant toothpaste",
+      "summary": "Use a catalyst to split hydrogen peroxide so fast it erupts as a tower of foam.",
+      "difficulty": "beginner",
+      "levels": [
+        "beginner",
+        "school",
+        "exploring"
+      ],
+      "estimatedMinutes": 9,
+      "xpReward": 100,
+      "objectives": [
+        "See a catalyst at work",
+        "Test for oxygen with a glowing splint"
+      ],
       "concept": "A catalyst gives the reaction an easier path without being used up.",
-      "realWorld": ["Catalytic converters", "Enzymes in your body"],
-      "equipment": ["Measuring cylinder", "Tray", "Wooden splint"],
-      "materials": ["Hydrogen peroxide 6%", "Potassium iodide", "Washing-up liquid", "Food colouring"],
-      "safety": ["The foam is hot: don't touch it", "Peroxide bleaches skin and clothes"],
-      "premium": false, "featured": true, "tags": ["catalyst", "gas", "foam"], "release": "MVP", "playable": false
+      "realWorld": [
+        "Catalytic converters",
+        "Enzymes in your body"
+      ],
+      "equipment": [
+        "Measuring cylinder",
+        "Tray",
+        "Wooden splint"
+      ],
+      "materials": [
+        "Hydrogen peroxide 6%",
+        "Potassium iodide",
+        "Washing-up liquid",
+        "Food colouring"
+      ],
+      "safety": [
+        "The foam is hot: don't touch it",
+        "Peroxide bleaches skin and clothes"
+      ],
+      "premium": false,
+      "featured": true,
+      "tags": [
+        "catalyst",
+        "gas",
+        "foam"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "chem-esterification", "slug": "making-esters", "subject": "chemistry",
-      "chapter": "Organic chemistry", "topic": "Esters",
-      "title": "Making fruity esters", "summary": "Warm an alcohol with a carboxylic acid and a drop of catalyst to make sweet-smelling esters.",
-      "difficulty": "advanced", "levels": ["high_school", "undergraduate"], "estimatedMinutes": 25, "xpReward": 100,
-      "objectives": ["Set up reflux safely", "Identify esters by smell and formula"],
+      "id": "chem-esterification",
+      "slug": "making-esters",
+      "subject": "chemistry",
+      "chapter": "Organic chemistry",
+      "topic": "Esters",
+      "title": "Making fruity esters",
+      "summary": "Warm an alcohol with a carboxylic acid and a drop of catalyst to make sweet-smelling esters.",
+      "difficulty": "advanced",
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "estimatedMinutes": 25,
+      "xpReward": 100,
+      "objectives": [
+        "Set up reflux safely",
+        "Identify esters by smell and formula"
+      ],
       "concept": "Alcohol + carboxylic acid ⇌ ester + water, catalysed by concentrated sulfuric acid.",
-      "realWorld": ["Food flavourings", "Perfumes", "Solvents"],
-      "equipment": ["Boiling tube", "Water bath", "Thermometer"],
-      "materials": ["Ethanol", "Ethanoic acid", "Concentrated sulfuric acid (1 drop)"],
-      "safety": ["Ethanol is flammable: water bath only, no open flame", "Concentrated acid is corrosive"],
-      "premium": true, "featured": false, "tags": ["organic", "smell", "reflux"], "release": "Later", "playable": false
+      "realWorld": [
+        "Food flavourings",
+        "Perfumes",
+        "Solvents"
+      ],
+      "equipment": [
+        "Boiling tube",
+        "Water bath",
+        "Thermometer"
+      ],
+      "materials": [
+        "Ethanol",
+        "Ethanoic acid",
+        "Concentrated sulfuric acid (1 drop)"
+      ],
+      "safety": [
+        "Ethanol is flammable: water bath only, no open flame",
+        "Concentrated acid is corrosive"
+      ],
+      "premium": true,
+      "featured": false,
+      "tags": [
+        "organic",
+        "smell",
+        "reflux"
+      ],
+      "release": "Later",
+      "playable": false
     },
     {
-      "id": "phys-pendulum", "slug": "simple-pendulum", "subject": "physics",
-      "chapter": "Mechanics", "topic": "Oscillations",
-      "title": "Simple pendulum and g", "summary": "Change the string length, time the swings and measure the acceleration due to gravity.",
-      "difficulty": "beginner", "levels": ["school", "high_school"], "estimatedMinutes": 14, "xpReward": 100,
-      "objectives": ["Time many oscillations to reduce error", "Plot T² against length", "Find g from the gradient"],
+      "id": "phys-pendulum",
+      "slug": "simple-pendulum",
+      "subject": "physics",
+      "chapter": "Mechanics",
+      "topic": "Oscillations",
+      "title": "Simple pendulum and g",
+      "summary": "Change the string length, time the swings and measure the acceleration due to gravity.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 14,
+      "xpReward": 100,
+      "objectives": [
+        "Time many oscillations to reduce error",
+        "Plot T² against length",
+        "Find g from the gradient"
+      ],
       "concept": "For small swings, T = 2π√(L/g): the period depends only on length, not on mass.",
-      "realWorld": ["Pendulum clocks", "Seismometers"],
-      "equipment": ["Clamp stand", "String", "Pendulum bob", "Stopwatch", "Metre rule"],
+      "realWorld": [
+        "Pendulum clocks",
+        "Seismometers"
+      ],
+      "equipment": [
+        "Clamp stand",
+        "String",
+        "Pendulum bob",
+        "Stopwatch",
+        "Metre rule"
+      ],
       "materials": [],
-      "safety": ["Keep the swing area clear"],
-      "premium": false, "featured": true, "tags": ["pendulum", "graph", "gravity"], "release": "MVP", "playable": false
+      "safety": [
+        "Keep the swing area clear"
+      ],
+      "premium": false,
+      "featured": true,
+      "tags": [
+        "pendulum",
+        "graph",
+        "gravity"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "phys-projectile", "slug": "projectile-motion", "subject": "physics",
-      "chapter": "Mechanics", "topic": "Projectiles",
-      "title": "Projectile launcher", "summary": "Launch balls at different angles and speeds and hit targets by predicting the path.",
-      "difficulty": "intermediate", "levels": ["high_school", "undergraduate"], "estimatedMinutes": 16, "xpReward": 100,
-      "objectives": ["Split velocity into components", "Predict range and height", "Find the best launch angle"],
+      "id": "phys-projectile",
+      "slug": "projectile-motion",
+      "subject": "physics",
+      "chapter": "Mechanics",
+      "topic": "Projectiles",
+      "title": "Projectile launcher",
+      "summary": "Launch balls at different angles and speeds and hit targets by predicting the path.",
+      "difficulty": "intermediate",
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "estimatedMinutes": 16,
+      "xpReward": 100,
+      "objectives": [
+        "Split velocity into components",
+        "Predict range and height",
+        "Find the best launch angle"
+      ],
       "concept": "Horizontal motion is steady; vertical motion accelerates downward at g. Together they make a parabola.",
-      "realWorld": ["Sports science", "Fountains and water jets"],
-      "equipment": ["Launcher", "Protractor", "Target board"],
+      "realWorld": [
+        "Sports science",
+        "Fountains and water jets"
+      ],
+      "equipment": [
+        "Launcher",
+        "Protractor",
+        "Target board"
+      ],
       "materials": [],
-      "safety": ["Never aim at people"],
-      "premium": false, "featured": false, "tags": ["vectors", "motion"], "release": "MVP", "playable": false
+      "safety": [
+        "Never aim at people"
+      ],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "vectors",
+        "motion"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "phys-newton-2", "slug": "newtons-second-law", "subject": "physics",
-      "chapter": "Mechanics", "topic": "Forces",
-      "title": "F = ma on an air track", "summary": "Pull a glider with falling masses and show acceleration is proportional to force.",
-      "difficulty": "intermediate", "levels": ["high_school"], "estimatedMinutes": 18, "xpReward": 100,
-      "objectives": ["Measure acceleration with light gates", "Keep total mass constant"],
+      "id": "phys-newton-2",
+      "slug": "newtons-second-law",
+      "subject": "physics",
+      "chapter": "Mechanics",
+      "topic": "Forces",
+      "title": "F = ma on an air track",
+      "summary": "Pull a glider with falling masses and show acceleration is proportional to force.",
+      "difficulty": "intermediate",
+      "levels": [
+        "high_school"
+      ],
+      "estimatedMinutes": 18,
+      "xpReward": 100,
+      "objectives": [
+        "Measure acceleration with light gates",
+        "Keep total mass constant"
+      ],
       "concept": "Resultant force equals mass times acceleration.",
-      "realWorld": ["Car safety design", "Rocket launches"],
-      "equipment": ["Air track", "Glider", "Light gates", "Pulley", "Slotted masses"],
+      "realWorld": [
+        "Car safety design",
+        "Rocket launches"
+      ],
+      "equipment": [
+        "Air track",
+        "Glider",
+        "Light gates",
+        "Pulley",
+        "Slotted masses"
+      ],
       "materials": [],
-      "safety": ["Keep feet clear of falling masses"],
-      "premium": true, "featured": false, "tags": ["forces", "graph"], "release": "MVP", "playable": false
+      "safety": [
+        "Keep feet clear of falling masses"
+      ],
+      "premium": true,
+      "featured": false,
+      "tags": [
+        "forces",
+        "graph"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "phys-refraction", "slug": "refraction-snells-law", "subject": "physics",
-      "chapter": "Waves and optics", "topic": "Refraction",
-      "title": "Bending light: Snell's law", "summary": "Shine a ray box through a glass block, measure angles and find the refractive index.",
-      "difficulty": "intermediate", "levels": ["school", "high_school"], "estimatedMinutes": 15, "xpReward": 100,
-      "objectives": ["Draw normals and measure angles", "Find n from sin i / sin r", "Spot total internal reflection"],
+      "id": "phys-refraction",
+      "slug": "refraction-snells-law",
+      "subject": "physics",
+      "chapter": "Waves and optics",
+      "topic": "Refraction",
+      "title": "Bending light: Snell's law",
+      "summary": "Shine a ray box through a glass block, measure angles and find the refractive index.",
+      "difficulty": "intermediate",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 15,
+      "xpReward": 100,
+      "objectives": [
+        "Draw normals and measure angles",
+        "Find n from sin i / sin r",
+        "Spot total internal reflection"
+      ],
       "concept": "Light slows down in glass and bends towards the normal.",
-      "realWorld": ["Optical fibres", "Spectacles", "Rainbows"],
-      "equipment": ["Ray box", "Glass block", "Protractor"],
+      "realWorld": [
+        "Optical fibres",
+        "Spectacles",
+        "Rainbows"
+      ],
+      "equipment": [
+        "Ray box",
+        "Glass block",
+        "Protractor"
+      ],
       "materials": [],
-      "safety": ["Ray boxes get hot"],
-      "premium": false, "featured": true, "tags": ["light", "refraction"], "release": "MVP", "playable": false
+      "safety": [
+        "Ray boxes get hot"
+      ],
+      "premium": false,
+      "featured": true,
+      "tags": [
+        "light",
+        "refraction"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "phys-ohms-law", "slug": "ohms-law", "subject": "physics",
-      "chapter": "Electricity and circuits", "topic": "Resistance",
-      "title": "Ohm's law", "summary": "Build a circuit, vary the voltage and plot current to find a resistor's resistance.",
-      "difficulty": "beginner", "levels": ["school", "high_school"], "estimatedMinutes": 12, "xpReward": 100,
-      "objectives": ["Connect an ammeter in series and voltmeter in parallel", "Plot V against I"],
+      "id": "phys-ohms-law",
+      "slug": "ohms-law",
+      "subject": "physics",
+      "chapter": "Electricity and circuits",
+      "topic": "Resistance",
+      "title": "Ohm's law",
+      "summary": "Build a circuit, vary the voltage and plot current to find a resistor's resistance.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 12,
+      "xpReward": 100,
+      "objectives": [
+        "Connect an ammeter in series and voltmeter in parallel",
+        "Plot V against I"
+      ],
       "concept": "For an ohmic conductor at constant temperature, V = IR.",
-      "realWorld": ["Designing phone chargers", "Dimmer switches"],
-      "equipment": ["Power pack", "Resistor", "Ammeter", "Voltmeter", "Variable resistor"],
+      "realWorld": [
+        "Designing phone chargers",
+        "Dimmer switches"
+      ],
+      "equipment": [
+        "Power pack",
+        "Resistor",
+        "Ammeter",
+        "Voltmeter",
+        "Variable resistor"
+      ],
       "materials": [],
-      "safety": ["Low voltage only", "Switch off between readings so wires don't heat"],
-      "premium": false, "featured": false, "tags": ["circuit", "graph"], "release": "MVP", "playable": false
+      "safety": [
+        "Low voltage only",
+        "Switch off between readings so wires don't heat"
+      ],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "circuit",
+        "graph"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "phys-series-parallel", "slug": "series-and-parallel", "subject": "physics",
-      "chapter": "Electricity and circuits", "topic": "Circuits",
-      "title": "Series vs parallel bulbs", "summary": "Wire bulbs both ways and discover why your house is wired in parallel.",
-      "difficulty": "beginner", "levels": ["beginner", "school"], "estimatedMinutes": 10, "xpReward": 100,
-      "objectives": ["Compare current and voltage in each circuit", "Explain brightness"],
+      "id": "phys-series-parallel",
+      "slug": "series-and-parallel",
+      "subject": "physics",
+      "chapter": "Electricity and circuits",
+      "topic": "Circuits",
+      "title": "Series vs parallel bulbs",
+      "summary": "Wire bulbs both ways and discover why your house is wired in parallel.",
+      "difficulty": "beginner",
+      "levels": [
+        "beginner",
+        "school"
+      ],
+      "estimatedMinutes": 10,
+      "xpReward": 100,
+      "objectives": [
+        "Compare current and voltage in each circuit",
+        "Explain brightness"
+      ],
       "concept": "Series shares voltage; parallel shares current. Each parallel branch gets the full voltage.",
-      "realWorld": ["Household wiring", "Fairy lights"],
-      "equipment": ["Battery pack", "Bulbs", "Switches", "Ammeter"],
+      "realWorld": [
+        "Household wiring",
+        "Fairy lights"
+      ],
+      "equipment": [
+        "Battery pack",
+        "Bulbs",
+        "Switches",
+        "Ammeter"
+      ],
       "materials": [],
-      "safety": ["Never connect a battery's terminals directly together"],
-      "premium": false, "featured": false, "tags": ["circuit"], "release": "MVP", "playable": false
+      "safety": [
+        "Never connect a battery's terminals directly together"
+      ],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "circuit"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "phys-specific-heat", "slug": "specific-heat-capacity", "subject": "physics",
-      "chapter": "Heat", "topic": "Thermal energy",
-      "title": "Specific heat capacity", "summary": "Heat a metal block electrically and work out how much energy one kilogram needs per degree.",
-      "difficulty": "advanced", "levels": ["high_school", "undergraduate"], "estimatedMinutes": 20, "xpReward": 100,
-      "objectives": ["Measure energy with a joulemeter", "Reduce heat loss with insulation"],
+      "id": "phys-specific-heat",
+      "slug": "specific-heat-capacity",
+      "subject": "physics",
+      "chapter": "Heat",
+      "topic": "Thermal energy",
+      "title": "Specific heat capacity",
+      "summary": "Heat a metal block electrically and work out how much energy one kilogram needs per degree.",
+      "difficulty": "advanced",
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "estimatedMinutes": 20,
+      "xpReward": 100,
+      "objectives": [
+        "Measure energy with a joulemeter",
+        "Reduce heat loss with insulation"
+      ],
       "concept": "E = mcΔθ: the energy needed depends on mass, material and temperature change.",
-      "realWorld": ["Storage heaters", "Why coasts have milder weather"],
-      "equipment": ["Metal block", "Immersion heater", "Thermometer", "Joulemeter"],
+      "realWorld": [
+        "Storage heaters",
+        "Why coasts have milder weather"
+      ],
+      "equipment": [
+        "Metal block",
+        "Immersion heater",
+        "Thermometer",
+        "Joulemeter"
+      ],
       "materials": [],
-      "safety": ["The heater and block get very hot"],
-      "premium": true, "featured": false, "tags": ["heat", "energy"], "release": "Later", "playable": false
+      "safety": [
+        "The heater and block get very hot"
+      ],
+      "premium": true,
+      "featured": false,
+      "tags": [
+        "heat",
+        "energy"
+      ],
+      "release": "Later",
+      "playable": false
     },
     {
-      "id": "math-graph-transformations", "slug": "graph-transformations", "subject": "maths",
-      "chapter": "Functions and graphs", "topic": "Transformations",
-      "title": "Slide, stretch, flip", "summary": "Drag sliders for a, b, c and d and watch y = a·f(b(x − c)) + d move in real time.",
-      "difficulty": "beginner", "levels": ["school", "high_school", "exploring"], "estimatedMinutes": 10, "xpReward": 100,
-      "objectives": ["Link each parameter to a transformation", "Match a target graph"],
+      "id": "math-graph-transformations",
+      "slug": "graph-transformations",
+      "subject": "maths",
+      "chapter": "Functions and graphs",
+      "topic": "Transformations",
+      "title": "Slide, stretch, flip",
+      "summary": "Drag sliders for a, b, c and d and watch y = a·f(b(x − c)) + d move in real time.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "high_school",
+        "exploring"
+      ],
+      "estimatedMinutes": 10,
+      "xpReward": 100,
+      "objectives": [
+        "Link each parameter to a transformation",
+        "Match a target graph"
+      ],
       "concept": "Changes inside the function act on x (and feel backwards); changes outside act on y.",
-      "realWorld": ["Audio equalisers", "Animation curves"],
-      "equipment": ["Function plotter"],
+      "realWorld": [
+        "Audio equalisers",
+        "Animation curves"
+      ],
+      "equipment": [
+        "Function plotter"
+      ],
       "materials": [],
       "safety": [],
-      "premium": false, "featured": true, "tags": ["graphs", "functions"], "release": "MVP", "playable": false
+      "premium": false,
+      "featured": true,
+      "tags": [
+        "graphs",
+        "functions"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "math-unit-circle", "slug": "unit-circle-trig", "subject": "maths",
-      "chapter": "Trigonometry", "topic": "Unit circle",
-      "title": "The spinning unit circle", "summary": "Spin a point round the unit circle and watch sine and cosine waves trace themselves out.",
-      "difficulty": "beginner", "levels": ["school", "high_school"], "estimatedMinutes": 9, "xpReward": 100,
-      "objectives": ["Read sin and cos from coordinates", "Connect radians to arc length"],
+      "id": "math-unit-circle",
+      "slug": "unit-circle-trig",
+      "subject": "maths",
+      "chapter": "Trigonometry",
+      "topic": "Unit circle",
+      "title": "The spinning unit circle",
+      "summary": "Spin a point round the unit circle and watch sine and cosine waves trace themselves out.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 9,
+      "xpReward": 100,
+      "objectives": [
+        "Read sin and cos from coordinates",
+        "Connect radians to arc length"
+      ],
       "concept": "cos θ and sin θ are the x and y coordinates of a point at angle θ on a circle of radius 1.",
-      "realWorld": ["Sound waves", "Alternating current", "Game physics"],
-      "equipment": ["Unit circle visualiser", "Wave plotter"],
+      "realWorld": [
+        "Sound waves",
+        "Alternating current",
+        "Game physics"
+      ],
+      "equipment": [
+        "Unit circle visualiser",
+        "Wave plotter"
+      ],
       "materials": [],
       "safety": [],
-      "premium": false, "featured": false, "tags": ["trigonometry", "waves"], "release": "MVP", "playable": false
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "trigonometry",
+        "waves"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "math-derivative-slope", "slug": "derivative-as-slope", "subject": "maths",
-      "chapter": "Calculus", "topic": "Differentiation",
-      "title": "Chasing the tangent", "summary": "Shrink a secant line until it becomes a tangent and see the derivative appear.",
-      "difficulty": "intermediate", "levels": ["high_school", "undergraduate"], "estimatedMinutes": 14, "xpReward": 100,
-      "objectives": ["Estimate gradients with secants", "Sketch f'(x) from f(x)"],
+      "id": "math-derivative-slope",
+      "slug": "derivative-as-slope",
+      "subject": "maths",
+      "chapter": "Calculus",
+      "topic": "Differentiation",
+      "title": "Chasing the tangent",
+      "summary": "Shrink a secant line until it becomes a tangent and see the derivative appear.",
+      "difficulty": "intermediate",
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "estimatedMinutes": 14,
+      "xpReward": 100,
+      "objectives": [
+        "Estimate gradients with secants",
+        "Sketch f'(x) from f(x)"
+      ],
       "concept": "The derivative is the limit of the secant gradient as the gap h shrinks to zero.",
-      "realWorld": ["Speed from a distance graph", "Optimising profit"],
-      "equipment": ["Function plotter", "Tangent tool"],
+      "realWorld": [
+        "Speed from a distance graph",
+        "Optimising profit"
+      ],
+      "equipment": [
+        "Function plotter",
+        "Tangent tool"
+      ],
       "materials": [],
       "safety": [],
-      "premium": false, "featured": false, "tags": ["calculus", "limits"], "release": "MVP", "playable": false
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "calculus",
+        "limits"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "math-riemann-sums", "slug": "riemann-sums", "subject": "maths",
-      "chapter": "Calculus", "topic": "Integration",
-      "title": "Area under a curve", "summary": "Fill a curve with rectangles, add more and more, and watch the sum close in on the integral.",
-      "difficulty": "advanced", "levels": ["high_school", "undergraduate"], "estimatedMinutes": 16, "xpReward": 100,
-      "objectives": ["Compare left, right and midpoint sums", "See the limit become an integral"],
+      "id": "math-riemann-sums",
+      "slug": "riemann-sums",
+      "subject": "maths",
+      "chapter": "Calculus",
+      "topic": "Integration",
+      "title": "Area under a curve",
+      "summary": "Fill a curve with rectangles, add more and more, and watch the sum close in on the integral.",
+      "difficulty": "advanced",
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "estimatedMinutes": 16,
+      "xpReward": 100,
+      "objectives": [
+        "Compare left, right and midpoint sums",
+        "See the limit become an integral"
+      ],
       "concept": "A definite integral is the limit of Riemann sums as rectangle width goes to zero.",
-      "realWorld": ["Distance from a speed graph", "Total rainfall"],
-      "equipment": ["Function plotter", "Rectangle slider"],
+      "realWorld": [
+        "Distance from a speed graph",
+        "Total rainfall"
+      ],
+      "equipment": [
+        "Function plotter",
+        "Rectangle slider"
+      ],
       "materials": [],
       "safety": [],
-      "premium": true, "featured": false, "tags": ["calculus", "area"], "release": "MVP", "playable": false
+      "premium": true,
+      "featured": false,
+      "tags": [
+        "calculus",
+        "area"
+      ],
+      "release": "MVP",
+      "playable": false
     },
     {
-      "id": "math-probability-dice", "slug": "dice-probability", "subject": "maths",
-      "chapter": "Probability", "topic": "Experimental probability",
-      "title": "Ten thousand dice", "summary": "Roll virtual dice thousands of times and watch experimental results settle onto the theory.",
-      "difficulty": "beginner", "levels": ["beginner", "school", "exploring"], "estimatedMinutes": 8, "xpReward": 100,
-      "objectives": ["Compare experimental and theoretical probability", "See the law of large numbers"],
+      "id": "math-probability-dice",
+      "slug": "dice-probability",
+      "subject": "maths",
+      "chapter": "Probability",
+      "topic": "Experimental probability",
+      "title": "Ten thousand dice",
+      "summary": "Roll virtual dice thousands of times and watch experimental results settle onto the theory.",
+      "difficulty": "beginner",
+      "levels": [
+        "beginner",
+        "school",
+        "exploring"
+      ],
+      "estimatedMinutes": 8,
+      "xpReward": 100,
+      "objectives": [
+        "Compare experimental and theoretical probability",
+        "See the law of large numbers"
+      ],
       "concept": "With more trials, relative frequency gets closer to the true probability.",
-      "realWorld": ["Insurance", "Weather forecasts", "Board-game design"],
-      "equipment": ["Dice simulator", "Bar chart"],
+      "realWorld": [
+        "Insurance",
+        "Weather forecasts",
+        "Board-game design"
+      ],
+      "equipment": [
+        "Dice simulator",
+        "Bar chart"
+      ],
       "materials": [],
       "safety": [],
-      "premium": false, "featured": false, "tags": ["probability", "statistics"], "release": "MVP", "playable": false
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "probability",
+        "statistics"
+      ],
+      "release": "MVP",
+      "playable": false
     }
   ]
 }

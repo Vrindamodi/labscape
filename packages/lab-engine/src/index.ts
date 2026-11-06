@@ -7,3 +7,7 @@ export * from "./engine/reagents";
 export * from "./engine/state";
 export * from "./engine/reducer";
 export * from "./engine/hash";
+export * from "./protocol/types";
+export * from "./protocol/evaluator";
+export * from "./protocol/session";
+export * from "./protocol/content";

@@ -1,0 +1,318 @@
+{
+  "id": "chem-iron-copper-displacement",
+  "slug": "iron-nail-copper-sulfate",
+  "version": 1,
+  "subject": "chemistry",
+  "title": "Iron nail in copper sulfate",
+  "fidelity": "approximate",
+  "reviewStatus": "draft",
+  "bench": {
+    "items": [
+      {
+        "id": "cuso4",
+        "kind": "reagent_bottle",
+        "label": "Copper(II) sulfate 0.5 M",
+        "x": -300,
+        "z": -60,
+        "fill": {
+          "reagentId": "cuso4-0.5",
+          "volumeMl": 150
+        }
+      },
+      {
+        "id": "tube",
+        "kind": "boiling_tube",
+        "label": "Boiling tube",
+        "x": 0,
+        "z": 40,
+        "socket": "rack:rack"
+      },
+      {
+        "id": "rack",
+        "kind": "test_tube_rack",
+        "x": 0,
+        "z": 40
+      },
+      {
+        "id": "iron-nail",
+        "kind": "glass_rod",
+        "label": "Iron nail (cleaned with sandpaper)",
+        "x": 180,
+        "z": 70
+      },
+      {
+        "id": "goggles",
+        "kind": "goggles",
+        "x": 320,
+        "z": 110
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "goggles",
+      "title": "Put on goggles",
+      "instruction": "Copper sulfate irritates eyes. Goggles on.",
+      "action": "equipment.place",
+      "from": "goggles",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "safe-1",
+        "safe-2",
+        "safe-3"
+      ]
+    },
+    {
+      "id": "cu-in",
+      "title": "20 mL copper sulfate",
+      "instruction": "Pour about 20 mL of copper(II) sulfate into the boiling tube.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "cuso4",
+      "to": "tube",
+      "quantity": {
+        "target": 20,
+        "plusMinus": 3,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 6
+      },
+      "hints": [
+        "vol-1",
+        "vol-2",
+        "vol-3"
+      ]
+    },
+    {
+      "id": "nail-in",
+      "title": "Add the iron nail",
+      "instruction": "Lower the cleaned nail into the solution.",
+      "requires": [
+        "cu-in"
+      ],
+      "action": "solid.add",
+      "from": "iron-nail",
+      "to": "tube",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "nail-1",
+        "nail-2",
+        "nail-3"
+      ]
+    },
+    {
+      "id": "coat",
+      "title": "Watch the nail",
+      "instruction": "Watch the nail's surface. Use the time-lapse to speed up.",
+      "requires": [
+        "nail-in"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "deposit:tube"
+      },
+      "hints": [
+        "wait-1",
+        "wait-2",
+        "wait-3"
+      ]
+    },
+    {
+      "id": "ten-minutes",
+      "title": "Ten minutes later",
+      "instruction": "Fast-forward ten minutes and compare the solution's colour with the stock bottle.",
+      "requires": [
+        "coat"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "time-at-least:600000"
+      },
+      "hints": [
+        "wait-1",
+        "wait-2",
+        "wait-3"
+      ]
+    }
+  ],
+  "hints": {
+    "safe-1": {
+      "rung": 1,
+      "text": "What protects your eyes?"
+    },
+    "safe-2": {
+      "rung": 2,
+      "text": "Drag the goggles onto your face icon."
+    },
+    "safe-3": {
+      "rung": 3,
+      "text": "Watch the goggles go on."
+    },
+    "vol-1": {
+      "rung": 1,
+      "text": "Enough liquid to cover most of the nail."
+    },
+    "vol-2": {
+      "rung": 2,
+      "text": "Pour until the counter reads about 20 mL."
+    },
+    "vol-3": {
+      "rung": 3,
+      "text": "Watch the pour."
+    },
+    "nail-1": {
+      "rung": 1,
+      "text": "Which metal are you testing?"
+    },
+    "nail-2": {
+      "rung": 2,
+      "text": "Drag the iron nail into the boiling tube."
+    },
+    "nail-3": {
+      "rung": 3,
+      "text": "Watch the nail go in."
+    },
+    "wait-1": {
+      "rung": 1,
+      "text": "Some reactions are slow. Keep watching the surface."
+    },
+    "wait-2": {
+      "rung": 2,
+      "text": "Use the time-lapse control to fast-forward."
+    },
+    "wait-3": {
+      "rung": 3,
+      "text": "Watch the time-lapse."
+    }
+  },
+  "observations": {
+    "whatHappened": "A pinky-brown coat of copper grew on the nail, and over ten minutes the blue solution paled and turned slightly green.",
+    "why": "Iron is more reactive than copper, so iron atoms give electrons to Cu²⁺ ions. Copper metal comes out on the nail; iron goes into solution as pale green Fe²⁺. Fewer blue Cu²⁺ ions means a paler colour.",
+    "equationLatex": "\\mathrm{Fe(s) + CuSO_4(aq) \\longrightarrow FeSO_4(aq) + Cu(s)}",
+    "realWorld": [
+      "Recovering copper from mine waste with scrap iron",
+      "Why iron and copper pipes shouldn't touch",
+      "The reactivity series"
+    ],
+    "prompts": [
+      {
+        "id": "q-coat",
+        "question": "The pinky-brown coat on the nail is...",
+        "choices": [
+          "Rust",
+          "Copper",
+          "Iron sulfate",
+          "Paint"
+        ],
+        "answer": 1,
+        "explain": "Copper ions gain electrons and form copper metal on the nail."
+      },
+      {
+        "id": "q-why",
+        "question": "Why does the reaction happen?",
+        "choices": [
+          "Copper is more reactive than iron",
+          "Iron is more reactive than copper",
+          "The solution is acidic",
+          "The nail is hot"
+        ],
+        "answer": 1,
+        "explain": "A more reactive metal displaces a less reactive one from its compounds."
+      }
+    ]
+  },
+  "safety": [],
+  "golden": {
+    "durationS": 40,
+    "captions": [
+      {
+        "t": 0,
+        "text": "Copper sulfate into a boiling tube, then a clean iron nail."
+      },
+      {
+        "t": 12000,
+        "text": "Within seconds a copper coat starts to form...",
+        "slow": true
+      },
+      {
+        "t": 30000,
+        "text": "Time-lapse: ten minutes later the blue has faded."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "goggles",
+          "x": 0,
+          "y": 0,
+          "socket": "worn"
+        }
+      },
+      {
+        "t": 6000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "cuso4",
+          "to": "tube",
+          "volumeMl": 20,
+          "tiltDegMax": 60,
+          "meanRateMlPerS": 4,
+          "peakRateMlPerS": 5.5,
+          "durationMs": 5000
+        }
+      },
+      {
+        "t": 9000,
+        "type": "solid.add",
+        "payload": {
+          "from": "iron-nail",
+          "to": "tube",
+          "massG": 3
+        }
+      },
+      {
+        "t": 40000,
+        "type": "timer.mark",
+        "payload": {
+          "label": "coat visible"
+        }
+      },
+      {
+        "t": 610000,
+        "type": "timer.mark",
+        "payload": {
+          "label": "ten minutes"
+        }
+      },
+      {
+        "t": 612000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-coat",
+          "value": 1
+        }
+      },
+      {
+        "t": 613000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-why",
+          "value": 1
+        }
+      }
+    ]
+  }
+}

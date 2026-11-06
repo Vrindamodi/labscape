@@ -1,0 +1,422 @@
+{
+  "id": "chem-precipitation",
+  "slug": "precipitation-reactions",
+  "version": 1,
+  "subject": "chemistry",
+  "title": "Precipitation reactions",
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "bench": {
+    "items": [
+      {
+        "id": "cuso4",
+        "kind": "reagent_bottle",
+        "label": "Copper(II) sulfate 0.5 M",
+        "x": -320,
+        "z": -60,
+        "fill": {
+          "reagentId": "cuso4-0.5",
+          "volumeMl": 100
+        }
+      },
+      {
+        "id": "bacl2",
+        "kind": "reagent_bottle",
+        "label": "Barium chloride 0.1 M",
+        "x": -240,
+        "z": -60,
+        "fill": {
+          "reagentId": "bacl2-0.1",
+          "volumeMl": 100
+        }
+      },
+      {
+        "id": "naoh",
+        "kind": "dropper_bottle",
+        "label": "Sodium hydroxide 1 M",
+        "x": 220,
+        "z": -50,
+        "fill": {
+          "reagentId": "naoh-1",
+          "volumeMl": 30
+        }
+      },
+      {
+        "id": "na2so4",
+        "kind": "dropper_bottle",
+        "label": "Sodium sulfate 0.1 M",
+        "x": 290,
+        "z": -50,
+        "fill": {
+          "reagentId": "na2so4-0.1",
+          "volumeMl": 30
+        }
+      },
+      {
+        "id": "rack",
+        "kind": "test_tube_rack",
+        "x": 0,
+        "z": 40
+      },
+      {
+        "id": "t1",
+        "kind": "test_tube",
+        "label": "Tube 1",
+        "x": -40,
+        "z": 40,
+        "socket": "rack:rack"
+      },
+      {
+        "id": "t2",
+        "kind": "test_tube",
+        "label": "Tube 2",
+        "x": 40,
+        "z": 40,
+        "socket": "rack:rack"
+      },
+      {
+        "id": "goggles",
+        "kind": "goggles",
+        "x": 320,
+        "z": 110
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "goggles",
+      "title": "Put on goggles",
+      "instruction": "Barium salts are toxic and NaOH is corrosive. Goggles on.",
+      "action": "equipment.place",
+      "from": "goggles",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "safe-1",
+        "safe-2",
+        "safe-3"
+      ]
+    },
+    {
+      "id": "cu-in",
+      "title": "Copper sulfate into tube 1",
+      "instruction": "Pour about 2 mL of copper(II) sulfate into tube 1.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "cuso4",
+      "to": "t1",
+      "quantity": {
+        "target": 2,
+        "plusMinus": 0.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 3
+      },
+      "hints": [
+        "vol-1",
+        "vol-2",
+        "vol-3"
+      ]
+    },
+    {
+      "id": "naoh-drops",
+      "title": "NaOH dropwise",
+      "instruction": "Add sodium hydroxide drop by drop. Watch where each drop lands.",
+      "requires": [
+        "cu-in"
+      ],
+      "action": "liquid.drop",
+      "from": "naoh",
+      "to": "t1",
+      "technique": {
+        "kind": "dropwise",
+        "dropVolumeMl": 0.05,
+        "maxRateMlPerS": 0.3,
+        "appliesWithinMlOfEndpoint": 99
+      },
+      "complete": {
+        "predicate": "precipitate:t1:Cu(OH)2"
+      },
+      "hints": [
+        "drop-1",
+        "drop-2",
+        "drop-3"
+      ]
+    },
+    {
+      "id": "ba-in",
+      "title": "Barium chloride into tube 2",
+      "instruction": "Pour about 2 mL of barium chloride into tube 2.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "bacl2",
+      "to": "t2",
+      "quantity": {
+        "target": 2,
+        "plusMinus": 0.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 3
+      },
+      "hints": [
+        "vol-1",
+        "vol-2",
+        "vol-3"
+      ]
+    },
+    {
+      "id": "so4-drops",
+      "title": "Sodium sulfate dropwise",
+      "instruction": "Add sodium sulfate drop by drop.",
+      "requires": [
+        "ba-in"
+      ],
+      "action": "liquid.drop",
+      "from": "na2so4",
+      "to": "t2",
+      "technique": {
+        "kind": "dropwise",
+        "dropVolumeMl": 0.05,
+        "maxRateMlPerS": 0.3,
+        "appliesWithinMlOfEndpoint": 99
+      },
+      "complete": {
+        "predicate": "precipitate:t2:BaSO4"
+      },
+      "hints": [
+        "drop-1",
+        "drop-2",
+        "drop-3"
+      ]
+    }
+  ],
+  "hints": {
+    "safe-1": {
+      "rung": 1,
+      "text": "What protects your eyes from splashes?"
+    },
+    "safe-2": {
+      "rung": 2,
+      "text": "Drag the goggles onto your face icon before handling the reagents."
+    },
+    "safe-3": {
+      "rung": 3,
+      "text": "Watch the goggles go on."
+    },
+    "vol-1": {
+      "rung": 1,
+      "text": "You only need a small volume: about a fifth of the tube."
+    },
+    "vol-2": {
+      "rung": 2,
+      "text": "Tilt just past the pour point and stop at 2 mL on the counter."
+    },
+    "vol-3": {
+      "rung": 3,
+      "text": "Watch a 2 mL pour."
+    },
+    "drop-1": {
+      "rung": 1,
+      "text": "Add slowly so you can see where the solid first forms."
+    },
+    "drop-2": {
+      "rung": 2,
+      "text": "Tap the dropper bottle one drop at a time."
+    },
+    "drop-3": {
+      "rung": 3,
+      "text": "Watch the drops go in."
+    }
+  },
+  "observations": {
+    "whatHappened": "Clear blue copper sulfate gave a pale blue cloudy solid as soon as NaOH landed. Barium chloride and sodium sulfate, both colourless, made a thick white solid. Both solids slowly settled to the bottom.",
+    "why": "Some pairs of ions form compounds that hardly dissolve. When their concentrations multiplied together exceed the solubility product (Ksp), the extra comes out of solution as a solid precipitate.",
+    "equationLatex": "\\mathrm{Cu^{2+}(aq) + 2OH^-(aq) \\longrightarrow Cu(OH)_2(s)} \\quad \\mathrm{Ba^{2+}(aq) + SO_4^{2-}(aq) \\longrightarrow BaSO_4(s)}",
+    "realWorld": [
+      "Removing metals from waste water",
+      "Barium meals for X-rays (BaSO₄ is insoluble, so safe)",
+      "Testing for sulfate ions"
+    ],
+    "prompts": [
+      {
+        "id": "q-blue",
+        "question": "The pale blue precipitate in tube 1 is...",
+        "choices": [
+          "Copper(II) hydroxide",
+          "Sodium sulfate",
+          "Copper metal",
+          "Copper(II) sulfate crystals"
+        ],
+        "answer": 0,
+        "explain": "Cu²⁺ + 2OH⁻ → Cu(OH)₂, a pale blue solid."
+      },
+      {
+        "id": "q-white",
+        "question": "Which ions made the white solid in tube 2?",
+        "choices": [
+          "Na⁺ and Cl⁻",
+          "Ba²⁺ and SO₄²⁻",
+          "Na⁺ and SO₄²⁻",
+          "Ba²⁺ and Cl⁻"
+        ],
+        "answer": 1,
+        "explain": "Barium sulfate is the insoluble one; NaCl stays dissolved."
+      }
+    ]
+  },
+  "safety": [],
+  "golden": {
+    "durationS": 35,
+    "captions": [
+      {
+        "t": 0,
+        "text": "Goggles on: barium salts are toxic."
+      },
+      {
+        "t": 4000,
+        "text": "Copper sulfate, then sodium hydroxide drop by drop...",
+        "slow": true
+      },
+      {
+        "t": 16000,
+        "text": "Barium chloride meets sodium sulfate: a thick white precipitate."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "goggles",
+          "x": 0,
+          "y": 0,
+          "socket": "worn"
+        }
+      },
+      {
+        "t": 4000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "cuso4",
+          "to": "t1",
+          "volumeMl": 2,
+          "tiltDegMax": 60,
+          "meanRateMlPerS": 1.2,
+          "peakRateMlPerS": 2,
+          "durationMs": 1700
+        }
+      },
+      {
+        "t": 7000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "naoh",
+          "to": "t1",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 8000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "naoh",
+          "to": "t1",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 9000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "naoh",
+          "to": "t1",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 10000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "naoh",
+          "to": "t1",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 14000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "bacl2",
+          "to": "t2",
+          "volumeMl": 2,
+          "tiltDegMax": 60,
+          "meanRateMlPerS": 1.2,
+          "peakRateMlPerS": 2,
+          "durationMs": 1700
+        }
+      },
+      {
+        "t": 17000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "na2so4",
+          "to": "t2",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 18000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "na2so4",
+          "to": "t2",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 19000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "na2so4",
+          "to": "t2",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 30000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-blue",
+          "value": 0
+        }
+      },
+      {
+        "t": 31000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-white",
+          "value": 1
+        }
+      }
+    ]
+  }
+}

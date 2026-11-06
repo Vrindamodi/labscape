@@ -1,0 +1,68 @@
+{
+  "id": "chem-diluting-acid", "slug": "diluting-acid-safely", "version": 1, "subject": "chemistry",
+  "title": "Diluting acid safely", "fidelity": "approximate", "reviewStatus": "draft",
+  "bench": { "items": [
+    { "id": "acid", "kind": "reagent_bottle", "label": "Concentrated sulfuric acid", "x": -300, "z": -60, "fill": { "reagentId": "h2so4-conc", "volumeMl": 30 } },
+    { "id": "water", "kind": "reagent_bottle", "label": "Distilled water", "x": -220, "z": -60, "fill": { "reagentId": "water", "volumeMl": 200 } },
+    { "id": "cyl", "kind": "measuring_cylinder_10", "x": -100, "z": 40 },
+    { "id": "beaker", "kind": "beaker_100", "x": 40, "z": 40 },
+    { "id": "rod", "kind": "glass_rod", "x": 160, "z": 80 },
+    { "id": "thermo", "kind": "thermometer", "x": 200, "z": 80 },
+    { "id": "goggles", "kind": "goggles", "x": 320, "z": 110 }
+  ] },
+  "steps": [
+    { "id": "goggles", "title": "Goggles on", "instruction": "Concentrated acid destroys skin and eyes. Goggles on before anything else.", "action": "equipment.place", "from": "goggles", "complete": { "onEvent": true }, "scoring": { "equipment": 1 }, "hints": ["safe-1", "safe-2", "safe-3"] },
+    { "id": "water-first", "title": "Water into the beaker first", "instruction": "Pour about 50 mL of water into the beaker.", "requires": ["goggles"], "action": "liquid.pour", "from": "water", "to": "beaker", "quantity": { "target": 50, "plusMinus": 5, "unit": "mL" }, "technique": { "kind": "pour", "maxRateMlPerS": 25 }, "hints": ["order-1", "order-2", "order-3"] },
+    { "id": "thermometer", "title": "Thermometer in", "instruction": "Stand the thermometer in the water to watch the temperature.", "action": "equipment.connect", "from": "thermo", "to": "beaker", "complete": { "onEvent": true }, "hints": ["temp-1", "temp-2", "temp-3"] },
+    { "id": "measure-acid", "title": "Measure 5 mL of acid", "instruction": "Pour 5 mL of concentrated acid into the measuring cylinder, very slowly.", "requires": ["goggles"], "action": "liquid.pour", "from": "acid", "to": "cyl", "quantity": { "target": 5, "plusMinus": 0.5, "unit": "mL" }, "technique": { "kind": "slow_pour", "maxRateMlPerS": 1.5 }, "hints": ["slow-1", "slow-2", "slow-3"] },
+    { "id": "acid-into-water", "title": "Acid into water, slowly", "instruction": "Pour the acid slowly into the water down a glass rod, stirring all the time.", "requires": ["water-first", "measure-acid"], "action": "liquid.pour", "from": "cyl", "to": "beaker", "quantity": { "target": 5, "plusMinus": 0.5, "unit": "mL" }, "technique": { "kind": "slow_pour", "maxRateMlPerS": 1 }, "mixing": { "kind": "stir_continuous", "during": "each_addition", "withinMs": 3000 }, "onDeviation": { "order": { "severity": "major", "consequence": "blocked" } }, "hints": ["slow-1", "slow-2", "slow-3"] },
+    { "id": "read-temp", "title": "Read the temperature", "instruction": "Read the thermometer. How much did it warm up?", "requires": ["acid-into-water"], "action": "measure.read", "from": "thermo", "measurement": { "instrument": "thermo", "readTo": 1, "unit": "°C" }, "hints": ["temp-1", "temp-2", "temp-3"] }
+  ],
+  "hints": {
+    "safe-1": { "rung": 1, "text": "Concentrated acid is the most dangerous thing on this bench." },
+    "safe-2": { "rung": 2, "text": "Drag the goggles onto your face icon before you touch anything." },
+    "safe-3": { "rung": 3, "text": "Watch the goggles go on." },
+    "order-1": { "rung": 1, "text": "Which goes in the beaker first: the big volume of water or the small volume of acid?" },
+    "order-2": { "rung": 2, "text": "Always water first, then add the acid to it. Remember: \"Do what you oughta, add acid to water.\"" },
+    "order-3": { "rung": 3, "text": "Watch: water first, then acid down the rod." },
+    "temp-1": { "rung": 1, "text": "Diluting acid gives out heat. How will you measure it?" },
+    "temp-2": { "rung": 2, "text": "Drag the thermometer into the beaker, then open its reading lens." },
+    "temp-3": { "rung": 3, "text": "Watch the thermometer go in." },
+    "slow-1": { "rung": 1, "text": "Concentrated acid is thick and heavy. What happens if it splashes?" },
+    "slow-2": { "rung": 2, "text": "Barely tilt: keep the pour-rate gauge green, under 1 mL/s, and stir as you pour." },
+    "slow-3": { "rung": 3, "text": "Watch a slow pour down the rod." }
+  },
+  "observations": {
+    "whatHappened": "The water warmed by several degrees as the acid went in, but nothing spat because the heat spread through the large volume of water.",
+    "why": "Diluting concentrated sulfuric acid releases a lot of heat. Acid poured into water sinks, because it is denser, and mixes, so the heat spreads through all the water. Water poured onto acid floats on top and boils on contact, spraying hot acid.",
+    "equationLatex": "\\mathrm{H_2SO_4(l) \\xrightarrow{H_2O} 2H^+(aq) + SO_4^{2-}(aq)} \\quad \\Delta H \\approx -74\\ \\mathrm{kJ\\,mol^{-1}}",
+    "realWorld": ["Making battery acid", "Why lab technicians store acids low down", "Chemical burns first aid: lots of running water"],
+    "prompts": [
+      { "id": "q-order", "question": "Why must acid go into water, not water into acid?", "choices": ["Water floats on acid and boils on contact, spitting acid", "Acid evaporates", "It is only a tradition", "Water makes acid stronger"], "answer": 0, "explain": "The heat released boils a small amount of water floating on top, which spatters hot acid." },
+      { "id": "q-heat", "question": "Diluting concentrated acid is...", "choices": ["Exothermic", "Endothermic", "Thermally neutral", "Only a physical change with no energy change"], "answer": 0, "explain": "It releases heat, so it is exothermic." }
+    ]
+  },
+  "safety": [
+    { "when": "seen:acid-spatter", "code": "water-into-acid", "title": "Stop: water added to concentrated acid", "message": "The water boiled on contact and sprayed hot acid. In a real lab this causes serious burns. Always put the water in first and add acid to it slowly.", "restartFrom": "water-first" }
+  ],
+  "golden": {
+    "durationS": 45,
+    "captions": [
+      { "t": 0, "text": "Goggles on before touching concentrated acid." },
+      { "t": 4000, "text": "Water goes into the beaker FIRST." },
+      { "t": 12000, "text": "Measure 5 mL of acid, very slowly.", "slow": true },
+      { "t": 22000, "text": "Acid into water, slowly, stirring all the time. Feel the heat." }
+    ],
+    "events": [
+      { "t": 1000, "type": "equipment.place", "payload": { "equipmentId": "goggles", "x": 0, "y": 0, "socket": "worn" } },
+      { "t": 6000, "type": "liquid.pour", "payload": { "from": "water", "to": "beaker", "volumeMl": 50, "tiltDegMax": 70, "meanRateMlPerS": 12, "peakRateMlPerS": 18, "durationMs": 4200 } },
+      { "t": 8000, "type": "equipment.connect", "payload": { "from": "thermo", "to": "beaker", "port": "in" } },
+      { "t": 16000, "type": "liquid.pour", "payload": { "from": "acid", "to": "cyl", "volumeMl": 5, "tiltDegMax": 48, "meanRateMlPerS": 0.8, "peakRateMlPerS": 1.2, "durationMs": 6000 } },
+      { "t": 28000, "type": "liquid.pour", "payload": { "from": "cyl", "to": "beaker", "volumeMl": 5, "tiltDegMax": 40, "meanRateMlPerS": 0.6, "peakRateMlPerS": 0.9, "durationMs": 8000 } },
+      { "t": 29000, "type": "mix.stir", "payload": { "target": "beaker", "intensity": "gentle", "durationMs": 6000 } },
+      { "t": 40000, "type": "measure.read", "payload": { "instrument": "thermo", "reading": { "key": "temperature", "value": 35, "unit": "°C" } } },
+      { "t": 42000, "type": "param.set", "payload": { "key": "answer:q-order", "value": 0 } },
+      { "t": 43000, "type": "param.set", "payload": { "key": "answer:q-heat", "value": 0 } }
+    ]
+  }
+}

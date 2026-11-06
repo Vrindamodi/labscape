@@ -1,0 +1,99 @@
+{
+  "id": "chem-flame-tests", "slug": "flame-tests", "version": 1, "subject": "chemistry",
+  "title": "Flame tests", "fidelity": "qualitative", "reviewStatus": "draft",
+  "bench": { "items": [
+    { "id": "bunsen", "kind": "bunsen", "x": 0, "z": -40 },
+    { "id": "loop", "kind": "wire_loop", "x": 120, "z": 90 },
+    { "id": "acid", "kind": "test_tube", "label": "Hydrochloric acid 2 M (cleaning)", "x": -240, "z": 40, "socket": "rack:rack", "fill": { "reagentId": "hcl-2", "volumeMl": 8 } },
+    { "id": "rack", "kind": "test_tube_rack", "x": -150, "z": 40 },
+    { "id": "li", "kind": "test_tube", "label": "Lithium chloride", "x": -180, "z": 40, "socket": "rack:rack", "fill": { "reagentId": "licl", "volumeMl": 5 } },
+    { "id": "na", "kind": "test_tube", "label": "Sodium chloride", "x": -150, "z": 40, "socket": "rack:rack", "fill": { "reagentId": "nacl", "volumeMl": 5 } },
+    { "id": "k", "kind": "test_tube", "label": "Potassium chloride", "x": -120, "z": 40, "socket": "rack:rack", "fill": { "reagentId": "kcl", "volumeMl": 5 } },
+    { "id": "ca", "kind": "test_tube", "label": "Calcium chloride", "x": -90, "z": 40, "socket": "rack:rack", "fill": { "reagentId": "cacl2", "volumeMl": 5 } },
+    { "id": "cu", "kind": "test_tube", "label": "Copper(II) chloride", "x": -60, "z": 40, "socket": "rack:rack", "fill": { "reagentId": "cucl2", "volumeMl": 5 } },
+    { "id": "goggles", "kind": "goggles", "x": 320, "z": 110 }
+  ] },
+  "steps": [
+    { "id": "goggles", "title": "Goggles on", "instruction": "Goggles on, long hair tied back.", "action": "equipment.place", "from": "goggles", "complete": { "onEvent": true }, "scoring": { "equipment": 1 }, "hints": ["safe-1", "safe-2", "safe-3"] },
+    { "id": "air-hole", "title": "Open the air hole", "instruction": "Open the Bunsen's air hole so you get a hot, nearly invisible blue flame.", "action": "param.set", "from": "bunsen", "complete": { "onEvent": true }, "scoring": { "technique": 1 }, "hints": ["flame-1", "flame-2", "flame-3"] },
+    { "id": "light", "title": "Light the Bunsen", "instruction": "Turn on the gas and light the burner.", "requires": ["goggles"], "action": "heat.set", "from": "bunsen", "complete": { "onEvent": true }, "hints": ["flame-1", "flame-2", "flame-3"] },
+    { "id": "clean", "title": "Clean the loop", "instruction": "Dip the loop in the acid, then hold it in the flame until it adds no colour.", "requires": ["light"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:loop-clean" }, "scoring": { "technique": 1 }, "hints": ["clean-1", "clean-2", "clean-3"] },
+    { "id": "lithium", "title": "Test lithium", "instruction": "Dip the clean loop in lithium chloride and hold it in the edge of the flame.", "requires": ["clean"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:flame:Li+" }, "hints": ["test-1", "test-2", "test-3"] },
+    { "id": "clean-2", "title": "Clean again", "instruction": "Clean the loop in acid and flame before the next metal.", "requires": ["lithium"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:loop-clean" }, "scoring": { "technique": 1 }, "hints": ["clean-1", "clean-2", "clean-3"] },
+    { "id": "sodium", "title": "Test sodium", "instruction": "Sodium chloride next.", "requires": ["clean-2"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:flame:Na+" }, "hints": ["test-1", "test-2", "test-3"] },
+    { "id": "clean-3", "title": "Clean again", "instruction": "Sodium's yellow hides other colours. Clean thoroughly.", "requires": ["sodium"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:loop-clean" }, "scoring": { "technique": 1 }, "hints": ["clean-1", "clean-2", "clean-3"] },
+    { "id": "potassium", "title": "Test potassium", "instruction": "Potassium chloride next.", "requires": ["clean-3"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:flame:K+" }, "hints": ["test-1", "test-2", "test-3"] },
+    { "id": "clean-4", "title": "Clean again", "instruction": "Clean the loop.", "requires": ["potassium"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:loop-clean" }, "scoring": { "technique": 1 }, "hints": ["clean-1", "clean-2", "clean-3"] },
+    { "id": "calcium", "title": "Test calcium", "instruction": "Calcium chloride next.", "requires": ["clean-4"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:flame:Ca2+" }, "hints": ["test-1", "test-2", "test-3"] },
+    { "id": "clean-5", "title": "Clean again", "instruction": "Clean the loop.", "requires": ["calcium"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:loop-clean" }, "scoring": { "technique": 1 }, "hints": ["clean-1", "clean-2", "clean-3"] },
+    { "id": "copper", "title": "Test copper", "instruction": "Finally, copper(II) chloride.", "requires": ["clean-5"], "action": "equipment.connect", "from": "loop", "complete": { "predicate": "new:flame:Cu2+" }, "hints": ["test-1", "test-2", "test-3"] }
+  ],
+  "hints": {
+    "safe-1": { "rung": 1, "text": "Flames and acid: what should you wear?" },
+    "safe-2": { "rung": 2, "text": "Drag the goggles onto your face icon." },
+    "safe-3": { "rung": 3, "text": "Watch the goggles go on." },
+    "flame-1": { "rung": 1, "text": "Which flame is hotter and has no colour of its own: yellow or blue?" },
+    "flame-2": { "rung": 2, "text": "Turn the collar to open the air hole, then turn on the gas and press the igniter." },
+    "flame-3": { "rung": 3, "text": "Watch the flame turn from yellow to blue." },
+    "clean-1": { "rung": 1, "text": "Any trace left on the wire will colour the flame." },
+    "clean-2": { "rung": 2, "text": "Dip the loop in the acid tube, then hold it in the flame until the flame shows no colour." },
+    "clean-3": { "rung": 3, "text": "Watch the loop being cleaned." },
+    "test-1": { "rung": 1, "text": "Each metal has its own flame colour." },
+    "test-2": { "rung": 2, "text": "Dip the clean loop in the solution, then hold it at the edge of the blue flame." },
+    "test-3": { "rung": 3, "text": "Watch the colour appear." }
+  },
+  "observations": {
+    "whatHappened": "Lithium gave a crimson flame, sodium an intense yellow-orange, potassium lilac, calcium orange-red and copper blue-green.",
+    "why": "The flame's heat lifts electrons in the metal ions to higher energy levels. When they fall back they give out light of exact energies, and so exact colours, which are different for every element.",
+    "equationLatex": "E = h f",
+    "realWorld": ["Firework colours", "Sodium street lamps", "Astronomers identifying elements in stars"],
+    "prompts": [
+      { "id": "q-lilac", "question": "Which metal ion gave a lilac flame?", "choices": ["Lithium", "Sodium", "Potassium", "Copper"], "answer": 2, "explain": "Potassium gives lilac; it is easily hidden by sodium's yellow." },
+      { "id": "q-clean", "question": "Why clean the loop between tests?", "choices": ["Leftover salt would colour the next flame", "To cool it down", "Acid makes the colours brighter", "It is not needed"], "answer": 0, "explain": "Traces of the last metal, especially sodium, would mask the next colour." }
+    ]
+  },
+  "safety": [],
+  "golden": {
+    "durationS": 70,
+    "captions": [
+      { "t": 0, "text": "Open the air hole and light the Bunsen: a hot blue flame." },
+      { "t": 6000, "text": "Clean the loop in acid until the flame shows no colour." },
+      { "t": 14000, "text": "Lithium: crimson.", "slow": true },
+      { "t": 28000, "text": "Sodium: intense yellow-orange." },
+      { "t": 42000, "text": "Potassium: lilac." },
+      { "t": 54000, "text": "Calcium: orange-red. Copper: blue-green." }
+    ],
+    "events": [
+      { "t": 1000, "type": "equipment.place", "payload": { "equipmentId": "goggles", "x": 0, "y": 0, "socket": "worn" } },
+      { "t": 2000, "type": "param.set", "payload": { "key": "airhole:bunsen", "value": true } },
+      { "t": 3000, "type": "heat.set", "payload": { "target": "bunsen", "powerPct": 100 } },
+      { "t": 6000, "type": "equipment.connect", "payload": { "from": "loop", "to": "acid", "port": "dip" } },
+      { "t": 7000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 12000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 14000, "type": "equipment.connect", "payload": { "from": "loop", "to": "li", "port": "dip" } },
+      { "t": 15000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 20000, "type": "equipment.connect", "payload": { "from": "loop", "to": "acid", "port": "dip" } },
+      { "t": 21000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 26000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 28000, "type": "equipment.connect", "payload": { "from": "loop", "to": "na", "port": "dip" } },
+      { "t": 29000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 34000, "type": "equipment.connect", "payload": { "from": "loop", "to": "acid", "port": "dip" } },
+      { "t": 35000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 40000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 42000, "type": "equipment.connect", "payload": { "from": "loop", "to": "k", "port": "dip" } },
+      { "t": 43000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 48000, "type": "equipment.connect", "payload": { "from": "loop", "to": "acid", "port": "dip" } },
+      { "t": 49000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 54000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 55000, "type": "equipment.connect", "payload": { "from": "loop", "to": "ca", "port": "dip" } },
+      { "t": 56000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 61000, "type": "equipment.connect", "payload": { "from": "loop", "to": "acid", "port": "dip" } },
+      { "t": 62000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 67000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 68000, "type": "equipment.connect", "payload": { "from": "loop", "to": "cu", "port": "dip" } },
+      { "t": 69000, "type": "equipment.connect", "payload": { "from": "loop", "to": "bunsen", "port": "flame" } },
+      { "t": 74000, "type": "param.set", "payload": { "key": "answer:q-lilac", "value": 2 } },
+      { "t": 75000, "type": "param.set", "payload": { "key": "answer:q-clean", "value": 0 } }
+    ]
+  }
+}
