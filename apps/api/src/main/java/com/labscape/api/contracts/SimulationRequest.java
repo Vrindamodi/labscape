@@ -27,5 +27,5 @@ public record SimulationRequest(
             @NotBlank String unit,
             Double concentrationM) {}
 
-    public record Conditions(Double temperatureC, Double pressureKPa, Boolean stirring) {}
+    public record Conditions(Double temperatureC, Double pressureKPa, Boolean stirring, Boolean ignition) {}
 }

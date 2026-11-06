@@ -72,9 +72,27 @@ public final class Latex {
         return sb.toString();
     }
 
+    /** Structured form of an equation (used to animate atoms rearranging). */
+    public record Eq(List<Term> lhs, List<Term> rhs, String over) {}
+
+    private static final ThreadLocal<java.util.Map<String, Eq>> RECENT =
+            ThreadLocal.withInitial(java.util.HashMap::new);
+
+    /** Clears the per-run registry of equations built on this thread. */
+    public static void resetRecent() {
+        RECENT.get().clear();
+    }
+
+    /** The structured equation behind a LaTeX string built on this thread, if any. */
+    public static Eq structured(String latex) {
+        return RECENT.get().get(latex);
+    }
+
     public static String equation(List<Term> lhs, List<Term> rhs, String over) {
         String arrow = over == null ? " \\rightarrow " : " \\xrightarrow{\\mathrm{" + formula(over) + "}} ";
-        return side(lhs) + arrow + side(rhs);
+        String latex = side(lhs) + arrow + side(rhs);
+        RECENT.get().put(latex, new Eq(lhs, rhs, over));
+        return latex;
     }
 
     private static String side(List<Term> terms) {

@@ -43,7 +43,16 @@ public record SimulationResult(
     public record Measurement(String key, double value, String unit) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record ReactionSummary(String id, String name, String type, String equationLatex, String discoveryId) {}
+    public record ReactionSummary(
+            String id, String name, String type, String equationLatex, String discoveryId, Participants participants) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record EquationTerm(int coef, String formula, String charge, String state) {}
+
+    public record Participants(List<EquationTerm> reactants, List<EquationTerm> products) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CompoundInfo(String formula, String name, String state, String colour, String note) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Presentation(
@@ -54,5 +63,7 @@ public record SimulationResult(
             String neededTool,
             String focusRef,
             List<String> suggestions,
-            List<String> discoveryIds) {}
+            List<String> discoveryIds,
+            List<CompoundInfo> compounds,
+            List<String> facts) {}
 }

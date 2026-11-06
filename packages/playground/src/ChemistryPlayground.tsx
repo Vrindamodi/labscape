@@ -2,8 +2,7 @@ import type { ObservationCue, SimulationResult } from "@labscape/contracts";
 import { animate, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProblemError, fetchCatalogue, resolveMix } from "./api";
-import { blendHex, hexToRgba, oklabToCss } from "./colour";
-import { BenchControls } from "./components/BenchControls";
+import { blendHex, hexToRgba, mixRgba, oklabToCss } from "./colour";
 import {
   Beaker,
   BOTTOM,
@@ -17,12 +16,15 @@ import {
 } from "./components/Beaker";
 import { NumberTicker } from "./components/bits";
 import { DiscoveryJournal, ProgressRing } from "./components/DiscoveryJournal";
-import { DiscoveryCard, FloatingNote, Ribbon, SafetyShield, Vignette } from "./components/Effects";
+import { DiscoveryCard, FloatingNote, Ribbon } from "./components/Effects";
 import { InfoSheet } from "./components/InfoSheet";
-import { OutcomePanel, type PanelState } from "./components/OutcomePanel";
 import type { Emitter } from "./components/particles";
-import { Shelf } from "./components/Shelf";
-import { sound } from "./sound";
+import { DispenserControls, DispenserSvg, useDispenser } from "./lab/Dispenser";
+import { InsightPanel, type InsightState } from "./lab/InsightPanel";
+import { LabRoom } from "./lab/LabRoom";
+import { ProhibitedDialog } from "./lab/ProhibitedDialog";
+import { ReagentRack } from "./lab/ReagentRack";
+import { sound, type SoundCue } from "./sound";
 import {
   loadDiscoveries,
   loadMuted,
@@ -31,12 +33,16 @@ import {
   type FoundDiscovery,
 } from "./storage";
 import type { CatalogueResponse, DiscoveryDef, ShelfItem, TrayItem } from "./types";
-import { liquidMl } from "./types";
+import { dispenseMode } from "./types";
 import "katex/dist/katex.min.css";
 import "./playground.css";
+import "./lab/lab.css";
 
-const MAX_TRAY = 6;
 const XP_PER_DISCOVERY = 20;
+const CAPACITY = 150;
+const ROOM_TEMP = 22;
+
+type Content = { item: ShelfItem; amount: number };
 
 type Vessel = {
   levelMl: number;
@@ -49,15 +55,21 @@ type Vessel = {
   oil: { ml: number; colour: string } | null;
   frozen: boolean;
   swirling: boolean;
-  pour: { colour: string } | null;
   glow: string | null;
   shake: number;
+  gasHaze: string | null;
+  flame: { colour: string; intensity: number; key: number } | null;
+  flash: { colour: string; intensity: number; key: number } | null;
+  condense: { colour: string; amount: number } | null;
+  skate: { colour: string; key: number; durationMs: number } | null;
 };
+
+const CLEAR = "rgba(216, 241, 255, 0.10)";
 
 const EMPTY: Vessel = {
   levelMl: 0,
   levelMs: 400,
-  colour: "rgba(216, 241, 255, 0.06)",
+  colour: CLEAR,
   colourMs: 300,
   colourEase: "linear",
   ppts: [],
@@ -65,161 +77,256 @@ const EMPTY: Vessel = {
   oil: null,
   frozen: false,
   swirling: false,
-  pour: null,
   glow: null,
   shake: 0,
+  gasHaze: null,
+  flame: null,
+  flash: null,
+  condense: null,
+  skate: null,
 };
 
-type Preset = { label: string; items: [string, number][]; temperature?: number };
+type Preset = { label: string; emoji: string; steps: [string, number][]; ignite?: boolean };
 
 const PRESETS: Preset[] = [
   {
-    label: "Neutralise an acid (with universal indicator)",
-    items: [
-      ["hcl", 20],
-      ["universal-indicator", 4],
-      ["naoh", 20],
+    label: "Sodium in water",
+    emoji: "🌊",
+    steps: [
+      ["water", 50],
+      ["phenolphthalein", 3],
+      ["el-Na", 0.15],
+    ],
+  },
+  {
+    label: "Make water: hydrogen + oxygen + spark",
+    emoji: "💥",
+    steps: [
+      ["el-H", 100],
+      ["el-O", 50],
+    ],
+    ignite: true,
+  },
+  {
+    label: "Golden rain",
+    emoji: "✨",
+    steps: [
+      ["pbno3", 10],
+      ["ki", 5],
+    ],
+  },
+  {
+    label: "Burning magnesium",
+    emoji: "🔥",
+    steps: [
+      ["el-Mg", 0.2],
+      ["el-O", 120],
+    ],
+    ignite: true,
+  },
+  {
+    label: "Potassium's lilac flame",
+    emoji: "💜",
+    steps: [
+      ["water", 50],
+      ["el-K", 0.08],
+    ],
+  },
+  {
+    label: "Chlorine pushes out bromine",
+    emoji: "🟠",
+    steps: [
+      ["kbr", 20],
+      ["el-Cl", 60],
     ],
   },
   {
     label: "Royal blue copper complex",
-    items: [
+    emoji: "💙",
+    steps: [
       ["cuso4", 5],
       ["ammonia", 40],
     ],
   },
   {
-    label: "Iodine clock",
-    items: [
-      ["ki", 10],
-      ["h2so4", 10],
-      ["starch", 5],
-      ["h2o2", 10],
-    ],
-  },
-  {
     label: "Catalyst eruption",
-    items: [
+    emoji: "🌋",
+    steps: [
       ["h2o2", 40],
       ["mno2-powder", 0.3],
     ],
   },
   {
-    label: "Silver halide test",
-    items: [
-      ["kbr", 5],
-      ["agno3", 10],
+    label: "Iron + sulfur, heated",
+    emoji: "🟤",
+    steps: [
+      ["el-Fe", 1],
+      ["el-S", 1],
     ],
+    ignite: true,
   },
   {
-    label: "Copper displacement",
-    items: [
-      ["cuso4", 30],
-      ["zn-granules", 2],
-    ],
-  },
-  {
-    label: "Disappearing cross (warm)",
-    items: [
-      ["na2s2o3", 40],
-      ["hcl", 10],
-    ],
-    temperature: 50,
-  },
-  {
-    label: "Magnesium in acid",
-    items: [
-      ["hcl", 40],
-      ["mg-ribbon", 0.3],
-    ],
-  },
-  {
-    label: "The cooling fizz",
-    items: [
-      ["ethanoic-acid", 30],
-      ["nahco3", 30],
-    ],
-  },
-  {
-    label: "Test for water",
-    items: [
-      ["cuso4-anhydrous", 2],
-      ["water", 20],
-    ],
-  },
-  {
-    label: "Amphoteric zinc",
-    items: [
-      ["znso4", 5],
-      ["naoh", 30],
-    ],
-  },
-  {
-    label: "Rust-brown hydroxide",
-    items: [
-      ["fecl3", 20],
-      ["naoh", 10],
+    label: "Instant cold pack",
+    emoji: "🧊",
+    steps: [
+      ["water", 50],
+      ["nh4no3", 5],
     ],
   },
 ];
 
+const SOUND_IDS: Record<string, SoundCue> = {
+  pop: "pop",
+  bang: "bang",
+  crackle: "crackle",
+  sizzle: "sizzle",
+  whoosh: "whoosh",
+  hiss: "hiss",
+};
+
+const sleep = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
 let uidCounter = 0;
 const uid = () => `u${++uidCounter}`;
-const sleep = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms));
 
-function defaultAmount(item: ShelfItem): number {
-  const { min, max, unit } = item.limits;
-  if (unit === "drops") return Math.min(max, Math.max(min, 3));
-  if (unit === "mL") return Math.min(max, Math.max(min, 10));
-  const v = min + (max - min) / 4;
-  return Math.round(v * 100) / 100;
+function solidVisual(item: ShelfItem, amount: number, existing?: SolidVisual): SolidVisual {
+  const { min, max } = item.limits;
+  const size = 0.75 + Math.min(1, (amount - min) / Math.max(1e-6, max - min)) * 0.55;
+  return {
+    key: existing?.key ?? uid(),
+    substanceId: item.id,
+    form: item.element && item.element.state === "l" ? "granules" : (item.solidForm ?? "powder"),
+    colour: item.colour,
+    size,
+    remaining: existing?.remaining ?? 1,
+    remainingMs: existing?.remainingMs ?? 400,
+    deposit: existing?.deposit ?? null,
+    tint: existing?.tint ?? null,
+  };
 }
 
-function solidSize(t: TrayItem) {
-  const { min, max } = t.item.limits;
-  return 0.8 + ((t.amount - min) / Math.max(1e-6, max - min)) * 0.5;
+function isLiquid(item: ShelfItem) {
+  return (item.form === "solution" || item.form === "liquid") && !item.element;
+}
+
+function liquidVolume(c: Content) {
+  if (!isLiquid(c.item)) return 0;
+  return c.item.limits.unit === "drops" ? c.amount * 0.05 : c.amount;
+}
+
+/** What the vessel looks like from its contents alone (before the engine says anything). */
+function baseline(contents: Content[], prev: Vessel): Vessel {
+  const liquids = contents.filter((c) => isLiquid(c.item) && c.item.id !== "vegetable-oil");
+  const level = contents.reduce((a, c) => a + liquidVolume(c), 0);
+  const colour = liquids.length
+    ? blendHex(
+        liquids.map((c) => ({
+          hex: c.item.colour,
+          weight: liquidVolume(c),
+          opacity: c.item.opacity,
+        })),
+      )
+    : CLEAR;
+  const gases = contents.filter((c) => c.item.form === "gas");
+  const gasHaze = gases.length
+    ? (() => {
+        const coloured = gases.filter((g) => g.item.opacity > 0.1);
+        if (!coloured.length) return "rgba(225,240,255,0.18)";
+        return hexToRgba(
+          coloured[0]?.item.colour ?? "#ffffff",
+          Math.min(0.55, 0.15 + coloured.reduce((a, g) => a + g.amount, 0) / 400),
+        );
+      })()
+    : null;
+  const oilItem = contents.find((c) => c.item.id === "vegetable-oil");
+  const solids = contents
+    .filter((c) => c.item.form === "solid" || (c.item.element && c.item.form === "liquid"))
+    .map((c) =>
+      solidVisual(
+        c.item,
+        c.amount,
+        prev.solids.find((s) => s.substanceId === c.item.id),
+      ),
+    );
+  return {
+    ...prev,
+    levelMl: level,
+    levelMs: 500,
+    colour,
+    colourMs: 500,
+    colourEase: "linear",
+    gasHaze,
+    oil: oilItem ? { ml: oilItem.amount, colour: hexToRgba(oilItem.item.colour, 0.6) } : null,
+    solids,
+  };
 }
 
 export function ChemistryPlayground() {
   const reduced = useReducedMotion() ?? false;
   const [cat, setCat] = useState<CatalogueResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [tray, setTray] = useState<TrayItem[]>([]);
-  const [temperature, setTemperature] = useState(22);
+  const [contents, setContents] = useState<Content[]>([]);
+  const [history, setHistory] = useState<{ id: string; amount: number }[]>([]);
+  const [inHand, setInHand] = useState<ShelfItem | null>(null);
+  const [rackTab, setRackTab] = useState<"elements" | "chemicals">("elements");
+  const [vessel, setVessel] = useState<Vessel>(EMPTY);
+  const [insight, setInsight] = useState<InsightState>({ kind: "idle" });
+  const [bathTemp, setBathTemp] = useState(ROOM_TEMP);
+  const [liveTemp, setLiveTemp] = useState(ROOM_TEMP);
+  const [ph, setPh] = useState<number | null>(null);
+  const [burnerOn, setBurnerOn] = useState(false);
+  const [ignited, setIgnited] = useState(false);
   const [stirring, setStirring] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [mixed, setMixed] = useState(false);
-  const [panel, setPanel] = useState<PanelState>({ kind: "idle" });
-  const [category, setCategory] = useState("all");
+  const [toolGlow, setToolGlow] = useState<string | null>(null);
   const [shelfGlow, setShelfGlow] = useState<string | null>(null);
-  const [heaterGlow, setHeaterGlow] = useState(false);
-  const [focusRef, setFocusRef] = useState<string | null>(null);
-  const [info, setInfo] = useState<ShelfItem | null>(null);
-  const [journalOpen, setJournalOpen] = useState(false);
   const [found, setFound] = useState<Record<string, FoundDiscovery>>(loadDiscoveries);
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [cards, setCards] = useState<{ d: DiscoveryDef; eq: string | null }[]>([]);
-  const [muted, setMuted] = useState(loadMuted);
-  const [engineOnline, setEngineOnline] = useState<boolean | null>(null);
   const [ribbon, setRibbon] = useState<{ text: string; sub: string } | null>(null);
-  const [shield, setShield] = useState(false);
-  const [vignette, setVignette] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<{
+    title: string;
+    message: string;
+    alternatives: string[];
+  } | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const [vessel, setVessel] = useState<Vessel>(EMPTY);
-  const [liveTemp, setLiveTemp] = useState(22);
-  const [ph, setPh] = useState<number | null>(null);
+  const [engineOnline, setEngineOnline] = useState<boolean | null>(null);
+  const [muted, setMuted] = useState(loadMuted);
+  const [journalOpen, setJournalOpen] = useState(false);
+  const [info, setInfo] = useState<ShelfItem | null>(null);
   const [journalPulse, setJournalPulse] = useState(0);
+  const [busy, setBusy] = useState(false);
 
   const beakerRef = useRef<BeakerHandle>(null);
-  const timers = useRef<number[]>([]);
+  const contentsRef = useRef(contents);
+  contentsRef.current = contents;
+  const vesselRef = useRef(vessel);
+  vesselRef.current = vessel;
+  const bathRef = useRef(bathTemp);
+  bathRef.current = bathTemp;
+  const ignitedRef = useRef(ignited);
+  ignitedRef.current = ignited;
+  const stirRef = useRef(stirring);
+  stirRef.current = stirring;
+  const insightKindRef = useRef(insight.kind);
+  insightKindRef.current = insight.kind;
+  const seq = useRef(0);
+  const debounce = useRef<number | null>(null);
+  const shown = useRef<Set<string>>(new Set());
+  const pending = useRef(0);
   const emitters = useRef<Emitter[]>([]);
-  const runId = useRef(0);
+  const timers = useRef<number[]>([]);
   const tempAnim = useRef<{ stop: () => void } | null>(null);
+  const lastDelta = useRef(0);
   const cooldownUntil = useRef(0);
+  const lastTempBand = useRef(Math.floor(ROOM_TEMP / 10));
+
+  const later = useCallback((ms: number, fn: () => void) => {
+    timers.current.push(window.setTimeout(fn, ms));
+  }, []);
 
   useEffect(() => {
     sound.muted = muted;
     saveMuted(muted);
+    if (muted) sound.stopAll();
   }, [muted]);
 
   useEffect(() => {
@@ -227,8 +334,6 @@ export function ChemistryPlayground() {
       .then((c) => {
         setCat(c);
         setEngineOnline(c.safetyEngineOnline);
-        setTemperature(c.conditions.defaultTemperatureC);
-        setLiveTemp(c.conditions.defaultTemperatureC);
       })
       .catch((e: unknown) => {
         setLoadError(
@@ -236,64 +341,41 @@ export function ChemistryPlayground() {
         );
         setEngineOnline(false);
       });
+    return () => sound.stopAll();
   }, []);
 
-  useEffect(() => {
-    if (!busy) setLiveTemp(temperature);
-  }, [temperature, busy]);
+  // ------------------------------------------------------------------ resolving
 
-  const later = useCallback((ms: number, fn: () => void) => {
-    const id = window.setTimeout(fn, ms);
-    timers.current.push(id);
-  }, []);
-
-  const clearStage = useCallback(() => {
-    runId.current++;
-    timers.current.forEach((t) => window.clearTimeout(t));
-    timers.current = [];
-    emitters.current = [];
-    tempAnim.current?.stop();
-    beakerRef.current?.clear();
-    setVessel(EMPTY);
-    setRibbon(null);
-    setShield(false);
-    setVignette(null);
-    setNote(null);
-    setPh(null);
-    setHeaterGlow(false);
-    setShelfGlow(null);
-    setFocusRef(null);
-  }, []);
-
-  // ------------------------------------------------------------------ tray
-
-  const addToTray = useCallback(
-    (item: ShelfItem) => {
-      if (busy) return;
-      setTray((t) => {
-        if (t.some((x) => x.item.id === item.id)) {
-          setNote(`${item.name} is already in the tray`);
-          window.setTimeout(() => setNote(null), 1600);
-          return t;
-        }
-        if (t.length >= MAX_TRAY) {
-          setNote(`The tray holds ${MAX_TRAY} reagents`);
-          window.setTimeout(() => setNote(null), 1600);
-          return t;
-        }
-        sound.play("clink");
-        return [...t, { key: uid(), item, amount: defaultAmount(item) }];
-      });
-      setShelfGlow((g) => (g === item.id ? null : g));
-      setFocusRef(null);
+  const recordDiscoveries = useCallback(
+    (r: SimulationResult, delay: number) => {
+      const ids = r.presentation?.discoveryIds ?? [];
+      const newly = ids.filter((id) => !found[id]);
+      if (!newly.length) return newly;
+      const next = { ...found };
+      for (const id of newly) {
+        next[id] = {
+          at: Date.now(),
+          equationLatex:
+            r.presentation?.reactions.find((x) => x.discoveryId === id)?.equationLatex ?? "",
+        };
+      }
+      setFound(next);
+      saveDiscoveries(next);
+      setFresh((f) => new Set([...f, ...newly]));
+      const defs = cat?.discoveries ?? [];
+      const queued = newly
+        .slice(0, 3)
+        .map((id) => ({ d: defs.find((d) => d.id === id), eq: next[id]?.equationLatex ?? null }))
+        .filter((x): x is { d: DiscoveryDef; eq: string | null } => x.d !== undefined);
+      later(delay, () => setCards(queued));
+      setJournalPulse((p) => p + 1);
+      return newly;
     },
-    [busy],
+    [cat, found, later],
   );
 
-  // ------------------------------------------------------------------ cue playback
-
   const applyCue = useCallback(
-    (cue: ObservationCue, baseTemp: number) => {
+    (cue: ObservationCue, fresh: boolean, baseTemp: number) => {
       const beaker = beakerRef.current;
       switch (cue.kind) {
         case "colour": {
@@ -332,34 +414,49 @@ export function ChemistryPlayground() {
           };
           emitters.current = [...emitters.current.filter((x) => x.until > performance.now()), e];
           beaker?.setEmitters(emitters.current);
-          sound.play("fizz", Math.min(1.5, cue.ratePerS / 60));
+          sound.loop("fizz", true, Math.min(1.4, cue.ratePerS / 50));
+          later(cue.durationMs, () => {
+            if (emitters.current.every((x) => x.until <= performance.now() + 50))
+              sound.loop("fizz", false);
+          });
+          if (cue.colour) {
+            const haze = oklabToCss(cue.colour, 0.6);
+            setVessel((v) => ({ ...v, gasHaze: haze }));
+            beaker?.smoke(haze, 0.5, cue.durationMs);
+          }
           break;
         }
         case "precipitate": {
           const colour = oklabToCss(cue.colour);
-          setVessel((v) => ({
-            ...v,
-            ppts: [
-              ...v.ppts,
-              {
-                id: cue.id,
-                colour,
-                turbidity: cue.turbidity,
-                settleMs: cue.settleMs,
-                dissolved: 0,
-              },
-            ],
-          }));
-          beaker?.flakes(colour, cue.turbidity, cue.settleMs);
-          sound.play("drop");
+          setVessel((v) => {
+            const exists = v.ppts.some((p) => p.id === cue.id);
+            return {
+              ...v,
+              ppts: exists
+                ? v.ppts.map((p) => (p.id === cue.id ? { ...p, turbidity: cue.turbidity } : p))
+                : [
+                    ...v.ppts,
+                    {
+                      id: cue.id,
+                      colour,
+                      turbidity: cue.turbidity,
+                      settleMs: cue.settleMs,
+                      dissolved: 0,
+                    },
+                  ],
+            };
+          });
+          if (fresh) {
+            beaker?.flakes(colour, cue.turbidity, cue.settleMs);
+            sound.play("drop");
+          }
           break;
         }
         case "temperature": {
+          lastDelta.current = cue.deltaC;
           tempAnim.current?.stop();
-          const target = baseTemp + cue.deltaC;
-          tempAnim.current = animate(baseTemp, target, {
+          tempAnim.current = animate(liveTempRef.current, baseTemp + cue.deltaC, {
             duration: reduced ? 0.2 : Math.min(4, cue.tauMs / 1500),
-            ease: [0.2, 0, 0, 1],
             onUpdate: (v) => setLiveTemp(v),
           });
           break;
@@ -396,16 +493,61 @@ export function ChemistryPlayground() {
           }));
           break;
         }
-        case "layers": {
-          const colour = oklabToCss(cue.colour);
-          setVessel((v) => ({ ...v, oil: { ml: cue.volumeMl, colour } }));
+        case "layers":
+          setVessel((v) => ({ ...v, oil: { ml: cue.volumeMl, colour: oklabToCss(cue.colour) } }));
           break;
-        }
-        case "odour": {
-          setNote(`👃 You notice ${cue.description}`);
-          later(3800, () => setNote(null));
+        case "smoke":
+          if (fresh) beaker?.smoke(oklabToCss(cue.colour), cue.density, cue.durationMs);
           break;
-        }
+        case "flame":
+          if (fresh) {
+            const colour = oklabToCss({ ...cue.colour, alpha: 1 });
+            setVessel((v) => ({
+              ...v,
+              flame: { colour, intensity: cue.intensity, key: Date.now() },
+            }));
+            beaker?.embers(colour, cue.durationMs);
+            later(cue.durationMs, () => setVessel((v) => ({ ...v, flame: null })));
+          }
+          break;
+        case "light":
+          if (fresh)
+            setVessel((v) => ({
+              ...v,
+              flash: {
+                colour: oklabToCss({ ...cue.colour, alpha: 1 }),
+                intensity: cue.intensity,
+                key: Date.now(),
+              },
+            }));
+          break;
+        case "condense":
+          if (fresh)
+            setVessel((v) => ({
+              ...v,
+              condense: { colour: oklabToCss(cue.colour), amount: cue.amount },
+            }));
+          break;
+        case "skate":
+          if (fresh)
+            setVessel((v) => ({
+              ...v,
+              skate: {
+                colour: oklabToCss({ ...cue.colour, alpha: 1 }),
+                key: Date.now(),
+                durationMs: cue.durationMs,
+              },
+            }));
+          break;
+        case "sound":
+          if (fresh) sound.play(SOUND_IDS[cue.soundId] ?? "pop");
+          break;
+        case "odour":
+          if (fresh) {
+            setNote(`👃 You notice ${cue.description}`);
+            later(3800, () => setNote(null));
+          }
+          break;
         default:
           break;
       }
@@ -413,369 +555,435 @@ export function ChemistryPlayground() {
     [later, reduced],
   );
 
-  // ------------------------------------------------------------------ outcomes
+  const liveTempRef = useRef(liveTemp);
+  liveTempRef.current = liveTemp;
 
-  const recordDiscoveries = useCallback(
-    (r: SimulationResult, cardDelayMs: number) => {
-      const ids = r.presentation?.discoveryIds ?? [];
-      const newly = ids.filter((id) => !found[id]);
-      if (newly.length === 0) return [];
-      const next = { ...found };
-      for (const id of newly) {
-        const eq = r.presentation?.reactions.find((x) => x.discoveryId === id)?.equationLatex ?? "";
-        next[id] = { at: Date.now(), equationLatex: eq };
-      }
-      setFound(next);
-      saveDiscoveries(next);
-      setFresh((f) => new Set([...f, ...newly]));
-      const defs = cat?.discoveries ?? [];
-      const queued = newly
-        .slice(0, 3)
-        .map((id) => ({ d: defs.find((d) => d.id === id), eq: next[id]?.equationLatex ?? null }))
-        .filter((x): x is { d: DiscoveryDef; eq: string | null } => x.d !== undefined);
-      // Cards wait until the reaction has played out, so they never hide the moment itself.
-      later(cardDelayMs, () => setCards(queued));
-      setJournalPulse((p) => p + 1);
-      return newly;
-    },
-    [cat, found, later],
-  );
+  const historyRef = useRef(history);
+  historyRef.current = history;
 
-  const reveal = useCallback(
+  const undoLast = useCallback((silent = false) => {
+    const h = historyRef.current;
+    const last = h[h.length - 1];
+    if (!last) return;
+    const next = contentsRef.current
+      .map((c) => (c.item.id === last.id ? { ...c, amount: c.amount - last.amount } : c))
+      .filter((c) => c.amount > 1e-6);
+    contentsRef.current = next;
+    historyRef.current = h.slice(0, -1);
+    setContents(next);
+    setHistory(h.slice(0, -1));
+    setVessel((v) =>
+      baseline(next, { ...v, frozen: false, glow: null, ppts: [], flame: null, condense: null }),
+    );
+    shown.current.clear();
+    if (!silent) sound.play("pour");
+  }, []);
+
+  const handleResult = useCallback(
     (r: SimulationResult, baseTemp: number) => {
-      const p = r.presentation;
-      const showPanel = (delay: number) =>
-        later(delay, () => setPanel({ kind: "result", result: r }));
-      const phMeasure = r.measurements.find((m) => m.key === "pH");
-      switch (r.outcome) {
-        case "reaction":
-        case "no_reaction": {
-          for (const cue of r.cues) {
-            later(cue.startMs ?? 0, () => applyCue(cue, baseTemp));
-          }
-          const settle = Math.min(
-            4200,
-            Math.max(
-              r.outcome === "reaction" ? 1300 : 700,
-              ...r.cues.map(
-                (c) => (c.startMs ?? 0) + ("durationMs" in c ? Math.min(c.durationMs, 1800) : 600),
-              ),
+      setEngineOnline(true);
+      const reactionIds = (r.presentation?.reactions ?? []).map((x) => x.id);
+      const newIds = reactionIds.filter((id) => !shown.current.has(id));
+      const freshEvents = newIds.length > 0;
+      newIds.forEach((id) => shown.current.add(id));
+      const temp = r.measurements.find((m) => m.key === "temperature");
+      const phM = r.measurements.find((m) => m.key === "pH");
+
+      if (r.outcome === "prohibited") {
+        undoLast(true);
+        setVessel((v) => ({ ...v, shake: v.shake + 1, glow: "rgba(239,68,68,0.55)" }));
+        sound.play("deny");
+        setDialog({
+          title: r.presentation?.title ?? "Not allowed",
+          message: r.presentation?.message ?? "",
+          alternatives: r.presentation?.suggestions ?? [],
+        });
+        setInsight({ kind: "result", result: r });
+        later(1600, () => setVessel((v) => ({ ...v, glow: null })));
+        return;
+      }
+      if (r.outcome === "out_of_range") {
+        undoLast(true);
+        sound.play("warn");
+        setNote(r.presentation?.message ?? "That's too much.");
+        later(3500, () => setNote(null));
+        return;
+      }
+      setVessel((v) => ({ ...v, frozen: r.outcome === "unsupported", glow: null }));
+      setPh(phM ? phM.value : null);
+      if (r.outcome === "unsupported") {
+        sound.play("freeze");
+        setVessel((v) => ({ ...v, glow: "rgba(245,158,11,0.45)" }));
+        setInsight({ kind: "result", result: r });
+        return;
+      }
+      if (r.outcome === "needs_conditions") {
+        sound.play("warn");
+        const tool = r.presentation?.neededTool;
+        setToolGlow(tool ?? null);
+        if (tool === "catalyst") {
+          setRackTab("chemicals");
+          setShelfGlow("mno2-powder");
+        } else if (tool === "acid") {
+          setRackTab("chemicals");
+          setShelfGlow("h2so4");
+        }
+      } else {
+        setToolGlow(null);
+        setShelfGlow(null);
+      }
+      for (const cue of r.cues) later(cue.startMs ?? 0, () => applyCue(cue, freshEvents, baseTemp));
+      if (!r.cues.some((c) => c.kind === "temperature") && temp) {
+        lastDelta.current = temp.value - baseTemp;
+        setLiveTemp(temp.value);
+      }
+      // Water made in a dry vessel collects as a visible puddle at the bottom.
+      const water = r.presentation?.compounds.find((x) => x.formula === "H2O" && x.state === "l");
+      if (water && freshEvents && vesselRef.current.levelMl < 1) {
+        later(900, () =>
+          setVessel((v) => ({
+            ...v,
+            levelMl: Math.max(v.levelMl, 6),
+            levelMs: 2500,
+            colour: "rgba(120,190,255,0.35)",
+            colourMs: 800,
+          })),
+        );
+      }
+      setInsight({ kind: "result", result: r });
+      if (r.outcome === "reaction" && freshEvents) {
+        const settle = Math.min(
+          3500,
+          Math.max(
+            900,
+            ...r.cues.map(
+              (c) => (c.startMs ?? 0) + ("durationMs" in c ? Math.min(c.durationMs, 1500) : 400),
             ),
+          ),
+        );
+        later(Math.min(1200, settle * 0.5), () => {
+          const newly = recordDiscoveries(r, Math.max(1600, settle));
+          const defs = cat?.discoveries ?? [];
+          setVessel((v) => ({ ...v, glow: "rgba(34,197,94,0.45)" }));
+          setRibbon(
+            newly.length
+              ? {
+                  text: "New discovery!",
+                  sub: newly.map((id) => defs.find((d) => d.id === id)?.name ?? id).join(" · "),
+                }
+              : { text: "Reaction!", sub: r.presentation?.title ?? "" },
           );
-          showPanel(r.outcome === "reaction" ? 650 : 400);
-          later(settle * 0.6, () => phMeasure && setPh(phMeasure.value));
-          if (r.outcome === "reaction") {
-            const ribbonAt = Math.min(1400, settle * 0.5);
-            later(ribbonAt, () => {
-              const newly = recordDiscoveries(r, Math.max(1800, settle - ribbonAt + 1400));
-              const defs = cat?.discoveries ?? [];
-              setVessel((v) => ({ ...v, glow: "rgba(34,197,94,0.55)" }));
-              setRibbon(
-                newly.length > 0
-                  ? {
-                      text: "Reaction discovered",
-                      sub: newly.map((id) => defs.find((d) => d.id === id)?.name ?? id).join(" · "),
-                    }
-                  : { text: "Reaction", sub: p?.title ?? "" },
-              );
-              beakerRef.current?.sparks(
-                newly.length > 0
-                  ? ["#22D3EE", "#E879F9", "#22C55E", "#FDE68A"]
-                  : ["#22C55E", "#A7F3D0"],
-                newly.length > 0 ? 90 : 40,
-              );
-              sound.play(newly.length > 0 ? "discover" : "chime");
-              later(2600, () => setRibbon(null));
-            });
-          } else {
-            later(500, () => {
-              recordDiscoveries(r, 1600);
-              setVessel((v) => ({ ...v, glow: "rgba(56,189,248,0.35)" }));
-              sound.play("click");
-            });
-          }
-          break;
-        }
-        case "needs_conditions": {
-          for (const cue of r.cues) later(cue.startMs ?? 0, () => applyCue(cue, baseTemp));
-          setVessel((v) => ({ ...v, glow: "rgba(245,158,11,0.45)" }));
-          sound.play("warn");
-          const tool = p?.neededTool;
-          if (tool === "heater") setHeaterGlow(true);
-          if (tool === "catalyst") {
-            setCategory("solid");
-            setShelfGlow("mno2-powder");
-          }
-          if (tool === "acid") {
-            setCategory("acid");
-            setShelfGlow("h2so4");
-          }
-          showPanel(250);
-          break;
-        }
-        case "procedure_mismatch": {
-          for (const cue of r.cues) later(cue.startMs ?? 0, () => applyCue(cue, baseTemp));
-          setVessel((v) => ({ ...v, glow: "rgba(245,158,11,0.45)" }));
-          setHeaterGlow(p?.neededTool === "heater");
-          sound.play("warn");
-          showPanel(250);
-          break;
-        }
-        case "out_of_range": {
-          setVessel((v) => ({
-            ...v,
-            levelMl: 0,
-            levelMs: 900,
-            oil: null,
-            solids: [],
-            glow: "rgba(245,158,11,0.45)",
-          }));
-          beakerRef.current?.drops("rgba(220,235,255,0.7)", 24, true);
-          setFocusRef(p?.focusRef ?? null);
-          setHeaterGlow(p?.neededTool === "heater");
-          sound.play("warn");
-          showPanel(250);
-          break;
-        }
-        case "unsupported": {
-          setVessel((v) => ({ ...v, frozen: true, glow: "rgba(245,158,11,0.4)" }));
-          sound.play("freeze");
-          showPanel(300);
-          break;
-        }
-        case "prohibited": {
-          setVessel((v) => ({
-            ...v,
-            levelMl: 0,
-            levelMs: 900,
-            oil: null,
-            solids: v.solids.map((s) => ({ ...s, remaining: 0, remainingMs: 500 })),
-            glow: "rgba(239,68,68,0.6)",
-            shake: v.shake + 1,
-          }));
-          beakerRef.current?.drops("rgba(255,180,180,0.8)", 40, true);
-          sound.play("deny");
-          later(250, () => {
-            setShield(true);
-            setVignette("rgba(239,68,68,0.55)");
-          });
-          later(2600, () => setShield(false));
-          later(2200, () => setVignette(null));
-          showPanel(450);
-          break;
-        }
+          beakerRef.current?.sparks(
+            newly.length ? ["#22D3EE", "#E879F9", "#22C55E", "#FDE68A"] : ["#22C55E", "#A7F3D0"],
+            newly.length ? 80 : 30,
+          );
+          sound.play(newly.length ? "discover" : "chime");
+          later(2400, () => setRibbon(null));
+          later(2600, () => setVessel((v) => ({ ...v, glow: null })));
+        });
+      } else if (r.outcome === "no_reaction") {
+        recordDiscoveries(r, 1200);
       }
     },
-    [applyCue, cat, later, recordDiscoveries],
+    [applyCue, cat, later, recordDiscoveries, undoLast],
   );
 
-  const handleError = useCallback(
-    (e: unknown) => {
-      const status = e instanceof ProblemError ? e.status : 0;
-      if (status === 429 && e instanceof ProblemError) {
+  const doResolve = useCallback(async () => {
+    const list = contentsRef.current;
+    if (!list.length) return;
+    if (Date.now() < cooldownUntil.current) return;
+    const my = ++seq.current;
+    const tray: TrayItem[] = list.map((c) => ({
+      key: c.item.id,
+      item: c.item,
+      amount: Math.round(c.amount * 1000) / 1000,
+    }));
+    const temp = Math.round(bathRef.current);
+    setBusy(true);
+    setVessel((v) => ({ ...v, swirling: true }));
+    if (insightKindRef.current !== "result") setInsight({ kind: "working" });
+    try {
+      const [r] = await Promise.all([
+        resolveMix(tray, temp, stirRef.current, ignitedRef.current),
+        sleep(reduced ? 100 : 350),
+      ]);
+      if (my !== seq.current) return;
+      handleResult(r, temp);
+    } catch (e) {
+      if (my !== seq.current) return;
+      if (e instanceof ProblemError && e.status === 429) {
         const secs = Number(e.problem["retryAfterSeconds"] ?? 60);
         cooldownUntil.current = Date.now() + secs * 1000;
-        setPanel({
+        undoLast(true);
+        setInsight({
           kind: "cooldown",
           until: cooldownUntil.current,
           message: e.problem.detail ?? "Cooldown active.",
         });
-        setVignette("rgba(239,68,68,0.4)");
-        later(1500, () => setVignette(null));
-        setVessel((v) => ({ ...v, levelMl: 0, levelMs: 700, solids: [], oil: null }));
         sound.play("deny");
-        later(secs * 1000, () => setPanel({ kind: "idle" }));
-        return;
-      }
-      if (status === 503 || status === 0) setEngineOnline(false);
-      setVessel((v) => ({ ...v, frozen: true }));
-      sound.play("freeze");
-      const message =
-        e instanceof ProblemError
-          ? (e.problem.detail ?? e.problem.title)
-          : "Something went wrong talking to the safety engine.";
-      setPanel({ kind: "offline", message });
-    },
-    [later],
-  );
-
-  // ------------------------------------------------------------------ mix
-
-  const runMix = useCallback(
-    async (snapshot: TrayItem[], temp: number) => {
-      if (snapshot.length === 0 || busy) return;
-      if (Date.now() < cooldownUntil.current) return;
-      clearStage();
-      const myRun = runId.current;
-      setBusy(true);
-      setMixed(true);
-      setPanel({ kind: "pouring" });
-      setLiveTemp(temp);
-
-      const request = resolveMix(snapshot, temp, stirring).then(
-        (r) => ({ ok: true as const, r }),
-        (e: unknown) => ({ ok: false as const, e }),
-      );
-
-      const per = reduced ? 160 : Math.max(420, Math.min(720, 2600 / snapshot.length));
-      const poured: { hex: string; weight: number; opacity: number }[] = [];
-      let level = 0;
-      let oilMl = 0;
-      for (let i = 0; i < snapshot.length; i++) {
-        const t = snapshot[i];
-        if (!t) continue;
-        if (i > 0) await sleep(per);
-        if (runId.current !== myRun) return;
-        if (t.item.form === "solid") {
-          setVessel((v) => ({
-            ...v,
-            pour: null,
-            solids: [
-              ...v.solids,
-              {
-                key: uid(),
-                substanceId: t.item.id,
-                form: t.item.solidForm ?? "powder",
-                colour: t.item.colour,
-                size: solidSize(t),
-                remaining: 1,
-                remainingMs: 400,
-                deposit: null,
-                tint: null,
-              },
-            ],
-          }));
-          sound.play("drop");
-          continue;
-        }
-        const ml = liquidMl(t);
-        level += ml;
-        if (t.item.id === "vegetable-oil") {
-          oilMl += ml;
-          const oil = { ml: oilMl, colour: hexToRgba(t.item.colour, 0.6) };
-          setVessel((v) => ({
-            ...v,
-            pour: { colour: hexToRgba(t.item.colour, 0.8) },
-            levelMl: level,
-            levelMs: per * 0.9,
-            oil,
-          }));
-        } else {
-          poured.push({ hex: t.item.colour, weight: ml, opacity: t.item.opacity });
-          const colour = blendHex(poured);
-          setVessel((v) => ({
-            ...v,
-            pour: { colour: hexToRgba(t.item.colour, Math.max(0.45, t.item.opacity)) },
-            levelMl: level,
-            levelMs: per * 0.9,
-            colour,
-            colourMs: per,
-            colourEase: "linear",
-          }));
-        }
-        beakerRef.current?.drops(
-          hexToRgba(t.item.colour, Math.max(0.5, t.item.opacity)),
-          t.item.limits.unit === "drops" ? 4 : 14,
-        );
-        sound.play(t.item.limits.unit === "drops" ? "drop" : "pour");
-      }
-      await sleep(per);
-      if (runId.current !== myRun) return;
-      setVessel((v) => ({ ...v, pour: null, swirling: true }));
-      setPanel({ kind: "resolving" });
-
-      const [res] = await Promise.all([request, sleep(reduced ? 300 : 700)]);
-      if (runId.current !== myRun) return;
-      setVessel((v) => ({ ...v, swirling: false }));
-      setBusy(false);
-      if (res.ok) {
-        setEngineOnline(true);
-        reveal(res.r, temp);
       } else {
-        handleError(res.e);
+        if (!(e instanceof ProblemError) || e.status === 503 || e.status === 0)
+          setEngineOnline(false);
+        setVessel((v) => ({ ...v, frozen: true }));
+        setInsight({
+          kind: "offline",
+          message:
+            e instanceof ProblemError
+              ? (e.problem.detail ?? e.problem.title)
+              : "Something went wrong.",
+        });
       }
+    } finally {
+      if (my === seq.current) {
+        setBusy(false);
+        setVessel((v) => ({ ...v, swirling: false }));
+      }
+    }
+  }, [handleResult, reduced, undoLast]);
+
+  const requestResolve = useCallback(
+    (ms = 220) => {
+      if (debounce.current) window.clearTimeout(debounce.current);
+      debounce.current = window.setTimeout(() => void doResolve(), ms);
     },
-    [busy, clearStage, handleError, reduced, reveal, stirring],
+    [doResolve],
   );
+
+  // ------------------------------------------------------------------ adding things
+
+  const addAmount = useCallback((item: ShelfItem, delta: number) => {
+    const cs = contentsRef.current;
+    const i = cs.findIndex((c) => c.item.id === item.id);
+    const next =
+      i >= 0
+        ? cs.map((c, k) => (k === i ? { ...c, amount: c.amount + delta } : c))
+        : [...cs, { item, amount: delta }];
+    contentsRef.current = next;
+    setContents(next);
+    if (isLiquid(item) && item.id !== "vegetable-oil") {
+      const ml = item.limits.unit === "drops" ? delta * 0.05 : delta;
+      const poured = hexToRgba(item.colour, Math.max(0.12, item.opacity));
+      setVessel((old) => {
+        const total = old.levelMl + ml;
+        return {
+          ...old,
+          frozen: false,
+          levelMl: total,
+          levelMs: 120,
+          colour: mixRgba(
+            old.levelMl > 0.5 ? old.colour : poured,
+            poured,
+            ml / Math.max(total, 1e-6),
+          ),
+          colourMs: 150,
+          colourEase: "linear",
+        };
+      });
+    } else {
+      setVessel((old) => {
+        const b = baseline(next, old);
+        return { ...old, frozen: false, solids: b.solids, gasHaze: b.gasHaze, oil: b.oil };
+      });
+    }
+    pending.current += delta;
+  }, []);
+
+  const commitAddition = useCallback(
+    (item: ShelfItem) => {
+      const amount = pending.current;
+      pending.current = 0;
+      if (amount <= 1e-6) return;
+      setHistory((h) => [...h, { id: item.id, amount }]);
+      requestResolve();
+    },
+    [requestResolve],
+  );
+
+  const current = (id: string) => contents.find((c) => c.item.id === id)?.amount ?? 0;
+  const totalLiquid = contents.reduce((a, c) => a + liquidVolume(c), 0);
+  const handItem = inHand ?? PLACEHOLDER;
+  const remaining = inHand
+    ? Math.max(
+        0,
+        Math.min(
+          handItem.limits.max - current(handItem.id),
+          isLiquid(handItem)
+            ? (CAPACITY - totalLiquid) / (handItem.limits.unit === "drops" ? 0.05 : 1)
+            : Infinity,
+        ),
+      )
+    : 0;
+
+  const dispenser = useDispenser({
+    item: handItem,
+    remaining,
+    onDispense: (d) => {
+      if (inHand) addAmount(inHand, d);
+    },
+    onDone: () => {
+      if (inHand) commitAddition(inHand);
+    },
+  });
+
+  const pickUp = useCallback((item: ShelfItem) => {
+    setInHand(item);
+    setShelfGlow(null);
+    sound.play("clink");
+  }, []);
+
+  const emptyVessel = useCallback(() => {
+    seq.current++;
+    timers.current.forEach((t) => window.clearTimeout(t));
+    timers.current = [];
+    emitters.current = [];
+    tempAnim.current?.stop();
+    beakerRef.current?.clear();
+    sound.loop("fizz", false);
+    shown.current.clear();
+    setContents([]);
+    setHistory([]);
+    setVessel(EMPTY);
+    setInsight({ kind: "idle" });
+    setIgnited(false);
+    setPh(null);
+    setToolGlow(null);
+    setRibbon(null);
+    lastDelta.current = 0;
+    setLiveTemp(bathRef.current);
+    sound.play("pour");
+  }, []);
 
   const runPreset = useCallback(
-    (preset: Preset) => {
-      if (!cat || busy) return;
-      const items: TrayItem[] = [];
-      for (const [id, amount] of preset.items) {
+    async (p: Preset) => {
+      if (!cat) return;
+      emptyVessel();
+      await sleep(350);
+      for (const [id, amount] of p.steps) {
         const item = cat.substances.find((s) => s.id === id);
-        if (item) items.push({ key: uid(), item, amount });
+        if (!item) continue;
+        setInHand(item);
+        const mode = dispenseMode(item);
+        sound.play(
+          mode === "pour"
+            ? "pour"
+            : mode === "dropper"
+              ? "drip"
+              : mode === "spatula"
+                ? "scoop"
+                : "hiss",
+        );
+        const steps = 8;
+        for (let i = 0; i < steps; i++) {
+          addAmount(item, amount / steps);
+          await sleep(reduced ? 10 : 70);
+        }
+        pending.current = 0;
+        setHistory((h) => [...h, { id: item.id, amount }]);
+        await sleep(250);
       }
-      const t = preset.temperature ?? cat.conditions.defaultTemperatureC;
-      setTray(items);
-      setTemperature(t);
-      void runMix(items, t);
+      if (p.ignite) {
+        await sleep(300);
+        setVessel((v) => ({
+          ...v,
+          flash: { colour: "#ffffff", intensity: 0.25, key: Date.now() },
+        }));
+        sound.play("spark");
+        setIgnited(true);
+        ignitedRef.current = true;
+      }
+      requestResolve(50);
     },
-    [busy, cat, runMix],
+    [addAmount, cat, emptyVessel, reduced, requestResolve],
   );
 
-  const onOption = useCallback(
-    (option: string) => {
-      if (/supported combination|reaction concepts|energy/i.test(option)) {
-        const pool = /energy/i.test(option)
-          ? PRESETS.filter((p) => /Magnesium|Neutralise|Catalyst/.test(p.label))
-          : PRESETS;
-        const pick = pool[Math.floor(Math.random() * pool.length)];
-        if (pick) runPreset(pick);
-        return;
-      }
-      if (/properties/i.test(option)) {
-        const first = tray[0];
-        if (first) setInfo(first.item);
-        return;
-      }
-      setNote(
-        /AI/i.test(option)
-          ? "The AI science assistant arrives on Day 3"
-          : /emergency/i.test(option)
-            ? "The emergency simulator arrives in Release 3"
-            : "Concept lessons arrive with the experiment library",
-      );
-      later(2400, () => setNote(null));
-    },
-    [later, runPreset, tray],
-  );
+  // ------------------------------------------------------------------ tools
 
-  const empty = useCallback(() => {
-    if (busy) return;
-    if (mixed) {
-      clearStage();
-      setMixed(false);
-      setPanel({ kind: "idle" });
-      sound.play("pour");
-    } else {
-      setTray([]);
+  useEffect(() => {
+    sound.loop("burner", burnerOn);
+    const id = window.setInterval(() => {
+      setBathTemp((t) => {
+        const next = burnerOn ? Math.min(90, t + 0.6) : Math.max(ROOM_TEMP, t - 0.25);
+        const band = Math.floor(next / 10);
+        if (band !== lastTempBand.current && contentsRef.current.length) {
+          lastTempBand.current = band;
+          window.setTimeout(() => requestResolve(100), 0);
+        }
+        return next;
+      });
+    }, 200);
+    return () => window.clearInterval(id);
+  }, [burnerOn, requestResolve]);
+
+  useEffect(() => {
+    if (!busy) setLiveTemp(bathTemp + lastDelta.current);
+  }, [bathTemp, busy]);
+
+  const toggleBurner = () => {
+    const on = !burnerOn;
+    setBurnerOn(on);
+    sound.play(on ? "whoosh" : "click");
+    setToolGlow(null);
+    if (on && totalLiquid < 0.5 && contents.length) {
+      setIgnited(true);
+      ignitedRef.current = true;
+      requestResolve(600);
     }
-  }, [busy, clearStage, mixed]);
+  };
 
-  const nextCard = useCallback(() => setCards((c) => c.slice(1)), []);
+  const strikeSpark = () => {
+    sound.play("spark");
+    setVessel((v) => ({ ...v, flash: { colour: "#fff6c8", intensity: 0.3, key: Date.now() } }));
+    setIgnited(true);
+    ignitedRef.current = true;
+    setToolGlow(null);
+    if (contents.length) requestResolve(120);
+  };
 
-  // ------------------------------------------------------------------ derived
+  const stir = (on: boolean) => {
+    setStirring(on);
+    sound.loop("stir", on);
+  };
 
-  const selected = useMemo(() => new Set(tray.map((t) => t.item.id)), [tray]);
-  const foundCount = cat ? cat.discoveries.filter((d) => found[d.id]).length : 0;
-  const totalLiquid = tray.reduce((a, t) => a + liquidMl(t), 0);
+  const onOption = (o: string) => {
+    if (/supported|concepts|energy|reaction/i.test(o)) {
+      const pick = PRESETS[Math.floor(Math.random() * PRESETS.length)];
+      if (pick) void runPreset(pick);
+      return;
+    }
+    if (/properties/i.test(o) && contents[0]) {
+      setInfo(contents[0].item);
+      return;
+    }
+    setNote(
+      /AI/i.test(o)
+        ? "The AI science assistant is coming next"
+        : /emergency/i.test(o)
+          ? "The emergency simulator is coming next"
+          : "Lessons are coming with the experiment library",
+    );
+    later(2400, () => setNote(null));
+  };
+
   const presets = useMemo(
-    () => PRESETS.slice(0, 6).map((p) => ({ label: p.label, onPick: () => runPreset(p) })),
+    () => PRESETS.map((p) => ({ label: p.label, emoji: p.emoji, onPick: () => void runPreset(p) })),
     [runPreset],
   );
-  const canMix =
-    !busy && tray.length > 0 && engineOnline !== false && Date.now() >= cooldownUntil.current;
+  const nextCard = useCallback(() => setCards((c) => c.slice(1)), []);
+  const foundCount = cat ? cat.discoveries.filter((d) => found[d.id]).length : 0;
+  const card = cards[0] ?? null;
 
   if (loadError) {
     return (
-      <div className="ls-bg grid min-h-screen place-items-center p-6 text-center">
-        <div className="ls-panel max-w-md p-8">
-          <div className="ls-eyebrow text-state-danger">Simulation unavailable</div>
-          <h1 className="mt-2 font-heading text-2xl text-white">Can't reach the LABscape API</h1>
-          <p className="mt-3 text-sm text-white/60">{loadError}</p>
-          <p className="mt-3 text-sm text-white/45">
-            Start it with <code className="tabular text-accent-cyan">pnpm api:demo</code>, then
+      <div className="lab-root grid min-h-screen place-items-center p-6 text-center">
+        <LabRoom />
+        <div className="lab-card relative max-w-md p-8">
+          <div className="lab-eyebrow text-red-600">Simulation unavailable</div>
+          <h1 className="mt-2 font-heading text-2xl text-slate-800">
+            Can't reach the LABscape API
+          </h1>
+          <p className="mt-3 text-sm text-slate-600">{loadError}</p>
+          <p className="mt-3 text-sm text-slate-500">
+            Start it with <code className="font-mono text-cyan-700">pnpm api:demo</code>, then
             reload.
           </p>
         </div>
@@ -783,10 +991,9 @@ export function ChemistryPlayground() {
     );
   }
 
-  const card = cards[0] ?? null;
-
   return (
-    <div className="ls-bg flex h-screen min-h-[640px] flex-col overflow-hidden text-white">
+    <div className="lab-root relative flex h-screen min-h-[680px] flex-col overflow-hidden">
+      <LabRoom />
       <Header
         online={engineOnline}
         found={foundCount}
@@ -796,35 +1003,27 @@ export function ChemistryPlayground() {
         pulse={journalPulse}
         onMute={() => setMuted((m) => !m)}
         onJournal={() => setJournalOpen(true)}
-        onInspire={() => {
-          const pick = PRESETS[Math.floor(Math.random() * PRESETS.length)];
-          if (pick) runPreset(pick);
-        }}
-        busy={busy}
       />
-
-      <main className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-3 lg:grid-cols-[300px_minmax(0,1fr)_370px] lg:overflow-hidden">
-        <div className="h-[460px] lg:h-auto lg:min-h-0">
+      <main className="relative grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-3 lg:grid-cols-[340px_minmax(0,1fr)_380px] lg:overflow-hidden">
+        <div className="h-[520px] lg:h-auto lg:min-h-0">
           {cat ? (
-            <Shelf
+            <ReagentRack
               items={cat.substances}
-              selected={selected}
-              category={category}
-              onCategory={setCategory}
+              inHand={inHand?.id ?? null}
               highlightId={shelfGlow}
-              onAdd={(item) => addToTray(item)}
+              onPick={pickUp}
               onInfo={setInfo}
-              disabled={busy}
+              tab={rackTab}
+              onTab={setRackTab}
             />
           ) : (
-            <div className="ls-panel h-full animate-pulse" />
+            <div className="lab-card h-full animate-pulse" />
           )}
         </div>
 
-        <div className="order-first grid grid-rows-[400px_auto] gap-3 lg:order-none lg:min-h-0 lg:grid-rows-[minmax(380px,1fr)_auto]">
-          <div className="ls-stage relative min-h-0 overflow-hidden">
-            <div className="ls-stage-floor" aria-hidden />
-            <div className="absolute inset-0 flex items-center justify-center p-4 pt-10">
+        <div className="order-first flex min-h-[560px] flex-col gap-2 lg:order-none lg:min-h-0">
+          <div className="relative min-h-0 flex-1">
+            <div className="absolute inset-0 flex items-end justify-center">
               <div className="relative h-full" style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}>
                 <Beaker
                   ref={beakerRef}
@@ -837,98 +1036,156 @@ export function ChemistryPlayground() {
                   solids={vessel.solids}
                   oil={vessel.oil}
                   frozen={vessel.frozen}
-                  swirling={vessel.swirling}
+                  swirling={vessel.swirling || stirring}
                   stirring={stirring}
                   temperature={liveTemp}
-                  pour={vessel.pour}
+                  pour={null}
                   glow={vessel.glow}
                   shake={vessel.shake}
+                  gasHaze={vessel.gasHaze}
+                  flame={vessel.flame}
+                  flash={vessel.flash}
+                  condense={vessel.condense}
+                  skate={vessel.skate}
+                  burner={burnerOn}
+                  hand={inHand ? (g) => <DispenserSvg d={dispenser} g={g} /> : undefined}
                 />
               </div>
             </div>
 
-            <div className="ls-hud absolute left-3 top-3 flex flex-col gap-2">
-              <Readout label="Temp" value={liveTemp} decimals={1} unit="°C" />
-              <Readout label="pH" value={ph} decimals={2} unit="" />
-              <Readout label="Volume" value={vessel.levelMl} decimals={1} unit="mL" />
+            <div className="absolute left-2 top-2 flex flex-col gap-2">
+              <Instrument
+                label="Thermometer"
+                value={liveTemp}
+                unit="°C"
+                decimals={1}
+                colour="#ef4444"
+              />
+              <Instrument label="pH meter" value={ph} unit="" decimals={1} colour="#8b5cf6" />
+              <Instrument
+                label="Liquid"
+                value={vessel.levelMl}
+                unit="mL"
+                decimals={1}
+                colour="#0ea5e9"
+              />
             </div>
 
-            {busy && panel.kind === "resolving" && (
-              <motion.div
-                className="absolute right-3 top-3 flex items-center gap-2 rounded-full border border-accent-cyan/40 bg-bg-base/70 px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-accent-cyan backdrop-blur"
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <motion.span
-                  className="h-2 w-2 rounded-full bg-accent-cyan"
-                  animate={{ opacity: [1, 0.2, 1] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                />
-                Safety engine validating
-              </motion.div>
+            {contents.length > 0 && (
+              <div className="absolute right-2 top-2 max-w-[220px]">
+                <div className="lab-contents">
+                  <div className="lab-eyebrow mb-1">In the vessel</div>
+                  {contents.map((c) => (
+                    <div
+                      key={c.item.id}
+                      className="flex items-center gap-1.5 text-[12px] text-slate-700"
+                    >
+                      <i
+                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        style={{ background: c.item.colour, border: "1px solid rgba(0,0,0,0.15)" }}
+                      />
+                      <span className="truncate">{c.item.name}</span>
+                      <span className="tabular ml-auto text-slate-500">
+                        {c.amount.toFixed(
+                          c.item.limits.unit === "drops" ? 0 : c.item.limits.unit === "g" ? 2 : 1,
+                        )}{" "}
+                        {c.item.limits.unit}
+                      </span>
+                    </div>
+                  ))}
+                  {ignited && (
+                    <div className="mt-1 text-[11px] font-semibold text-orange-600">🔥 Ignited</div>
+                  )}
+                </div>
+              </div>
             )}
 
-            {vessel.frozen && panel.kind === "result" && (
-              <motion.div
-                className="absolute inset-x-0 bottom-6 mx-auto w-fit rounded-lg border border-state-warning/50 bg-state-warning/15 px-4 py-2 font-heading text-[13px] font-semibold uppercase tracking-[0.18em] text-state-warning backdrop-blur"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                Simulation not available
-              </motion.div>
-            )}
-
-            <div className="pointer-events-none absolute inset-x-0 top-[16%] flex justify-center">
+            <div className="pointer-events-none absolute inset-x-0 top-[12%] flex justify-center">
               <Ribbon show={ribbon !== null} text={ribbon?.text ?? ""} sub={ribbon?.sub ?? ""} />
             </div>
-            <div className="pointer-events-none absolute inset-0 grid place-items-center">
-              <SafetyShield show={shield} />
-            </div>
-            <div className="pointer-events-none absolute inset-x-0 top-14 flex justify-center">
+            <div className="pointer-events-none absolute inset-x-0 top-12 flex justify-center">
               <FloatingNote text={note} />
             </div>
+            {vessel.frozen && insight.kind === "result" && (
+              <motion.div
+                className="lab-frozen-badge"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                🧩 Simulation not available for this mix
+              </motion.div>
+            )}
           </div>
 
-          <BenchControls
-            tray={tray}
-            maxItems={MAX_TRAY}
-            capacityMl={cat?.conditions.vesselCapacityMl ?? 150}
-            temperature={temperature}
-            minT={cat?.conditions.minTemperatureC ?? 5}
-            maxT={cat?.conditions.maxTemperatureC ?? 90}
-            stirring={stirring}
-            busy={busy}
-            canMix={canMix && totalLiquid <= (cat?.conditions.vesselCapacityMl ?? 150) + 1}
-            focusRef={focusRef}
-            heaterGlow={heaterGlow}
-            mixed={mixed}
-            onAmount={(key, amount) =>
-              setTray((t) => t.map((x) => (x.key === key ? { ...x, amount } : x)))
-            }
-            onRemove={(key) => setTray((t) => t.filter((x) => x.key !== key))}
-            onTemperature={(v) => {
-              setTemperature(v);
-              setHeaterGlow(false);
-            }}
-            onStirring={setStirring}
-            onMix={() => void runMix(tray, temperature)}
-            onEmpty={empty}
-          />
+          {inHand && <DispenserControls d={dispenser} onPutDown={() => setInHand(null)} />}
+
+          <div className="lab-toolbar">
+            <Tool
+              icon="🔥"
+              label={burnerOn ? `Burner on · ${bathTemp.toFixed(0)}°C` : "Bunsen burner"}
+              active={burnerOn}
+              glow={toolGlow === "heater"}
+              onClick={toggleBurner}
+            />
+            <Tool
+              icon="⚡"
+              label="Spark igniter"
+              glow={toolGlow === "spark"}
+              onClick={strikeSpark}
+            />
+            <Tool
+              icon="🥄"
+              label={stirring ? "Stirring…" : "Hold to stir"}
+              active={stirring}
+              onDown={() => stir(true)}
+              onUp={() => stir(false)}
+            />
+            <Tool
+              icon="↶"
+              label="Undo last"
+              disabled={!history.length}
+              onClick={() => {
+                undoLast();
+                requestResolve(300);
+              }}
+            />
+            <Tool
+              icon="🧽"
+              label="Empty & wash"
+              disabled={!contents.length}
+              onClick={emptyVessel}
+            />
+            {!inHand && (
+              <span className="ml-auto hidden text-[12.5px] font-medium text-white/90 drop-shadow md:block">
+                Pick something from the shelf to hold it ✋
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="min-h-[420px] lg:min-h-0">
-          <OutcomePanel
-            state={panel}
+        <div className="h-[560px] lg:h-auto lg:min-h-0">
+          <InsightPanel
+            state={insight}
             newDiscoveries={fresh}
-            onOption={onOption}
             presets={presets}
+            onOption={onOption}
           />
         </div>
       </main>
 
-      <Vignette colour={vignette ?? "transparent"} show={vignette !== null} />
       <DiscoveryCard discovery={card?.d ?? null} equation={card?.eq ?? null} onDone={nextCard} />
       <AutoAdvance cardId={card?.d.id ?? null} onAdvance={nextCard} />
+      <ProhibitedDialog
+        open={dialog !== null}
+        title={dialog?.title ?? ""}
+        message={dialog?.message ?? ""}
+        alternatives={dialog?.alternatives ?? []}
+        onClose={() => setDialog(null)}
+        onAlternative={(a) => {
+          setDialog(null);
+          onOption(a);
+        }}
+      />
       <DiscoveryJournal
         open={journalOpen}
         onClose={() => setJournalOpen(false)}
@@ -940,7 +1197,7 @@ export function ChemistryPlayground() {
         item={info}
         onClose={() => setInfo(null)}
         onAdd={(i) => {
-          addToTray(i);
+          pickUp(i);
           setInfo(null);
         }}
       />
@@ -948,38 +1205,84 @@ export function ChemistryPlayground() {
   );
 }
 
+const PLACEHOLDER: ShelfItem = {
+  id: "__none",
+  name: "",
+  formula: "",
+  concentrationM: null,
+  category: "",
+  form: "solution",
+  solidForm: null,
+  colour: "#ffffff",
+  opacity: 0,
+  hazards: [],
+  limits: { min: 0, max: 0, unit: "mL" },
+  description: "",
+  element: null,
+};
+
 function AutoAdvance({ cardId, onAdvance }: { cardId: string | null; onAdvance: () => void }) {
   useEffect(() => {
     if (!cardId) return;
-    const id = window.setTimeout(onAdvance, 2600);
+    const id = window.setTimeout(onAdvance, 2800);
     return () => window.clearTimeout(id);
   }, [cardId, onAdvance]);
   return null;
 }
 
-function Readout({
+function Instrument({
   label,
   value,
-  decimals,
   unit,
+  decimals,
+  colour,
 }: {
   label: string;
   value: number | null;
-  decimals: number;
   unit: string;
+  decimals: number;
+  colour: string;
 }) {
   return (
-    <div className="ls-hud-chip">
-      <span className="text-[9.5px] uppercase tracking-[0.16em] text-white/45">{label}</span>
-      <span className="text-[15px] text-white">
+    <div className="lab-instrument" style={{ ["--accent" as string]: colour }}>
+      <span className="lab-instrument-label">{label}</span>
+      <span className="lab-instrument-screen">
         {value === null ? (
-          <span className="tabular text-white/35">—</span>
+          "--.-"
         ) : (
-          <NumberTicker value={value} decimals={decimals} durationMs={500} />
+          <NumberTicker value={value} decimals={decimals} durationMs={400} />
         )}
-        {unit && <span className="ml-1 text-[10px] text-white/45">{unit}</span>}
+        {unit && <small>{unit}</small>}
       </span>
     </div>
+  );
+}
+
+function Tool(p: {
+  icon: string;
+  label: string;
+  active?: boolean;
+  glow?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  onDown?: () => void;
+  onUp?: () => void;
+}) {
+  return (
+    <motion.button
+      className={`lab-tool ${p.active ? "lab-tool-on" : ""} ${p.glow ? "lab-tool-glow" : ""}`}
+      disabled={p.disabled}
+      onClick={p.onClick}
+      onPointerDown={p.onDown}
+      onPointerUp={p.onUp}
+      onPointerLeave={p.onUp}
+      whileTap={{ scale: 0.94 }}
+      animate={p.glow ? { y: [0, -4, 0] } : { y: 0 }}
+      transition={p.glow ? { duration: 1.2, repeat: Infinity } : { duration: 0.2 }}
+    >
+      <span className="text-lg">{p.icon}</span>
+      <span>{p.label}</span>
+    </motion.button>
   );
 }
 
@@ -990,95 +1293,60 @@ function Header(props: {
   xp: number;
   muted: boolean;
   pulse: number;
-  busy: boolean;
   onMute: () => void;
   onJournal: () => void;
-  onInspire: () => void;
 }) {
   const status =
     props.online === null
-      ? { text: "Connecting", colour: "#94A3B8" }
+      ? { t: "Connecting…", c: "#64748b" }
       : props.online
-        ? { text: "Safety engine online", colour: "#22C55E" }
-        : { text: "Safety engine offline", colour: "#EF4444" };
+        ? { t: "Safety engine online", c: "#16a34a" }
+        : { t: "Safety engine offline", c: "#dc2626" };
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-white/5 px-4">
-      <div className="flex min-w-0 items-center gap-3">
-        <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden>
-          <defs>
-            <linearGradient id="logo" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0" stopColor="#22D3EE" />
-              <stop offset="1" stopColor="#8B5CF6" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M12 3h8v2h-1v8l8 13a3 3 0 0 1-2.6 4.5H7.6A3 3 0 0 1 5 26l8-13V5h-1z"
-            fill="none"
-            stroke="url(#logo)"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-          <path d="M9 22h14l2 4H7z" fill="url(#logo)" opacity="0.8" />
-        </svg>
-        <div className="min-w-0">
-          <div className="font-heading text-[17px] font-bold leading-none tracking-tight">
-            LAB<span className="text-accent-cyan">scape</span>
+    <header className="lab-header relative z-10">
+      <div className="flex items-center gap-3">
+        <div className="lab-logo">⚗</div>
+        <div>
+          <div className="font-heading text-[19px] font-bold leading-none text-slate-800">
+            LAB<span className="text-cyan-600">scape</span>
           </div>
-          <div className="mt-1 hidden items-center gap-2 text-[10.5px] uppercase tracking-[0.2em] text-white/45 sm:flex">
-            Open playground
-            <span className="rounded-full bg-subject-chemistry/15 px-2 py-0.5 text-subject-chemistry">
-              Chemistry
-            </span>
+          <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-teal-700">
+            Open playground · Chemistry
           </div>
         </div>
       </div>
-
       <div
-        className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] md:flex"
+        className="hidden items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-[11.5px] font-semibold md:flex"
+        style={{ color: status.c }}
         role="status"
       >
         <motion.span
           className="h-2 w-2 rounded-full"
-          style={{ background: status.colour, boxShadow: `0 0 10px ${status.colour}` }}
-          animate={{ opacity: [1, 0.4, 1] }}
+          style={{ background: status.c }}
+          animate={{ opacity: [1, 0.3, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
-        <span style={{ color: status.colour }}>{status.text}</span>
+        {status.t}
       </div>
-
       <div className="flex items-center gap-2">
-        <span className="hidden sm:inline-flex">
-          <button
-            className="ls-btn-ghost"
-            onClick={props.onInspire}
-            disabled={props.busy}
-            title="Run a random experiment"
-          >
-            🎲 Inspire me
-          </button>
-        </span>
         <motion.button
           key={props.pulse}
-          className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-3 hover:bg-white/[0.08]"
+          className="lab-pillbtn"
           onClick={props.onJournal}
           animate={props.pulse ? { scale: [1, 1.15, 1] } : {}}
-          transition={{ duration: 0.5 }}
-          aria-label={`Discovery journal: ${props.found} of ${props.total} discovered`}
+          aria-label={`Discovery journal: ${props.found} of ${props.total}`}
         >
-          <ProgressRing value={props.found} total={props.total} size={30} />
-          <span className="tabular text-[13px]">
-            {props.found}
-            <span className="text-white/40">/{props.total}</span>
+          <ProgressRing value={props.found} total={props.total} size={26} />
+          <span className="tabular">
+            {props.found}/{props.total}
           </span>
+          <span className="hidden sm:inline">discoveries</span>
         </motion.button>
-        <div className="tabular hidden rounded-full bg-state-success/10 px-3 py-1.5 text-[12px] font-semibold text-state-success sm:block">
-          {props.xp} XP
-        </div>
+        <span className="lab-pillbtn lab-xp">⭐ {props.xp} XP</span>
         <button
-          className="ls-icon-btn"
+          className="lab-pillbtn"
           onClick={props.onMute}
-          aria-label={props.muted ? "Unmute sounds" : "Mute sounds"}
-          title={props.muted ? "Sound off" : "Sound on"}
+          aria-label={props.muted ? "Unmute" : "Mute"}
         >
           {props.muted ? "🔇" : "🔊"}
         </button>

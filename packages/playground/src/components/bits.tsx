@@ -77,6 +77,10 @@ export function NumberTicker({
 }
 
 const HAZARD: Record<string, { label: string; path: string }> = {
+  radioactive: {
+    label: "Radioactive",
+    path: "M9 9 m-1.6 0 a1.6 1.6 0 1 0 3.2 0 a1.6 1.6 0 1 0 -3.2 0 M9 7 L7 3.6 A6 6 0 0 1 11 3.6 Z M7.3 10 L5.3 13.4 A6 6 0 0 1 3.4 9.9 Z M10.7 10 L14.6 9.9 A6 6 0 0 1 12.7 13.4 Z",
+  },
   corrosive: { label: "Corrosive", path: "M6 4h6l-1 4H7z M5 12c2 0 2 2 4 2s2-2 4-2M4 15h10" },
   irritant: { label: "Irritant / harmful", path: "M9 4v6 M9 13v1" },
   oxidising: { label: "Oxidising", path: "M9 4c2 2 3 3 3 5a3 3 0 1 1-6 0c0-2 1-3 3-5z M4 14h10" },
@@ -117,6 +121,24 @@ export function HazardIcon({ kind }: { kind: string }) {
 
 /** Reagent bottle or sample dish art for shelf cards. */
 export function ReagentArt({ item, size = 56 }: { item: ShelfItem; size?: number }) {
+  if (item.form === "gas") {
+    return (
+      <svg viewBox="0 0 40 56" width={size * 0.72} height={size} aria-hidden>
+        <rect
+          x="10"
+          y="10"
+          width="20"
+          height="44"
+          rx="9"
+          fill={hexToRgba(item.colour, 0.9)}
+          stroke="#334155"
+          strokeWidth="1.4"
+        />
+        <rect x="16" y="3" width="8" height="8" fill="#64748b" />
+        <rect x="12" y="26" width="16" height="10" rx="1.5" fill="rgba(255,255,255,0.9)" />
+      </svg>
+    );
+  }
   if (item.form === "solid") {
     return (
       <svg viewBox="-34 -30 68 44" width={size} height={size * 0.65} aria-hidden>

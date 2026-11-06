@@ -62,6 +62,7 @@ export function resolveMix(
   tray: TrayItem[],
   temperatureC: number,
   stirring: boolean,
+  ignition = false,
 ): Promise<SimulationResult> {
   const req: SimulationRequest = {
     id: crypto.randomUUID(),
@@ -69,7 +70,7 @@ export function resolveMix(
     mode: "sandbox",
     attemptId: sessionKey(),
     inputs: tray.map((t) => ({ ref: t.item.id, amount: t.amount, unit: t.item.limits.unit })),
-    conditions: { temperatureC, stirring },
+    conditions: { temperatureC, stirring, ignition },
   };
   return call<SimulationResult>("/v1/safety/resolve", {
     method: "POST",

@@ -11,6 +11,7 @@ import com.labscape.api.contracts.SimulationResult.ReactionSummary;
 import com.labscape.api.intelligence.chem.Catalogue;
 import com.labscape.api.intelligence.chem.ChemistryEngine;
 import com.labscape.api.intelligence.chem.ChemistryEngine.Portion;
+import com.labscape.api.intelligence.chem.Lore;
 import com.labscape.api.intelligence.chem.Substance;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -104,7 +105,8 @@ public class SafetyPipeline {
         }
 
         // 4. Reaction lookup, 5. outcome resolution.
-        ChemistryEngine.Result r = engine.run(portions, temperature);
+        boolean ignition = req.conditions() != null && Boolean.TRUE.equals(req.conditions().ignition());
+        ChemistryEngine.Result r = engine.run(portions, temperature, ignition);
         SimulationResult result = toResult(req.id(), r, portions);
         audit(session, req, result, null, false, inputSummary);
         return result;
@@ -125,7 +127,7 @@ public class SafetyPipeline {
                                 fmt(l.min()), fmt(l.max()), l.unit(), s.displayName()),
                         s.id()));
             }
-            if (!s.isSolid()) liquid += "drops".equals(l.unit()) ? amount * 0.05 : amount;
+            if (!s.isSolid() && !s.isGas()) liquid += "drops".equals(l.unit()) ? amount * 0.05 : amount;
         }
         if (liquid > VESSEL_CAPACITY_ML) {
             return Optional.of(outOfRange(req.id(), "VESSEL_OVERFLOW",
@@ -154,14 +156,49 @@ public class SafetyPipeline {
         return new SimulationResult(requestId, Outcome.PROHIBITED, OutcomeCopy.PROHIBITED_REASON, null, null, null,
                 List.of(), List.of(), List.of(), Fidelity.QUALITATIVE, List.of(),
                 new Presentation(OutcomeCopy.PROHIBITED_TITLE, OutcomeCopy.PROHIBITED_MESSAGE, List.of(), List.of(),
-                        null, null, OutcomeCopy.PROHIBITED_ALTERNATIVES, List.of()));
+                        null, null, OutcomeCopy.PROHIBITED_ALTERNATIVES, List.of(), List.of(), List.of()));
     }
 
     private SimulationResult outOfRange(String requestId, String code, String message, String focusRef) {
         return new SimulationResult(requestId, Outcome.OUT_OF_RANGE, code, null, null, null,
                 List.of(), List.of(), List.of(), Fidelity.QUALITATIVE, List.of(),
                 new Presentation(OutcomeCopy.OUT_OF_RANGE_TITLE, message, List.of(), List.of(),
-                        "TEMP_OUT_OF_RANGE".equals(code) ? "heater" : null, focusRef, List.of(), List.of()));
+                        "TEMP_OUT_OF_RANGE".equals(code) ? "heater" : null, focusRef, List.of(), List.of(), List.of(), List.of()));
+    }
+
+    private static SimulationResult.Participants participants(ChemistryEngine.Reaction x) {
+        if (x.participants() == null) return null;
+        java.util.function.Function<com.labscape.api.intelligence.chem.Latex.Term, SimulationResult.EquationTerm> map =
+                t -> new SimulationResult.EquationTerm(t.coef(), t.formula(), t.charge(), t.state());
+        return new SimulationResult.Participants(
+                x.participants().lhs().stream().map(map).toList(), x.participants().rhs().stream().map(map).toList());
+    }
+
+    private static List<SimulationResult.CompoundInfo> compounds(ChemistryEngine.Result r) {
+        return r.products().stream()
+                .filter(p -> p.mol() > 1e-9)
+                .map(p -> new SimulationResult.CompoundInfo(p.formula(), Lore.name(p.formula()), p.phase(),
+                        Lore.colour(p.formula()), noteFor(p.formula())))
+                .toList();
+    }
+
+    private static String noteFor(String formula) {
+        Lore.Gas g = Lore.GASES.get(formula);
+        return g == null ? null : "Smell: " + g.smell().toLowerCase(Locale.ROOT);
+    }
+
+    private static List<String> facts(ChemistryEngine.Result r, List<Portion> portions) {
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        for (ChemistryEngine.Reaction x : r.reactions()) {
+            String f = Lore.reactionFact(x.discoveryId());
+            if (f != null) out.add(f);
+        }
+        for (Portion p : portions) {
+            if (p.substance().isElement()) out.add(p.substance().element().fact());
+        }
+        boolean smelly = r.cues().stream().anyMatch(c -> c.containsKey("smell") || "smoke".equals(c.get("kind")));
+        if (smelly) out.add(Lore.SNIFF_SAFETY);
+        return out.stream().limit(5).toList();
     }
 
     private SimulationResult toResult(String requestId, ChemistryEngine.Result r, List<Portion> portions) {
@@ -169,7 +206,10 @@ public class SafetyPipeline {
         List<SimulationResult.Measurement> measurements = r.measurements().stream()
                 .map(m -> new SimulationResult.Measurement(m.key(), m.value(), m.unit())).toList();
         List<ReactionSummary> summaries = r.reactions().stream()
-                .map(x -> new ReactionSummary(x.id(), x.name(), x.type(), x.equationLatex(), x.discoveryId())).toList();
+                .map(x -> new ReactionSummary(x.id(), x.name(), x.type(), x.equationLatex(), x.discoveryId(), participants(x)))
+                .toList();
+        List<SimulationResult.CompoundInfo> compounds = compounds(r);
+        List<String> facts = facts(r, portions);
         List<String> discoveries = r.reactions().stream().map(ChemistryEngine.Reaction::discoveryId)
                 .filter(d -> d != null).distinct().toList();
         List<String> reasons = List.copyOf(new LinkedHashSet<>(r.reasons()));
@@ -179,22 +219,22 @@ public class SafetyPipeline {
                     List.of(), List.of(), List.of(), Fidelity.QUALITATIVE, List.of(),
                     new Presentation(OutcomeCopy.UNSUPPORTED_TITLE, OutcomeCopy.UNSUPPORTED_MESSAGE,
                             List.of(r.unsupportedMessage(), "Unsupported doesn't mean impossible - it means this combination isn't modelled yet."),
-                            List.of(), null, null, OutcomeCopy.UNSUPPORTED_OPTIONS, List.of()));
+                            List.of(), null, null, OutcomeCopy.UNSUPPORTED_OPTIONS, List.of(), List.of(), facts));
             case PROCEDURE_MISMATCH -> new SimulationResult(requestId, Outcome.PROCEDURE_MISMATCH, r.reasonCode(), null, null, null,
                     List.of(), cues, measurements, Fidelity.APPROXIMATE, List.of(),
                     new Presentation(OutcomeCopy.MISMATCH_TITLE, r.mismatches().get(0).message(), List.of(), List.of(),
-                            "heater", null, List.of(), List.of()));
+                            "heater", null, List.of(), List.of(), List.of(), facts));
             case NEEDS_CONDITIONS -> new SimulationResult(requestId, Outcome.NEEDS_CONDITIONS, r.reasonCode(), null, null, null,
                     List.of(), cues, measurements, Fidelity.APPROXIMATE, List.of(),
                     new Presentation(OutcomeCopy.NEEDS_CONDITIONS_TITLE, r.pending().get(0).message(), List.of(), List.of(),
-                            r.pending().get(0).tool(), null, List.of(), List.of()));
+                            r.pending().get(0).tool(), null, List.of(), List.of(), List.of(), facts));
             case NO_REACTION -> {
                 List<String> obs = new ArrayList<>(r.observations());
                 obs.addAll(reasons);
                 yield new SimulationResult(requestId, Outcome.NO_REACTION, r.reasonCode(), null, null, null,
                         List.of(), cues, measurements, Fidelity.APPROXIMATE, List.of(),
                         new Presentation(OutcomeCopy.NO_REACTION_TITLE, OutcomeCopy.NO_REACTION_MESSAGE, obs, summaries,
-                                null, null, List.of(), discoveries));
+                                null, null, List.of(), discoveries, compounds, facts));
             }
             case REACTION -> {
                 List<ChemistryEngine.Reaction> chemical = r.chemical();
@@ -212,7 +252,7 @@ public class SafetyPipeline {
                 yield new SimulationResult(requestId, Outcome.REACTION, null, primary.id(), 1, primary.equationLatex(),
                         species, cues, measurements, Fidelity.APPROXIMATE,
                         discoveries.stream().map(d -> "expl-" + d).toList(),
-                        new Presentation(title, message, obs, summaries, null, null, List.of(), discoveries));
+                        new Presentation(title, message, obs, summaries, null, null, List.of(), discoveries, compounds, facts));
             }
         };
     }

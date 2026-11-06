@@ -60,13 +60,17 @@ class SafetyPipelineTest {
     }
 
     private static SimulationResult mix(SafetyPipeline p, String session, double tempC, In... inputs) {
+        return mix(p, session, tempC, false, inputs);
+    }
+
+    private static SimulationResult mix(SafetyPipeline p, String session, double tempC, boolean ignition, In... inputs) {
         List<SimulationRequest.Input> list = new ArrayList<>();
         for (In i : inputs) {
             Substance s = CATALOGUE.find(i.ref()).orElseThrow();
             list.add(new SimulationRequest.Input(i.ref(), i.amount(), s.limits().unit(), null));
         }
         var req = new SimulationRequest("req-" + IDS.incrementAndGet(), "chemistry", "sandbox", "att-1", null, null, null,
-                list, new SimulationRequest.Conditions(tempC, null, null));
+                list, new SimulationRequest.Conditions(tempC, null, null, ignition));
         return p.resolve(req, session);
     }
 
@@ -248,6 +252,100 @@ class SafetyPipelineTest {
                 .isIn("QTY_ABOVE_LIMIT", "VESSEL_OVERFLOW");
     }
 
+    // ------------------------------------------------------------------ elements
+
+    private SimulationResult spark(In... inputs) {
+        return mix(pipeline, "session-test", 22, true, inputs);
+    }
+
+    @Test
+    void sodiumInWaterSkatesAndMakesAlkali() {
+        SimulationResult r = mix(in("water", 50), in("el-Na", 0.2), in("phenolphthalein", 3));
+        assertThat(r.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(discoveries(r)).contains("alkali-water", "indicator-alkali");
+        assertThat(hasCue(r, "skate")).isTrue();
+        assertThat(measurement(r, "pH")).isGreaterThan(12);
+        assertThat(r.presentation().compounds()).anySatisfy(c -> assertThat(c.name()).isEqualTo("Sodium hydroxide"));
+    }
+
+    @Test
+    void hydrogenAndOxygenNeedASparkThenMakeWater() {
+        SimulationResult cold = mix(in("el-H", 100), in("el-O", 50));
+        assertThat(cold.outcome()).isEqualTo(Outcome.NEEDS_CONDITIONS);
+        assertThat(cold.reasonCode()).isEqualTo("NEEDS_IGNITION");
+        assertThat(cold.presentation().neededTool()).isEqualTo("spark");
+
+        SimulationResult r = spark(in("el-H", 100), in("el-O", 50));
+        assertThat(r.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(discoveries(r)).contains("water-synthesis");
+        assertThat(hasCue(r, "condense")).isTrue();
+        assertThat(hasCue(r, "light")).isTrue();
+        var reaction = r.presentation().reactions().get(0);
+        assertThat(reaction.participants()).isNotNull();
+        assertThat(reaction.participants().products()).anySatisfy(t -> assertThat(t.formula()).isEqualTo("H2O"));
+        assertThat(r.presentation().compounds()).anySatisfy(c -> assertThat(c.name()).isEqualTo("Water"));
+        assertThat(r.presentation().facts()).isNotEmpty();
+    }
+
+    @Test
+    void sodiumAndChlorineMakeSalt() {
+        SimulationResult r = mix(in("el-Na", 0.2), in("el-Cl", 100));
+        assertThat(r.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(discoveries(r)).contains("salt-synthesis");
+        assertThat(r.equationLatex()).contains("NaCl");
+        assertThat(r.presentation().compounds()).anySatisfy(c -> assertThat(c.name()).isEqualTo("Sodium chloride"));
+    }
+
+    @Test
+    void magnesiumBurnsBrightly() {
+        SimulationResult r = spark(in("el-Mg", 0.2), in("el-O", 100));
+        assertThat(discoveries(r)).contains("metal-burning");
+        assertThat(r.equationLatex()).contains("MgO");
+        assertThat(hasCue(r, "flame")).isTrue();
+    }
+
+    @Test
+    void ironAndSulfurNeedHeatingThenGlow() {
+        assertThat(mix(in("el-Fe", 1), in("el-S", 1)).reasonCode()).isEqualTo("NEEDS_IGNITION");
+        assertThat(spark(in("el-Fe", 1), in("el-S", 1)).equationLatex()).contains("FeS");
+    }
+
+    @Test
+    void chlorineDisplacesBromide() {
+        SimulationResult r = mix(in("kbr", 20), in("el-Cl", 50));
+        assertThat(discoveries(r)).contains("halogen-displacement");
+    }
+
+    @Test
+    void goldenRainAndColdPack() {
+        assertThat(discoveries(mix(in("pbno3", 10), in("ki", 5)))).contains("golden-rain");
+        SimulationResult cold = mix(in("water", 50), in("nh4no3", 5));
+        assertThat(discoveries(cold)).contains("cold-pack");
+        assertThat(measurement(cold, "temperature")).isLessThan(22);
+    }
+
+    @Test
+    void nobleGasesAndSuperheavies() {
+        assertThat(mix(in("el-He", 50), in("water", 20)).outcome()).isEqualTo(Outcome.NO_REACTION);
+        SimulationResult og = mix(in("el-Og", 0.1), in("water", 20));
+        assertThat(og.outcome()).isEqualTo(Outcome.UNSUPPORTED);
+        assertThat(og.presentation().observations().get(0)).contains("handful");
+    }
+
+    @Test
+    void explosiveMixturesAreProhibited() {
+        assertThat(mix(in("kno3", 2), in("el-C", 1), in("el-S", 1)).outcome()).isEqualTo(Outcome.PROHIBITED);
+        assertThat(mix(in("el-Al", 1), in("fe2o3-powder", 2)).outcome()).isEqualTo(Outcome.PROHIBITED);
+        assertThat(mix(in("nh4no3", 2), in("sugar", 2)).outcome()).isEqualTo(Outcome.PROHIBITED);
+    }
+
+    @Test
+    void radioactiveElementsCarryAWarning() {
+        SimulationResult r = mix(in("el-U", 1), in("hcl", 20));
+        assertThat(r.presentation().observations().stream().anyMatch(o -> o.contains("radioactive"))
+                || r.presentation().message().contains("radioactive")).isTrue();
+    }
+
     // ------------------------------------------------------------------ prohibited
 
     @Test
@@ -304,25 +402,26 @@ class SafetyPipelineTest {
         List<Substance> all = new ArrayList<>(CATALOGUE.all());
         Map<Outcome, Integer> counts = new EnumMap<>(Outcome.class);
         int n = 0;
+        SafetyPipeline pairs = newPipeline(true, new ProbeGuard(Integer.MAX_VALUE, Duration.ofMinutes(10), Duration.ofMinutes(2), Clock.systemUTC()));
         for (double temp : new double[] {22, 75}) {
+            boolean ignite = temp > 50;
             for (int i = 0; i < all.size(); i++) {
                 for (int j = i + 1; j < all.size(); j++) {
-                    SafetyPipeline fresh = newPipeline(true, new ProbeGuard(1_000_000, Duration.ofMinutes(10), Duration.ofMinutes(2), Clock.systemUTC()));
-                    SimulationResult r = mix(fresh, "pairs", temp, mid(all.get(i)), mid(all.get(j)));
-                    assertSane(r, all.get(i).id() + "+" + all.get(j).id() + "@" + temp);
+                    SimulationResult r = mix(pairs, "pairs", temp, ignite, mid(all.get(i)), mid(all.get(j)));
+                    assertSane(r, all.get(i).id() + "+" + all.get(j).id() + "@" + temp + (ignite ? "+spark" : ""));
                     counts.merge(r.outcome(), 1, Integer::sum);
                     n++;
                 }
             }
         }
         Random rnd = new Random(42);
-        SafetyPipeline fresh = newPipeline(true, new ProbeGuard(1_000_000, Duration.ofMinutes(10), Duration.ofMinutes(2), Clock.systemUTC()));
-        for (int k = 0; k < 3000; k++) {
+        SafetyPipeline fresh = newPipeline(true, new ProbeGuard(Integer.MAX_VALUE, Duration.ofMinutes(10), Duration.ofMinutes(2), Clock.systemUTC()));
+        for (int k = 0; k < 5000; k++) {
             int size = 3 + rnd.nextInt(2);
             List<In> picks = new ArrayList<>();
             for (int m = 0; m < size; m++) picks.add(random(all.get(rnd.nextInt(all.size())), rnd));
             double temp = 5 + rnd.nextInt(86);
-            SimulationResult r = mix(fresh, "fuzz", temp, picks.toArray(In[]::new));
+            SimulationResult r = mix(fresh, "fuzz", temp, rnd.nextBoolean(), picks.toArray(In[]::new));
             assertSane(r, picks + "@" + temp);
             counts.merge(r.outcome(), 1, Integer::sum);
             n++;

@@ -37,7 +37,11 @@ public class PlaygroundController {
             double opacity,
             List<String> hazards,
             Substance.Limits limits,
-            String description) {}
+            String description,
+            ElementView element) {}
+
+    public record ElementView(int z, String symbol, String category, String state, Double electronegativity,
+            double atomicMass, boolean radioactive, boolean superheavy) {}
 
     public record Conditions(double minTemperatureC, double maxTemperatureC, double defaultTemperatureC, double vesselCapacityMl) {}
 
@@ -52,7 +56,11 @@ public class PlaygroundController {
     public CatalogueResponse catalogue() {
         List<ShelfItem> items = catalogue.all().stream()
                 .map(s -> new ShelfItem(s.id(), s.name(), s.formula(), s.concentrationM(), s.category(), s.form(),
-                        s.solidForm(), s.colour(), s.opacity(), s.hazards(), s.limits(), s.description()))
+                        s.solidForm(), s.colour(), s.opacity(), s.hazards(), s.limits(), s.description(),
+                        s.element() == null ? null : new ElementView(s.element().z(), s.element().symbol(), s.element().category(),
+                                s.element().state(), s.element().electronegativity(),
+                                s.molarMass() == null ? 0 : (s.formula().endsWith("2") && s.formula().length() <= 3 ? s.molarMass() / 2 : s.molarMass()),
+                                s.element().radioactive(), s.element().superheavy())))
                 .toList();
         return new CatalogueResponse(catalogue.version(), pipeline.enabled(), items, Discovery.ALL,
                 new Conditions(SafetyPipeline.MIN_TEMP_C, SafetyPipeline.MAX_TEMP_C, SafetyPipeline.DEFAULT_TEMP_C,

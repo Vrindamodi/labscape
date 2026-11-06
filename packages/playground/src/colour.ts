@@ -66,3 +66,12 @@ export function lighten(css: string, amount: number, alphaBoost = 0): string {
   const f = (v: number) => Math.round(v + (255 - v) * amount);
   return `rgba(${f(r)}, ${f(g)}, ${f(b)}, ${Math.min(1, a + alphaBoost).toFixed(3)})`;
 }
+
+/** Mix a poured colour into the current liquid colour by volume fraction. */
+export function mixRgba(current: string, added: string, fraction: number): string {
+  const [r1, g1, b1, a1] = parseRgba(current);
+  const [r2, g2, b2, a2] = parseRgba(added);
+  const f = Math.max(0, Math.min(1, fraction));
+  const mix = (x: number, y: number) => Math.round(x + (y - x) * f);
+  return `rgba(${mix(r1, r2)}, ${mix(g1, g2)}, ${mix(b1, b2)}, ${(a1 + (a2 - a1) * f).toFixed(3)})`;
+}

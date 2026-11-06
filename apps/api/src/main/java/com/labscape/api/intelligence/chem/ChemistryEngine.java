@@ -41,7 +41,9 @@ public class ChemistryEngine {
 
     public record Mismatch(String code, String message) {}
 
-    public record Reaction(String id, String name, String type, String equationLatex, String discoveryId, double extentMol) {}
+    public record Reaction(
+            String id, String name, String type, String equationLatex, String discoveryId, double extentMol,
+            Latex.Eq participants) {}
 
     public record Product(String formula, double mol, String phase) {}
 
@@ -66,7 +68,13 @@ public class ChemistryEngine {
     }
 
     public Result run(List<Portion> portions, double temperatureC) {
-        return new Run(merge(portions), temperatureC).execute();
+        return run(portions, temperatureC, false);
+    }
+
+    /** @param ignition a flame or spark has been applied to the mixture */
+    public Result run(List<Portion> portions, double temperatureC, boolean ignition) {
+        Latex.resetRecent();
+        return new Run(merge(portions), temperatureC, ignition).execute();
     }
 
     private static List<Portion> merge(List<Portion> portions) {
@@ -79,10 +87,13 @@ public class ChemistryEngine {
 
     // ------------------------------------------------------------------------------------------
 
-    private final class Run {
+    private final class Run implements MixtureOps {
         final List<Portion> portions;
         final double tempC;
         final double tf;
+        final boolean ignition;
+        double gasMl;
+        boolean bleached;
         final Map<String, Double> mol = new LinkedHashMap<>();
         final Map<String, String> solidTarget = new LinkedHashMap<>();
         final Map<String, Double> solidInitial = new LinkedHashMap<>();
@@ -107,14 +118,31 @@ public class ChemistryEngine {
         final Map<String, Double> pptFormed = new LinkedHashMap<>();
         int reactionIndex = 0;
 
-        Run(List<Portion> portions, double tempC) {
+        Run(List<Portion> portions, double tempC, boolean ignition) {
             this.portions = portions;
             this.tempC = tempC;
+            this.ignition = ignition;
             this.tf = Math.pow(2.0, (tempC - 25.0) / 10.0);
             for (Portion p : portions) {
                 Substance s = p.substance();
                 if (s.acid() != null) hadAcid = true;
                 if (s.base() != null || s.carbonate() != null && !s.isSolid()) hadBase = true;
+                if (s.isGas()) {
+                    gasMl += p.amount();
+                    double n = p.amount() / RTP_ML_PER_MOL;
+                    s.species().forEach((k, coef) -> add(k, coef * n));
+                    continue;
+                }
+                if (s.isElement() && "liquid".equals(s.form())) {
+                    double density = "Hg".equals(s.element().symbol()) ? 13.53 : 3.10;
+                    double n = p.amount() * density / s.molarMass();
+                    s.species().forEach((k, coef) -> {
+                        add(k, coef * n);
+                        solidTarget.put(k, "solid:" + s.id());
+                        solidInitial.merge(k, coef * n, Double::sum);
+                    });
+                    continue;
+                }
                 if (s.isSolid()) {
                     double n = p.amount() / s.molarMass();
                     s.species().forEach((k, coef) -> {
@@ -132,10 +160,21 @@ public class ChemistryEngine {
 
         // ---------------------------------------------------------------- bookkeeping
 
-        double get(String k) { return mol.getOrDefault(k, 0.0); }
-        boolean has(String k) { return get(k) > EPS; }
-        void add(String k, double v) { mol.merge(k, v, Double::sum); }
-        double take(String k, double v) {
+        // MixtureOps
+        @Override public List<Portion> portions() { return portions; }
+        @Override public double tempC() { return tempC; }
+        @Override public boolean ignition() { return ignition; }
+        @Override public double aqMl() { return aqMl; }
+        @Override public void heat(double joules) { heatJ += joules; }
+        @Override public String solidTarget(String key) { return solidTarget.get(key); }
+        @Override public void observe(String text) { observations.add(text); }
+        @Override public void reason(String text) { reasons.add(text); }
+        @Override public void pending(String code, String tool, String message) { pending.add(new Pending(code, tool, message)); }
+
+        @Override public double get(String k) { return mol.getOrDefault(k, 0.0); }
+        @Override public boolean has(String k) { return get(k) > EPS; }
+        @Override public void add(String k, double v) { mol.merge(k, v, Double::sum); }
+        @Override public double take(String k, double v) {
             double cur = get(k);
             double t = Math.max(0, Math.min(cur, v));
             mol.put(k, cur - t);
@@ -148,20 +187,24 @@ public class ChemistryEngine {
             return portions.stream().anyMatch(p -> p.substance().id().equals(substanceId));
         }
 
-        void product(String formula, double n, String phase) {
+        @Override
+        public void product(String formula, double n, String phase) {
             products.merge(formula, new Product(formula, n, phase),
                     (a, b) -> new Product(a.formula(), a.mol() + b.mol(), a.phase()));
         }
 
-        long nextStart() {
+        @Override
+        public long nextStart() {
             return Math.min(1500, 220L * reactionIndex++);
         }
 
-        void reaction(String id, String name, String type, String eq, String discovery, double extent) {
-            reactions.add(new Reaction(id, name, type, eq, discovery, extent));
+        @Override
+        public void reaction(String id, String name, String type, String eq, String discovery, double extent) {
+            reactions.add(new Reaction(id, name, type, eq, discovery, extent, Latex.structured(eq)));
         }
 
-        Map<String, Object> cue(String kind, String target, long startMs) {
+        @Override
+        public Map<String, Object> cue(String kind, String target, long startMs) {
             Map<String, Object> c = new LinkedHashMap<>();
             c.put("kind", kind);
             c.put("target", target);
@@ -170,19 +213,26 @@ public class ChemistryEngine {
             return c;
         }
 
-        void gas(String gas, double n, String target, double k, String bubble, long startMs) {
+        @Override
+        public void gas(String gas, double n, String target, double k, String bubble, long startMs) {
             gases.merge(gas, n, Double::sum);
             product(gas, n, "g");
             double rate = clamp(Math.sqrt(n * 1e4) * 14 * k * tf, 4, 140);
             long duration = (long) clamp(9000 / Math.max(0.05, k * tf), 2200, 14000);
-            Map<String, Object> c = cue("gas", target, startMs);
+            Map<String, Object> c = cue("gas", target == null ? "vessel" : target, startMs);
             c.put("ratePerS", round(rate, 1));
             c.put("bubble", bubble);
             c.put("gas", gas);
             c.put("durationMs", duration);
+            Lore.Gas info = Lore.GASES.get(gas);
+            if (info != null) {
+                if (info.colourHex() != null) c.put("colour", Colour.hex(info.colourHex(), 0.7).toJson());
+                c.put("smell", info.smell());
+            }
         }
 
-        void precipitate(String formula, double n, String hex, long startMs, long settleMs) {
+        @Override
+        public void precipitate(String formula, double n, String hex, long startMs, long settleMs) {
             precipitates.merge(formula, n, Double::sum);
             pptFormed.merge(formula, n, Double::sum);
             product(formula, n, "s");
@@ -194,7 +244,8 @@ public class ChemistryEngine {
             c.put("settleMs", settleMs);
         }
 
-        void dissolveSolid(String speciesKey, double startMs, long durationMs) {
+        @Override
+        public void dissolveSolid(String speciesKey, double startMs, long durationMs) {
             String target = solidTarget.get(speciesKey);
             if (target == null) return;
             double initial = solidInitial.getOrDefault(speciesKey, 0.0);
@@ -238,6 +289,7 @@ public class ChemistryEngine {
             Colour startColour = startColour();
 
             physical();
+            ElementRules.apply(this);
             hydration();
             neutralise();
             carbonates();
@@ -247,6 +299,7 @@ public class ChemistryEngine {
             permanganate();
             peroxide();
             iron3();
+            halogens();
             copperIodide();
             iodine();
             displacement();
@@ -268,10 +321,24 @@ public class ChemistryEngine {
         }
 
         String coverage() {
+            for (Portion p : portions) {
+                Substance s = p.substance();
+                if (s.isElement() && s.element().superheavy()) return ElementRules.superheavyMessage(s);
+            }
             for (int i = 0; i < portions.size(); i++) {
                 for (int j = i + 1; j < portions.size(); j++) {
                     Substance a = portions.get(i).substance();
                     Substance b = portions.get(j).substance();
+                    if (a.isElement() || b.isElement()) {
+                        String msg = ElementRules.coverage(a, b);
+                        if (msg != null) return msg;
+                        Substance other = a.isElement() ? b : a;
+                        Substance el = other == a ? b : a;
+                        if (!other.isElement() && other.isLimited() && !other.coversPair(el)) {
+                            return "LABscape has no validated model for " + a.displayName() + " with " + b.displayName() + ".";
+                        }
+                        continue;
+                    }
                     boolean gap = catalogue.isGap(a.id(), b.id())
                             || a.isLimited() && !a.coversPair(b)
                             || b.isLimited() && !b.coversPair(a);
@@ -288,7 +355,7 @@ public class ChemistryEngine {
             List<Double> ws = new ArrayList<>();
             for (Portion p : portions) {
                 Substance s = p.substance();
-                if (s.isSolid() || "vegetable-oil".equals(s.id())) continue;
+                if (s.isSolid() || s.isGas() || s.isElement() || "vegetable-oil".equals(s.id())) continue;
                 double ml = volumeMl(p);
                 cs.add(Colour.hex(s.colour(), s.opacity()));
                 ws.add(ml * (0.15 + s.opacity()));
@@ -334,7 +401,34 @@ public class ChemistryEngine {
             if (present("ethanol") && aqMl > 0) {
                 reasons.add("Ethanol mixes completely with water, but no chemical reaction happens.");
             }
-            if (aqMl <= 0 && organicMl <= 0 && portions.size() > 1) {
+            if (aqMl > 0 && has("KNO3(s)")) {
+                double n = take("KNO3(s)", get("KNO3(s)"));
+                add("K+", n);
+                add("NO3-", n);
+                heatJ -= 34_900 * n;
+                dissolveSolid("KNO3(s)", 0, 2400);
+                observations.add("The potassium nitrate crystals dissolve, and the water gets a little colder.");
+            }
+            if (aqMl > 0 && has("NH4NO3(s)")) {
+                double n = take("NH4NO3(s)", get("NH4NO3(s)"));
+                add("NH4+", n);
+                add("NO3-", n);
+                heatJ -= 25_700 * n;
+                dissolveSolid("NH4NO3(s)", 0, 2400);
+                reaction("cold-pack", "Ammonium nitrate dissolves", "physical",
+                        Latex.equation(List.of(Term.of(1, "NH4NO3", "s")),
+                                List.of(Term.ion(1, "NH4", "+"), Term.ion(1, "NO3", "-")), null),
+                        "cold-pack", n);
+                observations.add("As the ammonium nitrate dissolves, the beaker gets noticeably cold - this takes in heat.");
+            }
+            if (aqMl > 0 && has("C12H22O11(s)")) {
+                take("C12H22O11(s)", get("C12H22O11(s)"));
+                dissolveSolid("C12H22O11(s)", 0, 3000);
+                reasons.add("Sugar dissolves in water, but its molecules stay the same - a physical change, not a reaction.");
+            }
+            boolean anyLiquid = aqMl > 0 || organicMl > 0;
+            boolean anyGas = gasMl > 0;
+            if (!anyLiquid && !anyGas && portions.size() > 1 && portions.stream().noneMatch(p -> p.substance().isElement())) {
                 reasons.add("Dry solids don't react - their particles can't move around and collide. Add water.");
             }
         }
@@ -407,6 +501,14 @@ public class ChemistryEngine {
                 String eq = acid != null && base != null ? neutralisationEquation(acid, base)
                         : Latex.equation(List.of(Term.ion(1, "H", "+"), Term.ion(1, "OH", "-")),
                                 List.of(Term.of(1, "H2O", "l")), null);
+                if (acid != null && base != null) {
+                    Substance.AcidInfo ai = acid.acid();
+                    Latex.Salt salt = ammonia ? Latex.salt("NH4", 1, true, ai.anion(), ai.anionCharge(), ai.poly())
+                            : Latex.salt(base.base().cation(), base.base().cationCharge(), false, ai.anion(), ai.anionCharge(), ai.poly());
+                    String cationName = ammonia ? "Ammonium" : Elements.NAME.getOrDefault(base.base().cation(), base.base().cation());
+                    Lore.register(salt.formula(), Lore.saltName(cationName, 1, false, ai.anion()), "#f4f4f2");
+                    product(salt.formula(), total, "aq");
+                }
                 reaction(ammonia ? "neutralisation-ammonia" : "neutralisation",
                         ammonia ? "Neutralisation with ammonia" : "Neutralisation", "neutralisation", eq,
                         ammonia ? "neutralisation-ammonia" : "neutralisation", total);
@@ -426,6 +528,19 @@ public class ChemistryEngine {
                         Latex.equation(List.of(Term.ion(1, "HCO3", "-"), Term.ion(1, "OH", "-")),
                                 List.of(Term.ion(1, "CO3", "2-"), Term.of(1, "H2O", "l")), null),
                         null, e5);
+            }
+
+            double e6 = Math.min(get("NH4+"), get("OH-"));
+            if (e6 > EPS && present("nh4no3")) {
+                take("NH4+", e6);
+                take("OH-", e6);
+                add("NH3", e6 * 0.5);
+                gas("NH3", e6 * 0.5, "vessel", 0.5 * tf, "fine", nextStart());
+                reaction("ammonia-release", "Ammonium salt + alkali", "gas",
+                        Latex.equation(List.of(Term.ion(1, "NH4", "+"), Term.ion(1, "OH", "-")),
+                                List.of(Term.of(1, "NH3", "g"), Term.of(1, "H2O", "l")), null),
+                        "ammonia-release", e6);
+                observations.add("A sharp, eye-watering smell of ammonia rises from the beaker - the test for ammonium ions.");
             }
         }
 
@@ -544,39 +659,60 @@ public class ChemistryEngine {
         void metalsWithAcid() {
             Substance acid = mainAcid();
             List<Portion> metals = portions.stream().filter(p -> p.substance().metal() != null)
-                    .sorted(Comparator.comparingInt((Portion p) -> -p.substance().metal().rank())).toList();
+                    .sorted(Comparator.comparingDouble((Portion p) -> p.substance().metal().e0())).toList();
             for (Portion p : metals) {
                 Substance s = p.substance();
                 Substance.MetalInfo m = s.metal();
                 String key = m.symbol() + "(s)";
                 if (m.acidRate() <= 0) {
                     if (hadAcid) {
-                        reasons.add(s.name() + ": copper sits below hydrogen in the reactivity series, so it doesn't react with dilute acids.");
+                        reasons.add(s.name() + " sits below hydrogen in the reactivity series, so it doesn't react with dilute acids.");
                     }
                     continue;
                 }
                 if (!has(key) || acidAvailable() <= EPS) continue;
+                int c = m.charge();
                 double n = get(key);
-                double[] t = consumeAcid(2 * n);
-                double e = (t[0] + t[1]) / 2;
+                double[] t = consumeAcid(c * n);
+                double e = (t[0] + t[1]) / c;
                 if (e <= EPS) continue;
                 take(key, e);
-                add(m.symbol() + "^2+", e);
-                heatJ += metalAcidHeat(m.symbol()) * e;
+                add(ionKey(m.symbol(), c), e);
+                heatJ += metalAcidHeat(m) * e;
                 long start = nextStart();
                 double strongShare = t[0] / (t[0] + t[1]);
                 double k = m.acidRate() * (strongShare + 0.2 * (1 - strongShare));
-                gas("H2", e, solidTarget.get(key), k, "fine", start);
+                gas("H2", e * c / 2, solidTarget.get(key), k, "fine", start);
                 dissolveSolid(key, start, (long) clamp(7000 / (k * tf), 1800, 14000));
                 String eq;
                 if (acid != null) {
                     Substance.AcidInfo a = acid.acid();
-                    Latex.Salt salt = Latex.salt(m.symbol(), 2, false, a.anion(), a.anionCharge(), a.poly());
-                    eq = Latex.equation(List.of(Term.of(1, m.symbol(), "s"), Term.of(2 / a.protons(), acid.formula(), "aq")),
-                            List.of(Term.of(1, salt.formula(), "aq"), Term.of(1, "H2", "g")), null);
+                    Latex.Salt salt = Latex.salt(m.symbol(), c, false, a.anion(), a.anionCharge(), a.poly());
+                    // a M + b HnA -> s salt + h H2, balanced by scaling until every coefficient is whole.
+                    int mult = 1;
+                    int metalCoef = 0, acidCoef = 0, saltCoef = 0, h2 = 0;
+                    for (; mult <= 12; mult++) {
+                        int protons = c * mult;
+                        if (protons % a.protons() != 0 || protons % 2 != 0 || mult % salt.cations() != 0) continue;
+                        metalCoef = mult;
+                        acidCoef = protons / a.protons();
+                        saltCoef = mult / salt.cations();
+                        h2 = protons / 2;
+                        break;
+                    }
+                    String metalName = Elements.NAME.getOrDefault(m.symbol(), m.symbol());
+                    Substance.ElementInfo info = Elements.INFO.get(m.symbol());
+                    boolean variable = info != null && info.oxidationStates().stream().filter(o -> o > 0).count() > 1;
+                    Lore.register(salt.formula(), Lore.saltName(metalName, c, variable, a.anion()), null);
+                    product(salt.formula(), e / Math.max(1, salt.cations()), "aq");
+                    eq = metalCoef == 0
+                            ? Latex.equation(List.of(Term.of(1, m.symbol(), "s"), Term.ion(c, "H", "+")),
+                                    List.of(Latex.ionTerm(1, ionKey(m.symbol(), c)), Term.of(1, "H2", "g")), null)
+                            : Latex.equation(List.of(Term.of(metalCoef, m.symbol(), "s"), Term.of(acidCoef, acid.formula(), "aq")),
+                                    List.of(Term.of(saltCoef, salt.formula(), "aq"), Term.of(h2, "H2", "g")), null);
                 } else {
-                    eq = Latex.equation(List.of(Term.of(1, m.symbol(), "s"), Term.ion(2, "H", "+")),
-                            List.of(Term.ion(1, m.symbol(), "2+"), Term.of(1, "H2", "g")), null);
+                    eq = Latex.equation(List.of(Term.of(2, m.symbol(), "s"), Term.ion(2 * c, "H", "+")),
+                            List.of(Latex.ionTerm(2, ionKey(m.symbol(), c)), Term.of(c, "H2", "g")), null);
                 }
                 reaction("acid-metal-" + m.symbol().toLowerCase(Locale.ROOT), s.name() + " in acid", "gas", eq, "acid-metal", e);
                 String speed = k > 2 ? "fizzes vigorously" : k > 0.6 ? "fizzes steadily" : "slowly gives off a few bubbles";
@@ -586,46 +722,64 @@ public class ChemistryEngine {
             }
         }
 
-        double metalAcidHeat(String symbol) {
-            return switch (symbol) {
+        double metalAcidHeat(Substance.MetalInfo m) {
+            return switch (m.symbol()) {
                 case "Mg" -> 467_000;
                 case "Zn" -> 153_000;
                 case "Fe" -> 89_000;
-                default -> 50_000;
+                default -> Math.max(30_000, -m.e0() * 96_500 * m.charge() * 0.6);
             };
         }
+
+        static String ionKey(String symbol, int charge) {
+            return charge == 1 ? symbol + "+" : symbol + "^" + charge + "+";
+        }
+
+        record Oxide(String key, String formula, String metal, int charge, int metalAtoms, String name, String colourWord) {}
+
+        static final List<Oxide> OXIDES = List.of(
+                new Oxide("CuO(s)", "CuO", "Cu", 2, 1, "Copper(II) oxide", "blue"),
+                new Oxide("Fe2O3(s)", "Fe2O3", "Fe", 3, 2, "Iron(III) oxide", "yellow-brown"));
 
         void oxideWithAcid() {
             if (has("MnO2(s)") && hadAcid) {
                 reasons.add("Manganese(IV) oxide doesn't react with dilute acids here - it's a catalyst, not a reactant.");
             }
-            if (!has("CuO(s)")) return;
-            if (acidAvailable() <= EPS) {
-                if (aqMl > 0 && !hadAcid) reasons.add("Copper(II) oxide is insoluble in water - it needs an acid.");
-                return;
+            for (Oxide ox : OXIDES) {
+                if (!has(ox.key())) continue;
+                if (acidAvailable() <= EPS) {
+                    if (aqMl > 0 && !hadAcid) reasons.add(ox.name() + " is insoluble in water - it needs an acid.");
+                    continue;
+                }
+                if (tempC < 50) {
+                    pending.add(new Pending("NEEDS_HEAT", "heater",
+                            "This reaction needs heat to proceed. Warm the mixture to about 60 °C."));
+                    continue;
+                }
+                Substance acid = mainAcid();
+                int protonsPerOxide = ox.charge() * ox.metalAtoms();
+                double n = get(ox.key());
+                double[] t = consumeAcid(protonsPerOxide * n);
+                double e = (t[0] + t[1]) / protonsPerOxide;
+                take(ox.key(), e);
+                add(ionKey(ox.metal(), ox.charge()), e * ox.metalAtoms());
+                heatJ += 63_000 * e;
+                product("H2O", e * protonsPerOxide / 2.0, "l");
+                long start = nextStart();
+                dissolveSolid(ox.key(), start, (long) clamp(9000 / tf, 2500, 9000));
+                Substance.AcidInfo a = acid.acid();
+                Latex.Salt salt = Latex.salt(ox.metal(), ox.charge(), false, a.anion(), a.anionCharge(), a.poly());
+                int oxCoef = 1;
+                while ((oxCoef * protonsPerOxide) % a.protons() != 0 || (oxCoef * ox.metalAtoms()) % salt.cations() != 0) oxCoef++;
+                product(salt.formula(), e * ox.metalAtoms() / salt.cations(), "aq");
+                Lore.register(salt.formula(), Lore.saltName(Elements.NAME.getOrDefault(ox.metal(), ox.metal()), ox.charge(), true, a.anion()), null);
+                reaction("acid-oxide", ox.name() + " in warm acid", "neutralisation",
+                        Latex.equation(List.of(Term.of(oxCoef, ox.formula(), "s"), Term.of(oxCoef * protonsPerOxide / a.protons(), acid.formula(), "aq")),
+                                List.of(Term.of(oxCoef * ox.metalAtoms() / salt.cations(), salt.formula(), "aq"),
+                                        Term.of(oxCoef * protonsPerOxide / 2, "H2O", "l")), null),
+                        "acid-oxide", e);
+                observations.add("The powder dissolves in the warm acid and the solution turns " + ox.colourWord() + ".");
             }
-            if (tempC < 50) {
-                pending.add(new Pending("NEEDS_HEAT", "heater",
-                        "This reaction needs heat to proceed. Warm the mixture to about 60 °C."));
-                return;
-            }
-            Substance acid = mainAcid();
-            double n = get("CuO(s)");
-            double[] t = consumeAcid(2 * n);
-            double e = (t[0] + t[1]) / 2;
-            take("CuO(s)", e);
-            add("Cu^2+", e);
-            heatJ += 63_000 * e;
-            product("H2O", e, "l");
-            long start = nextStart();
-            dissolveSolid("CuO(s)", start, (long) clamp(9000 / tf, 2500, 9000));
-            Substance.AcidInfo a = acid.acid();
-            Latex.Salt salt = Latex.salt("Cu", 2, false, a.anion(), a.anionCharge(), a.poly());
-            reaction("acid-oxide", "Copper(II) oxide in warm acid", "neutralisation",
-                    Latex.equation(List.of(Term.of(1, "CuO", "s"), Term.of(2 / a.protons(), acid.formula(), "aq")),
-                            List.of(Term.of(1, salt.formula(), "aq"), Term.of(1, "H2O", "l")), null),
-                    "acid-oxide", e);
-            observations.add("The black powder dissolves in the warm acid and the solution turns blue.");
         }
 
         void thiosulfateWithAcid() {
@@ -817,16 +971,18 @@ public class ChemistryEngine {
                 if (m == null || !has("Fe^3+")) continue;
                 String key = m.symbol() + "(s)";
                 if (!has(key)) continue;
-                double e = Math.min(get(key), get("Fe^3+") / 2);
+                if (m.e0() >= 0.77) continue; // Fe3+/Fe2+ is +0.77 V: nobler metals are not attacked
+                int c = m.charge();
+                double e = Math.min(get(key), get("Fe^3+") / c);
                 take(key, e);
-                take("Fe^3+", 2 * e);
-                add(m.symbol() + "^2+", e);
-                add("Fe^2+", 2 * e);
+                take("Fe^3+", c * e);
+                add(ionKey(m.symbol(), c), e);
+                add("Fe^2+", c * e);
                 long start = nextStart();
                 dissolveSolid(key, start, 5000);
                 reaction("iron3-" + m.symbol().toLowerCase(Locale.ROOT), "Iron(III) attacks " + p.substance().name().toLowerCase(Locale.ROOT), "redox",
-                        Latex.equation(List.of(Term.of(1, m.symbol(), "s"), Term.ion(2, "Fe", "3+")),
-                                List.of(Term.ion(1, m.symbol(), "2+"), Term.ion(2, "Fe", "2+")), null),
+                        Latex.equation(List.of(Term.of(1, m.symbol(), "s"), Term.ion(c, "Fe", "3+")),
+                                List.of(Latex.ionTerm(1, ionKey(m.symbol(), c)), Term.ion(c, "Fe", "2+")), null),
                         "iron3-reduction", e);
                 observations.add("The metal is slowly eaten away and the orange-yellow solution fades towards pale green.");
             }
@@ -878,24 +1034,25 @@ public class ChemistryEngine {
 
         // ---------------------------------------------------------------- displacement
 
-        record Ion(String key, String symbol, int charge, int rank, String depositHex, String discovery) {}
+        record Ion(String key, String symbol, int charge, double e0, String depositHex, String discovery) {}
 
         static final List<Ion> SERIES_IONS = List.of(
-                new Ion("Ag+", "Ag", 1, 1, "#d9dde3", "displacement-silver"),
-                new Ion("Cu^2+", "Cu", 2, 2, "#b5653a", "displacement-copper"),
-                new Ion("Fe^2+", "Fe", 2, 3, "#3d3d3f", "displacement-other"),
-                new Ion("Zn^2+", "Zn", 2, 4, "#9aa0a6", "displacement-other"),
-                new Ion("Mg^2+", "Mg", 2, 5, "#c9cdd3", "displacement-other"));
+                new Ion("Ag+", "Ag", 1, 0.80, "#d9dde3", "displacement-silver"),
+                new Ion("Cu^2+", "Cu", 2, 0.34, "#b5653a", "displacement-copper"),
+                new Ion("Pb^2+", "Pb", 2, -0.13, "#5a5f66", "displacement-other"),
+                new Ion("Fe^2+", "Fe", 2, -0.44, "#3d3d3f", "displacement-other"),
+                new Ion("Zn^2+", "Zn", 2, -0.76, "#9aa0a6", "displacement-other"),
+                new Ion("Mg^2+", "Mg", 2, -2.37, "#c9cdd3", "displacement-other"));
 
         void displacement() {
             List<Portion> metals = portions.stream().filter(p -> p.substance().metal() != null)
-                    .sorted(Comparator.comparingInt((Portion p) -> -p.substance().metal().rank())).toList();
+                    .sorted(Comparator.comparingDouble((Portion p) -> p.substance().metal().e0())).toList();
             for (Portion p : metals) {
                 Substance.MetalInfo m = p.substance().metal();
                 String key = m.symbol() + "(s)";
                 for (Ion ion : SERIES_IONS) {
                     if (!has(ion.key()) || ion.symbol().equals(m.symbol())) continue;
-                    if (ion.rank() > m.rank()) {
+                    if (ion.e0() <= m.e0()) {
                         reasons.add(p.substance().name() + " is less reactive than " + elementName(ion.symbol())
                                 + ", so it can't displace it from solution.");
                         continue;
@@ -908,9 +1065,9 @@ public class ChemistryEngine {
                     if (e <= EPS) continue;
                     take(key, metalCoef * e);
                     take(ion.key(), ionCoef * e);
-                    add(m.symbol() + "^2+", metalCoef * e);
+                    add(ionKey(m.symbol(), m.charge()), metalCoef * e);
                     product(ion.symbol(), ionCoef * e, "s");
-                    heatJ += 90_000 * (m.rank() - ion.rank()) * metalCoef * e;
+                    heatJ += 96_500 * (ion.e0() - m.e0()) * m.charge() * metalCoef * e * 0.8;
                     long start = nextStart();
                     Map<String, Object> c = cue("deposit", solidTarget.get(key), start);
                     c.put("colour", Colour.hex(ion.depositHex(), 1).toJson());
@@ -919,7 +1076,7 @@ public class ChemistryEngine {
                     reaction("displacement-" + m.symbol().toLowerCase(Locale.ROOT) + "-" + ion.symbol().toLowerCase(Locale.ROOT),
                             p.substance().name() + " displaces " + elementName(ion.symbol()).toLowerCase(Locale.ROOT), "displacement",
                             Latex.equation(List.of(Term.of(metalCoef, m.symbol(), "s"), Latex.ionTerm(ionCoef, ion.key())),
-                                    List.of(Term.ion(metalCoef, m.symbol(), "2+"), Term.of(ionCoef, ion.symbol(), "s")), null),
+                                    List.of(Latex.ionTerm(metalCoef, ionKey(m.symbol(), m.charge())), Term.of(ionCoef, ion.symbol(), "s")), null),
                             ion.discovery(), e);
                     observations.add(switch (ion.symbol()) {
                         case "Cu" -> "A pinky-brown coating of copper grows on the " + p.substance().name().toLowerCase(Locale.ROOT)
@@ -933,14 +1090,72 @@ public class ChemistryEngine {
         }
 
         String elementName(String symbol) {
-            return switch (symbol) {
-                case "Ag" -> "Silver";
-                case "Cu" -> "Copper";
-                case "Fe" -> "Iron";
-                case "Zn" -> "Zinc";
-                case "Mg" -> "Magnesium";
-                default -> symbol;
-            };
+            return Elements.NAME.getOrDefault(symbol, symbol);
+        }
+
+        /** Halogen displacement, halogens with alkali and thiosulfate, and chlorine bleaching. */
+        void halogens() {
+            String[][] order = {{"Cl2", "Cl-"}, {"Br2", "Br-"}, {"I2", "I-"}};
+            for (int i = 0; i < order.length; i++) {
+                for (int j = i + 1; j < order.length; j++) {
+                    String x2 = order[i][0], xm = order[i][1], y2 = order[j][0], ym = order[j][1];
+                    if (!has(x2) || !has(ym)) continue;
+                    double e = Math.min(get(x2), get(ym) / 2);
+                    take(x2, e);
+                    take(ym, 2 * e);
+                    add(xm, 2 * e);
+                    add(y2, e);
+                    nextStart();
+                    String xn = x2.substring(0, x2.length() - 1);
+                    String yn = y2.substring(0, y2.length() - 1);
+                    reaction("halogen-displacement-" + xn.toLowerCase(Locale.ROOT) + "-" + yn.toLowerCase(Locale.ROOT),
+                            elementName(xn) + " displaces " + elementName(yn).toLowerCase(Locale.ROOT), "redox",
+                            Latex.equation(List.of(Term.of(1, x2, "aq"), Latex.ionTerm(2, ym)),
+                                    List.of(Latex.ionTerm(2, xm), Term.of(1, y2, "aq")), null),
+                            "halogen-displacement", e);
+                    observations.add(elementName(xn) + " is more reactive, so it pushes " + elementName(yn).toLowerCase(Locale.ROOT)
+                            + " out of solution - the colour changes to " + ("Br2".equals(y2) ? "orange" : "brown") + ".");
+                }
+            }
+            for (String x2 : List.of("Cl2", "Br2")) {
+                if (has(x2) && has("OH-")) {
+                    String xn = x2.substring(0, x2.length() - 1);
+                    double e = Math.min(get(x2), get("OH-") / 2);
+                    take(x2, e);
+                    take("OH-", 2 * e);
+                    add(xn + "-", e);
+                    add("O" + xn + "-", e);
+                    if ("Cl2".equals(x2)) add("HOCl", e * 0.2);
+                    nextStart();
+                    reaction("halogen-alkali-" + xn.toLowerCase(Locale.ROOT), elementName(xn) + " + alkali", "redox",
+                            Latex.equation(List.of(Term.of(1, x2, "aq"), Term.ion(2, "OH", "-")),
+                                    List.of(Latex.ionTerm(1, xn + "-"), Latex.ionTerm(1, "O" + xn + "-"), Term.of(1, "H2O", "l")), null),
+                            "Cl2".equals(x2) ? "chlorine-bleach" : null, e);
+                    observations.add("The " + elementName(xn).toLowerCase(Locale.ROOT) + " colour fades as it reacts with the alkali"
+                            + ("Cl2".equals(x2) ? " - this is exactly how household bleach is made." : "."));
+                }
+                if (has(x2) && has("S2O3^2-")) {
+                    double e = Math.min(get(x2), get("S2O3^2-") / 2);
+                    String xn = x2.substring(0, x2.length() - 1);
+                    take(x2, e);
+                    take("S2O3^2-", 2 * e);
+                    add(xn + "-", 2 * e);
+                    nextStart();
+                    reaction("halogen-thiosulfate-" + xn.toLowerCase(Locale.ROOT), "Thiosulfate removes " + elementName(xn).toLowerCase(Locale.ROOT),
+                            "redox",
+                            Latex.equation(List.of(Term.of(1, x2, "aq"), Term.ion(2, "S2O3", "2-")),
+                                    List.of(Latex.ionTerm(2, xn + "-"), Term.ion(1, "S4O6", "2-")), null),
+                            "iodine-decolourised", e);
+                    observations.add("Thiosulfate removes the " + elementName(xn).toLowerCase(Locale.ROOT) + " colour.");
+                }
+            }
+            if (has("HOCl") && (has("ind:ui") || has("ind:mo") || has("ind:pp") || has("starch"))) {
+                bleached = true;
+                nextStart();
+                reaction("chlorine-bleaches", "Chlorine bleaches the dye", "redox",
+                        "\\text{HOCl} + \\text{dye} \\rightarrow \\text{colourless products}", "chlorine-bleach", get("HOCl"));
+                observations.add("The indicator colour vanishes - chlorine water bleaches dyes.");
+            }
         }
 
         // ---------------------------------------------------------------- precipitation
@@ -959,7 +1174,12 @@ public class ChemistryEngine {
                 new Ppt("Zn^2+", 2, "CO3^2-", 2, true, "ZnCO3", "#f5f5f5", 125.4, "insoluble-carbonate", "Zinc carbonate"),
                 new Ppt("Cu^2+", 2, "CO3^2-", 2, true, "CuCO3", "#58a894", 123.6, "insoluble-carbonate", "Copper(II) carbonate"),
                 new Ppt("Fe^2+", 2, "CO3^2-", 2, true, "FeCO3", "#a0a88a", 115.9, "insoluble-carbonate", "Iron(II) carbonate"),
-                new Ppt("Ag+", 1, "CO3^2-", 2, true, "Ag2CO3", "#efe6b0", 275.7, "insoluble-carbonate", "Silver carbonate"));
+                new Ppt("Ag+", 1, "CO3^2-", 2, true, "Ag2CO3", "#efe6b0", 275.7, "insoluble-carbonate", "Silver carbonate"),
+                new Ppt("Pb^2+", 2, "I-", 1, false, "PbI2", "#f7c21a", 461.0, "golden-rain", "Lead(II) iodide"),
+                new Ppt("Pb^2+", 2, "SO4^2-", 2, true, "PbSO4", "#fbfbfb", 303.3, "barium-sulfate", "Lead(II) sulfate"),
+                new Ppt("Pb^2+", 2, "Cl-", 1, false, "PbCl2", "#f6f6f4", 278.1, null, "Lead(II) chloride"),
+                new Ppt("Pb^2+", 2, "Br-", 1, false, "PbBr2", "#f6f6f4", 367.0, null, "Lead(II) bromide"),
+                new Ppt("Pb^2+", 2, "CO3^2-", 2, true, "PbCO3", "#f6f6f4", 267.2, "insoluble-carbonate", "Lead(II) carbonate"));
 
         record Hydroxide(String cation, String symbol, int charge, String solid, String hex, double molarMass,
                 String discovery, String colourWord) {}
@@ -969,7 +1189,15 @@ public class ChemistryEngine {
                 new Hydroxide("Cu^2+", "Cu", 2, "Cu(OH)2", "#4a9fe0", 97.6, "copper-hydroxide", "pale blue"),
                 new Hydroxide("Fe^2+", "Fe", 2, "Fe(OH)2", "#6d8f58", 89.9, "iron2-hydroxide", "dirty green"),
                 new Hydroxide("Zn^2+", "Zn", 2, "Zn(OH)2", "#f2f2f2", 99.4, "white-hydroxide", "white"),
-                new Hydroxide("Mg^2+", "Mg", 2, "Mg(OH)2", "#f2f2f2", 58.3, "white-hydroxide", "white"));
+                new Hydroxide("Mg^2+", "Mg", 2, "Mg(OH)2", "#f2f2f2", 58.3, "white-hydroxide", "white"),
+                new Hydroxide("Al^3+", "Al", 3, "Al(OH)3", "#f4f4f2", 78.0, "white-hydroxide", "white"),
+                new Hydroxide("Pb^2+", "Pb", 2, "Pb(OH)2", "#f4f4f2", 241.2, "white-hydroxide", "white"),
+                new Hydroxide("Ni^2+", "Ni", 2, "Ni(OH)2", "#7fc47a", 92.7, null, "pale green"),
+                new Hydroxide("Co^2+", "Co", 2, "Co(OH)2", "#5a78c8", 92.9, null, "blue"),
+                new Hydroxide("Mn^2+", "Mn", 2, "Mn(OH)2", "#efe4d8", 88.9, null, "off-white"),
+                new Hydroxide("Cr^3+", "Cr", 3, "Cr(OH)3", "#5f8a62", 103.0, null, "grey-green"),
+                new Hydroxide("Cd^2+", "Cd", 2, "Cd(OH)2", "#f4f4f2", 146.4, "white-hydroxide", "white"),
+                new Hydroxide("Sn^2+", "Sn", 2, "Sn(OH)2", "#f4f4f2", 152.7, "white-hydroxide", "white"));
 
         void precipitation() {
             if (aqMl <= 0) return;
@@ -988,7 +1216,9 @@ public class ChemistryEngine {
                         Latex.equation(List.of(Latex.ionTerm(x, p.cation()), Latex.ionTerm(y, p.anion())),
                                 List.of(Term.of(1, p.solid(), "s")), null),
                         p.discovery(), e);
-                observations.add("A " + colourWord(p.hex()) + " precipitate of " + p.name().toLowerCase(Locale.ROOT) + " forms instantly.");
+                observations.add("PbI2".equals(p.solid())
+                        ? "A brilliant golden-yellow precipitate of lead(II) iodide appears - the 'golden rain'."
+                        : "A " + colourWord(p.hex()) + " precipitate of " + p.name().toLowerCase(Locale.ROOT) + " forms instantly.");
             }
             // Iron(III) + carbonate: hydrolyses to iron(III) hydroxide with fizzing.
             if (has("Fe^3+") && has("CO3^2-")) {
@@ -1201,13 +1431,13 @@ public class ChemistryEngine {
         }
 
         void indicators(double ph) {
-            if (Double.isNaN(ph)) return;
+            if (Double.isNaN(ph) || bleached) return;
             boolean acidBaseChemistry = hadAcid || hadBase || Math.abs(ph - 7) > 1.5;
             for (String ind : List.of("ind:pp", "ind:ui", "ind:mo")) {
                 if (!has(ind)) continue;
                 Colour neutral = indicatorColour(ind, 7.0);
                 Colour now = indicatorColour(ind, ph);
-                boolean changed = now.distance(neutral) > 0.06;
+                boolean changed = "ind:pp".equals(ind) ? indicatorStrength(ind, ph) > 0.05 : now.distance(neutral) > 0.06;
                 if (!changed || !acidBaseChemistry) continue;
                 String name = switch (ind) {
                     case "ind:pp" -> "Phenolphthalein";
@@ -1320,6 +1550,11 @@ public class ChemistryEngine {
             addColour(cs, ws, "MnO4-", "#7b1f8a", 700);
             addColour(cs, ws, "Mn^2+", "#f6dbe6", 0.5);
             addColour(cs, ws, "OCl-", "#eef5b8", 0.3);
+            addColour(cs, ws, "Cl2", "#cfe35a", 30);
+            addColour(cs, ws, "Br2", "#d0661a", 40);
+            addColour(cs, ws, "Ni^2+", "#5fbf6a", 6);
+            addColour(cs, ws, "Co^2+", "#e58fb0", 8);
+            addColour(cs, ws, "Cr^3+", "#4f8a5a", 10);
             double i2 = molar("I2");
             if (i2 > EPS) {
                 if (starchComplex) {
@@ -1332,7 +1567,7 @@ public class ChemistryEngine {
             }
             for (String ind : List.of("ind:pp", "ind:ui", "ind:mo")) {
                 double c = molar(ind);
-                if (c <= EPS || Double.isNaN(ph)) continue;
+                if (c <= EPS || Double.isNaN(ph) || bleached) continue;
                 double strength = indicatorStrength(ind, ph) * c * 9000;
                 if (strength > 0) {
                     cs.add(indicatorColour(ind, ph));
@@ -1430,13 +1665,20 @@ public class ChemistryEngine {
             case "CuI" -> 190.5;
             case "MnO2" -> 86.9;
             case "S" -> 32.1;
+            case "PbI2" -> 461.0;
+            case "PbSO4" -> 303.3;
+            case "PbCl2" -> 278.1;
+            case "PbBr2" -> 367.0;
+            case "PbCO3" -> 267.2;
+            case "Al(OH)3" -> 78.0;
+            case "Ca(OH)2" -> 74.1;
             default -> 100;
         };
     }
 
     static String colourWord(String hex) {
         return switch (hex) {
-            case "#f2e27a" -> "yellow";
+            case "#f2e27a", "#f7c21a" -> "yellow";
             case "#eee3bf", "#efe6b0" -> "cream";
             case "#58a894" -> "blue-green";
             case "#a0a88a" -> "grey-green";

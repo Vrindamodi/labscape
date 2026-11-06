@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * One allowlisted catalogue entry. Solution species are molarities; solid species are
- * mol per mol of formula unit. Tags are server-only (used by safety rules) and never sent
- * to clients.
+ * One allowlisted catalogue entry (a compound/solution or one of the 118 elements). Solution species
+ * are molarities; solid species are mol per mol of formula unit; gases are measured in mL at RTP.
+ * Tags are server-only (used by safety rules) and never sent to clients.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record Substance(
@@ -32,7 +32,8 @@ public record Substance(
         MetalInfo metal,
         Double molarMass,
         List<String> tags,
-        String description) {
+        String description,
+        ElementInfo element) {
 
     public record Limits(double min, double max, String unit) {}
 
@@ -42,14 +43,51 @@ public record Substance(
 
     public record CarbonateInfo(String cation, int cationCharge, int cationCount, int unitProtons) {}
 
-    public record MetalInfo(String symbol, int charge, int rank, double acidRate, String colour) {}
+    /** e0 = standard electrode potential (V) of M^n+/M: lower = more reactive. */
+    public record MetalInfo(String symbol, int charge, double e0, double acidRate, String colour) {}
+
+    /** Present only for the 118 elements. */
+    public record ElementInfo(
+            int z,
+            String symbol,
+            String category,
+            String state,
+            Double electronegativity,
+            List<Integer> oxidationStates,
+            boolean radioactive,
+            boolean superheavy,
+            String fact) {
+
+        public boolean isMetal() {
+            return switch (category) {
+                case "alkali", "alkaline-earth", "transition", "post-transition", "lanthanide", "actinide" -> true;
+                default -> false;
+            };
+        }
+
+        public int commonPositive() {
+            return oxidationStates.stream().filter(o -> o > 0).findFirst().orElse(0);
+        }
+
+        public int commonNegative() {
+            return oxidationStates.stream().filter(o -> o < 0).findFirst().orElse(0);
+        }
+    }
 
     public boolean isSolid() {
         return "solid".equals(form);
     }
 
+    public boolean isGas() {
+        return "gas".equals(form);
+    }
+
     public boolean isLimited() {
         return "limited".equals(model);
+    }
+
+    public boolean isElement() {
+        return element != null;
     }
 
     public boolean hasTag(String tag) {

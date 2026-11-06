@@ -1,4 +1,4 @@
 // @labscape/playground - owned by Part 4.
-// Open Playground sandbox: chemistry mode on the server-side safety engine (/v1/safety/resolve).
+// Open Playground: a hands-on chemistry lab on the server-side safety engine (/v1/safety/resolve).
 export { ChemistryPlayground } from "./ChemistryPlayground";
-export { OutcomePanel } from "./components/OutcomePanel";
+export { InsightPanel } from "./lab/InsightPanel";

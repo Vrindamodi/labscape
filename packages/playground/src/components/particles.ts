@@ -16,7 +16,9 @@ export type Emitter = {
   until: number;
 };
 
-type Kind = "bubble" | "ring" | "flake" | "steam" | "spark" | "drop" | "mote";
+type Kind = "bubble" | "ring" | "flake" | "steam" | "spark" | "drop" | "mote" | "plume" | "ember";
+
+export type SmokeEmitter = { id: string; colour: string; density: number; until: number };
 
 type P = {
   kind: Kind;
@@ -44,9 +46,29 @@ export class ParticleSystem {
   private scale = 1;
   private slowFrames = 0;
   private quality = 1;
+  /** Vertical offset (viewBox units) of the vessel inside the canvas. */
+  offsetY = 0;
   surfaceY = 360;
   steamLevel = 0;
   stirring = false;
+  mouthY = 60;
+  private smokes: SmokeEmitter[] = [];
+  private embersUntil = 0;
+  private emberColour = "#ffb060";
+
+  /** Coloured smoke/gas drifting out of the vessel mouth. */
+  smoke(colour: string, density: number, durationMs: number) {
+    this.smokes = [
+      ...this.smokes.filter((s) => s.until > performance.now()),
+      { id: String(Math.random()), colour, density, until: performance.now() + durationMs },
+    ];
+  }
+
+  /** Glowing embers and sparks thrown up by a burning solid. */
+  embers(colour: string, durationMs: number) {
+    this.emberColour = colour;
+    this.embersUntil = performance.now() + durationMs;
+  }
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -87,6 +109,8 @@ export class ParticleSystem {
   clear() {
     this.particles = [];
     this.emitters = [];
+    this.smokes = [];
+    this.embersUntil = 0;
     this.acc.clear();
   }
 
@@ -209,6 +233,42 @@ export class ParticleSystem {
       });
     }
 
+    for (const sm of this.smokes) {
+      if (now > sm.until) continue;
+      if (Math.random() < sm.density * 0.9 * this.quality) {
+        this.particles.push({
+          kind: "plume",
+          x: this.rand(this.bounds.left + 30, this.bounds.right - 30),
+          y: Math.min(this.surfaceY, this.bounds.bottom) - this.rand(0, 20),
+          vx: this.rand(-8, 8),
+          vy: -this.rand(28, 55),
+          r: this.rand(10, 20),
+          life: 0,
+          max: this.rand(3, 5),
+          colour: sm.colour,
+          phase: Math.random() * 6,
+          floor: sm.density,
+        });
+      }
+    }
+    if (now < this.embersUntil && Math.random() < 0.7 * this.quality) {
+      for (let i = 0; i < 2; i++) {
+        this.particles.push({
+          kind: "ember",
+          x: this.rand(this.bounds.left + 40, this.bounds.right - 40),
+          y: this.bounds.bottom - this.rand(0, 14),
+          vx: this.rand(-50, 50),
+          vy: -this.rand(80, 220),
+          r: this.rand(0.8, 2),
+          life: 0,
+          max: this.rand(0.5, 1.2),
+          colour: this.emberColour,
+          phase: 0,
+          floor: 0,
+        });
+      }
+    }
+
     const next: P[] = [];
     for (const p of this.particles) {
       p.life += dt;
@@ -266,6 +326,18 @@ export class ParticleSystem {
           if (!p.phase && p.y >= this.surfaceY) continue;
           if (p.phase && p.y < -20) continue;
           break;
+        case "plume":
+          p.x += p.vx * dt + Math.sin(p.life * 1.6 + p.phase) * 10 * dt;
+          p.y += p.vy * dt;
+          if (p.y < this.mouthY)
+            p.vx += (p.x < (this.bounds.left + this.bounds.right) / 2 ? -1 : 1) * 4 * dt;
+          p.r += dt * 9;
+          break;
+        case "ember":
+          p.vy += 120 * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          break;
         case "mote":
           break;
       }
@@ -281,7 +353,7 @@ export class ParticleSystem {
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     const offsetX = (this.canvas.width - this.viewW * this.scale) / 2;
     const offsetY = (this.canvas.height - this.viewH * this.scale) / 2;
-    ctx.setTransform(this.scale, 0, 0, this.scale, offsetX, offsetY);
+    ctx.setTransform(this.scale, 0, 0, this.scale, offsetX, offsetY + this.offsetY * this.scale);
 
     for (const p of this.particles) {
       const fade = 1 - p.life / p.max;
@@ -337,9 +409,40 @@ export class ParticleSystem {
           ctx.ellipse(p.x, p.y, p.r * 0.8, p.r * 1.3, 0, 0, Math.PI * 2);
           ctx.fill();
           break;
+        case "plume": {
+          const a = Math.min(1, p.life * 2) * fade * (0.35 + p.floor * 0.4);
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+          g.addColorStop(0, withAlpha(p.colour, a));
+          g.addColorStop(1, withAlpha(p.colour, 0));
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+        case "ember":
+          ctx.globalAlpha = fade;
+          ctx.fillStyle = p.colour;
+          ctx.shadowColor = p.colour;
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = 1;
+          break;
         case "mote":
           break;
       }
     }
   }
+}
+
+function withAlpha(colour: string, a: number): string {
+  const m = colour.match(/rgba?\(([^)]+)\)/);
+  if (m && m[1]) {
+    const [r, g, b] = m[1].split(",").map((x) => parseFloat(x));
+    return `rgba(${r ?? 255}, ${g ?? 255}, ${b ?? 255}, ${a.toFixed(3)})`;
+  }
+  return colour;
 }

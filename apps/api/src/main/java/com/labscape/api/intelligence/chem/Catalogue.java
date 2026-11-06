@@ -30,7 +30,9 @@ public class Catalogue {
     public Catalogue(ObjectMapper mapper) {
         File file = read(mapper);
         Map<String, Substance> map = new LinkedHashMap<>();
-        for (Substance s : file.substances()) {
+        List<Substance> all = new java.util.ArrayList<>(file.substances());
+        all.addAll(Elements.load(mapper));
+        for (Substance s : all) {
             if (map.put(s.id(), s) != null) {
                 throw new IllegalStateException("Duplicate catalogue id: " + s.id());
             }

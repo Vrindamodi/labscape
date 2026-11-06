@@ -1,273 +1,1709 @@
 {
-  "version": "2026.11.05-1",
+  "version": "2026.11.06-1",
   "note": "Curated school-lab allowlist. Solution 'species' values are molarities (mol/L); solid 'species' values are mol per mol of formula unit. Interim content - needs chemistry + safety reviewer sign-off (seven-stage review) before release.",
   "substances": [
     {
-      "id": "water", "name": "Distilled water", "formula": "H2O", "category": "solvent", "form": "liquid", "aqueous": true,
-      "colour": "#d8f1ff", "opacity": 0.05, "hazards": [], "limits": { "min": 1, "max": 100, "unit": "mL" },
-      "model": "full", "species": {}, "tags": ["water"],
+      "id": "water",
+      "name": "Distilled water",
+      "formula": "H2O",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": true,
+      "colour": "#d8f1ff",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 100,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {},
+      "tags": [
+        "water"
+      ],
       "description": "Pure water. Dilutes solutions and dissolves ionic solids."
     },
     {
-      "id": "hcl-dilute", "name": "Hydrochloric acid", "formula": "HCl", "concentrationM": 0.1, "category": "acid", "form": "solution", "aqueous": true,
-      "colour": "#e6f6ff", "opacity": 0.06, "hazards": ["irritant"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "H+": 0.1, "Cl-": 0.1 }, "acid": { "protons": 1, "anion": "Cl", "anionCharge": 1, "poly": false, "strong": true },
-      "tags": ["acid"], "description": "A strong acid, fully ionised in water. Dilute (0.1 M)."
+      "id": "hcl-dilute",
+      "name": "Hydrochloric acid",
+      "formula": "HCl",
+      "concentrationM": 0.1,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#e6f6ff",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H+": 0.1,
+        "Cl-": 0.1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "Cl",
+        "anionCharge": 1,
+        "poly": false,
+        "strong": true
+      },
+      "tags": [
+        "acid"
+      ],
+      "description": "A strong acid, fully ionised in water. Dilute (0.1 M)."
     },
     {
-      "id": "hcl", "name": "Hydrochloric acid", "formula": "HCl", "concentrationM": 1.0, "category": "acid", "form": "solution", "aqueous": true,
-      "colour": "#e6f6ff", "opacity": 0.07, "hazards": ["corrosive"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "H+": 1.0, "Cl-": 1.0 }, "acid": { "protons": 1, "anion": "Cl", "anionCharge": 1, "poly": false, "strong": true },
-      "tags": ["acid"], "description": "A strong acid, fully ionised in water (1 M)."
+      "id": "hcl",
+      "name": "Hydrochloric acid",
+      "formula": "HCl",
+      "concentrationM": 1,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#e6f6ff",
+      "opacity": 0.07,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H+": 1,
+        "Cl-": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "Cl",
+        "anionCharge": 1,
+        "poly": false,
+        "strong": true
+      },
+      "tags": [
+        "acid"
+      ],
+      "description": "A strong acid, fully ionised in water (1 M)."
     },
     {
-      "id": "h2so4", "name": "Sulfuric acid (dilute)", "formula": "H2SO4", "concentrationM": 0.5, "category": "acid", "form": "solution", "aqueous": true,
-      "colour": "#eef7ff", "opacity": 0.07, "hazards": ["corrosive"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "H+": 1.0, "SO4^2-": 0.5 }, "acid": { "protons": 2, "anion": "SO4", "anionCharge": 2, "poly": true, "strong": true },
-      "tags": ["acid"], "description": "A strong diprotic acid: each formula unit releases two H⁺ ions. Dilute (0.5 M)."
+      "id": "h2so4",
+      "name": "Sulfuric acid (dilute)",
+      "formula": "H2SO4",
+      "concentrationM": 0.5,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef7ff",
+      "opacity": 0.07,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H+": 1,
+        "SO4^2-": 0.5
+      },
+      "acid": {
+        "protons": 2,
+        "anion": "SO4",
+        "anionCharge": 2,
+        "poly": true,
+        "strong": true
+      },
+      "tags": [
+        "acid"
+      ],
+      "description": "A strong diprotic acid: each formula unit releases two H⁺ ions. Dilute (0.5 M)."
     },
     {
-      "id": "ethanoic-acid", "name": "Ethanoic acid", "formula": "CH3COOH", "concentrationM": 1.0, "category": "acid", "form": "solution", "aqueous": true,
-      "colour": "#f4f8fb", "opacity": 0.06, "hazards": ["irritant"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "CH3COOH": 1.0 }, "acid": { "protons": 1, "anion": "CH3COO", "anionCharge": 1, "poly": true, "strong": false },
-      "tags": ["acid", "weak_acid"], "description": "A weak acid (the acid in vinegar). Only partly ionised, so it reacts more gently."
+      "id": "ethanoic-acid",
+      "name": "Ethanoic acid",
+      "formula": "CH3COOH",
+      "concentrationM": 1,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f4f8fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "CH3COOH": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "CH3COO",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid"
+      ],
+      "description": "A weak acid (the acid in vinegar). Only partly ionised, so it reacts more gently."
     },
     {
-      "id": "naoh-dilute", "name": "Sodium hydroxide", "formula": "NaOH", "concentrationM": 0.1, "category": "alkali", "form": "solution", "aqueous": true,
-      "colour": "#f3f8ff", "opacity": 0.06, "hazards": ["irritant"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Na+": 0.1, "OH-": 0.1 }, "base": { "cation": "Na", "cationCharge": 1, "hydroxides": 1, "ammonia": false },
-      "tags": ["alkali"], "description": "A strong alkali (0.1 M)."
+      "id": "naoh-dilute",
+      "name": "Sodium hydroxide",
+      "formula": "NaOH",
+      "concentrationM": 0.1,
+      "category": "alkali",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f3f8ff",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.1,
+        "OH-": 0.1
+      },
+      "base": {
+        "cation": "Na",
+        "cationCharge": 1,
+        "hydroxides": 1,
+        "ammonia": false
+      },
+      "tags": [
+        "alkali"
+      ],
+      "description": "A strong alkali (0.1 M)."
     },
     {
-      "id": "naoh", "name": "Sodium hydroxide", "formula": "NaOH", "concentrationM": 1.0, "category": "alkali", "form": "solution", "aqueous": true,
-      "colour": "#f3f8ff", "opacity": 0.07, "hazards": ["corrosive"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Na+": 1.0, "OH-": 1.0 }, "base": { "cation": "Na", "cationCharge": 1, "hydroxides": 1, "ammonia": false },
-      "tags": ["alkali"], "description": "A strong alkali (1 M). Used to test for metal ions by the colour of their hydroxides."
+      "id": "naoh",
+      "name": "Sodium hydroxide",
+      "formula": "NaOH",
+      "concentrationM": 1,
+      "category": "alkali",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f3f8ff",
+      "opacity": 0.07,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 1,
+        "OH-": 1
+      },
+      "base": {
+        "cation": "Na",
+        "cationCharge": 1,
+        "hydroxides": 1,
+        "ammonia": false
+      },
+      "tags": [
+        "alkali"
+      ],
+      "description": "A strong alkali (1 M). Used to test for metal ions by the colour of their hydroxides."
     },
     {
-      "id": "koh", "name": "Potassium hydroxide", "formula": "KOH", "concentrationM": 1.0, "category": "alkali", "form": "solution", "aqueous": true,
-      "colour": "#f3f8ff", "opacity": 0.07, "hazards": ["corrosive"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "K+": 1.0, "OH-": 1.0 }, "base": { "cation": "K", "cationCharge": 1, "hydroxides": 1, "ammonia": false },
-      "tags": ["alkali"], "description": "A strong alkali (1 M)."
+      "id": "koh",
+      "name": "Potassium hydroxide",
+      "formula": "KOH",
+      "concentrationM": 1,
+      "category": "alkali",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f3f8ff",
+      "opacity": 0.07,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 1,
+        "OH-": 1
+      },
+      "base": {
+        "cation": "K",
+        "cationCharge": 1,
+        "hydroxides": 1,
+        "ammonia": false
+      },
+      "tags": [
+        "alkali"
+      ],
+      "description": "A strong alkali (1 M)."
     },
     {
-      "id": "limewater", "name": "Limewater", "formula": "Ca(OH)2", "concentrationM": 0.02, "category": "alkali", "form": "solution", "aqueous": true,
-      "colour": "#f6f9fb", "opacity": 0.07, "hazards": ["irritant"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Ca^2+": 0.02, "OH-": 0.04 }, "base": { "cation": "Ca", "cationCharge": 2, "hydroxides": 2, "ammonia": false },
-      "tags": ["alkali"], "description": "A saturated solution of calcium hydroxide. Turns milky with carbonate ions."
+      "id": "limewater",
+      "name": "Limewater",
+      "formula": "Ca(OH)2",
+      "concentrationM": 0.02,
+      "category": "alkali",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f6f9fb",
+      "opacity": 0.07,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ca^2+": 0.02,
+        "OH-": 0.04
+      },
+      "base": {
+        "cation": "Ca",
+        "cationCharge": 2,
+        "hydroxides": 2,
+        "ammonia": false
+      },
+      "tags": [
+        "alkali"
+      ],
+      "description": "A saturated solution of calcium hydroxide. Turns milky with carbonate ions."
     },
     {
-      "id": "ammonia", "name": "Ammonia solution", "formula": "NH3", "concentrationM": 1.0, "category": "alkali", "form": "solution", "aqueous": true,
-      "colour": "#f4f9fb", "opacity": 0.06, "hazards": ["irritant"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "NH3": 1.0 }, "base": { "ammonia": true },
-      "tags": ["alkali", "ammonia_source"], "description": "A weak alkali. Forms deep-blue complexes with copper(II) ions."
+      "id": "ammonia",
+      "name": "Ammonia solution",
+      "formula": "NH3",
+      "concentrationM": 1,
+      "category": "alkali",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f4f9fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "NH3": 1
+      },
+      "base": {
+        "ammonia": true
+      },
+      "tags": [
+        "alkali",
+        "ammonia_source"
+      ],
+      "description": "A weak alkali. Forms deep-blue complexes with copper(II) ions."
     },
     {
-      "id": "nacl", "name": "Sodium chloride", "formula": "NaCl", "concentrationM": 1.0, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#eef6fb", "opacity": 0.05, "hazards": [], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Na+": 1.0, "Cl-": 1.0 }, "tags": ["salt"], "description": "Table salt dissolved in water. A source of chloride ions."
+      "id": "nacl",
+      "name": "Sodium chloride",
+      "formula": "NaCl",
+      "concentrationM": 1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 1,
+        "Cl-": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Table salt dissolved in water. A source of chloride ions."
     },
     {
-      "id": "kbr", "name": "Potassium bromide", "formula": "KBr", "concentrationM": 0.5, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#eef6fb", "opacity": 0.05, "hazards": [], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "K+": 0.5, "Br-": 0.5 }, "tags": ["salt"], "description": "A source of bromide ions."
+      "id": "kbr",
+      "name": "Potassium bromide",
+      "formula": "KBr",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.5,
+        "Br-": 0.5
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "A source of bromide ions."
     },
     {
-      "id": "ki", "name": "Potassium iodide", "formula": "KI", "concentrationM": 0.5, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#eef6fb", "opacity": 0.05, "hazards": [], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "K+": 0.5, "I-": 0.5 }, "tags": ["salt", "iodide"], "description": "A source of iodide ions, which are easily oxidised to brown iodine."
+      "id": "ki",
+      "name": "Potassium iodide",
+      "formula": "KI",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.5,
+        "I-": 0.5
+      },
+      "tags": [
+        "salt",
+        "iodide"
+      ],
+      "description": "A source of iodide ions, which are easily oxidised to brown iodine."
     },
     {
-      "id": "agno3", "name": "Silver nitrate", "formula": "AgNO3", "concentrationM": 0.05, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#f1f5f8", "opacity": 0.06, "hazards": ["corrosive", "environmental"], "limits": { "min": 1, "max": 20, "unit": "mL" },
-      "model": "full", "species": { "Ag+": 0.05, "NO3-": 0.05 }, "tags": ["salt", "silver_salt"], "description": "Used to test for halide ions: they form coloured silver halide precipitates."
+      "id": "agno3",
+      "name": "Silver nitrate",
+      "formula": "AgNO3",
+      "concentrationM": 0.05,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ag+": 0.05,
+        "NO3-": 0.05
+      },
+      "tags": [
+        "salt",
+        "silver_salt"
+      ],
+      "description": "Used to test for halide ions: they form coloured silver halide precipitates."
     },
     {
-      "id": "bacl2", "name": "Barium chloride", "formula": "BaCl2", "concentrationM": 0.1, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#f1f5f8", "opacity": 0.05, "hazards": ["toxic"], "limits": { "min": 1, "max": 20, "unit": "mL" },
-      "model": "full", "species": { "Ba^2+": 0.1, "Cl-": 0.2 }, "tags": ["salt"], "description": "Used to test for sulfate ions (white barium sulfate precipitate)."
+      "id": "bacl2",
+      "name": "Barium chloride",
+      "formula": "BaCl2",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.05,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ba^2+": 0.1,
+        "Cl-": 0.2
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Used to test for sulfate ions (white barium sulfate precipitate)."
     },
     {
-      "id": "cacl2", "name": "Calcium chloride", "formula": "CaCl2", "concentrationM": 0.5, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#f1f5f8", "opacity": 0.05, "hazards": ["irritant"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Ca^2+": 0.5, "Cl-": 1.0 }, "tags": ["salt"], "description": "A source of calcium ions."
+      "id": "cacl2",
+      "name": "Calcium chloride",
+      "formula": "CaCl2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ca^2+": 0.5,
+        "Cl-": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "A source of calcium ions."
     },
     {
-      "id": "cuso4", "name": "Copper(II) sulfate", "formula": "CuSO4", "concentrationM": 0.5, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#2f8fe0", "opacity": 0.55, "hazards": ["irritant", "environmental"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Cu^2+": 0.5, "SO4^2-": 0.5 }, "tags": ["salt", "copper_salt"], "description": "Blue because of hydrated copper(II) ions."
+      "id": "cuso4",
+      "name": "Copper(II) sulfate",
+      "formula": "CuSO4",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#2f8fe0",
+      "opacity": 0.55,
+      "hazards": [
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Cu^2+": 0.5,
+        "SO4^2-": 0.5
+      },
+      "tags": [
+        "salt",
+        "copper_salt"
+      ],
+      "description": "Blue because of hydrated copper(II) ions."
     },
     {
-      "id": "feso4", "name": "Iron(II) sulfate", "formula": "FeSO4", "concentrationM": 0.1, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#a8d8a8", "opacity": 0.25, "hazards": ["irritant"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Fe^2+": 0.1, "SO4^2-": 0.1 }, "tags": ["salt"], "description": "Pale green iron(II) ions. Easily oxidised to iron(III)."
+      "id": "feso4",
+      "name": "Iron(II) sulfate",
+      "formula": "FeSO4",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#a8d8a8",
+      "opacity": 0.25,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Fe^2+": 0.1,
+        "SO4^2-": 0.1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Pale green iron(II) ions. Easily oxidised to iron(III)."
     },
     {
-      "id": "fecl3", "name": "Iron(III) chloride", "formula": "FeCl3", "concentrationM": 0.1, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#d9a03a", "opacity": 0.45, "hazards": ["corrosive"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Fe^3+": 0.1, "Cl-": 0.3 }, "tags": ["salt"], "description": "Yellow-orange iron(III) ions. A mild oxidising agent."
+      "id": "fecl3",
+      "name": "Iron(III) chloride",
+      "formula": "FeCl3",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#d9a03a",
+      "opacity": 0.45,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Fe^3+": 0.1,
+        "Cl-": 0.3
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Yellow-orange iron(III) ions. A mild oxidising agent."
     },
     {
-      "id": "znso4", "name": "Zinc sulfate", "formula": "ZnSO4", "concentrationM": 0.5, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#f1f5f8", "opacity": 0.05, "hazards": ["irritant", "environmental"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Zn^2+": 0.5, "SO4^2-": 0.5 }, "tags": ["salt"], "description": "Colourless zinc ions. Zinc hydroxide is amphoteric."
+      "id": "znso4",
+      "name": "Zinc sulfate",
+      "formula": "ZnSO4",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Zn^2+": 0.5,
+        "SO4^2-": 0.5
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Colourless zinc ions. Zinc hydroxide is amphoteric."
     },
     {
-      "id": "mgso4", "name": "Magnesium sulfate", "formula": "MgSO4", "concentrationM": 0.5, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#f1f5f8", "opacity": 0.05, "hazards": [], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Mg^2+": 0.5, "SO4^2-": 0.5 }, "tags": ["salt"], "description": "Epsom salt in solution."
+      "id": "mgso4",
+      "name": "Magnesium sulfate",
+      "formula": "MgSO4",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Mg^2+": 0.5,
+        "SO4^2-": 0.5
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Epsom salt in solution."
     },
     {
-      "id": "na2so4", "name": "Sodium sulfate", "formula": "Na2SO4", "concentrationM": 0.5, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#f1f5f8", "opacity": 0.05, "hazards": [], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Na+": 1.0, "SO4^2-": 0.5 }, "tags": ["salt"], "description": "A source of sulfate ions."
+      "id": "na2so4",
+      "name": "Sodium sulfate",
+      "formula": "Na2SO4",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 1,
+        "SO4^2-": 0.5
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "A source of sulfate ions."
     },
     {
-      "id": "na2co3", "name": "Sodium carbonate", "formula": "Na2CO3", "concentrationM": 0.5, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#f1f5f8", "opacity": 0.05, "hazards": ["irritant"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Na+": 1.0, "CO3^2-": 0.5 }, "carbonate": { "cation": "Na", "cationCharge": 1, "cationCount": 2, "unitProtons": 2 },
-      "tags": ["salt", "carbonate"], "description": "Washing soda. Alkaline, and fizzes with acids."
+      "id": "na2co3",
+      "name": "Sodium carbonate",
+      "formula": "Na2CO3",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 1,
+        "CO3^2-": 0.5
+      },
+      "carbonate": {
+        "cation": "Na",
+        "cationCharge": 1,
+        "cationCount": 2,
+        "unitProtons": 2
+      },
+      "tags": [
+        "salt",
+        "carbonate"
+      ],
+      "description": "Washing soda. Alkaline, and fizzes with acids."
     },
     {
-      "id": "nahco3", "name": "Sodium hydrogencarbonate", "formula": "NaHCO3", "concentrationM": 0.5, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#f1f5f8", "opacity": 0.05, "hazards": [], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Na+": 0.5, "HCO3-": 0.5 }, "carbonate": { "cation": "Na", "cationCharge": 1, "cationCount": 1, "unitProtons": 1 },
-      "tags": ["salt", "carbonate"], "description": "Baking soda. Its reaction with acids takes in heat."
+      "id": "nahco3",
+      "name": "Sodium hydrogencarbonate",
+      "formula": "NaHCO3",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.5,
+        "HCO3-": 0.5
+      },
+      "carbonate": {
+        "cation": "Na",
+        "cationCharge": 1,
+        "cationCount": 1,
+        "unitProtons": 1
+      },
+      "tags": [
+        "salt",
+        "carbonate"
+      ],
+      "description": "Baking soda. Its reaction with acids takes in heat."
     },
     {
-      "id": "na2s2o3", "name": "Sodium thiosulfate", "formula": "Na2S2O3", "concentrationM": 0.1, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#f1f5f8", "opacity": 0.05, "hazards": [], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "Na+": 0.2, "S2O3^2-": 0.1 }, "tags": ["salt", "thiosulfate"], "description": "Turns cloudy with acid as sulfur forms; also decolourises iodine."
+      "id": "na2s2o3",
+      "name": "Sodium thiosulfate",
+      "formula": "Na2S2O3",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.2,
+        "S2O3^2-": 0.1
+      },
+      "tags": [
+        "salt",
+        "thiosulfate"
+      ],
+      "description": "Turns cloudy with acid as sulfur forms; also decolourises iodine."
     },
     {
-      "id": "kmno4", "name": "Potassium manganate(VII)", "formula": "KMnO4", "concentrationM": 0.01, "category": "salt", "form": "solution", "aqueous": true,
-      "colour": "#7b1f8a", "opacity": 0.85, "hazards": ["oxidising", "environmental"], "limits": { "min": 1, "max": 20, "unit": "mL" },
-      "model": "full", "species": { "K+": 0.01, "MnO4-": 0.01 }, "tags": ["salt", "permanganate"], "description": "Intensely purple. A powerful oxidising agent that is decolourised when it reacts in acid."
+      "id": "kmno4",
+      "name": "Potassium manganate(VII)",
+      "formula": "KMnO4",
+      "concentrationM": 0.01,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#7b1f8a",
+      "opacity": 0.85,
+      "hazards": [
+        "oxidising",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.01,
+        "MnO4-": 0.01
+      },
+      "tags": [
+        "salt",
+        "permanganate"
+      ],
+      "description": "Intensely purple. A powerful oxidising agent that is decolourised when it reacts in acid."
     },
     {
-      "id": "h2o2", "name": "Hydrogen peroxide (3%)", "formula": "H2O2", "concentrationM": 0.9, "category": "other", "form": "solution", "aqueous": true,
-      "colour": "#eef7ff", "opacity": 0.05, "hazards": ["irritant", "oxidising"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "full", "species": { "H2O2": 0.9 }, "tags": ["peroxide"], "description": "Slowly decomposes into water and oxygen; a catalyst speeds this up enormously."
+      "id": "h2o2",
+      "name": "Hydrogen peroxide (3%)",
+      "formula": "H2O2",
+      "concentrationM": 0.9,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef7ff",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant",
+        "oxidising"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H2O2": 0.9
+      },
+      "tags": [
+        "peroxide"
+      ],
+      "description": "Slowly decomposes into water and oxygen; a catalyst speeds this up enormously."
     },
     {
-      "id": "iodine-solution", "name": "Iodine solution", "formula": "I2", "concentrationM": 0.02, "category": "other", "form": "solution", "aqueous": true,
-      "colour": "#8a4a12", "opacity": 0.8, "hazards": ["irritant"], "limits": { "min": 1, "max": 20, "unit": "mL" },
-      "model": "full", "species": { "I2": 0.02, "I-": 0.05, "K+": 0.05 }, "tags": ["iodine"], "description": "Iodine dissolved in potassium iodide solution. Turns starch blue-black."
+      "id": "iodine-solution",
+      "name": "Iodine solution",
+      "formula": "I2",
+      "concentrationM": 0.02,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#8a4a12",
+      "opacity": 0.8,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "I2": 0.02,
+        "I-": 0.05,
+        "K+": 0.05
+      },
+      "tags": [
+        "iodine"
+      ],
+      "description": "Iodine dissolved in potassium iodide solution. Turns starch blue-black."
     },
     {
-      "id": "starch", "name": "Starch solution", "formula": "(C6H10O5)n", "category": "other", "form": "solution", "aqueous": true,
-      "colour": "#f4f6f2", "opacity": 0.18, "hazards": [], "limits": { "min": 1, "max": 20, "unit": "mL" },
-      "model": "full", "species": { "starch": 0.01 }, "tags": ["starch"], "description": "1% starch. The classic test reagent for iodine."
+      "id": "starch",
+      "name": "Starch solution",
+      "formula": "(C6H10O5)n",
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f4f6f2",
+      "opacity": 0.18,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "starch": 0.01
+      },
+      "tags": [
+        "starch"
+      ],
+      "description": "1% starch. The classic test reagent for iodine."
     },
     {
-      "id": "bleach", "name": "Household bleach", "formula": "NaOCl", "concentrationM": 0.5, "category": "household", "form": "solution", "aqueous": true,
-      "colour": "#f0f5c8", "opacity": 0.12, "hazards": ["corrosive", "environmental"], "limits": { "min": 1, "max": 20, "unit": "mL" },
-      "model": "limited", "inertWith": ["water"], "species": { "Na+": 0.5, "OCl-": 0.5 },
-      "tags": ["hypochlorite"], "description": "Sodium hypochlorite. Never mix bleach with other cleaning products."
+      "id": "bleach",
+      "name": "Household bleach",
+      "formula": "NaOCl",
+      "concentrationM": 0.5,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f0f5c8",
+      "opacity": 0.12,
+      "hazards": [
+        "corrosive",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "limited",
+      "inertWith": [
+        "water"
+      ],
+      "species": {
+        "Na+": 0.5,
+        "OCl-": 0.5
+      },
+      "tags": [
+        "hypochlorite"
+      ],
+      "description": "Sodium hypochlorite. Never mix bleach with other cleaning products."
     },
     {
-      "id": "ethanol", "name": "Ethanol", "formula": "C2H5OH", "category": "solvent", "form": "liquid", "aqueous": false,
-      "colour": "#f6fbff", "opacity": 0.04, "hazards": ["flammable"], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "limited", "inertWith": ["water", "glycerol", "vegetable-oil", "cuso4-anhydrous", "category:indicator"], "species": {},
-      "tags": ["fuel"], "description": "A flammable organic solvent. Mixes completely with water."
+      "id": "ethanol",
+      "name": "Ethanol",
+      "formula": "C2H5OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.04,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "limited",
+      "inertWith": [
+        "water",
+        "glycerol",
+        "vegetable-oil",
+        "cuso4-anhydrous",
+        "category:indicator"
+      ],
+      "species": {},
+      "tags": [
+        "fuel"
+      ],
+      "description": "A flammable organic solvent. Mixes completely with water."
     },
     {
-      "id": "glycerol", "name": "Glycerol", "formula": "C3H8O3", "category": "solvent", "form": "liquid", "aqueous": false,
-      "colour": "#f6fbff", "opacity": 0.08, "hazards": [], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "limited", "inertWith": ["water", "ethanol", "vegetable-oil", "category:indicator", "category:salt"], "species": {},
-      "tags": ["fuel"], "description": "A thick, sweet, water-soluble liquid."
+      "id": "glycerol",
+      "name": "Glycerol",
+      "formula": "C3H8O3",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.08,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "limited",
+      "inertWith": [
+        "water",
+        "ethanol",
+        "vegetable-oil",
+        "category:indicator",
+        "category:salt"
+      ],
+      "species": {},
+      "tags": [
+        "fuel"
+      ],
+      "description": "A thick, sweet, water-soluble liquid."
     },
     {
-      "id": "vegetable-oil", "name": "Vegetable oil", "formula": "C57H104O6", "category": "solvent", "form": "liquid", "aqueous": false,
-      "colour": "#e9c84b", "opacity": 0.55, "hazards": [], "limits": { "min": 1, "max": 50, "unit": "mL" },
-      "model": "limited", "inertWith": ["water", "ethanol", "glycerol", "category:salt"], "species": {},
-      "tags": ["fuel", "immiscible"], "description": "Non-polar, so it does not mix with water and floats on top."
+      "id": "vegetable-oil",
+      "name": "Vegetable oil",
+      "formula": "C57H104O6",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#e9c84b",
+      "opacity": 0.55,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "limited",
+      "inertWith": [
+        "water",
+        "ethanol",
+        "glycerol",
+        "category:salt"
+      ],
+      "species": {},
+      "tags": [
+        "fuel",
+        "immiscible"
+      ],
+      "description": "Non-polar, so it does not mix with water and floats on top."
     },
     {
-      "id": "phenolphthalein", "name": "Phenolphthalein", "formula": "C20H14O4", "category": "indicator", "form": "solution", "aqueous": true,
-      "colour": "#f6f8fb", "opacity": 0.04, "hazards": ["flammable"], "limits": { "min": 1, "max": 10, "unit": "drops" },
-      "model": "full", "species": { "ind:pp": 0.02 }, "tags": ["indicator"], "description": "Colourless in acid and neutral solutions, pink above about pH 8.2."
+      "id": "phenolphthalein",
+      "name": "Phenolphthalein",
+      "formula": "C20H14O4",
+      "category": "indicator",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f6f8fb",
+      "opacity": 0.04,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "ind:pp": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "Colourless in acid and neutral solutions, pink above about pH 8.2."
     },
     {
-      "id": "universal-indicator", "name": "Universal indicator", "formula": "UI", "category": "indicator", "form": "solution", "aqueous": true,
-      "colour": "#3fa535", "opacity": 0.7, "hazards": ["flammable"], "limits": { "min": 1, "max": 10, "unit": "drops" },
-      "model": "full", "species": { "ind:ui": 0.02 }, "tags": ["indicator"], "description": "A mixture of indicators: red in strong acid, green when neutral, purple in strong alkali."
+      "id": "universal-indicator",
+      "name": "Universal indicator",
+      "formula": "UI",
+      "category": "indicator",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#3fa535",
+      "opacity": 0.7,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "ind:ui": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "A mixture of indicators: red in strong acid, green when neutral, purple in strong alkali."
     },
     {
-      "id": "methyl-orange", "name": "Methyl orange", "formula": "C14H14N3NaO3S", "category": "indicator", "form": "solution", "aqueous": true,
-      "colour": "#f08a24", "opacity": 0.7, "hazards": ["toxic"], "limits": { "min": 1, "max": 10, "unit": "drops" },
-      "model": "full", "species": { "ind:mo": 0.02 }, "tags": ["indicator"], "description": "Red below pH 3.1, yellow above pH 4.4."
+      "id": "methyl-orange",
+      "name": "Methyl orange",
+      "formula": "C14H14N3NaO3S",
+      "category": "indicator",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f08a24",
+      "opacity": 0.7,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "ind:mo": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "Red below pH 3.1, yellow above pH 4.4."
     },
     {
-      "id": "mg-ribbon", "name": "Magnesium ribbon", "formula": "Mg", "category": "metal", "form": "solid", "solidForm": "ribbon", "aqueous": false,
-      "colour": "#c9cdd3", "opacity": 1, "hazards": ["flammable"], "limits": { "min": 0.05, "max": 1, "unit": "g" },
-      "model": "full", "molarMass": 24.31, "species": { "Mg(s)": 1 }, "metal": { "symbol": "Mg", "charge": 2, "rank": 5, "acidRate": 3.0, "colour": "#c9cdd3" },
-      "tags": ["metal", "reactive_metal"], "description": "A very reactive metal. Fizzes vigorously in acid."
+      "id": "mg-ribbon",
+      "name": "Magnesium ribbon",
+      "formula": "Mg",
+      "category": "metal",
+      "form": "solid",
+      "solidForm": "ribbon",
+      "aqueous": false,
+      "colour": "#c9cdd3",
+      "opacity": 1,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 0.05,
+        "max": 1,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 24.31,
+      "species": {
+        "Mg(s)": 1
+      },
+      "metal": {
+        "symbol": "Mg",
+        "charge": 2,
+        "e0": -2.37,
+        "acidRate": 3,
+        "colour": "#c9cdd3"
+      },
+      "tags": [
+        "metal",
+        "reactive_metal"
+      ],
+      "description": "A very reactive metal. Fizzes vigorously in acid."
     },
     {
-      "id": "zn-granules", "name": "Zinc granules", "formula": "Zn", "category": "metal", "form": "solid", "solidForm": "granules", "aqueous": false,
-      "colour": "#9ea5ad", "opacity": 1, "hazards": ["environmental"], "limits": { "min": 0.1, "max": 5, "unit": "g" },
-      "model": "full", "molarMass": 65.38, "species": { "Zn(s)": 1 }, "metal": { "symbol": "Zn", "charge": 2, "rank": 4, "acidRate": 1.0, "colour": "#9ea5ad" },
-      "tags": ["metal", "reactive_metal"], "description": "Moderately reactive. Makes hydrogen steadily with acid."
+      "id": "zn-granules",
+      "name": "Zinc granules",
+      "formula": "Zn",
+      "category": "metal",
+      "form": "solid",
+      "solidForm": "granules",
+      "aqueous": false,
+      "colour": "#9ea5ad",
+      "opacity": 1,
+      "hazards": [
+        "environmental"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 65.38,
+      "species": {
+        "Zn(s)": 1
+      },
+      "metal": {
+        "symbol": "Zn",
+        "charge": 2,
+        "e0": -0.76,
+        "acidRate": 1,
+        "colour": "#9ea5ad"
+      },
+      "tags": [
+        "metal",
+        "reactive_metal"
+      ],
+      "description": "Moderately reactive. Makes hydrogen steadily with acid."
     },
     {
-      "id": "fe-filings", "name": "Iron filings", "formula": "Fe", "category": "metal", "form": "solid", "solidForm": "filings", "aqueous": false,
-      "colour": "#55575b", "opacity": 1, "hazards": [], "limits": { "min": 0.1, "max": 5, "unit": "g" },
-      "model": "full", "molarMass": 55.85, "species": { "Fe(s)": 1 }, "metal": { "symbol": "Fe", "charge": 2, "rank": 3, "acidRate": 0.5, "colour": "#55575b" },
-      "tags": ["metal", "reactive_metal"], "description": "Reacts slowly with dilute acid to form pale green iron(II) ions."
+      "id": "fe-filings",
+      "name": "Iron filings",
+      "formula": "Fe",
+      "category": "metal",
+      "form": "solid",
+      "solidForm": "filings",
+      "aqueous": false,
+      "colour": "#55575b",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 55.85,
+      "species": {
+        "Fe(s)": 1
+      },
+      "metal": {
+        "symbol": "Fe",
+        "charge": 2,
+        "e0": -0.44,
+        "acidRate": 0.5,
+        "colour": "#55575b"
+      },
+      "tags": [
+        "metal",
+        "reactive_metal"
+      ],
+      "description": "Reacts slowly with dilute acid to form pale green iron(II) ions."
     },
     {
-      "id": "cu-turnings", "name": "Copper turnings", "formula": "Cu", "category": "metal", "form": "solid", "solidForm": "turnings", "aqueous": false,
-      "colour": "#c46a3c", "opacity": 1, "hazards": [], "limits": { "min": 0.1, "max": 5, "unit": "g" },
-      "model": "full", "molarMass": 63.55, "species": { "Cu(s)": 1 }, "metal": { "symbol": "Cu", "charge": 2, "rank": 2, "acidRate": 0, "colour": "#c46a3c" },
-      "tags": ["metal"], "description": "Below hydrogen in the reactivity series."
+      "id": "cu-turnings",
+      "name": "Copper turnings",
+      "formula": "Cu",
+      "category": "metal",
+      "form": "solid",
+      "solidForm": "turnings",
+      "aqueous": false,
+      "colour": "#c46a3c",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 63.55,
+      "species": {
+        "Cu(s)": 1
+      },
+      "metal": {
+        "symbol": "Cu",
+        "charge": 2,
+        "e0": 0.34,
+        "acidRate": 0,
+        "colour": "#c46a3c"
+      },
+      "tags": [
+        "metal"
+      ],
+      "description": "Below hydrogen in the reactivity series."
     },
     {
-      "id": "caco3-chips", "name": "Marble chips", "formula": "CaCO3", "category": "solid", "form": "solid", "solidForm": "chips", "aqueous": false,
-      "colour": "#f2f0ea", "opacity": 1, "hazards": [], "limits": { "min": 0.5, "max": 10, "unit": "g" },
-      "model": "full", "molarMass": 100.09, "species": { "CaCO3(s)": 1 }, "carbonate": { "cation": "Ca", "cationCharge": 2, "cationCount": 1, "unitProtons": 2 },
-      "tags": ["carbonate"], "description": "Calcium carbonate. Insoluble in water, fizzes in acid."
+      "id": "caco3-chips",
+      "name": "Marble chips",
+      "formula": "CaCO3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "chips",
+      "aqueous": false,
+      "colour": "#f2f0ea",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.5,
+        "max": 10,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 100.09,
+      "species": {
+        "CaCO3(s)": 1
+      },
+      "carbonate": {
+        "cation": "Ca",
+        "cationCharge": 2,
+        "cationCount": 1,
+        "unitProtons": 2
+      },
+      "tags": [
+        "carbonate"
+      ],
+      "description": "Calcium carbonate. Insoluble in water, fizzes in acid."
     },
     {
-      "id": "cuo-powder", "name": "Copper(II) oxide", "formula": "CuO", "category": "solid", "form": "solid", "solidForm": "powder", "aqueous": false,
-      "colour": "#1d1d1f", "opacity": 1, "hazards": ["environmental"], "limits": { "min": 0.1, "max": 5, "unit": "g" },
-      "model": "full", "molarMass": 79.55, "species": { "CuO(s)": 1 }, "tags": ["oxide"], "description": "A black basic oxide. Dissolves in warm acid to give a blue solution."
+      "id": "cuo-powder",
+      "name": "Copper(II) oxide",
+      "formula": "CuO",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#1d1d1f",
+      "opacity": 1,
+      "hazards": [
+        "environmental"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 79.55,
+      "species": {
+        "CuO(s)": 1
+      },
+      "tags": [
+        "oxide"
+      ],
+      "description": "A black basic oxide. Dissolves in warm acid to give a blue solution."
     },
     {
-      "id": "mno2-powder", "name": "Manganese(IV) oxide", "formula": "MnO2", "category": "solid", "form": "solid", "solidForm": "powder", "aqueous": false,
-      "colour": "#2a2522", "opacity": 1, "hazards": ["irritant"], "limits": { "min": 0.05, "max": 2, "unit": "g" },
-      "model": "full", "molarMass": 86.94, "species": { "MnO2(s)": 1 }, "tags": ["catalyst"], "description": "A catalyst for the decomposition of hydrogen peroxide."
+      "id": "mno2-powder",
+      "name": "Manganese(IV) oxide",
+      "formula": "MnO2",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#2a2522",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.05,
+        "max": 2,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 86.94,
+      "species": {
+        "MnO2(s)": 1
+      },
+      "tags": [
+        "catalyst"
+      ],
+      "description": "A catalyst for the decomposition of hydrogen peroxide."
     },
     {
-      "id": "cuso4-anhydrous", "name": "Anhydrous copper(II) sulfate", "formula": "CuSO4", "category": "solid", "form": "solid", "solidForm": "powder", "aqueous": false,
-      "colour": "#eef0ee", "opacity": 1, "hazards": ["irritant", "environmental"], "limits": { "min": 0.2, "max": 5, "unit": "g" },
-      "model": "full", "molarMass": 159.6, "species": { "CuSO4(anh)": 1 }, "tags": ["water_test"], "description": "White powder that turns blue when water is added: a test for water."
+      "id": "cuso4-anhydrous",
+      "name": "Anhydrous copper(II) sulfate",
+      "formula": "CuSO4",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#eef0ee",
+      "opacity": 1,
+      "hazards": [
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 0.2,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 159.6,
+      "species": {
+        "CuSO4(anh)": 1
+      },
+      "tags": [
+        "water_test"
+      ],
+      "description": "White powder that turns blue when water is added: a test for water."
     },
     {
-      "id": "cuso4-crystals", "name": "Copper(II) sulfate crystals", "formula": "CuSO4·5H2O", "category": "solid", "form": "solid", "solidForm": "crystals", "aqueous": false,
-      "colour": "#1f7fd6", "opacity": 1, "hazards": ["irritant", "environmental"], "limits": { "min": 0.2, "max": 5, "unit": "g" },
-      "model": "full", "molarMass": 249.7, "species": { "CuSO4·5H2O(s)": 1 }, "tags": ["copper_salt"], "description": "Blue hydrated crystals that dissolve to give a blue solution."
+      "id": "cuso4-crystals",
+      "name": "Copper(II) sulfate crystals",
+      "formula": "CuSO4·5H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#1f7fd6",
+      "opacity": 1,
+      "hazards": [
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 0.2,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 249.7,
+      "species": {
+        "CuSO4·5H2O(s)": 1
+      },
+      "tags": [
+        "copper_salt"
+      ],
+      "description": "Blue hydrated crystals that dissolve to give a blue solution."
     },
     {
-      "id": "kmno4-crystals", "name": "Potassium manganate(VII) crystals", "formula": "KMnO4", "category": "solid", "form": "solid", "solidForm": "crystals", "aqueous": false,
-      "colour": "#3b0f45", "opacity": 1, "hazards": ["oxidising", "environmental"], "limits": { "min": 0.01, "max": 0.2, "unit": "g" },
-      "model": "full", "molarMass": 158.03, "species": { "KMnO4(s)": 1 }, "tags": ["strong_oxidiser_solid", "permanganate"],
+      "id": "kmno4-crystals",
+      "name": "Potassium manganate(VII) crystals",
+      "formula": "KMnO4",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#3b0f45",
+      "opacity": 1,
+      "hazards": [
+        "oxidising",
+        "environmental"
+      ],
+      "limits": {
+        "min": 0.01,
+        "max": 0.2,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 158.03,
+      "species": {
+        "KMnO4(s)": 1
+      },
+      "tags": [
+        "strong_oxidiser_solid",
+        "permanganate"
+      ],
       "description": "Dark purple crystals. A few dissolve to make an intensely purple solution - watch the streaks spread."
+    },
+    {
+      "id": "pbno3",
+      "name": "Lead(II) nitrate",
+      "formula": "Pb(NO3)2",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f1f5f8",
+      "opacity": 0.05,
+      "hazards": [
+        "toxic",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Pb^2+": 0.1,
+        "NO3-": 0.2
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "A source of lead(II) ions. With iodide it makes the famous golden rain."
+    },
+    {
+      "id": "kno3",
+      "name": "Potassium nitrate",
+      "formula": "KNO3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f4f4f2",
+      "opacity": 1,
+      "hazards": [
+        "oxidising"
+      ],
+      "limits": {
+        "min": 0.2,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 101.1,
+      "species": {
+        "KNO3(s)": 1
+      },
+      "tags": [
+        "nitrate_oxidiser"
+      ],
+      "description": "Saltpetre. Dissolves in water and cools it slightly. A strong oxidiser when dry."
+    },
+    {
+      "id": "nh4no3",
+      "name": "Ammonium nitrate",
+      "formula": "NH4NO3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f4",
+      "opacity": 1,
+      "hazards": [
+        "oxidising"
+      ],
+      "limits": {
+        "min": 0.5,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 80.04,
+      "species": {
+        "NH4NO3(s)": 1
+      },
+      "tags": [
+        "nitrate_oxidiser"
+      ],
+      "description": "Dissolving it in water takes in so much heat that it is used in instant cold packs."
+    },
+    {
+      "id": "fe2o3-powder",
+      "name": "Iron(III) oxide",
+      "formula": "Fe2O3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#8a3b1c",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 159.69,
+      "species": {
+        "Fe2O3(s)": 1
+      },
+      "tags": [
+        "thermite_oxide"
+      ],
+      "description": "Rust. A red-brown basic oxide that dissolves in warm acid."
+    },
+    {
+      "id": "sugar",
+      "name": "Sugar (sucrose)",
+      "formula": "C12H22O11",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#fbfbf8",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.5,
+        "max": 10,
+        "unit": "g"
+      },
+      "model": "limited",
+      "inertWith": [
+        "water",
+        "category:acid",
+        "category:alkali",
+        "category:indicator",
+        "nacl",
+        "kbr",
+        "ki",
+        "na2so4",
+        "mgso4",
+        "cacl2",
+        "znso4",
+        "cuso4",
+        "starch"
+      ],
+      "molarMass": 342.3,
+      "species": {
+        "C12H22O11(s)": 1
+      },
+      "tags": [
+        "fuel"
+      ],
+      "description": "Table sugar. Dissolves in water without reacting."
     }
   ],
   "gaps": [
-    ["na2s2o3", "fecl3"], ["na2s2o3", "cuso4"], ["na2s2o3", "agno3"], ["na2s2o3", "kmno4"], ["na2s2o3", "h2o2"], ["na2s2o3", "kmno4-crystals"],
-    ["na2s2o3", "cuso4-crystals"],
-    ["iodine-solution", "mg-ribbon"], ["iodine-solution", "zn-granules"], ["iodine-solution", "fe-filings"],
-    ["iodine-solution", "na2co3"], ["iodine-solution", "nahco3"],
-    ["h2o2", "cuso4"], ["h2o2", "cuso4-crystals"], ["h2o2", "agno3"], ["h2o2", "fe-filings"], ["h2o2", "cu-turnings"],
-    ["agno3", "feso4"],
-    ["kmno4", "mg-ribbon"], ["kmno4", "zn-granules"], ["kmno4", "fe-filings"], ["kmno4", "cu-turnings"], ["kmno4", "starch"],
-    ["kmno4", "ammonia"], ["kmno4", "hcl"], ["kmno4", "hcl-dilute"],
-    ["nahco3", "cuso4"], ["nahco3", "cuso4-crystals"], ["nahco3", "feso4"], ["nahco3", "fecl3"], ["nahco3", "agno3"], ["nahco3", "znso4"],
-    ["na2co3", "fecl3"],
-    ["fecl3", "ammonia"],
-    ["mno2-powder", "hcl"], ["mno2-powder", "kmno4"],
-    ["cuo-powder", "ammonia"]
+    [
+      "na2s2o3",
+      "fecl3"
+    ],
+    [
+      "na2s2o3",
+      "cuso4"
+    ],
+    [
+      "na2s2o3",
+      "agno3"
+    ],
+    [
+      "na2s2o3",
+      "kmno4"
+    ],
+    [
+      "na2s2o3",
+      "h2o2"
+    ],
+    [
+      "na2s2o3",
+      "kmno4-crystals"
+    ],
+    [
+      "na2s2o3",
+      "cuso4-crystals"
+    ],
+    [
+      "iodine-solution",
+      "mg-ribbon"
+    ],
+    [
+      "iodine-solution",
+      "zn-granules"
+    ],
+    [
+      "iodine-solution",
+      "fe-filings"
+    ],
+    [
+      "iodine-solution",
+      "na2co3"
+    ],
+    [
+      "iodine-solution",
+      "nahco3"
+    ],
+    [
+      "h2o2",
+      "cuso4"
+    ],
+    [
+      "h2o2",
+      "cuso4-crystals"
+    ],
+    [
+      "h2o2",
+      "agno3"
+    ],
+    [
+      "h2o2",
+      "fe-filings"
+    ],
+    [
+      "h2o2",
+      "cu-turnings"
+    ],
+    [
+      "agno3",
+      "feso4"
+    ],
+    [
+      "kmno4",
+      "mg-ribbon"
+    ],
+    [
+      "kmno4",
+      "zn-granules"
+    ],
+    [
+      "kmno4",
+      "fe-filings"
+    ],
+    [
+      "kmno4",
+      "cu-turnings"
+    ],
+    [
+      "kmno4",
+      "starch"
+    ],
+    [
+      "kmno4",
+      "ammonia"
+    ],
+    [
+      "kmno4",
+      "hcl"
+    ],
+    [
+      "kmno4",
+      "hcl-dilute"
+    ],
+    [
+      "nahco3",
+      "cuso4"
+    ],
+    [
+      "nahco3",
+      "cuso4-crystals"
+    ],
+    [
+      "nahco3",
+      "feso4"
+    ],
+    [
+      "nahco3",
+      "fecl3"
+    ],
+    [
+      "nahco3",
+      "agno3"
+    ],
+    [
+      "nahco3",
+      "znso4"
+    ],
+    [
+      "na2co3",
+      "fecl3"
+    ],
+    [
+      "fecl3",
+      "ammonia"
+    ],
+    [
+      "mno2-powder",
+      "hcl"
+    ],
+    [
+      "mno2-powder",
+      "kmno4"
+    ],
+    [
+      "cuo-powder",
+      "ammonia"
+    ],
+    [
+      "pbno3",
+      "na2s2o3"
+    ],
+    [
+      "pbno3",
+      "h2o2"
+    ],
+    [
+      "pbno3",
+      "kmno4"
+    ],
+    [
+      "fe2o3-powder",
+      "ammonia"
+    ],
+    [
+      "fe2o3-powder",
+      "h2o2"
+    ]
   ]
 }

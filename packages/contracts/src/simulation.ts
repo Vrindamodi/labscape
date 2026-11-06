@@ -6,6 +6,8 @@
  * Rule: engines decide WHAT happens; animation layers decide HOW it looks.
  * Nothing (colour change, bubble, precipitate...) is drawn without a cue from an engine.
  *
+ * v0.3.0: ignition condition, smoke/flame/condense/skate cues, gas colour + smell,
+ * compounds, facts and structured participants.
  * v0.2.0: cues carry optional startMs; added `layers` cue, `fraction` on dissolve,
  * `stirring` condition and the optional `presentation` block used by outcome panels.
  */
@@ -24,7 +26,13 @@ export type SimulationRequest = {
   /** Signed reaction pack version the client engine ran (server re-checks). */
   packVersion?: string;
   inputs: SimulationInput[];
-  conditions?: { temperatureC?: number; pressureKPa?: number; stirring?: boolean };
+  conditions?: {
+    temperatureC?: number;
+    pressureKPa?: number;
+    stirring?: boolean;
+    /** A flame or spark has been applied to the mixture (sticky for the vessel). */
+    ignition?: boolean;
+  };
 };
 
 export type SimulationInput = {
@@ -69,6 +77,10 @@ export type ObservationCue =
       bubble: "fine" | "medium" | "coarse";
       gas: string;
       durationMs: number;
+      /** Visible colour of the gas, when it has one (e.g. chlorine, bromine vapour). */
+      colour?: Oklab;
+      /** What it smells like. Never sniff directly - waft. */
+      smell?: string;
     })
   | (CueBase & {
       kind: "precipitate";
@@ -82,6 +94,16 @@ export type ObservationCue =
   | (CueBase & { kind: "deposit"; colour: Oklab; durationMs: number })
   | (CueBase & { kind: "light"; colour: Oklab; intensity: number; durationMs: number })
   | (CueBase & { kind: "layers"; colour: Oklab; volumeMl: number })
+  | (CueBase & {
+      kind: "smoke";
+      colour: Oklab;
+      density: number;
+      durationMs: number;
+      label?: string;
+    })
+  | (CueBase & { kind: "flame"; colour: Oklab; intensity: number; durationMs: number })
+  | (CueBase & { kind: "condense"; colour: Oklab; amount: number; durationMs: number })
+  | (CueBase & { kind: "skate"; colour: Oklab; durationMs: number })
   | (CueBase & { kind: "odour"; description: string })
   | (CueBase & { kind: "sound"; soundId: string });
 
@@ -92,6 +114,20 @@ export type ReactionSummary = {
   type: string;
   equationLatex: string;
   discoveryId?: string;
+  /** Structured equation, used to animate atoms rearranging. */
+  participants?: { reactants: EquationTerm[]; products: EquationTerm[] };
+};
+
+export type EquationTerm = { coef: number; formula: string; charge?: string; state?: string };
+
+/** A substance formed, for the "compounds formed" panel. */
+export type CompoundInfo = {
+  formula: string;
+  name: string;
+  state: Phase;
+  /** Display colour (hex) of the substance itself. */
+  colour?: string;
+  note?: string;
 };
 
 /** User-facing copy for outcome panels. Prohibited copy is identical for every request. */
@@ -106,6 +142,9 @@ export type SimulationPresentation = {
   focusRef?: string;
   suggestions: string[];
   discoveryIds: string[];
+  compounds: CompoundInfo[];
+  /** "Did you know?" facts about the substances and reactions involved. */
+  facts: string[];
 };
 
 export type SimulationResult = {
