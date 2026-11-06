@@ -13,6 +13,19 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@labscape/contracts": "workspace:*"
+    "@labscape/contracts": "workspace:*",
+    "framer-motion": "11.11.17",
+    "katex": "0.16.11"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/katex": "0.16.7",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   }
 }

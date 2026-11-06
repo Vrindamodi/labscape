@@ -1,6 +1,6 @@
 {
   "name": "@labscape/contracts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "The eight shared LABscape contracts: TypeScript types plus JSON fixtures. Mirrored in Java under apps/api .../contracts.",

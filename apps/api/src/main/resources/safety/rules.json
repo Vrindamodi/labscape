@@ -1,0 +1,16 @@
+{
+  "version": "2026.11.05-1",
+  "note": "SERVER ONLY. Never sent to clients and never named in any response. Each rule blocks a hazardous class of combination outright. Interim rules - require safety reviewer sign-off; Part 1 safety admin will edit these through safety_rules.",
+  "rules": [
+    { "id": "SR-001", "allOf": ["hypochlorite", "acid"], "description": "Hypochlorite with any acid" },
+    { "id": "SR-002", "allOf": ["hypochlorite", "ammonia_source"], "description": "Hypochlorite with ammonia" },
+    { "id": "SR-003", "allOf": ["hypochlorite", "fuel"], "description": "Hypochlorite with organic solvents" },
+    { "id": "SR-004", "allOf": ["hypochlorite", "peroxide"], "description": "Hypochlorite with peroxide" },
+    { "id": "SR-005", "allOf": ["silver_salt", "ammonia_source"], "description": "Silver salts with ammonia" },
+    { "id": "SR-006", "allOf": ["iodine", "ammonia_source"], "description": "Iodine with ammonia" },
+    { "id": "SR-007", "allOf": ["strong_oxidiser_solid", "fuel"], "description": "Solid strong oxidiser with fuel" },
+    { "id": "SR-008", "allOf": ["strong_oxidiser_solid", "reactive_metal"], "description": "Solid strong oxidiser with reactive metal" },
+    { "id": "SR-009", "allOf": ["strong_oxidiser_solid", "acid"], "description": "Solid strong oxidiser with acid" },
+    { "id": "SR-010", "allOf": ["strong_oxidiser_solid", "peroxide"], "description": "Solid strong oxidiser with peroxide" }
+  ]
+}

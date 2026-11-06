@@ -37,6 +37,13 @@ server:
 
 labscape:
   web-origin: ${WEB_ORIGIN:http://localhost:5173}
+  safety:
+    # R1 ships the safety engine behind this flag. Off => /v1/safety/resolve returns 503 and the
+    # playground shows no reactions at all.
+    engine-enabled: ${SAFETY_ENGINE_ENABLED:true}
+    probe-threshold: 3
+    probe-window-seconds: 600
+    cooldown-seconds: 120
 
 springdoc:
   api-docs:

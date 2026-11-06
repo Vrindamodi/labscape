@@ -16,7 +16,7 @@ The eight contracts that are the **only** way the four parts talk to each other
 
 ## Rules
 
-- **Status: v0.1.0 draft.** Contracts v1 are agreed by all four owners in week 1, then frozen.
+- **Status: v0.2.0 draft.** Contracts v1 are agreed by all four owners in week 1, then frozen.
 - After v1, any change is a pull request approved by all four owners (see `.github/CODEOWNERS`) and bumps
   `CONTRACTS_VERSION` + `package.json` by semver.
 - The Java mirror lives in `apps/api/src/main/java/com/labscape/api/contracts/` and must change in the

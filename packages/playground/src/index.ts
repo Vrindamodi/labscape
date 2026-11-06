@@ -1,4 +1,4 @@
 // @labscape/playground - owned by Part 4.
-// Open Playground sandbox shell, outcome panels and discoveries.
-// Placeholder created during shared-foundation setup; implementation starts in Part 4.
-export {};
+// Open Playground sandbox: chemistry mode on the server-side safety engine (/v1/safety/resolve).
+export { ChemistryPlayground } from "./ChemistryPlayground";
+export { OutcomePanel } from "./components/OutcomePanel";

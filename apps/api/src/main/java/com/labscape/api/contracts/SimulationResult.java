@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 
-/** Contract 3 - mirrors packages/contracts/src/simulation.ts. */
+/** Contract 3 - mirrors packages/contracts/src/simulation.ts (v0.2.0). */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record SimulationResult(
         String requestId,
@@ -19,7 +19,8 @@ public record SimulationResult(
         List<JsonNode> cues,
         List<Measurement> measurements,
         Fidelity fidelity,
-        List<String> explanationRefs) {
+        List<String> explanationRefs,
+        Presentation presentation) {
 
     public enum Outcome {
         @JsonProperty("reaction") REACTION,
@@ -40,4 +41,18 @@ public record SimulationResult(
     public record Species(String id, String formula, double amountMol, String phase) {}
 
     public record Measurement(String key, double value, String unit) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReactionSummary(String id, String name, String type, String equationLatex, String discoveryId) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Presentation(
+            String title,
+            String message,
+            List<String> observations,
+            List<ReactionSummary> reactions,
+            String neededTool,
+            String focusRef,
+            List<String> suggestions,
+            List<String> discoveryIds) {}
 }

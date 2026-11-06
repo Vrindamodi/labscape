@@ -17,6 +17,7 @@
     "test": "pnpm -r --if-present test",
     "api": "cd apps/api && mvn spring-boot:run -Dspring-boot.run.profiles=local",
     "api:test": "cd apps/api && mvn -B verify",
+    "api:demo": "cd apps/api && mvn spring-boot:run -Dspring-boot.run.profiles=nodb",
     "db:up": "docker compose up -d postgres redis",
     "db:down": "docker compose down"
   },

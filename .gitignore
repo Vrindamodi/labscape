@@ -27,3 +27,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Local tool config (machine-specific paths)
+.claude/

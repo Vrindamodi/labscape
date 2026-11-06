@@ -26,7 +26,9 @@ cp .env.example .env          # set DATABASE_URL etc. (local or Neon)
 pnpm install
 pnpm db:up                    # local Postgres (pgvector) + Redis
 pnpm api                      # Spring Boot on :8080  (Flyway runs migrations)
+# or, with no database at all:  pnpm api:demo
 pnpm dev                      # web on :5173, proxies /v1 to the API
+# open http://localhost:5173/playground/chemistry
 ```
 
 Checks: `pnpm typecheck`, `pnpm lint`, `pnpm api:test` (includes contract fixture tests).
