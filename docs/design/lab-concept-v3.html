@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LABscape Lab v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #01030a; font-family: Inter, system-ui, sans-serif; color: #e8f0ff; padding: 22px 0 60px; }
+  .cap { width: 1600px; margin: 0 auto 12px; font: 700 22px Sora; color: #fff; transform-origin: top left; }
+  .cap span { font: 500 14px Inter; color: #8ea6d6; margin-left: 10px; }
+  .wrap { width: 1600px; margin: 0 auto 46px; transform-origin: top left; }
+  .frame { position: relative; width: 1600px; height: 900px; overflow: hidden; border-radius: 22px; background: #0b1730; box-shadow: 0 40px 120px -30px #000, 0 0 0 1px rgba(110,160,255,.16); }
+  canvas.gl { position: absolute; inset: 0; width: 1600px; height: 900px; }
+  [data-lucide] { width: 18px; height: 18px; stroke-width: 1.9; }
+
+  /* type scale: 12 / 13 / 14 / 16 / 20 / 28 */
+  .t12 { font-size: 12px; } .t13 { font-size: 13px; } .t14 { font-size: 14px; }
+  .kicker { font: 600 12px Inter; letter-spacing: .08em; text-transform: uppercase; color: #8fa6d1; }
+  .glass { background: linear-gradient(180deg, rgba(14, 26, 56, .72), rgba(8, 16, 38, .78)); border: 1px solid rgba(140, 180, 255, .16);
+    backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    box-shadow: inset 0 1px 0 rgba(200, 220, 255, .10), 0 24px 60px -24px rgba(0, 0, 0, .8); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 12px; font: 600 14px Inter; color: #dbe7ff; background: rgba(120, 160, 255, .10); border: 1px solid rgba(140, 180, 255, .16); }
+  .btn.primary { color: #fff; background: linear-gradient(180deg, #3d8bff, #1d5fe0); border-color: #6aa8ff; box-shadow: 0 8px 24px -8px rgba(61, 139, 255, .9), inset 0 1px 0 rgba(255,255,255,.35); }
+  .muted { color: #8fa6d1; }
+
+  /* top bar */
+  .top { position: absolute; left: 16px; right: 16px; top: 14px; height: 56px; border-radius: 18px; display: flex; align-items: center; padding: 0 10px 0 14px; gap: 14px; z-index: 5; }
+  .brand { display: flex; align-items: center; gap: 10px; font: 700 20px Sora; letter-spacing: -.01em; }
+  .brand i { width: 30px; height: 30px; border-radius: 10px; background: conic-gradient(from 220deg, #3d8bff, #39d6ff, #ffc23d, #3d8bff); position: relative; }
+  .brand i::after { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: #0b1730; box-shadow: 0 0 0 3px rgba(255,255,255,.85) inset; }
+  .navs { display: flex; gap: 2px; margin-left: 10px; }
+  .nav { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 11px; font: 600 14px Inter; color: #a9bde4; }
+  .nav.on { color: #fff; background: rgba(61, 139, 255, .22); box-shadow: inset 0 0 0 1px rgba(110, 170, 255, .45); }
+  .nav.sos [data-lucide] { color: #ff5b6b; }
+  .tr { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .xp { width: 210px; }
+  .xp .row { display: flex; justify-content: space-between; font: 600 12px Inter; color: #c8d6f3; }
+  .bar { height: 6px; border-radius: 6px; background: rgba(255,255,255,.1); margin-top: 5px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 64%; border-radius: 6px; background: linear-gradient(90deg, #ffc23d, #ff8a3d); }
+  .av { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #ffc23d, #ff6a8a); border: 2px solid rgba(255,255,255,.7); }
+
+  /* left rail + drawer */
+  .rail { position: absolute; left: 16px; top: 84px; width: 60px; bottom: 16px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 0; z-index: 4; }
+  .ri { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; color: #9fb4de; position: relative; }
+  .ri.on { color: #fff; background: rgba(61, 139, 255, .25); box-shadow: inset 0 0 0 1px rgba(110, 170, 255, .5); }
+  .ri .tip { position: absolute; left: 52px; white-space: nowrap; font: 600 12px Inter; color: #dbe7ff; opacity: 0; }
+  .rail .sp { flex: 1; }
+  .drawer { position: absolute; left: 84px; top: 84px; width: 300px; bottom: 16px; border-radius: 18px; padding: 14px; z-index: 4; }
+  .dhead { display: flex; justify-content: space-between; align-items: center; }
+  .dhead b { font: 700 16px Sora; }
+  .search { margin-top: 12px; height: 38px; border-radius: 11px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: rgba(4,10,28,.55); border: 1px solid rgba(140,180,255,.14); color: #8fa6d1; font-size: 13px; }
+  .filters { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .f { height: 28px; padding: 0 10px; border-radius: 9px; display: inline-flex; align-items: center; font: 600 12px Inter; color: #a9bde4; background: rgba(120,160,255,.08); border: 1px solid rgba(140,180,255,.12); }
+  .f.on { color: #fff; background: rgba(61,139,255,.25); border-color: rgba(110,170,255,.5); }
+  .shelf { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .bot { height: 150px; border-radius: 14px; position: relative; overflow: hidden; background: radial-gradient(90% 70% at 50% 38%, var(--tint), transparent 70%), rgba(4,10,28,.5); border: 1px solid rgba(140,180,255,.12); }
+  .bot.held { border-color: #6aa8ff; box-shadow: 0 0 0 1px #6aa8ff, 0 0 26px -8px #3d8bff; }
+  .bot svg { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); width: 86px; height: 96px; filter: drop-shadow(0 10px 12px rgba(0,0,0,.55)); }
+  .bot .meta { position: absolute; left: 10px; right: 10px; bottom: 8px; }
+  .bot .meta b { display: block; font: 600 13px Inter; color: #fff; }
+  .bot .meta span { font: 500 12px JetBrains Mono; color: #8fa6d1; }
+  .bot .hz { position: absolute; right: 9px; top: 9px; display: flex; gap: 4px; }
+  .bot .hz i { width: 16px; height: 16px; transform: rotate(45deg); border-radius: 2px; border: 1.6px solid #ff5b6b; background: #fff; }
+  .bot .tagpill { position: absolute; left: 9px; top: 9px; font: 600 11px JetBrains Mono; color: #9fd8ff; padding: 2px 6px; border-radius: 6px; background: rgba(61,139,255,.18); }
+  .held-badge { position: absolute; left: 9px; top: 9px; font: 700 11px Inter; color: #fff; padding: 3px 7px; border-radius: 7px; background: #3d8bff; display: flex; gap: 4px; align-items: center; }
+  .held-badge [data-lucide] { width: 12px; height: 12px; }
+
+  /* mission */
+  .mission { position: absolute; left: 400px; top: 84px; width: 330px; border-radius: 18px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; z-index: 3; }
+  .ringp { width: 52px; height: 52px; border-radius: 50%; background: conic-gradient(#ffc23d 0 72%, rgba(255,255,255,.1) 72%); display: grid; place-items: center; flex-shrink: 0; }
+  .ringp::after { content: "72%"; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: #0b1730; font: 700 12px Sora; color: #ffc23d; }
+  .mission b { display: block; font: 700 14px Sora; }
+  .stars { display: flex; gap: 2px; margin-top: 4px; color: #ffc23d; }
+  .stars [data-lucide] { width: 14px; height: 14px; }
+  .stars .off { color: rgba(255,255,255,.25); }
+
+  /* readouts anchored to the beaker */
+  .anchor { position: absolute; z-index: 3; display: flex; align-items: center; gap: 0; }
+  .anchor .line { width: 60px; height: 1px; background: linear-gradient(90deg, rgba(140,190,255,.0), rgba(140,190,255,.8)); }
+  .anchor .dotp { width: 7px; height: 7px; border-radius: 50%; background: #9fd0ff; box-shadow: 0 0 10px #3d8bff; }
+  .read { border-radius: 14px; padding: 8px 12px; min-width: 120px; }
+  .read b { display: block; font: 700 22px Sora; letter-spacing: -.01em; }
+  .read small { font: 600 12px Inter; color: #8fa6d1; }
+  .delta { font: 600 12px Inter; margin-left: 6px; }
+
+  /* contextual tool ring next to the held bottle */
+  .ctx { position: absolute; z-index: 4; width: 250px; border-radius: 18px; padding: 12px; }
+  .ctx .hd { display: flex; align-items: center; gap: 8px; font: 700 14px Sora; }
+  .ctx .hd .sw { width: 14px; height: 14px; border-radius: 4px; background: #ffd23f; }
+  .tilt { margin-top: 10px; display: flex; gap: 12px; align-items: center; }
+  .gauge { width: 70px; height: 70px; border-radius: 50%; background: conic-gradient(from 180deg, #3de8a8, #39d6ff 70deg, #3d8bff 116deg, rgba(255,255,255,.08) 116deg 180deg, transparent 180deg); display: grid; place-items: center; position: relative; }
+  .gauge::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: #0c1734; }
+  .gauge b { position: relative; z-index: 1; font: 700 17px Sora; }
+  .speedseg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; }
+  .speedseg div { height: 30px; border-radius: 9px; display: grid; place-items: center; font: 600 12px Inter; color: #a9bde4; background: rgba(120,160,255,.08); border: 1px solid rgba(140,180,255,.12); }
+  .speedseg .on { color: #fff; background: rgba(61,139,255,.3); border-color: #6aa8ff; }
+  .amt { margin-top: 10px; display: flex; align-items: center; gap: 6px; }
+  .amt .v { flex: 1; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; background: rgba(2,8,24,.65); border: 1px solid rgba(140,180,255,.2); font: 700 18px Sora; }
+  .amt .v small { font: 600 12px Inter; color: #8fa6d1; }
+  .sq { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: rgba(120,160,255,.10); border: 1px solid rgba(140,180,255,.16); }
+  .chipsq { display: flex; gap: 4px; margin-top: 8px; }
+  .chipsq span { flex: 1; height: 26px; border-radius: 8px; display: grid; place-items: center; font: 600 12px JetBrains Mono; color: #a9bde4; background: rgba(120,160,255,.08); }
+  .chipsq .on { color: #fff; background: rgba(61,139,255,.3); }
+  .drag-hint { position: absolute; z-index: 3; display: flex; align-items: center; gap: 8px; font: 600 13px Inter; color: #dbe7ff; padding: 8px 12px; border-radius: 12px; }
+
+  /* right drawer */
+  .right { position: absolute; right: 16px; top: 84px; width: 356px; bottom: 96px; border-radius: 18px; padding: 14px; z-index: 4; overflow: hidden; }
+  .seg { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: rgba(4,10,28,.55); border: 1px solid rgba(140,180,255,.12); }
+  .seg div { flex: 1; height: 32px; display: grid; place-items: center; border-radius: 9px; font: 600 13px Inter; color: #a9bde4; }
+  .seg .on { color: #fff; background: rgba(61,139,255,.28); }
+  .status { margin-top: 12px; padding: 12px; border-radius: 14px; background: linear-gradient(120deg, rgba(61,232,168,.16), rgba(61,139,255,.08)); border: 1px solid rgba(61,232,168,.35); }
+  .status .t { display: flex; align-items: center; gap: 8px; font: 700 16px Sora; }
+  .status .t i { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; background: #3de8a8; color: #053; }
+  .status p { margin-top: 6px; font-size: 13px; line-height: 1.5; color: #c8d6f3; }
+  .prodrow { margin-top: 10px; display: flex; gap: 8px; }
+  .prod { flex: 1; display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 12px; background: rgba(4,10,28,.5); border: 1px solid rgba(140,180,255,.12); }
+  .prod .o { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; }
+  .prod b { display: block; font: 700 13px JetBrains Mono; } .prod small { font-size: 12px; color: #8fa6d1; }
+  .eqn { margin-top: 10px; padding: 10px 12px; border-radius: 12px; font: 600 14px JetBrains Mono; background: rgba(4,10,28,.5); border: 1px solid rgba(140,180,255,.12); }
+  .eqn em { font-style: normal; color: #39d6ff; }
+  .hints { margin-top: 12px; }
+  .hstep { display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border-radius: 12px; margin-top: 6px; border: 1px solid rgba(140,180,255,.12); background: rgba(4,10,28,.45); }
+  .hstep .n { width: 24px; height: 24px; border-radius: 8px; flex-shrink: 0; display: grid; place-items: center; font: 700 12px Sora; }
+  .hstep.open { border-color: rgba(255,194,61,.5); background: rgba(255,194,61,.08); }
+  .hstep.open .n { background: #ffc23d; color: #2a1d00; }
+  .hstep.lock { opacity: .6; } .hstep.lock .n { background: rgba(255,255,255,.08); color: #8fa6d1; }
+  .hstep p { font-size: 13px; line-height: 1.45; color: #dbe7ff; } .hstep small { font-size: 12px; color: #8fa6d1; }
+  .log { margin-top: 12px; }
+  .lrow { display: grid; grid-template-columns: 48px 1fr; gap: 8px; padding: 6px 0; font-size: 13px; border-bottom: 1px dashed rgba(140,180,255,.12); }
+  .lrow span:first-child { font: 600 12px JetBrains Mono; color: #39d6ff; }
+
+  /* bottom dock */
+  .dock { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); height: 70px; border-radius: 20px; padding: 8px; display: flex; gap: 6px; align-items: center; z-index: 4; }
+  .tool { width: 74px; height: 54px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: 600 12px Inter; color: #a9bde4; }
+  .tool [data-lucide] { width: 20px; height: 20px; }
+  .tool.on { color: #fff; background: rgba(61,139,255,.28); box-shadow: inset 0 0 0 1px rgba(110,170,255,.55); }
+  .tool.hot { color: #ffd59a; background: rgba(255,138,61,.18); box-shadow: inset 0 0 0 1px rgba(255,160,90,.5); }
+  .vsep { width: 1px; height: 36px; background: rgba(140,180,255,.16); margin: 0 4px; }
+  .focus { position: absolute; right: 16px; bottom: 16px; height: 70px; border-radius: 20px; padding: 0 18px; display: flex; align-items: center; gap: 10px; font: 600 14px Inter; z-index: 4; }
+
+  /* frame 2: reaction moment */
+  .lens { position: absolute; left: 980px; top: 150px; width: 360px; height: 360px; border-radius: 50%; overflow: hidden; z-index: 3;
+    border: 2px solid rgba(160, 200, 255, .55); box-shadow: 0 0 0 8px rgba(61,139,255,.12), 0 0 60px -6px rgba(61,139,255,.8), inset 0 0 60px rgba(0,0,0,.6);
+    background: radial-gradient(circle at 50% 45%, rgba(40,80,170,.85), rgba(6,14,40,.95)); }
+  .lens-tag { position: absolute; left: 1035px; top: 118px; z-index: 4; padding: 6px 12px; border-radius: 10px; font: 700 12px Inter; letter-spacing: .08em; }
+  .leader { position: absolute; z-index: 3; left: 760px; top: 420px; width: 240px; height: 2px; transform-origin: left; transform: rotate(-16deg); background: linear-gradient(90deg, rgba(140,190,255,.0), rgba(140,190,255,.9)); }
+  .complete { position: absolute; left: 50%; top: 92px; transform: translateX(-50%); z-index: 4; display: flex; align-items: center; gap: 14px; padding: 12px 18px 12px 12px; border-radius: 20px; }
+  .complete .medal { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, #ffd56b, #ff9a3d); color: #3a2200; box-shadow: 0 0 30px -4px #ffb03d; }
+  .complete b { font: 700 18px Sora; } .complete .xpb { padding: 6px 12px; border-radius: 10px; font: 700 14px Sora; color: #2a1d00; background: linear-gradient(135deg, #fff1b8, #ffc23d); }
+  .timeline { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); width: 860px; height: 74px; border-radius: 20px; padding: 12px 16px; display: flex; align-items: center; gap: 14px; z-index: 4; }
+  .scrub { flex: 1; position: relative; height: 34px; }
+  .scrub .trk { position: absolute; left: 0; right: 0; top: 15px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.12); }
+  .scrub .done { position: absolute; left: 0; width: 62%; top: 15px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #3de8a8, #39d6ff); }
+  .scrub .mk { position: absolute; top: 4px; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; transform: translateX(-50%); background: #0c1734; border: 1px solid rgba(140,180,255,.3); }
+  .scrub .mk [data-lucide] { width: 14px; height: 14px; }
+  .scrub .head { position: absolute; left: 62%; top: -2px; width: 3px; height: 38px; border-radius: 2px; background: #fff; box-shadow: 0 0 10px #39d6ff; }
+  .caption2 { position: absolute; left: 92px; top: 92px; z-index: 4; width: 420px; padding: 16px; border-radius: 18px; }
+  .caption2 h2 { font: 700 28px/1.1 Sora; letter-spacing: -.02em; }
+  .caption2 h2 em { font-style: normal; background: linear-gradient(90deg, #ff7ab6, #39d6ff); -webkit-background-clip: text; color: transparent; }
+  .facts { margin-top: 12px; padding: 12px; border-radius: 14px; background: linear-gradient(135deg, rgba(167,123,255,.22), rgba(57,214,255,.10)); border: 1px solid rgba(167,123,255,.35); font-size: 13px; line-height: 1.5; }
+
+  /* frame 3: periodic table */
+  .ptwrap { position: absolute; left: 92px; right: 16px; top: 84px; bottom: 16px; border-radius: 20px; padding: 18px; z-index: 4; display: grid; grid-template-columns: 1fr 340px; gap: 18px; }
+  .pthead { display: flex; align-items: center; gap: 12px; grid-column: 1 / -1; }
+  .pthead h2 { font: 700 24px Sora; }
+  .views { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: rgba(4,10,28,.55); margin-left: 16px; }
+  .views div { height: 32px; padding: 0 12px; display: grid; place-items: center; border-radius: 9px; font: 600 13px Inter; color: #a9bde4; }
+  .views .on { color: #fff; background: rgba(61,139,255,.3); }
+  .pt { display: grid; grid-template-columns: repeat(18, 1fr); grid-template-rows: repeat(7, 54px) 12px repeat(2, 54px); gap: 4px; }
+  .tile { border-radius: 9px; padding: 5px 6px; background: rgba(120,160,255,.07); border: 1px solid rgba(140,180,255,.12); position: relative; overflow: hidden; }
+  .tile .z { font: 500 10px JetBrains Mono; color: #8fa6d1; } .tile .s { font: 700 18px/1.1 Sora; } .tile .v { font: 600 10px JetBrains Mono; color: #c8d6f3; }
+  .tile.hot { background: var(--h); border-color: rgba(255,255,255,.25); }
+  .tile.sel { outline: 2px solid #fff; box-shadow: 0 0 26px 2px var(--h); z-index: 2; }
+  .scale { margin-top: 12px; display: flex; align-items: center; gap: 10px; font: 600 12px Inter; color: #8fa6d1; }
+  .scale i { flex: 0 0 280px; height: 10px; border-radius: 6px; background: linear-gradient(90deg, #1d3a8a, #2f7cff, #39d6ff, #3de8a8, #ffd23f, #ff7a3d, #ff3d6b); }
+  .side { display: flex; flex-direction: column; gap: 12px; }
+  .cmp { padding: 14px; border-radius: 16px; background: rgba(4,10,28,.55); border: 1px solid rgba(140,180,255,.14); }
+  .cmpgrid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin-top: 10px; }
+  .bigt { height: 104px; border-radius: 14px; padding: 10px; position: relative; }
+  .bigt .z { font: 600 12px JetBrains Mono; opacity: .85; } .bigt .s { font: 700 40px/1 Sora; margin-top: 4px; } .bigt .n { font: 600 12px Inter; }
+  .vs { font: 700 13px Sora; color: #8fa6d1; }
+  .crow { display: grid; grid-template-columns: 1fr 96px 1fr; gap: 6px; margin-top: 8px; font: 600 13px Inter; align-items: center; }
+  .crow span:nth-child(2) { text-align: center; font-size: 12px; color: #8fa6d1; }
+  .crow span:first-child { text-align: right; }
+  .predict { padding: 14px; border-radius: 16px; background: linear-gradient(135deg, rgba(255,90,120,.18), rgba(255,194,61,.10)); border: 1px solid rgba(255,140,100,.35); }
+</style>
+</head>
+<body>
+
+<div class="cap" data-s>1 · Main lab <span>real-time 3D bench · bench-first layout · tools appear next to the bottle in your hand · missions · hint ladder · live notebook</span></div>
+<div class="wrap" data-s><div class="frame" id="f1"><canvas class="gl" id="c1"></canvas></div></div>
+
+<div class="cap" data-s>2 · The reaction moment <span>focus mode · camera pushes in · micro view of molecules · slow-mo replay timeline · mission complete</span></div>
+<div class="wrap" data-s><div class="frame" id="f2"><canvas class="gl" id="c2"></canvas></div></div>
+
+<div class="cap" data-s>3 · Periodic table drawer <span>soft tiles, live trend heatmaps (electronegativity shown) · compare two elements · predicted reaction before you mix</span></div>
+<div class="wrap" data-s><div class="frame" id="f3"><canvas class="gl" id="c3"></canvas></div></div>
+
+<script type="module">
+// Real-time 3D lab bench for the LABscape v3 mockup (Three.js, physically based glass + post FX).
+import * as THREE from "three";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+const W = 1600, H = 900;
+
+function backdropTexture() {
+  const c = document.createElement("canvas");
+  c.width = 2048; c.height = 1152;
+  const g = c.getContext("2d");
+  const wall = g.createLinearGradient(0, 0, 0, c.height);
+  wall.addColorStop(0, "#172a52"); wall.addColorStop(0.65, "#1f3763"); wall.addColorStop(1, "#0c1730");
+  g.fillStyle = wall; g.fillRect(0, 0, c.width, c.height);
+  // window + city at dusk
+  g.fillStyle = "#0e1a36"; g.fillRect(760, 120, 560, 470);
+  const sky = g.createLinearGradient(0, 140, 0, 570);
+  sky.addColorStop(0, "#4b6fd1"); sky.addColorStop(0.6, "#9fb2ea"); sky.addColorStop(1, "#f2b38a");
+  g.fillStyle = sky; g.fillRect(780, 140, 255, 430); g.fillRect(1045, 140, 255, 430);
+  for (let i = 0; i < 14; i++) {
+    const x = 780 + i * 38, h = 120 + ((i * 53) % 150);
+    g.fillStyle = "#30477f"; g.fillRect(x, 570 - h, 32, h);
+    g.fillStyle = "rgba(255,214,140,.8)";
+    for (let k = 0; k < 10; k++) if ((i * 7 + k * 3) % 4 === 0) g.fillRect(x + 5 + (k % 3) * 9, 570 - h + 10 + k * 11, 5, 6);
+  }
+  // shelves with coloured bottles
+  g.fillStyle = "#2d4170"; g.fillRect(120, 360, 520, 14); g.fillRect(120, 560, 520, 14);
+  const cols = ["#4f7bd9", "#a35bd6", "#3fb3c9", "#d9a83f", "#5a9f6a", "#d2557a", "#5d7ad0", "#e07b39"];
+  for (let i = 0; i < 8; i++) { g.fillStyle = cols[i]; g.globalAlpha = 0.8; g.beginPath(); g.roundRect(140 + i * 60, 270 - (i % 3) * 16, 40, 90 + (i % 3) * 16, 8); g.fill(); }
+  for (let i = 0; i < 7; i++) { g.fillStyle = "#a8bde6"; g.globalAlpha = 0.35; g.beginPath(); g.roundRect(150 + i * 68, 470, 46, 90, 10); g.fill(); }
+  g.globalAlpha = 1;
+  // plant
+  g.fillStyle = "#b98a52"; g.beginPath(); g.roundRect(560, 470, 110, 90, 12); g.fill();
+  g.fillStyle = "#3f8f52";
+  for (let i = 0; i < 18; i++) { g.save(); g.translate(615 + Math.cos(i) * 60, 400 + Math.sin(i * 1.7) * 55); g.rotate(i * 0.45); g.beginPath(); g.ellipse(0, 0, 44, 16, 0, 0, Math.PI * 2); g.fill(); g.restore(); }
+  // poster
+  g.fillStyle = "rgba(220,232,250,.85)"; g.fillRect(1480, 180, 260, 320);
+  g.fillStyle = "#5b7cc4"; g.font = "700 46px Rajdhani, sans-serif"; g.textAlign = "center";
+  g.fillText("Think", 1610, 360); g.fillText("Experiment", 1610, 410); g.fillText("Learn", 1610, 460);
+  g.strokeStyle = "#5b7cc4"; g.lineWidth = 6; g.beginPath(); g.arc(1610, 270, 40, 0, Math.PI * 2); g.stroke();
+  // cabinets + first aid
+  g.fillStyle = "#26406c"; g.fillRect(0, 640, c.width, 260);
+  g.fillStyle = "#cf3c3c"; g.fillRect(1500, 560, 130, 100); g.fillStyle = "#fff"; g.fillRect(1550, 575, 30, 70); g.fillRect(1530, 595, 70, 30);
+  // ceiling light bloom
+  const lamp = g.createRadialGradient(1024, 0, 0, 1024, 0, 900);
+  lamp.addColorStop(0, "rgba(200,225,255,.35)"); lamp.addColorStop(1, "rgba(200,225,255,0)");
+  g.fillStyle = lamp; g.fillRect(0, 0, c.width, c.height);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function labelTexture(text, sub, col) {
+  const c = document.createElement("canvas");
+  c.width = 256; c.height = 160;
+  const g = c.getContext("2d");
+  g.fillStyle = "#fbfcff"; g.fillRect(0, 0, 256, 160);
+  g.fillStyle = col; g.fillRect(0, 0, 256, 34);
+  g.fillStyle = "#fff"; g.font = "800 22px Inter, sans-serif"; g.fillText("LABscape", 14, 25);
+  g.fillStyle = "#0f172a"; g.font = "800 58px Inter, sans-serif"; g.fillText(text, 16, 100);
+  g.fillStyle = "#475569"; g.font = "600 22px Inter, sans-serif"; g.fillText(sub, 18, 138);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function softDot() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d");
+  const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, "rgba(255,255,255,.9)"); r.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = r; g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+
+const glass = () =>
+  new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, metalness: 0, roughness: 0.03, transmission: 1, thickness: 0.06, ior: 1.5,
+    clearcoat: 1, clearcoatRoughness: 0.03, specularIntensity: 1, envMapIntensity: 1.4, transparent: true, side: THREE.DoubleSide,
+  });
+
+const liquidMat = (hex, glow = 0.25) =>
+  new THREE.MeshPhysicalMaterial({
+    color: hex, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.05, sheen: 0.4, sheenColor: new THREE.Color("#ffffff"),
+    emissive: new THREE.Color(hex), emissiveIntensity: glow * 1.4,
+  });
+
+function lathe(points, segs = 72) {
+  return new THREE.LatheGeometry(points.map(([x, y]) => new THREE.Vector2(x, y)), segs);
+}
+
+function makeLab(canvas, opts) {
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.setSize(W, H, false);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.82;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b1730);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+  const camera = new THREE.PerspectiveCamera(opts.fov ?? 30, W / H, 0.1, 100);
+  const camBase = new THREE.Vector3(...opts.cam);
+  const target = new THREE.Vector3(...opts.target);
+
+  // backdrop
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(26, 14.6), new THREE.MeshBasicMaterial({ map: backdropTexture() }));
+  back.position.set(0, 4.2, -7);
+  scene.add(back);
+
+  // bench (dark epoxy, glossy)
+  const bench = new THREE.Mesh(
+    new THREE.BoxGeometry(16, 0.32, 6),
+    new THREE.MeshPhysicalMaterial({ color: 0x1a2230, roughness: 0.22, metalness: 0.15, clearcoat: 0.8, clearcoatRoughness: 0.15 }),
+  );
+  bench.position.set(0, -0.16, 0.5);
+  bench.receiveShadow = true;
+  scene.add(bench);
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(16, 0.04, 0.05), new THREE.MeshStandardMaterial({ color: 0x5a6b86, metalness: 0.6, roughness: 0.3 }));
+  edge.position.set(0, 0.0, 3.5);
+  scene.add(edge);
+
+  // hotplate stirrer
+  const hp = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.32, 1.45), new THREE.MeshPhysicalMaterial({ color: 0x2a3446, roughness: 0.38, metalness: 0.35, clearcoat: 0.8 }));
+  body.position.y = 0.16; body.castShadow = true; body.receiveShadow = true; hp.add(body);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.04, 1.2), new THREE.MeshStandardMaterial({ color: 0x151b26, roughness: 0.4 }));
+  top.position.y = 0.34; hp.add(top);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.018, 16, 96), new THREE.MeshBasicMaterial({ color: opts.ringColor ?? 0x3aa0ff }));
+  ring.rotation.x = Math.PI / 2; ring.position.y = 0.365; hp.add(ring);
+  const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.08, 32), new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.3, metalness: 0.2 }));
+  knob.rotation.x = Math.PI / 2; knob.position.set(0.55, 0.16, 0.74); hp.add(knob);
+  const led = new THREE.Mesh(new THREE.SphereGeometry(0.03), new THREE.MeshBasicMaterial({ color: 0xffd23f }));
+  led.position.set(-0.6, 0.18, 0.73); hp.add(led);
+  scene.add(hp);
+
+  // beaker (thick glass via closed lathe profile)
+  const beaker = new THREE.Group();
+  beaker.position.y = 0.37;
+  const gb = new THREE.Mesh(
+    lathe([[0, 0.02], [0.5, 0.02], [0.52, 0.06], [0.52, 1.3], [0.56, 1.34], [0.585, 1.33], [0.56, 1.29], [0.56, 0.05], [0.52, 0], [0, 0]]),
+    glass(),
+  );
+  gb.castShadow = true;
+  beaker.add(gb);
+  const level = opts.level ?? 0.72;
+  const liq = new THREE.Mesh(new THREE.CylinderGeometry(0.515, 0.515, level, 72), liquidMat(opts.liquid, opts.glow ?? 0.28));
+  liq.position.y = 0.025 + level / 2;
+  beaker.add(liq);
+  const vortex = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.26, 72, 1, true), liquidMat(opts.liquidTop ?? opts.liquid, (opts.glow ?? 0.28) + 0.15));
+  vortex.rotation.x = Math.PI;
+  vortex.position.y = 0.025 + level - 0.12;
+  beaker.add(vortex);
+  const stirBar = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 0.22, 8, 16), new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 }));
+  stirBar.rotation.z = Math.PI / 2; stirBar.position.y = 0.07;
+  beaker.add(stirBar);
+  // graduations
+  for (let i = 0; i < 5; i++) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.008, 0.005), new THREE.MeshBasicMaterial({ color: 0xe8f2ff, transparent: true, opacity: 0.7 }));
+    m.position.set(0.33, 0.25 + i * 0.22, 0.43);
+    m.rotation.y = 0.6;
+    beaker.add(m);
+  }
+  scene.add(beaker);
+
+  // bubbles
+  const bubbleGeo = new THREE.SphereGeometry(1, 12, 10);
+  const bubbleMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0, clearcoat: 1, emissive: 0xffffff, emissiveIntensity: 0.35 });
+  const N = opts.bubbles ?? 70;
+  const bubbles = new THREE.InstancedMesh(bubbleGeo, bubbleMat, N);
+  const bdata = Array.from({ length: N }, () => ({
+    r: Math.random() * 0.42, a: Math.random() * Math.PI * 2, y: Math.random() * level, s: 0.12 + Math.random() * 0.25, size: 0.008 + Math.random() * 0.02,
+  }));
+  beaker.add(bubbles);
+
+  // erlenmeyer flask (left back)
+  const flask = new THREE.Group();
+  flask.position.set(-2.4, 0, -1.2);
+  flask.add(new THREE.Mesh(lathe([[0, 0.01], [0.42, 0.01], [0.45, 0.05], [0.16, 0.9], [0.16, 1.25], [0.19, 1.28], [0.2, 1.26], [0.19, 1.25], [0.19, 0.9], [0.48, 0.05], [0.45, 0], [0, 0]]), glass()));
+  const fl = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.44, 0.35, 48), liquidMat("#3ee8a2", 0.25));
+  fl.position.y = 0.19; flask.add(fl);
+  scene.add(flask);
+
+  // test-tube rack (left)
+  const rack = new THREE.Group();
+  rack.position.set(-1.65, 0, 0.5);
+  const rackMat = new THREE.MeshPhysicalMaterial({ color: 0xe9eef6, roughness: 0.4 });
+  const r1 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.3), rackMat); r1.position.y = 0.55; rack.add(r1);
+  const r2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.3), rackMat); r2.position.y = 0.05; rack.add(r2);
+  [-0.58, 0.58].forEach((x) => { const p = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.55, 0.3), rackMat); p.position.set(x, 0.3, 0); rack.add(p); });
+  ["#ff5c8a", "#ffd23f", "#3ee8a2", "#a77bff"].forEach((col, i) => {
+    const x = -0.4 + i * 0.27;
+    const tube = new THREE.Mesh(lathe([[0, 0.06], [0.06, 0.08], [0.065, 0.12], [0.065, 0.95], [0.072, 0.97], [0.075, 0.95], [0.075, 0.1], [0.06, 0.04], [0, 0.03]], 40), glass());
+    tube.position.set(x, 0.05, 0); rack.add(tube);
+    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.35 + i * 0.06, 32), liquidMat(col, 0.3));
+    l.position.set(x, 0.3 + i * 0.03, 0); rack.add(l);
+  });
+  rack.traverse((o) => (o.castShadow = true));
+  scene.add(rack);
+
+  // burette on a stand (right)
+  const stand = new THREE.Group();
+  stand.position.set(1.45, 0, -0.55);
+  const metal = new THREE.MeshStandardMaterial({ color: 0x9aa6b6, metalness: 0.85, roughness: 0.25 });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.55), new THREE.MeshStandardMaterial({ color: 0x1d2430, roughness: 0.5 }));
+  base.position.y = 0.03; stand.add(base);
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.7, 16), metal); rod.position.set(0.2, 1.35, 0); stand.add(rod);
+  const clamp = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.06), new THREE.MeshStandardMaterial({ color: 0x2b313c })); clamp.position.set(0, 1.7, 0); stand.add(clamp);
+  const bur = new THREE.Mesh(lathe([[0, 0.02], [0.035, 0.0], [0.05, 0.1], [0.05, 2.2], [0.057, 2.2], [0.057, 0.1], [0.04, -0.02], [0, -0.03]], 32), glass());
+  bur.position.set(-0.2, 0.62, 0); stand.add(bur);
+  const burL = new THREE.Mesh(new THREE.CylinderGeometry(0.043, 0.043, 1.3, 24), liquidMat("#38b6ff", 0.35)); burL.position.set(-0.2, 1.3, 0); stand.add(burL);
+  const tap = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.05), new THREE.MeshStandardMaterial({ color: 0xc12a3a })); tap.position.set(-0.2, 0.72, 0); stand.add(tap);
+  stand.traverse((o) => (o.castShadow = true));
+  scene.add(stand);
+
+  // wash bottle + petri dish
+  const wb = new THREE.Mesh(lathe([[0, 0], [0.22, 0], [0.24, 0.05], [0.24, 0.62], [0.12, 0.74], [0.06, 0.78], [0, 0.78]], 40), new THREE.MeshPhysicalMaterial({ color: 0xf2f5fa, roughness: 0.5, transmission: 0.2 }));
+  wb.position.set(2.5, 0, 0.3); wb.castShadow = true; scene.add(wb);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.1, 24), new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
+  cap.position.set(2.5, 0.83, 0.3); scene.add(cap);
+  const petri = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 64, 1, true), glass());
+  petri.position.set(2.2, 0.03, 1.4); scene.add(petri);
+
+  // the bottle in your hand, pouring
+  let stream = null;
+  if (opts.held) {
+    const held = new THREE.Group();
+    const bodyG = lathe([[0, 0], [0.24, 0], [0.26, 0.04], [0.26, 0.62], [0.12, 0.74], [0.09, 0.82], [0.09, 0.9], [0, 0.9]], 48);
+    held.add(new THREE.Mesh(bodyG, glass()));
+    const hl = new THREE.Mesh(new THREE.CylinderGeometry(0.235, 0.235, 0.36, 40), liquidMat(opts.held.liquid, 0.25));
+    hl.position.y = 0.2; held.add(hl);
+    const label = new THREE.Mesh(new THREE.CylinderGeometry(0.262, 0.262, 0.28, 40, 1, true, -0.9, 1.8), new THREE.MeshStandardMaterial({ map: labelTexture(opts.held.text, opts.held.sub, opts.held.band), roughness: 0.6 }));
+    label.position.y = 0.36; held.add(label);
+    const hc = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.1, 24), new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.4 }));
+    hc.position.y = 0.95; held.add(hc);
+    held.position.set(0.95, 2.05, 0.15);
+    held.rotation.z = 1.95;
+    held.rotation.y = 0.25;
+    held.traverse((o) => (o.castShadow = true));
+    scene.add(held);
+    const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(0.18, 1.82, 0.12), new THREE.Vector3(0.08, 1.55, 0.1), new THREE.Vector3(0.06, 0.37 + 0.025 + level, 0.08));
+    stream = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.022, 12), new THREE.MeshPhysicalMaterial({ color: opts.held.liquid, emissive: new THREE.Color(opts.held.liquid), emissiveIntensity: 0.6, roughness: 0.05 }));
+    scene.add(stream);
+  }
+
+  // steam
+  const dot = softDot();
+  const steam = [];
+  for (let i = 0; i < (opts.steam ?? 10); i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: dot, color: opts.steamColor ?? 0xcfe8ff, transparent: true, opacity: 0.0, depthWrite: false }));
+    s.userData = { t: Math.random() };
+    scene.add(s);
+    steam.push(s);
+  }
+
+  // lights
+  scene.add(new THREE.AmbientLight(0x6080c0, 0.35));
+  const key = new THREE.SpotLight(0xdfe8ff, 34, 20, 0.55, 0.6, 1.6);
+  key.position.set(2.5, 6, 4); key.target.position.set(0, 0.6, 0); key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004;
+  scene.add(key, key.target);
+  const rimBlue = new THREE.PointLight(0x3a8cff, 22, 8); rimBlue.position.set(-2.5, 2.2, -1.5); scene.add(rimBlue);
+  const rimPink = new THREE.PointLight(opts.rim ?? 0xff4fd8, 10, 7); rimPink.position.set(2.8, 1.8, -1); scene.add(rimPink);
+  const under = new THREE.PointLight(opts.ringColor ?? 0x3aa0ff, 6, 2.2); under.position.set(0, 0.6, 0.2); scene.add(under);
+
+  // post FX
+  const composer = new EffectComposer(renderer);
+  composer.setSize(W, H);
+  composer.addPass(new RenderPass(scene, camera));
+  const focus = camBase.distanceTo(target);
+  composer.addPass(new BokehPass(scene, camera, { focus, aperture: opts.aperture ?? 0.0012, maxblur: 0.005 }));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), (opts.bloom ?? 0.55) * 0.7, 0.45, 0.93));
+  composer.addPass(new OutputPass());
+
+  const m4 = new THREE.Matrix4();
+  const clock = new THREE.Clock();
+  function frame() {
+    const t = clock.getElapsedTime();
+    camera.position.set(camBase.x + Math.sin(t * 0.18) * 0.12, camBase.y + Math.sin(t * 0.25) * 0.04, camBase.z);
+    camera.lookAt(target);
+    vortex.rotation.y = t * 4;
+    stirBar.rotation.y = t * 9;
+    const dt = 1 / 60;
+    bdata.forEach((b, i) => {
+      b.y += b.s * dt;
+      b.a += dt * 2.2;
+      if (b.y > level) { b.y = 0.02; b.r = Math.random() * 0.42; }
+      m4.makeScale(b.size, b.size, b.size).setPosition(Math.cos(b.a) * b.r, 0.03 + b.y, Math.sin(b.a) * b.r);
+      bubbles.setMatrixAt(i, m4);
+    });
+    bubbles.instanceMatrix.needsUpdate = true;
+    steam.forEach((s, i) => {
+      s.userData.t = (s.userData.t + dt * 0.12) % 1;
+      const k = s.userData.t;
+      s.position.set(Math.sin(i * 1.3 + k * 4) * 0.18, 1.75 + k * 1.6, Math.cos(i) * 0.1);
+      s.scale.setScalar(0.25 + k * 0.9);
+      s.material.opacity = Math.sin(k * Math.PI) * (opts.steamOpacity ?? 0.22);
+    });
+    if (stream) stream.material.emissiveIntensity = 0.5 + Math.sin(t * 20) * 0.08;
+    composer.render();
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+
+const NAV = (active) => `
+<div class="top glass">
+  <div class="brand"><i></i>LABscape</div>
+  <div class="navs">
+    <div class="nav"><i data-lucide="house"></i>Home</div>
+    <div class="nav"><i data-lucide="library"></i>Experiments</div>
+    <div class="nav ${active === "play" ? "on" : ""}"><i data-lucide="flask-conical"></i>Playground</div>
+    <div class="nav sos"><i data-lucide="siren"></i>Emergency</div>
+    <div class="nav"><i data-lucide="sparkles"></i>AI Assistant</div>
+  </div>
+  <div class="tr">
+    <div class="xp"><div class="row"><span>Level 12 · Research Scientist</span><span class="muted">6.4k / 10k</span></div><div class="bar"><i></i></div></div>
+    <div class="btn"><i data-lucide="flame" style="color:#ff8a3d"></i>12</div>
+    <div class="btn"><i data-lucide="gem" style="color:#b48cff"></i>2,450</div>
+    <div class="av"></div>
+  </div>
+</div>`;
+
+const RAIL = (active) => `
+<div class="rail glass">
+  ${[["test-tube-diagonal","Chemicals"],["atom","Periodic table"],["beaker","Glassware"],["bookmark","Saved mixes"],["notebook-pen","Notebook"]]
+    .map(([ic, t], i) => `<div class="ri ${i === active ? "on" : ""}" title="${t}"><i data-lucide="${ic}"></i></div>`).join("")}
+  <div class="sp"></div>
+  <div class="ri"><i data-lucide="settings"></i></div>
+</div>`;
+
+function bottleSVG(liq, cap, label, fill = 0.6, id) {
+  const top = 34 + (1 - fill) * 52;
+  return `<svg viewBox="0 0 86 96"><defs>
+    <linearGradient id="gs${id}" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".18" stop-color="#fff" stop-opacity=".06"/><stop offset=".85" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#fff" stop-opacity=".4"/></linearGradient>
+    <linearGradient id="gl${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${liq}"/><stop offset="1" stop-color="${liq}" stop-opacity=".75"/></linearGradient>
+    <radialGradient id="gc${id}" cx=".5" cy=".3"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+    <rect x="31" y="2" width="24" height="13" rx="3" fill="${cap}"/><rect x="31" y="2" width="24" height="5" rx="2" fill="#fff" opacity=".25"/>
+    <rect x="34" y="14" width="18" height="8" fill="#cfd8e6"/>
+    <path d="M18 34 Q18 22 31 22 L55 22 Q68 22 68 34 L68 84 Q68 92 60 92 L26 92 Q18 92 18 84 Z" fill="#dbeafe" fill-opacity=".10" stroke="#eaf3ff" stroke-opacity=".55" stroke-width="1.4"/>
+    <path d="M19.5 ${top} L66.5 ${top} L66.5 84 Q66.5 90.5 60 90.5 L26 90.5 Q19.5 90.5 19.5 84 Z" fill="url(#gl${id})"/>
+    <ellipse cx="43" cy="${top}" rx="23" ry="3" fill="#fff" opacity=".35"/>
+    <ellipse cx="43" cy="70" rx="20" ry="14" fill="url(#gc${id})"/>
+    <rect x="24" y="46" width="38" height="22" rx="3" fill="#fbfdff"/><rect x="24" y="46" width="38" height="6" rx="2" fill="${cap}"/>
+    <text x="43" y="64" text-anchor="middle" font-family="Inter" font-weight="800" font-size="10" fill="#0f172a">${label}</text>
+    <path d="M18 34 Q18 22 31 22 L55 22 Q68 22 68 34 L68 84 Q68 92 60 92 L26 92 Q18 92 18 84 Z" fill="url(#gs${id})"/>
+    <rect x="22" y="28" width="4" height="58" rx="2" fill="#fff" opacity=".7"/></svg>`;
+}
+function crystalSVG(c, id) {
+  return `<svg viewBox="0 0 86 96"><defs><linearGradient id="cr${id}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#bfe3ff"/><stop offset=".5" stop-color="${c}"/><stop offset="1" stop-color="#0b3d9e"/></linearGradient></defs>
+    <ellipse cx="43" cy="88" rx="30" ry="6" fill="#000" opacity=".45"/>
+    <path d="M43 12 L68 38 L60 82 L26 82 L18 38 Z" fill="url(#cr${id})"/><path d="M43 12 L60 82 L43 70 Z" fill="#fff" opacity=".22"/><path d="M18 38 L43 70 L26 82 Z" fill="#000" opacity=".18"/><path d="M43 12 L68 38 L43 70 Z" fill="#fff" opacity=".12"/>
+    <path d="M30 30 L40 20" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".85"/></svg>`;
+}
+function powderSVG(c) {
+  return `<svg viewBox="0 0 86 96"><ellipse cx="43" cy="84" rx="38" ry="9" fill="#1c2740" stroke="#9fb4de" stroke-opacity=".6"/><ellipse cx="43" cy="82" rx="34" ry="7" fill="#0c1430"/>
+    <path d="M12 82 C20 58 30 46 43 46 C56 46 66 58 74 82 Z" fill="${c}"/><path d="M26 64 C32 54 42 52 50 56" stroke="#fff" stroke-opacity=".75" stroke-width="2.4" fill="none"/>
+    ${Array.from({length: 14}, (_, i) => `<circle cx="${22 + (i * 37) % 44}" cy="${66 + (i * 13) % 16}" r="1" fill="#000" opacity=".12"/>`).join("")}</svg>`;
+}
+function metalSVG(c) {
+  return `<svg viewBox="0 0 86 96"><ellipse cx="43" cy="86" rx="32" ry="7" fill="#000" opacity=".45"/>
+    ${[[26,72],[42,66],[58,74],[34,84],[52,86],[62,58]].map(([x,y]) => `<path d="M${x-10} ${y} L${x-6} ${y-11} L${x+5} ${y-12} L${x+11} ${y-3} L${x+4} ${y+5} Z" fill="${c}" stroke="#334155" stroke-width=".8"/><path d="M${x-5} ${y-8} L${x+4} ${y-9}" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`).join("")}</svg>`;
+}
+function cylSVG(c, f) {
+  return `<svg viewBox="0 0 86 96"><rect x="28" y="16" width="30" height="78" rx="14" fill="${c}" stroke="#0f172a" stroke-width="1.4"/><rect x="38" y="4" width="10" height="14" fill="#64748b"/><circle cx="50" cy="8" r="5" fill="#22c55e"/>
+    <rect x="31" y="44" width="24" height="16" rx="3" fill="#fff"/><text x="43" y="56" text-anchor="middle" font-family="Inter" font-weight="800" font-size="10" fill="#0f172a">${f}</text><rect x="32" y="20" width="4" height="66" rx="2" fill="#fff" opacity=".5"/></svg>`;
+}
+
+/* ===================== FRAME 1 ===================== */
+document.getElementById("f1").insertAdjacentHTML("beforeend", NAV("play") + RAIL(0) + `
+<div class="drawer glass">
+  <div class="dhead"><b>Chemicals</b><div style="display:flex;gap:6px"><div class="sq" style="width:32px;height:32px"><i data-lucide="layout-grid"></i></div><div class="sq" style="width:32px;height:32px"><i data-lucide="panel-left-close"></i></div></div></div>
+  <div class="search"><i data-lucide="search"></i>Search 169 chemicals & elements</div>
+  <div class="filters"><span class="f on">All</span><span class="f">Acids</span><span class="f">Bases</span><span class="f">Salts</span><span class="f">Metals</span><span class="f">Gases</span><span class="f">Indicators</span></div>
+  <div class="shelf">
+    <div class="bot held" style="--tint:rgba(255,210,63,.25)"><span class="held-badge"><i data-lucide="hand"></i>In hand</span><span class="hz"><i></i></span>${bottleSVG("#ffd23f","#dc2626","HCl",.55,1)}<div class="meta"><b>Hydrochloric acid</b><span>HCl · 1.0 M</span></div></div>
+    <div class="bot" style="--tint:rgba(95,180,255,.25)"><span class="tagpill">BASE</span><span class="hz"><i></i></span>${bottleSVG("#5fb4ff","#1d4ed8","NaOH",.7,2)}<div class="meta"><b>Sodium hydroxide</b><span>NaOH · 1.0 M</span></div></div>
+    <div class="bot" style="--tint:rgba(31,139,255,.28)"><span class="tagpill">SALT</span>${crystalSVG("#1f8bff",3)}<div class="meta"><b>Copper(II) sulfate</b><span>CuSO₄·5H₂O</span></div></div>
+    <div class="bot" style="--tint:rgba(162,28,175,.3)"><span class="tagpill">OXID</span><span class="hz"><i></i></span>${bottleSVG("#a21caf","#4c1d95","KMnO₄",.62,4)}<div class="meta"><b>Permanganate</b><span>KMnO₄ · 0.01 M</span></div></div>
+    <div class="bot" style="--tint:rgba(248,250,252,.14)"><span class="tagpill">SALT</span>${powderSVG("#f8fafc")}<div class="meta"><b>Baking soda</b><span>NaHCO₃ · powder</span></div></div>
+    <div class="bot" style="--tint:rgba(199,227,106,.22)"><span class="tagpill">GAS</span><span class="hz"><i></i></span>${cylSVG("#c7e36a","Cl₂")}<div class="meta"><b>Chlorine</b><span>Cl₂ · cylinder</span></div></div>
+  </div>
+</div>
+
+<div class="mission glass"><div class="ringp"></div><div style="flex:1"><div class="kicker">Mission 3 of 8</div><b>Neutralise to exactly pH 7.00</b><div class="stars"><i data-lucide="star" fill="#ffc23d"></i><i data-lucide="star" fill="#ffc23d"></i><i data-lucide="star" class="off"></i><span class="t12 muted" style="margin-left:6px">±0.05 for 3 stars</span></div></div></div>
+
+<div class="anchor" style="left:520px;top:520px"><div class="read glass"><small>Temperature</small><b>31.6°<span class="delta" style="color:#ff9a5a">▲ 9.4</span></b></div><div class="line"></div><div class="dotp"></div></div>
+<div class="anchor" style="left:540px;top:615px"><div class="read glass"><small>pH</small><b style="color:#c9a6ff">7.84<span class="delta" style="color:#3de8a8">→ 7.00</span></b></div><div class="line"></div><div class="dotp"></div></div>
+
+<div class="ctx glass" style="left:1000px;top:250px">
+  <div class="hd"><span class="sw"></span>Pouring HCl<span class="muted t12" style="margin-left:auto">drag bottle to tilt</span></div>
+  <div class="tilt"><div class="gauge"><b>58°</b></div><div><div class="kicker">Flow</div><div style="font:700 20px Sora">4.2 <span class="t12 muted">mL/s</span></div><div class="t12" style="color:#3de8a8">Steady pour</div></div></div>
+  <div class="speedseg"><div>Drop</div><div>Slow</div><div class="on">Steady</div><div>Fast</div></div>
+  <div class="amt"><div class="sq"><i data-lucide="minus"></i></div><div class="v">18.4 <small>/ 25 mL</small></div><div class="sq"><i data-lucide="plus"></i></div></div>
+  <div class="chipsq"><span>1</span><span>5</span><span>10</span><span class="on">25</span><span>50</span></div>
+  <div style="display:flex;gap:6px;margin-top:10px"><div class="btn" style="flex:1;height:36px"><i data-lucide="droplet"></i>Dropwise</div><div class="btn" style="flex:1;height:36px"><i data-lucide="hand"></i>Put down</div></div>
+</div>
+
+<div class="right glass">
+  <div class="seg"><div class="on">Live</div><div>Molecules</div><div>Notebook</div><div>Facts</div></div>
+  <div class="status"><div class="t"><i><i data-lucide="check" style="width:14px;height:14px"></i></i>Neutralisation in progress</div><p>The acid is cancelling out the alkali. The pink fades as pH falls towards 7, and the beaker warms.</p></div>
+  <div class="prodrow">
+    <div class="prod"><span class="o" style="background:radial-gradient(circle at 35% 30%,#fff,#cbd5e1 60%,#8794a8)"></span><div><b>NaCl</b><small>dissolved</small></div></div>
+    <div class="prod"><span class="o" style="background:radial-gradient(circle at 35% 30%,#fff,#7cc8ff 60%,#2f7cff)"></span><div><b>H₂O</b><small>liquid</small></div></div>
+  </div>
+  <div class="eqn">HCl + NaOH <em>⟶</em> NaCl + H₂O <span class="muted t12" style="float:right">−57 kJ/mol</span></div>
+  <div class="hints"><div class="kicker" style="display:flex;justify-content:space-between"><span>Hints</span><span style="color:#ffc23d">2 of 3 used</span></div>
+    <div class="hstep open"><span class="n">1</span><div><p>Watch the indicator - pink means there's still alkali left.</p></div></div>
+    <div class="hstep open"><span class="n">2</span><div><p>You're close. Switch to <b>Drop</b> speed so you don't overshoot.</p></div></div>
+    <div class="hstep lock"><span class="n"><i data-lucide="lock" style="width:13px;height:13px"></i></span><div><p>Show me</p><small>A ghost hand demonstrates the move · −1 star</small></div></div>
+  </div>
+  <div class="log"><div class="kicker">Notebook · auto-logged</div>
+    <div class="lrow"><span>00:04</span><span>Added 25.0 mL NaOH (1 M) · steady pour</span></div>
+    <div class="lrow"><span>00:11</span><span>3 drops phenolphthalein → pink</span></div>
+    <div class="lrow"><span>00:26</span><span>Pouring HCl · 18.4 mL so far · 31.6 °C</span></div>
+  </div>
+</div>
+
+<div class="dock glass">
+  <div class="tool on"><i data-lucide="disc-3"></i>Stir</div>
+  <div class="tool"><i data-lucide="rotate-cw"></i>Swirl</div>
+  <div class="tool"><i data-lucide="vibrate"></i>Shake</div>
+  <div class="tool hot"><i data-lucide="flame"></i>68 °C</div>
+  <div class="tool"><i data-lucide="zap"></i>Spark</div>
+  <div class="tool"><i data-lucide="snowflake"></i>Ice bath</div>
+  <div class="vsep"></div>
+  <div class="tool"><i data-lucide="undo-2"></i>Undo</div>
+  <div class="tool"><i data-lucide="trash-2"></i>Empty</div>
+</div>
+<div class="focus glass"><i data-lucide="scan-eye"></i>Focus mode</div>
+`);
+
+/* ===================== FRAME 2 ===================== */
+const atom = (x, y, r, c, l, dark) => `<g><circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/><circle cx="${x - r * .35}" cy="${y - r * .38}" r="${r * .45}" fill="#fff" opacity=".55"/><text x="${x}" y="${y + 4}" text-anchor="middle" font-family="Sora" font-weight="700" font-size="${r > 14 ? 13 : 10}" fill="${dark ? "#1e293b" : "#fff"}">${l}</text></g>`;
+document.getElementById("f2").insertAdjacentHTML("beforeend", NAV("play") + `
+<div class="caption2 glass">
+  <div class="kicker" style="color:#ff9ac7">Reaction · slow motion 0.25×</div>
+  <h2>The last drop of acid <em>steals the pink</em></h2>
+  <p class="t14 muted" style="margin-top:8px;line-height:1.5">H⁺ from the acid meets OH⁻ from the alkali. They snap together into water, the solution becomes neutral, and phenolphthalein loses its colour.</p>
+  <div class="facts">💡 Your stomach acid is about pH 1.5 - antacid tablets work by exactly this reaction.</div>
+</div>
+<div class="complete glass"><div class="medal"><i data-lucide="trophy" style="width:24px;height:24px"></i></div><div><div class="kicker" style="color:#ffc23d">Mission complete</div><b>pH 7.02 · 3 stars</b></div><div class="stars" style="margin:0 6px"><i data-lucide="star" fill="#ffc23d"></i><i data-lucide="star" fill="#ffc23d"></i><i data-lucide="star" fill="#ffc23d"></i></div><div class="xpb">+120 XP</div></div>
+<div class="leader"></div>
+<div class="lens-tag glass">MICRO VIEW · 100 000 000×</div>
+<div class="lens"><svg viewBox="0 0 360 360" width="360" height="360">
+  <defs><radialGradient id="halo"><stop offset="0" stop-color="#39d6ff" stop-opacity=".5"/><stop offset="1" stop-color="#39d6ff" stop-opacity="0"/></radialGradient></defs>
+  ${Array.from({length: 26}, (_, i) => `<circle cx="${(i * 67) % 360}" cy="${(i * 41) % 360}" r="${1 + (i % 3)}" fill="#fff" opacity=".25"/>`).join("")}
+  <circle cx="180" cy="180" r="70" fill="url(#halo)"/>
+  <g stroke="#cfe3ff" stroke-width="5" stroke-linecap="round"><line x1="180" y1="180" x2="152" y2="204"/><line x1="180" y1="180" x2="208" y2="204"/><line x1="86" y1="96" x2="62" y2="78"/><line x1="282" y1="270" x2="300" y2="292"/></g>
+  ${atom(180, 180, 22, "#ff3d5a", "O")}${atom(150, 206, 13, "#f1f5f9", "H", true)}${atom(210, 206, 13, "#f1f5f9", "H", true)}
+  ${atom(86, 96, 18, "#ff3d5a", "O")}${atom(60, 76, 11, "#f1f5f9", "H", true)}<text x="104" y="76" font-family="Sora" font-weight="700" font-size="14" fill="#9fd0ff">OH⁻</text>
+  ${atom(290, 96, 13, "#f1f5f9", "H", true)}<text x="306" y="90" font-family="Sora" font-weight="700" font-size="14" fill="#ffb3c7">H⁺</text>
+  <path d="M276 108 C250 140 225 160 205 170" stroke="#ffb3c7" stroke-width="2" stroke-dasharray="4 5" fill="none"/>
+  <path d="M100 112 C130 140 150 158 166 168" stroke="#9fd0ff" stroke-width="2" stroke-dasharray="4 5" fill="none"/>
+  ${atom(80, 270, 18, "#a855f7", "Na")}<text x="98" y="300" font-family="Sora" font-weight="700" font-size="13" fill="#d8b4fe">Na⁺</text>
+  ${atom(280, 270, 18, "#22c55e", "Cl")}<text x="244" y="304" font-family="Sora" font-weight="700" font-size="13" fill="#86efac">Cl⁻</text>
+  <text x="180" y="330" text-anchor="middle" font-family="Inter" font-weight="600" font-size="13" fill="#cfe3ff">H⁺ + OH⁻ → H₂O</text>
+</svg></div>
+<div class="timeline glass">
+  <div class="btn" style="width:44px;padding:0"><i data-lucide="rewind"></i></div>
+  <div class="btn primary" style="width:44px;padding:0"><i data-lucide="pause"></i></div>
+  <div class="btn" style="padding:0 10px">0.25×</div>
+  <div class="scrub"><div class="trk"></div><div class="done"></div>
+    <div class="mk" style="left:6%"><i data-lucide="droplet" style="color:#5fb4ff"></i></div>
+    <div class="mk" style="left:20%"><i data-lucide="pipette" style="color:#ff7ab6"></i></div>
+    <div class="mk" style="left:44%"><i data-lucide="flask-conical" style="color:#ffd23f"></i></div>
+    <div class="mk" style="left:60%"><i data-lucide="sparkles" style="color:#3de8a8"></i></div>
+    <div class="head"></div></div>
+  <div class="btn"><i data-lucide="microscope"></i>Micro</div>
+  <div class="btn"><i data-lucide="share-2"></i>Share</div>
+</div>
+<div class="focus glass" style="bottom:auto;top:84px;height:48px"><i data-lucide="minimize-2"></i>Exit focus</div>
+`);
+
+/* ===================== FRAME 3 ===================== */
+const SYM = "H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og".split(" ");
+const EN = [2.20,0,0.98,1.57,2.04,2.55,3.04,3.44,3.98,0,0.93,1.31,1.61,1.90,2.19,2.58,3.16,0,0.82,1.00,1.36,1.54,1.63,1.66,1.55,1.83,1.88,1.91,1.90,1.65,1.81,2.01,2.18,2.55,2.96,3.0,0.82,0.95,1.22,1.33,1.6,2.16,1.9,2.2,2.28,2.2,1.93,1.69,1.78,1.96,2.05,2.1,2.66,2.6,0.79,0.89,1.1,1.12,1.13,1.14,1.13,1.17,1.2,1.2,1.2,1.22,1.23,1.24,1.25,1.1,1.27,1.3,1.5,2.36,1.9,2.2,2.2,2.28,2.54,2.0,1.62,1.87,2.02,2.0,2.2,0,0.7,0.9,1.1,1.3,1.5,1.38,1.36,1.28,1.3,1.3,1.3,1.3,1.3];
+const pos = (z) => { if (z===1) return [1,1]; if (z===2) return [1,18]; if (z<=4) return [2,z-2]; if (z<=10) return [2,z+8]; if (z<=12) return [3,z-10]; if (z<=18) return [3,z]; if (z<=36) return [4,z-18]; if (z<=54) return [5,z-36]; if (z<=56) return [6,z-54]; if (z<=71) return [9,z-54]; if (z<=86) return [6,z-68]; if (z<=88) return [7,z-86]; if (z<=103) return [10,z-86]; return [7,z-100]; };
+const heat = (v) => { const stops = ["#1d3a8a","#2f7cff","#39d6ff","#3de8a8","#ffd23f","#ff7a3d","#ff3d6b"]; const t = Math.max(0, Math.min(.999, (v - .7) / 3.3)); return stops[Math.floor(t * stops.length)]; };
+const tiles = SYM.map((s, i) => { const z = i + 1, [r, c] = pos(z); const en = EN[i]; const has = en && en > 0;
+  return `<div class="tile ${has ? "hot" : ""} ${z === 17 || z === 11 ? "sel" : ""}" style="grid-row:${r};grid-column:${c};${has ? `--h:${heat(en)};background:linear-gradient(160deg, ${heat(en)}d0, ${heat(en)}70)` : ""}"><div class="z">${z}</div><div class="s">${s}</div><div class="v">${has ? en.toFixed(2) : "—"}</div></div>`; }).join("");
+document.getElementById("f3").insertAdjacentHTML("beforeend", NAV("play") + RAIL(1) + `
+<div class="ptwrap glass">
+  <div class="pthead"><h2>Periodic table</h2>
+    <div class="views"><div>Families</div><div>State</div><div>Reactivity</div><div class="on">Electronegativity</div><div>Radioactive</div></div>
+    <div class="search" style="margin:0 0 0 auto;width:240px"><i data-lucide="search"></i>Search element</div>
+    <div class="sq"><i data-lucide="x"></i></div></div>
+  <div>
+    <div class="pt">${tiles}</div>
+    <div class="scale">0.7 <i></i> 4.0 · Pauling electronegativity · grey = not measured</div>
+  </div>
+  <div class="side">
+    <div class="cmp"><div class="kicker" style="display:flex;justify-content:space-between"><span>Compare</span><span style="color:#39d6ff">2 selected</span></div>
+      <div class="cmpgrid">
+        <div class="bigt" style="background:linear-gradient(160deg,#2f7cff,#1d3a8a)"><div class="z">11</div><div class="s">Na</div><div class="n">Sodium</div></div>
+        <div class="vs">vs</div>
+        <div class="bigt" style="background:linear-gradient(160deg,#ff7a3d,#ff3d6b)"><div class="z">17</div><div class="s">Cl</div><div class="n">Chlorine</div></div>
+      </div>
+      <div class="crow"><span>0.93</span><span>Electroneg.</span><span>3.16</span></div>
+      <div class="crow"><span>Solid</span><span>State</span><span>Gas</span></div>
+      <div class="crow"><span>Na⁺</span><span>Usual ion</span><span>Cl⁻</span></div>
+      <div class="crow"><span>98 °C</span><span>Melts at</span><span>−102 °C</span></div>
+    </div>
+    <div class="predict"><div class="kicker" style="color:#ffb38a">Predicted if you mix</div>
+      <div style="font:700 18px Sora;margin-top:6px">2Na + Cl₂ ⟶ 2NaCl</div>
+      <p class="t13" style="margin-top:6px;line-height:1.5;color:#ffe3d6">Big electronegativity gap (2.23) → ionic bond. Burns with a bright yellow flame and white smoke of table salt.</p>
+      <div style="display:flex;gap:6px;margin-top:10px"><div class="btn primary" style="flex:1"><i data-lucide="plus"></i>Add both to bench</div><div class="btn"><i data-lucide="info"></i></div></div>
+    </div>
+  </div>
+</div>`);
+
+lucide.createIcons();
+
+makeLab(document.getElementById("c1"), { cam: [0.2, 2.45, 6.4], target: [0.15, 0.95, 0], liquid: "#ff5fb8", liquidTop: "#ff9ad3", glow: 0.35, held: { liquid: "#ffd23f", text: "HCl", sub: "1.0 M acid", band: "#dc2626" }, bloom: 0.6 });
+makeLab(document.getElementById("c2"), { cam: [-0.35, 1.55, 3.3], target: [0.0, 0.85, 0], fov: 32, liquid: "#e9c7ff", liquidTop: "#ffffff", glow: 0.55, bloom: 0.95, aperture: 0.004, bubbles: 110, steamOpacity: 0.32 });
+makeLab(document.getElementById("c3"), { cam: [0.2, 2.45, 6.4], target: [0.15, 0.95, 0], liquid: "#5fb4ff", glow: 0.3, bloom: 0.5, aperture: 0.006 });
+
+function fit() {
+  const s = Math.min(1, (window.innerWidth - 24) / 1600);
+  document.querySelectorAll("[data-s]").forEach((el) => {
+    el.style.transform = `scale(${s})`;
+    el.style.marginLeft = `${Math.max(12, (window.innerWidth - 1600 * s) / 2)}px`;
+    el.style.marginBottom = el.classList.contains("wrap") ? `${-900 * (1 - s) + 40}px` : `${-34 * (1 - s) + 12}px`;
+  });
+}
+addEventListener("resize", fit); fit();
+</script>
+</body>
+</html>

@@ -15,9 +15,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm -r --if-present test",
-    "api": "cd apps/api && mvn spring-boot:run -Dspring-boot.run.profiles=local",
+    "api": "cd apps/api && mvn spring-boot:run -Dspring-boot.run.profiles=dev",
     "api:test": "cd apps/api && mvn -B verify",
-    "api:demo": "cd apps/api && mvn spring-boot:run -Dspring-boot.run.profiles=nodb",
+    "api:demo": "cd apps/api && mvn spring-boot:run -Dspring-boot.run.profiles=dev",
     "db:up": "docker compose up -d postgres redis",
     "db:down": "docker compose down"
   },

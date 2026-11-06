@@ -17,18 +17,25 @@ Redis · Flyway · pnpm workspaces.
 
 - Node.js 24 LTS + pnpm 9 (`corepack enable`)
 - JDK 21+ (Maven optional: use `apps/api/mvnw`)
-- Docker (for local Postgres/Redis), or a Neon database
+- No database install needed for development: the `dev` profile starts a real embedded Postgres 17
+  (data in `apps/api/.data/pg`). Use Neon (or Docker Postgres) by running the default profile with
+  `DATABASE_URL` / `FLYWAY_URL` set.
 
 ## Getting started
 
 ```bash
-cp .env.example .env          # set DATABASE_URL etc. (local or Neon)
 pnpm install
-pnpm db:up                    # local Postgres (pgvector) + Redis
-pnpm api                      # Spring Boot on :8080  (Flyway runs migrations)
-# or, with no database at all:  pnpm api:demo
+pnpm api                      # Spring Boot on :8080 with embedded Postgres; Flyway runs migrations
 pnpm dev                      # web on :5173, proxies /v1 to the API
-# open http://localhost:5173/playground/chemistry
+# open http://localhost:5173  ->  welcome, onboarding, dashboard
 ```
 
-Checks: `pnpm typecheck`, `pnpm lint`, `pnpm api:test` (includes contract fixture tests).
+- Sign up with `admin@labscape.dev` (dev profile) to get a super-admin account and the `/admin` page.
+- Payments run in **sandbox** mode: the checkout sheet's "Pay (test)" sends the same signed webhook
+  Razorpay would. Set `BILLING_MODE=razorpay` plus keys for live payments.
+- Password-reset links are written to the API log until email delivery is configured.
+- If `pnpm api` reports `could not lock .../epg-lock`, an earlier API process is still running: stop it
+  (and its `postgres.exe`) first.
+
+Checks: `pnpm typecheck`, `pnpm lint`, `pnpm api:test` (51 tests, including Part 1's done-when checks on a
+real embedded Postgres).

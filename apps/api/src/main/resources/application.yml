@@ -37,6 +37,32 @@ server:
 
 labscape:
   web-origin: ${WEB_ORIGIN:http://localhost:5173}
+  auth:
+    # HS256 key for the session JWT. Must be set (>= 32 bytes) outside dev.
+    jwt-secret: ${JWT_SECRET:dev-only-insecure-jwt-secret-change-me-0123456789}
+    session-days: 30
+    cookie-name: ls_session
+    cookie-secure: ${COOKIE_SECURE:true}
+    # Google sign-in is enabled when a client id is configured.
+    google-client-id: ${GOOGLE_CLIENT_ID:}
+    # Accounts registered with these emails become super_admin (first-admin bootstrap).
+    admin-bootstrap-emails: ${ADMIN_BOOTSTRAP_EMAILS:}
+  billing:
+    # sandbox = no money moves; a test sheet confirms payment through the same webhook path.
+    # razorpay = real Razorpay Subscriptions (needs key id/secret and the webhook secret).
+    mode: ${BILLING_MODE:sandbox}
+    razorpay-key-id: ${RAZORPAY_KEY_ID:}
+    razorpay-key-secret: ${RAZORPAY_KEY_SECRET:}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:dev-webhook-secret}
+  rewards:
+    daily-soft-cap: 1500
+    max-events-per-minute: 30
+  features:
+    # Flip on as each part ships; daily challenges only offer what can actually be completed.
+    experiments: false
+    quizzes: false
+    scenarios: false
+    molecular-view: false
   safety:
     # R1 ships the safety engine behind this flag. Off => /v1/safety/resolve returns 503 and the
     # playground shows no reactions at all.

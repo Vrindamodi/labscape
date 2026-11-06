@@ -14,4 +14,133 @@ body {
   background: var(--ls-bg-base);
   color: #e6e9f2;
   font-family: var(--ls-font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(47 128 255 / 0.45);
+}
+
+:focus-visible {
+  outline: 2px solid #2f80ff;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* App background: deep navy with soft aurora glows and a faint lab grid */
+.ls-app-bg {
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgb(47 128 255 / 0.14), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, rgb(139 92 246 / 0.1), transparent 60%),
+    radial-gradient(800px 500px at 50% 110%, rgb(34 211 238 / 0.07), transparent 60%),
+    var(--ls-bg-base);
+  background-attachment: fixed;
+}
+.ls-app-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 75%);
+  z-index: 0;
+}
+.ls-app-bg > * {
+  position: relative;
+  z-index: 1;
+}
+.ls-app-bg > aside,
+.ls-app-bg > nav {
+  position: fixed;
+}
+
+.ls-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+}
+
+/* AI orb: slow swirling violet / magenta */
+.ls-orb {
+  background: conic-gradient(from 0deg, #8b5cf6, #e879f9, #22d3ee, #8b5cf6);
+  box-shadow: 0 0 18px rgb(139 92 246 / 0.7);
+  animation: ls-spin 6s linear infinite;
+}
+@keyframes ls-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Premium: slowly rotating gradient border (6 s) */
+.ls-premium-border {
+  padding: 1px;
+  background: conic-gradient(from var(--ls-angle, 0deg), transparent 0 60%, #ffc23d 75%, #ff8a3d 85%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: ls-angle 6s linear infinite;
+}
+@property --ls-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes ls-angle {
+  to {
+    --ls-angle: 360deg;
+  }
+}
+
+/* Get Started: breathing glow (2.4 s loop) */
+.ls-breathe {
+  animation: ls-breathe 2.4s ease-in-out infinite;
+}
+@keyframes ls-breathe {
+  0%,
+  100% {
+    box-shadow: 0 10px 30px -10px rgb(47 128 255 / 0.9), 0 0 0 0 rgb(47 128 255 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.35);
+  }
+  50% {
+    box-shadow: 0 10px 40px -6px rgb(47 128 255 / 1), 0 0 0 10px rgb(47 128 255 / 0), inset 0 1px 0 rgb(255 255 255 / 0.35);
+  }
+}
+
+/* Featured hero shimmer */
+.ls-text-shine {
+  background: linear-gradient(100deg, #fff 30%, #9fd0ff 45%, #fff 60%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ls-shimmer 6s linear infinite;
+}
+
+:root[data-reduced-motion="true"] .ls-orb,
+:root[data-reduced-motion="true"] .ls-premium-border,
+:root[data-reduced-motion="true"] .ls-breathe,
+:root[data-reduced-motion="true"] .ls-text-shine,
+:root[data-reduced-motion="true"] .ls-anim {
+  animation: none !important;
+}
+
+/* Subject art loops */
+@keyframes ls-bubble {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-46px) scale(1); opacity: 0; }
+}
+@keyframes ls-swing {
+  0%, 100% { transform: rotate(22deg); }
+  50% { transform: rotate(-22deg); }
+}
+@keyframes ls-dash {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes ls-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }

@@ -8,6 +8,7 @@ storybook-static/
 
 # Java / Maven
 apps/api/target/
+apps/api/.data/
 *.class
 .mvn/wrapper/maven-wrapper.jar
 

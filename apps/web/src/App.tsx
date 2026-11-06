@@ -1,78 +1,86 @@
-import { CONTRACTS_VERSION } from "@labscape/contracts";
-import { colors } from "@labscape/ui";
-import { lazy, Suspense } from "react";
-import { Link, Route, Routes } from "react-router-dom";
+import { lazy, Suspense, type ReactNode } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useSession } from "./lib/session";
+import { AppShell } from "./shell/AppShell";
+import { RewardOverlay } from "./shell/RewardOverlay";
+import { LogoMark } from "./shell/brand";
 
-// Part 4 route, lazy-loaded so its assets only load on the playground (performance budget).
+const Welcome = lazy(() => import("./pages/Welcome"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Library = lazy(() => import("./pages/Library"));
+const ExperimentDetail = lazy(() => import("./pages/ExperimentDetail"));
+const Achievements = lazy(() => import("./pages/Achievements"));
+const Progress = lazy(() => import("./pages/Progress"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard"));
+const Plans = lazy(() => import("./pages/Plans"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Admin = lazy(() => import("./pages/Admin"));
+const ComingSoon = lazy(() => import("./pages/ComingSoon"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+// Part 4 route, lazy so its assets only load on the playground (performance budget).
 const ChemistryPlaygroundRoute = lazy(() => import("./routes/playground/ChemistryPlaygroundRoute"));
 
-/**
- * Minimal router. Part 1 replaces the home page with the real shell
- * (sidebar, top bar, context panel) per build plan 1.1.
- */
 export function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route
-        path="/playground/chemistry"
-        element={
-          <Suspense
-            fallback={
-              <div className="grid h-screen place-items-center text-white/40">Loading lab…</div>
-            }
-          >
-            <ChemistryPlaygroundRoute />
-          </Suspense>
-        }
-      />
-    </Routes>
+    <>
+      <Suspense fallback={<Splash />}>
+      <Routes>
+        <Route path="/welcome" element={<PublicOnly><Welcome /></PublicOnly>} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/login" element={<Auth mode="login" />} />
+        <Route path="/signup" element={<Auth mode="signup" />} />
+        <Route path="/forgot-password" element={<Auth mode="forgot" />} />
+        <Route path="/reset-password" element={<Auth mode="reset" />} />
+        <Route element={<AppShell />}>
+          <Route index element={<Gate need="session"><Dashboard /></Gate>} />
+          <Route path="library" element={<Gate><Library /></Gate>} />
+          <Route path="library/:slug" element={<Gate><ExperimentDetail /></Gate>} />
+          <Route path="achievements" element={<Gate need="session"><Achievements /></Gate>} />
+          <Route path="progress" element={<Gate need="session"><Progress /></Gate>} />
+          <Route path="profile" element={<Gate need="session"><Profile /></Gate>} />
+          <Route path="leaderboard" element={<Gate need="session"><Leaderboard /></Gate>} />
+          <Route path="plans" element={<Plans />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="admin" element={<Gate need="admin"><Admin /></Gate>} />
+          <Route path="playground/chemistry" element={<ChemistryPlaygroundRoute />} />
+          <Route path="lab/:subject/:slug" element={<ComingSoon />} />
+          {["emergency", "assistant", "quizzes", "periodic-table", "equipment", "formulas", "notebook", "community", "playground"].map((p) => (
+            <Route key={p} path={p} element={<ComingSoon />} />
+          ))}
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+      </Suspense>
+      <RewardOverlay />
+    </>
   );
 }
 
-function Home() {
-  const swatches = [
-    ["Primary", colors.accent.primary],
-    ["Cyan", colors.accent.cyan],
-    ["AI violet", colors.ai.violet],
-    ["Chemistry", colors.subject.chemistry],
-    ["Physics", colors.subject.physics],
-    ["Maths", colors.subject.maths],
-  ] as const;
+/** Routes that need a session send visitors to the welcome screen; unfinished onboarding resumes. */
+function Gate({ need, children }: { need?: "session" | "admin"; children: ReactNode }) {
+  const { me, loading } = useSession();
+  const location = useLocation();
+  if (loading) return null;
+  if (!me && need) return <Navigate to="/welcome" replace state={{ from: location.pathname }} />;
+  if (me && !me.profile.onboarded) return <Navigate to="/onboarding" replace />;
+  if (need === "admin" && me?.role !== "admin" && me?.role !== "super_admin") return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
 
+function PublicOnly({ children }: { children: ReactNode }) {
+  const { me, loading } = useSession();
+  if (loading) return null;
+  if (me?.profile.onboarded) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+function Splash() {
   return (
-    <main className="mx-auto flex min-h-full max-w-3xl flex-col justify-center gap-8 p-8">
-      <header>
-        <h1 className="font-heading text-h2 font-semibold">LABscape</h1>
-        <p className="text-accent-cyan">Explore. Experiment. Discover.</p>
-      </header>
-      <Link
-        to="/playground/chemistry"
-        className="group rounded-xl border border-subject-chemistry/40 bg-subject-chemistry/10 p-6 transition hover:bg-subject-chemistry/15"
-      >
-        <div className="text-xs uppercase tracking-[0.2em] text-subject-chemistry">
-          Part 4 · Day 1
-        </div>
-        <div className="mt-1 font-heading text-2xl font-semibold text-white">
-          Open Playground: Chemistry →
-        </div>
-        <p className="mt-1 text-sm text-white/60">
-          Mix anything from the shelf. Every combination goes through the safety engine.
-        </p>
-      </Link>
-      <section className="rounded-lg border border-glass-border bg-glass-fill p-6 backdrop-blur-glass">
-        <p className="text-sm text-white/70">
-          Shared foundation ready. Contracts <span className="tabular">v{CONTRACTS_VERSION}</span>
-        </p>
-        <ul className="mt-4 grid grid-cols-3 gap-3">
-          {swatches.map(([label, hex]) => (
-            <li key={label} className="flex items-center gap-2 text-sm">
-              <span className="h-4 w-4 rounded-sm" style={{ background: hex }} aria-hidden />
-              {label}
-            </li>
-          ))}
-        </ul>
-      </section>
-    </main>
+    <div className="grid h-full min-h-screen place-items-center bg-[#070b18]">
+      <LogoMark size={56} draw />
+    </div>
   );
 }

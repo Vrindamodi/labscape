@@ -11,5 +11,12 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "framer-motion": "11.11.17"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "react": "18.3.1"
   }
 }

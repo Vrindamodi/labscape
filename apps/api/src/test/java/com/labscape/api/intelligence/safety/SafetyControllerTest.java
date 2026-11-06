@@ -33,6 +33,7 @@ class SafetyControllerTest {
 
     @Nested
     @WebMvcTest(controllers = {SafetyController.class, PlaygroundController.class})
+    @org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
     @Import({SafetyPipeline.class, Catalogue.class, SafetyRuleBook.class, ChemistryEngine.class, ProbeGuard.class,
             SafetyAuditSink.class, SafetyProblemAdvice.class})
     @TestPropertySource(properties = {"labscape.web-origin=http://localhost:5173", "labscape.safety.engine-enabled=true"})
@@ -88,6 +89,7 @@ class SafetyControllerTest {
 
     @Nested
     @WebMvcTest(controllers = {SafetyController.class, PlaygroundController.class})
+    @org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
     @Import({SafetyPipeline.class, Catalogue.class, SafetyRuleBook.class, ChemistryEngine.class, ProbeGuard.class,
             SafetyAuditSink.class, SafetyProblemAdvice.class})
     @TestPropertySource(properties = {"labscape.web-origin=http://localhost:5173", "labscape.safety.engine-enabled=false"})

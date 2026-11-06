@@ -1,0 +1,17 @@
+# Local development: a real embedded Postgres 17 (no Docker, no Neon account needed).
+# Data persists in apps/api/.data/pg. Started by core.dev.EmbeddedPostgresBootstrap.
+# To use Neon instead, run the default profile with DATABASE_URL / FLYWAY_URL set.
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+labscape:
+  dev-db:
+    dir: .data/pg
+    port: 54329
+  auth:
+    cookie-secure: false
+    admin-bootstrap-emails: admin@labscape.dev
+  billing:
+    mode: sandbox

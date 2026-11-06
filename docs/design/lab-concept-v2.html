@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LABscape Playground v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #02040b; font-family: Inter, system-ui, sans-serif; color: #e6efff; padding: 24px 0 60px; }
+  .cap { width: 1600px; margin: 0 auto 12px; font: 700 24px Rajdhani; letter-spacing: .02em; color: #fff; transform-origin: top left; }
+  .cap span { font: 500 14px Inter; color: #8aa3cf; margin-left: 12px; }
+  .wrap { width: 1600px; margin: 0 auto 48px; transform-origin: top left; }
+  .frame { position: relative; width: 1600px; height: 900px; overflow: hidden; border-radius: 22px; box-shadow: 0 40px 120px -30px #000, 0 0 0 1px rgba(90,150,255,.18); background: #071025; }
+
+  /* ---------- tokens ---------- */
+  :root {
+    --navy: rgba(8, 20, 50, .86); --navy2: rgba(12, 30, 72, .9); --line: rgba(82, 150, 255, .32); --line2: rgba(82,150,255,.18);
+    --blue: #2f8cff; --cyan: #38d4ff; --ink: #eaf2ff; --muted: #8ea7d4; --gold: #ffc53d; --red: #ff4d5e; --green: #2ee59d; --violet: #a77bff;
+  }
+  .panel { position: absolute; background: linear-gradient(180deg, rgba(14,32,76,.88), rgba(6,16,42,.9)); border: 1px solid var(--line); border-radius: 18px;
+    box-shadow: inset 0 1px 0 rgba(140,190,255,.18), 0 0 0 1px rgba(0,0,0,.25), 0 24px 60px -20px rgba(0,0,0,.8), 0 0 40px -18px rgba(47,140,255,.6); backdrop-filter: blur(14px); }
+  .h { font-family: Rajdhani; font-weight: 700; letter-spacing: .02em; }
+  .muted { color: var(--muted); }
+  .k { font: 700 11px Inter; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .glowbtn { background: linear-gradient(180deg, #3aa0ff, #1561e8); border: 1px solid #6cb8ff; box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 0 18px -2px rgba(56,160,255,.8); color: #fff; }
+  .ghost { background: rgba(30,60,120,.35); border: 1px solid var(--line); color: var(--ink); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; font: 700 10.5px Inter; }
+
+  /* ---------- nav ---------- */
+  .nav { position: absolute; left: 0; right: 0; top: 0; height: 74px; display: flex; align-items: center; padding: 0 22px; gap: 18px;
+    background: linear-gradient(180deg, rgba(6,14,36,.96), rgba(6,14,36,.78)); border-bottom: 1px solid var(--line2); z-index: 5; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo b { font: 700 28px Rajdhani; color: #fff; } .logo b em { font-style: normal; color: var(--gold); }
+  .logo small { display: block; font: 500 11px Inter; color: var(--muted); margin-top: -2px; }
+  .tabsnav { display: flex; gap: 4px; padding: 5px; border-radius: 16px; background: rgba(10,26,64,.7); border: 1px solid var(--line2); margin-left: 18px; }
+  .navi { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 12px; font: 600 14.5px Inter; color: #c5d6f5; }
+  .navi.on { color: #fff; background: linear-gradient(180deg, #2b7cff, #1550c8); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 0 22px -4px #2f8cff; }
+  .navr { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .gem { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 999px; background: rgba(10,26,64,.8); border: 1px solid var(--line); font: 700 18px Rajdhani; }
+  .gem i { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: rgba(60,120,255,.25); font-style: normal; }
+  .lvl { display: flex; align-items: center; gap: 10px; font: 700 18px Rajdhani; color: var(--gold); }
+  .ava { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--gold); background: radial-gradient(circle at 50% 38%, #ffd7b0 0 22%, #6b3d1f 23% 30%, transparent 31%), linear-gradient(180deg, #4a8cff, #1b3d8f); box-shadow: 0 0 16px -2px var(--gold); }
+  .xpline { width: 120px; height: 5px; border-radius: 5px; background: rgba(255,255,255,.12); margin-top: 3px; overflow: hidden; }
+  .xpline i { display: block; width: 64%; height: 100%; background: linear-gradient(90deg, var(--gold), #ff8a3d); }
+
+  /* ---------- scene ---------- */
+  .scene { position: absolute; inset: 0; }
+
+  /* ---------- left panel ---------- */
+  .title { left: 20px; top: 92px; width: 380px; padding: 14px 18px; display: flex; gap: 14px; align-items: center; }
+  .title .ic { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: radial-gradient(circle at 40% 30%, rgba(56,212,255,.45), rgba(20,60,160,.5)); border: 1px solid var(--line); }
+  .left { left: 20px; top: 184px; width: 380px; height: 612px; padding: 14px; }
+  .seg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(4,12,32,.7); border: 1px solid var(--line2); }
+  .seg div { flex: 1; text-align: center; padding: 9px 4px; border-radius: 10px; white-space: nowrap; font: 600 12.5px Inter; color: #b8cbee; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .seg .on { color: #fff; background: linear-gradient(180deg, #2b7cff, #1550c8); box-shadow: 0 0 16px -4px #2f8cff; }
+  .search { margin-top: 10px; display: flex; gap: 8px; }
+  .search .in { flex: 1; padding: 9px 12px; border-radius: 12px; background: rgba(4,12,32,.7); border: 1px solid var(--line2); font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .search .sq { width: 38px; border-radius: 12px; display: grid; place-items: center; }
+  .chips { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 5px 10px; border-radius: 999px; font: 600 11.5px Inter; color: #b8cbee; background: rgba(30,60,120,.35); border: 1px solid var(--line2); }
+  .chip.on { color: #fff; background: rgba(47,140,255,.35); border-color: #5aa8ff; }
+  .grid { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .card { position: relative; height: 108px; border-radius: 14px; padding: 6px 6px 8px; text-align: center; background: radial-gradient(90% 70% at 50% 34%, var(--tint), transparent 70%), rgba(6,16,40,.75); border: 1px solid var(--line2); }
+  .card.sel { border-color: #5ab0ff; box-shadow: 0 0 0 1px #5ab0ff, 0 0 22px -4px #2f8cff; }
+  .card svg { width: 52px; height: 56px; display: block; margin: 0 auto; filter: drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+  .card .n { font: 600 11.5px/1.15 Inter; color: #eaf2ff; margin-top: 2px; }
+  .card .f { font: 600 10.5px JetBrains Mono; color: var(--muted); }
+  .card .hz { position: absolute; top: 6px; right: 6px; width: 15px; height: 15px; transform: rotate(45deg); border: 1.5px solid var(--red); background: #fff; border-radius: 2px; }
+  .card .hz.ok { border-color: var(--green); }
+  .card .mol { position: absolute; top: 6px; left: 7px; font: 700 9px JetBrains Mono; color: var(--cyan); }
+  .ptopen { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 14px; background: rgba(4,12,32,.75); border: 1px solid var(--line); }
+  .miniPT { display: grid; grid-template-columns: repeat(18, 7px); grid-template-rows: repeat(7, 7px); gap: 1px; }
+  .miniPT i { border-radius: 1px; }
+
+  /* ---------- right panel ---------- */
+  .right { right: 20px; top: 150px; width: 400px; height: 646px; padding: 16px; overflow: hidden; }
+  .rtabs { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(4,12,32,.7); border: 1px solid var(--line2); }
+  .rtabs div { flex: 1; text-align: center; padding: 7px; border-radius: 9px; font: 600 12.5px Inter; color: #b8cbee; }
+  .rtabs .on { color: #fff; background: rgba(47,140,255,.35); box-shadow: inset 0 0 0 1px #5aa8ff; }
+  .result { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: linear-gradient(120deg, rgba(46,229,157,.18), rgba(47,140,255,.10)); border: 1px solid rgba(46,229,157,.45); }
+  .result .t { font: 700 20px Rajdhani; color: #fff; display: flex; align-items: center; gap: 10px; }
+  .result .s { font-size: 12.5px; line-height: 1.45; color: #c9d8f5; margin-top: 4px; }
+  .prods { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .prod { padding: 8px; border-radius: 12px; background: rgba(6,16,40,.75); border: 1px solid var(--line2); text-align: center; }
+  .prod .sw { width: 30px; height: 30px; margin: 0 auto 4px; border-radius: 50%; }
+  .prod b { display: block; font: 700 13px JetBrains Mono; } .prod small { font-size: 10.5px; color: var(--muted); }
+  .eq { margin-top: 10px; padding: 9px 12px; border-radius: 12px; font: 600 13.5px JetBrains Mono; background: rgba(4,12,32,.75); border: 1px solid var(--line2); white-space: nowrap; }
+  .eq .a { color: var(--cyan); }
+  .meters { margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .m { padding: 7px 8px; border-radius: 12px; background: rgba(6,16,40,.75); border: 1px solid var(--line2); }
+  .m b { display: block; font: 700 17px Rajdhani; color: #fff; } .m small { font-size: 9.5px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .molbox { margin-top: 10px; height: 84px; border-radius: 12px; position: relative; overflow: hidden; background: radial-gradient(circle at 50% 50%, rgba(47,140,255,.22), transparent 70%), rgba(4,12,32,.75); border: 1px solid var(--line2); }
+  .obs { margin-top: 10px; }
+  .obs li { list-style: none; display: flex; gap: 8px; font-size: 12.5px; line-height: 1.4; color: #d6e3fb; padding: 5px 0; border-bottom: 1px dashed rgba(82,150,255,.15); }
+  .obs li i { font-style: normal; width: 20px; height: 20px; flex-shrink: 0; border-radius: 6px; display: grid; place-items: center; font-size: 11px; background: rgba(47,140,255,.2); }
+  .smell { margin-top: 10px; padding: 9px 12px; border-radius: 12px; background: linear-gradient(110deg, rgba(255,197,61,.16), rgba(255,77,94,.08)); border: 1px solid rgba(255,197,61,.4); font-size: 12px; color: #ffe7b0; display: flex; gap: 10px; align-items: center; }
+  .safety { position: absolute; right: 20px; top: 92px; display: flex; gap: 10px; }
+  .safety div { padding: 9px 14px; border-radius: 12px; font: 600 13px Inter; display: flex; gap: 8px; align-items: center; }
+
+  /* ---------- bottom dock ---------- */
+  .dock { left: 412px; right: 432px; bottom: 18px; height: 168px; padding: 12px 14px; display: grid; grid-template-columns: 1.3fr 1fr 1.15fr 0.95fr; gap: 10px; }
+  .sect { padding: 10px 12px; border-radius: 14px; background: rgba(4,12,32,.6); border: 1px solid var(--line2); position: relative; }
+  .sect .k { margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .slider { position: relative; height: 8px; border-radius: 9px; background: rgba(255,255,255,.1); margin: 14px 4px 6px; }
+  .slider .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 9px; background: linear-gradient(90deg, #2ee59d, #38d4ff, #2f8cff); box-shadow: 0 0 10px rgba(56,212,255,.7); }
+  .slider .knob { position: absolute; top: 50%; width: 22px; height: 22px; border-radius: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle at 40% 35%, #fff, #bfe3ff); border: 3px solid #2f8cff; box-shadow: 0 0 14px #2f8cff; }
+  .ticks { display: flex; justify-content: space-between; gap: 6px; font: 600 9.5px Inter; color: var(--muted); }
+  .ticks b { color: var(--cyan); }
+  .modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .mode { padding: 7px 2px 5px; border-radius: 10px; text-align: center; font: 600 10.5px Inter; color: #b8cbee; background: rgba(30,60,120,.3); border: 1px solid var(--line2); }
+  .mode svg { width: 20px; height: 20px; display: block; margin: 0 auto 3px; }
+  .mode.on { color: #fff; background: rgba(47,140,255,.35); border-color: #5aa8ff; box-shadow: 0 0 14px -3px #2f8cff; }
+  .amount { display: flex; align-items: center; gap: 8px; }
+  .amount .val { flex: 1; padding: 6px 10px; border-radius: 10px; background: rgba(2,8,24,.8); border: 1px solid var(--line); font: 700 22px Rajdhani; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+  .amount .val small { font: 600 12px Inter; color: var(--muted); }
+  .step { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font: 700 16px Inter; }
+  .quick { margin-top: 8px; display: flex; gap: 4px; }
+  .quick span { flex: 1; text-align: center; padding: 4px 0; border-radius: 8px; font: 600 10.5px JetBrains Mono; color: #b8cbee; background: rgba(30,60,120,.3); border: 1px solid var(--line2); }
+  .quick span.on { color: #fff; background: rgba(47,140,255,.35); border-color: #5aa8ff; }
+  .units { position: absolute; right: 10px; top: 8px; display: flex; gap: 3px; }
+  .units span { padding: 2px 6px; border-radius: 6px; font: 700 9.5px Inter; color: var(--muted); }
+  .units .on { color: #fff; background: rgba(47,140,255,.4); }
+  .dial { width: 64px; height: 64px; border-radius: 50%; position: relative; background: conic-gradient(from 220deg, #2f8cff, #ffc53d 120deg, #ff4d5e 200deg, rgba(255,255,255,.08) 200deg 280deg, transparent 280deg); display: grid; place-items: center; }
+  .dial::after { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: #071433; border: 1px solid var(--line2); }
+  .dial b { position: relative; z-index: 1; font: 700 17px Rajdhani; color: #fff; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-radius: 10px; background: rgba(30,60,120,.3); border: 1px solid var(--line2); font: 600 11px Inter; color: #d6e3fb; }
+  .sw2 { width: 30px; height: 17px; border-radius: 9px; background: rgba(255,255,255,.15); position: relative; }
+  .sw2::after { content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; }
+  .sw2.on { background: #2f8cff; box-shadow: 0 0 10px #2f8cff; } .sw2.on::after { left: 15px; }
+
+  .bl { position: absolute; left: 20px; bottom: 18px; display: flex; gap: 8px; }
+  .bl div { padding: 11px 14px; border-radius: 14px; font: 700 14px Inter; display: flex; align-items: center; gap: 8px; }
+  .br { position: absolute; right: 20px; bottom: 18px; width: 400px; display: flex; gap: 10px; }
+  .br .mix { flex: 1; height: 62px; border-radius: 16px; display: flex; align-items: center; justify-content: center; gap: 12px; font: 700 24px Rajdhani; letter-spacing: .04em; }
+  .br .hint { width: 120px; height: 62px; border-radius: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; font: 700 17px Rajdhani; color: var(--gold); background: rgba(40,30,0,.5); border: 1.5px solid rgba(255,197,61,.7); box-shadow: 0 0 22px -6px var(--gold); }
+
+  /* hint bubble + in-hand tag + contents */
+  .hintpop { position: absolute; left: 980px; top: 168px; width: 210px; padding: 12px 14px; border-radius: 14px; background: rgba(30,24,4,.9); border: 1px solid rgba(255,197,61,.7); box-shadow: 0 0 30px -8px var(--gold); font-size: 12px; line-height: 1.45; color: #fff2cc; }
+  .hintpop::after { content: ""; position: absolute; left: -8px; top: 26px; border: 8px solid transparent; border-right-color: rgba(255,197,61,.7); border-left: 0; }
+  .hintpop b { color: var(--gold); font: 700 13px Rajdhani; letter-spacing: .06em; display: block; margin-bottom: 3px; }
+  .contents { position: absolute; left: 420px; top: 92px; display: flex; gap: 6px; align-items: center; padding: 7px 10px; border-radius: 14px; }
+  .cchip { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 10px; background: rgba(30,60,120,.4); border: 1px solid var(--line2); font: 600 12px Inter; }
+  .cchip i { width: 10px; height: 10px; border-radius: 50%; }
+  .hud { position: absolute; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 12px; background: rgba(4,12,32,.82); border: 1px solid var(--line); box-shadow: 0 0 20px -8px #2f8cff; }
+  .hud b { font: 700 20px Rajdhani; } .hud small { font: 700 9.5px Inter; letter-spacing: .12em; color: var(--muted); }
+  .angle { position: absolute; left: 905px; top: 205px; padding: 5px 9px; border-radius: 10px; font: 700 11px JetBrains Mono; color: var(--cyan); background: rgba(4,12,32,.85); border: 1px solid var(--line); }
+
+  /* ---------- periodic table modal ---------- */
+  .dim { position: absolute; inset: 0; background: rgba(2,6,18,.55); backdrop-filter: blur(6px); }
+  .ptmodal { left: 60px; right: 60px; top: 96px; bottom: 26px; padding: 18px 22px; }
+  .pthead { display: flex; align-items: center; gap: 14px; }
+  .pthead .seg { width: 340px; }
+  .ptbody { display: grid; grid-template-columns: 1fr 330px; gap: 18px; margin-top: 14px; }
+  .bigpt { display: grid; grid-template-columns: repeat(18, 1fr); grid-template-rows: repeat(7, 58px) 14px repeat(2, 58px); gap: 4px; }
+  .tile { position: relative; border-radius: 7px; padding: 4px 5px; color: #fff; background: var(--c); border: 1px solid rgba(255,255,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), inset 0 -10px 18px -10px rgba(0,0,0,.45); overflow: hidden; }
+  .tile .zz { font: 600 9px JetBrains Mono; opacity: .85; }
+  .tile .ss { font: 700 19px/1 Rajdhani; margin-top: 2px; }
+  .tile .nn { font: 500 7.5px Inter; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile.dimmed { opacity: .25; }
+  .tile.sel { outline: 2px solid #fff; box-shadow: 0 0 24px 4px var(--c), inset 0 1px 0 rgba(255,255,255,.4); z-index: 2; transform: scale(1.12); }
+  .detail { padding: 16px; border-radius: 16px; background: rgba(4,12,32,.75); border: 1px solid var(--line); }
+  .bigtile { width: 120px; height: 136px; border-radius: 14px; padding: 10px; background: linear-gradient(160deg, #ff5f7e, #c2234a); border: 1px solid rgba(255,255,255,.3); box-shadow: 0 0 34px -6px #ff5f7e; }
+  .bigtile .zz { font: 600 13px JetBrains Mono; } .bigtile .ss { font: 700 54px/1 Rajdhani; margin-top: 4px; } .bigtile .nn { font: 600 13px Inter; }
+  .props { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .prop { padding: 7px 9px; border-radius: 10px; background: rgba(30,60,120,.3); border: 1px solid var(--line2); }
+  .prop small { display: block; font: 700 9px Inter; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+  .prop b { font: 700 15px Rajdhani; }
+  .legend2 { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; font: 600 11.5px Inter; color: #c5d6f5; }
+  .legend2 i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .trendbar { display: flex; gap: 6px; margin-left: 18px; }
+  .trendbar span { padding: 6px 10px; border-radius: 10px; font: 600 12px Inter; color: #b8cbee; background: rgba(30,60,120,.35); border: 1px solid var(--line2); }
+  .trendbar .on { color: #fff; background: rgba(47,140,255,.4); border-color: #5aa8ff; }
+  .formpick { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .formpick div { padding: 8px 4px; border-radius: 10px; text-align: center; font: 600 11px Inter; color: #b8cbee; background: rgba(30,60,120,.3); border: 1px solid var(--line2); }
+  .formpick .on { color: #fff; border-color: #5aa8ff; background: rgba(47,140,255,.35); }
+</style>
+</head>
+<body>
+
+<div class="cap" data-s>1 · Open Playground — main lab <span>pick chemicals visually, pour with speed / angle / amount, choose a mixing method, heat, ignite, get hints and live results</span></div>
+<div class="wrap" data-s><div class="frame" id="f1"></div></div>
+
+<div class="cap" data-s>2 · Periodic table — enlarged <span>click “Periodic table” to open the full interactive table; pick an element, choose its form and amount, add it to the beaker</span></div>
+<div class="wrap" data-s><div class="frame" id="f2"></div></div>
+
+<script>
+/* ======================== LAB SCENE (shared) ======================== */
+const SCENE = `
+<svg class="scene" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<defs>
+  <linearGradient id="wall" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#16294f"/><stop offset=".6" stop-color="#1d335c"/><stop offset="1" stop-color="#0d1a36"/></linearGradient>
+  <linearGradient id="win" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6a8fd8"/><stop offset="1" stop-color="#b8c9ef"/></linearGradient>
+  <linearGradient id="counter" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2a3442"/><stop offset=".25" stop-color="#1c2531"/><stop offset="1" stop-color="#0e141d"/></linearGradient>
+  <linearGradient id="counterEdge" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3c4a5e"/><stop offset="1" stop-color="#151c27"/></linearGradient>
+  <radialGradient id="lamp" cx=".5" cy="0" r=".9"><stop offset="0" stop-color="#cfe2ff" stop-opacity=".35"/><stop offset="1" stop-color="#cfe2ff" stop-opacity="0"/></radialGradient>
+  <radialGradient id="hpglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#3aa0ff" stop-opacity=".9"/><stop offset="1" stop-color="#3aa0ff" stop-opacity="0"/></radialGradient>
+  <linearGradient id="liq" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3fe0ff"/><stop offset=".55" stop-color="#1b7cff"/><stop offset="1" stop-color="#3b2bd1"/></linearGradient>
+  <linearGradient id="glassL" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".08" stop-color="#fff" stop-opacity=".08"/><stop offset=".85" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/></linearGradient>
+  <linearGradient id="hpBody" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f4f7fb"/><stop offset="1" stop-color="#bcc6d4"/></linearGradient>
+  <linearGradient id="bottleRed" x1="0" x2="1"><stop offset="0" stop-color="#ff8a8a"/><stop offset=".35" stop-color="#ffd0c4"/><stop offset="1" stop-color="#c3263a"/></linearGradient>
+  <linearGradient id="stream" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffe066" stop-opacity=".95"/><stop offset="1" stop-color="#ffd23f" stop-opacity=".6"/></linearGradient>
+  <filter id="dof" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="3.2"/></filter>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="1.4"/></filter>
+  <clipPath id="beakerIn"><path d="M712 405 L712 600 Q712 622 734 622 L888 622 Q910 622 910 600 L910 405 Z"/></clipPath>
+</defs>
+
+<!-- background room (depth of field) -->
+<g filter="url(#dof)">
+  <rect width="1600" height="900" fill="url(#wall)"/>
+  <rect x="0" y="0" width="1600" height="900" fill="url(#lamp)"/>
+  <!-- window with city -->
+  <rect x="640" y="90" width="330" height="260" rx="6" fill="#0f1d3b"/>
+  <rect x="652" y="102" width="150" height="236" fill="url(#win)"/><rect x="810" y="102" width="150" height="236" fill="url(#win)"/>
+  <g fill="#3b5aa0" opacity=".75">${Array.from({length:10},(_,i)=>`<rect x="${652+i*31}" y="${210+((i*37)%70)}" width="26" height="${130-((i*37)%70)}"/>`).join("")}</g>
+  <g fill="#ffd27a" opacity=".55">${Array.from({length:40},(_,i)=>`<rect x="${658+(i*29)%300}" y="${230+(i*17)%100}" width="4" height="5"/>`).join("")}</g>
+  <!-- shelves -->
+  <rect x="110" y="250" width="420" height="10" fill="#2c3d60"/><rect x="110" y="380" width="420" height="10" fill="#2c3d60"/>
+  ${[0,1,2,3,4,5,6].map(i=>`<rect x="${130+i*56}" y="${195-(i%3)*12}" width="34" height="${55+(i%3)*12}" rx="6" fill="${["#4f7bd9","#7a5bd6","#3fb3c9","#c9a23f","#5a8f6a","#c25a7a","#4d6aa8"][i]}" opacity=".7"/>`).join("")}
+  ${[0,1,2,3,4,5].map(i=>`<rect x="${140+i*64}" y="${320}" width="40" height="60" rx="8" fill="#9fb3d9" opacity=".35"/>`).join("")}
+  <!-- plant -->
+  <rect x="440" y="300" width="70" height="60" rx="8" fill="#b9864d"/>
+  <g fill="#3e8a4f">${Array.from({length:14},(_,i)=>`<ellipse cx="${475+Math.cos(i)*40}" cy="${260+Math.sin(i*1.7)*36}" rx="26" ry="11" transform="rotate(${i*26} ${475+Math.cos(i)*40} ${260+Math.sin(i*1.7)*36})"/>`).join("")}</g>
+  <!-- poster -->
+  <rect x="1110" y="140" width="190" height="230" rx="6" fill="#d9e4f5" opacity=".85"/>
+  <text x="1205" y="250" text-anchor="middle" font-family="Rajdhani" font-size="30" font-weight="700" fill="#5b7cc4">Think</text>
+  <text x="1205" y="285" text-anchor="middle" font-family="Rajdhani" font-size="26" font-weight="700" fill="#5b7cc4">Experiment</text>
+  <text x="1205" y="318" text-anchor="middle" font-family="Rajdhani" font-size="26" font-weight="700" fill="#5b7cc4">Learn</text>
+  <circle cx="1205" cy="190" r="26" fill="none" stroke="#5b7cc4" stroke-width="4"/>
+  <!-- cabinets -->
+  <rect x="0" y="440" width="1600" height="120" fill="#24395f"/><rect x="0" y="440" width="1600" height="6" fill="#33507f"/>
+  <!-- background glassware -->
+  <path d="M560 340 L560 410 L520 500 L640 500 L600 410 L600 340 Z" fill="#cfe4ff" opacity=".22" stroke="#cfe4ff" stroke-opacity=".4"/>
+  <rect x="1270" y="410" width="90" height="70" rx="8" fill="#d23a3a"/><rect x="1302" y="425" width="26" height="40" fill="#fff"/><rect x="1295" y="433" width="40" height="22" fill="#fff"/>
+</g>
+
+<!-- counter -->
+<path d="M0 560 L1600 560 L1600 900 L0 900 Z" fill="url(#counter)"/>
+<path d="M0 560 L1600 560 L1600 566 L0 566 Z" fill="#4a5b74"/>
+<rect x="0" y="770" width="1600" height="130" fill="url(#counterEdge)"/>
+<!-- counter reflections -->
+<ellipse cx="810" cy="660" rx="260" ry="34" fill="#2f8cff" opacity=".28" filter="url(#glow)"/>
+
+<!-- test tube rack (left) -->
+<g transform="translate(470 470)">
+  <rect x="0" y="80" width="200" height="18" rx="3" fill="#e9eef6"/><rect x="0" y="20" width="200" height="14" rx="3" fill="#e9eef6"/>
+  <rect x="4" y="20" width="8" height="78" fill="#cfd8e6"/><rect x="188" y="20" width="8" height="78" fill="#cfd8e6"/>
+  ${[0,1,2,3].map(i=>`<g transform="translate(${26+i*44} -30)"><rect width="22" height="120" rx="11" fill="#dceaff" fill-opacity=".25" stroke="#eaf3ff" stroke-opacity=".8" stroke-width="2"/><rect x="3" y="${70-i*8}" width="16" height="${46+i*8}" rx="8" fill="${["#ff6b8b","#ffd23f","#3fe0a0","#a77bff"][i]}" opacity=".85"/><rect x="4" y="6" width="4" height="100" rx="2" fill="#fff" opacity=".55"/></g>`).join("")}
+</g>
+
+<!-- burette stand (right) -->
+<g>
+  <rect x="1040" y="610" width="130" height="16" rx="4" fill="#1d2430"/><rect x="1098" y="230" width="8" height="390" fill="#9aa6b6"/>
+  <rect x="1010" y="268" width="120" height="16" rx="6" fill="#2b313c"/><circle cx="1012" cy="276" r="12" fill="#1a1f27"/><circle cx="1128" cy="276" r="12" fill="#1a1f27"/>
+  <rect x="1046" y="90" width="20" height="360" rx="6" fill="#dceaff" fill-opacity=".25" stroke="#eaf3ff" stroke-opacity=".8" stroke-width="2"/>
+  <rect x="1050" y="150" width="12" height="290" rx="4" fill="#38b6ff" opacity=".8"/>
+  <rect x="1049" y="96" width="4" height="340" fill="#fff" opacity=".5"/>
+  <rect x="1046" y="455" width="20" height="10" fill="#c12a3a"/><path d="M1052 465 L1060 465 L1057 492 L1055 492 Z" fill="#dceaff" opacity=".7"/>
+</g>
+
+<!-- wash bottle + petri -->
+<g transform="translate(1180 470)">
+  <path d="M0 40 Q0 20 20 20 L54 20 Q74 20 74 40 L74 140 Q74 150 64 150 L10 150 Q0 150 0 140 Z" fill="#f2f5fa"/>
+  <rect x="24" y="0" width="26" height="22" rx="4" fill="#1d4ed8"/><path d="M37 0 L37 -26 L18 -40" stroke="#1d4ed8" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <rect x="8" y="34" width="10" height="100" rx="5" fill="#fff"/>
+</g>
+<ellipse cx="1310" cy="640" rx="70" ry="16" fill="#dceaff" fill-opacity=".14" stroke="#eaf3ff" stroke-opacity=".6" stroke-width="2"/>
+
+<!-- hotplate stirrer -->
+<g>
+  <ellipse cx="811" cy="700" rx="190" ry="26" fill="#000" opacity=".45" filter="url(#soft)"/>
+  <path d="M640 640 L980 640 L1000 700 Q1000 712 986 712 L636 712 Q622 712 622 700 Z" fill="url(#hpBody)"/>
+  <rect x="660" y="624" width="300" height="22" rx="8" fill="#1a2232"/>
+  <ellipse cx="811" cy="630" rx="120" ry="12" fill="url(#hpglow)" filter="url(#glow)"/>
+  <ellipse cx="811" cy="630" rx="110" ry="9" fill="none" stroke="#5ab8ff" stroke-width="3" opacity=".9"/>
+  <circle cx="930" cy="684" r="15" fill="#1d4ed8" stroke="#0b2a7a" stroke-width="3"/><circle cx="700" cy="684" r="5" fill="#ffd23f"/><rect x="740" y="680" width="60" height="6" rx="3" fill="#9aa6b6"/>
+  <text x="836" y="688" font-family="JetBrains Mono" font-size="11" fill="#475569">68°C · 600 rpm</text>
+</g>
+
+<!-- beaker with vortex -->
+<g>
+  <g clip-path="url(#beakerIn)">
+    <rect x="700" y="470" width="220" height="160" fill="url(#liq)"/>
+    <ellipse cx="811" cy="470" rx="100" ry="14" fill="#9cf0ff" opacity=".7"/>
+    <path d="M760 470 Q811 545 862 470" fill="#1066e8" opacity=".55"/>
+    <path d="M772 474 Q811 530 850 474 M786 480 Q811 515 836 480" stroke="#bdf6ff" stroke-width="2.5" fill="none" opacity=".8"/>
+    <ellipse cx="811" cy="600" rx="90" ry="40" fill="#7ad7ff" opacity=".25" filter="url(#soft)"/>
+    ${Array.from({length:26},(_,i)=>{const x=740+((i*47)%140),y=500+((i*29)%110),r=1.5+(i%4);return `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" fill-opacity=".15" stroke="#fff" stroke-opacity=".8"/><circle cx="${x-r*.3}" cy="${y-r*.3}" r="${r*.3}" fill="#fff"/>`}).join("")}
+    <rect x="780" y="604" width="62" height="10" rx="5" fill="#f5f7fb" opacity=".85"/>
+  </g>
+  <path d="M704 395 L704 602 Q704 630 732 630 L890 630 Q918 630 918 602 L918 395" fill="url(#glassL)" stroke="#e8f2ff" stroke-opacity=".85" stroke-width="3"/>
+  <path d="M696 392 Q704 386 712 392 L918 392 Q926 388 926 396" stroke="#e8f2ff" stroke-opacity=".9" stroke-width="3" fill="none"/>
+  <path d="M716 410 L716 600" stroke="#fff" stroke-opacity=".7" stroke-width="6" stroke-linecap="round" filter="url(#soft)"/>
+  <g stroke="#e8f2ff" stroke-opacity=".7" stroke-width="2">${[0,1,2,3].map(i=>`<line x1="880" y1="${600-i*45}" x2="900" y2="${600-i*45}"/>`).join("")}</g>
+  <g font-family="JetBrains Mono" font-size="11" fill="#e8f2ff" opacity=".85">${["50","100","150","200"].map((t,i)=>`<text x="852" y="${604-i*45}">${t}</text>`).join("")}</g>
+  <!-- steam wisps -->
+  <g filter="url(#glow)" opacity=".55"><path d="M780 380 C760 330 820 320 800 270 C790 240 830 220 815 190" stroke="#cfe9ff" stroke-width="18" fill="none"/></g>
+</g>
+
+<!-- bottle being poured (in hand) -->
+<g transform="translate(965 300) rotate(-62)">
+  <path d="M0 30 Q0 10 18 10 L58 10 Q76 10 76 30 L76 130 Q76 146 60 146 L16 146 Q0 146 0 130 Z" fill="url(#bottleRed)" opacity=".95"/>
+  <path d="M6 70 L70 70 L70 130 Q70 140 60 140 L16 140 Q6 140 6 130 Z" fill="#ffd23f" opacity=".9"/>
+  <rect x="10" y="40" width="56" height="26" rx="3" fill="#fff"/><text x="38" y="58" text-anchor="middle" font-family="Inter" font-weight="800" font-size="12" fill="#b91c1c">HCl</text>
+  <rect x="26" y="-8" width="24" height="20" rx="3" fill="#e5e7eb"/>
+  <rect x="8" y="16" width="6" height="110" rx="3" fill="#fff" opacity=".6"/>
+</g>
+<path d="M912 352 C905 380 900 420 896 470" stroke="url(#stream)" stroke-width="7" fill="none" stroke-linecap="round"/>
+<g fill="#ffe066">${[0,1,2,3].map(i=>`<circle cx="${893+i*3}" cy="${478+i*4}" r="${2.5-i*.4}"/>`).join("")}</g>
+</svg>`;
+
+/* ======================== chemical bottle art ======================== */
+function bottle(liq, cap, fill=.62) {
+  const top = 22 + (1 - fill) * 40;
+  return `<svg viewBox="0 0 64 70">
+   <defs><linearGradient id="g${liq.slice(1)}" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".25" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity=".25"/></linearGradient>
+   <linearGradient id="l${liq.slice(1)}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${liq}" stop-opacity=".95"/><stop offset="1" stop-color="${liq}" stop-opacity=".7"/></linearGradient></defs>
+   <rect x="24" y="2" width="16" height="9" rx="2" fill="${cap}"/><rect x="26" y="10" width="12" height="6" fill="#cbd5e1"/>
+   <path d="M16 22 Q16 15 24 15 L40 15 Q48 15 48 22 L48 62 Q48 68 42 68 L22 68 Q16 68 16 62 Z" fill="#dbeafe" fill-opacity=".14" stroke="#e6f0ff" stroke-opacity=".75" stroke-width="1.4"/>
+   <path d="M17 ${top} L47 ${top} L47 62 Q47 67 42 67 L22 67 Q17 67 17 62 Z" fill="url(#l${liq.slice(1)})"/>
+   <ellipse cx="32" cy="${top}" rx="15" ry="2" fill="#fff" opacity=".45"/>
+   <rect x="20" y="36" width="24" height="14" rx="2" fill="#fff" opacity=".92"/><rect x="23" y="40" width="18" height="2" fill="#94a3b8"/><rect x="23" y="44" width="12" height="2" fill="#cbd5e1"/>
+   <path d="M16 22 Q16 15 24 15 L40 15 Q48 15 48 22 L48 62 Q48 68 42 68 L22 68 Q16 68 16 62 Z" fill="url(#g${liq.slice(1)})"/>
+   <rect x="19" y="19" width="3" height="44" rx="1.5" fill="#fff" opacity=".7"/></svg>`;
+}
+function crystal(c) {
+  return `<svg viewBox="0 0 64 70"><ellipse cx="32" cy="62" rx="24" ry="5" fill="#000" opacity=".35"/>
+   <path d="M32 10 L50 28 L44 58 L20 58 L14 28 Z" fill="${c}"/><path d="M32 10 L44 58 L32 50 Z" fill="#fff" opacity=".25"/><path d="M14 28 L32 50 L20 58 Z" fill="#000" opacity=".2"/><path d="M32 10 L50 28 L32 50 Z" fill="#fff" opacity=".12"/></svg>`;
+}
+function powder(c) {
+  return `<svg viewBox="0 0 64 70"><ellipse cx="32" cy="60" rx="28" ry="7" fill="#1e293b" stroke="#94a3b8" stroke-width="1.2"/>
+   <path d="M8 58 C14 40 22 30 32 30 C42 30 50 40 56 58 Z" fill="${c}"/><path d="M20 44 C26 36 34 34 40 38" stroke="#fff" stroke-opacity=".6" stroke-width="2" fill="none"/></svg>`;
+}
+function metal(c) {
+  return `<svg viewBox="0 0 64 70"><ellipse cx="32" cy="60" rx="26" ry="6" fill="#000" opacity=".35"/>
+   ${[[18,48],[30,44],[42,50],[24,56],[38,58],[46,40]].map(([x,y],i)=>`<path d="M${x-7} ${y} L${x-4} ${y-8} L${x+4} ${y-9} L${x+8} ${y-2} L${x+3} ${y+4} Z" fill="${c}" stroke="#334155" stroke-width=".6"/><path d="M${x-3} ${y-6} L${x+3} ${y-7}" stroke="#fff" stroke-opacity=".8" stroke-width="1.4"/>`).join("")}</svg>`;
+}
+function gas(c, f) {
+  return `<svg viewBox="0 0 64 70"><rect x="20" y="12" width="24" height="56" rx="11" fill="${c}" stroke="#0f172a" stroke-width="1.2"/><rect x="28" y="4" width="8" height="10" fill="#64748b"/><rect x="23" y="32" width="18" height="12" rx="2" fill="#fff"/><text x="32" y="41" text-anchor="middle" font-family="Inter" font-weight="800" font-size="8" fill="#0f172a">${f}</text><rect x="23" y="16" width="3" height="46" rx="1.5" fill="#fff" opacity=".5"/></svg>`;
+}
+
+const CHEMS = [
+  ["Hydrochloric acid","HCl · 1 M", bottle("#ffd23f","#dc2626"), "rgba(255,210,63,.28)", true, "ACID", true],
+  ["Sodium hydroxide","NaOH · 1 M", bottle("#5fb4ff","#1d4ed8",.7), "rgba(95,180,255,.25)", true, "BASE"],
+  ["Copper sulfate","CuSO₄", crystal("#1f8bff"), "rgba(31,139,255,.3)", false, "SALT"],
+  ["Silver nitrate","AgNO₃ · 0.05 M", bottle("#e6edf7","#334155",.55), "rgba(230,237,247,.18)", true, "SALT"],
+  ["Potassium permanganate","KMnO₄", bottle("#a21caf","#4c1d95",.6), "rgba(162,28,175,.3)", true, "OXID"],
+  ["Ethanol","C₂H₅OH", bottle("#c4b5fd","#6d28d9",.75), "rgba(196,181,253,.25)", true, "SOLV"],
+  ["Baking soda","NaHCO₃", powder("#f8fafc"), "rgba(248,250,252,.16)", false, "SALT"],
+  ["Magnesium","Mg ribbon", metal("#cbd5e1"), "rgba(203,213,225,.18)", true, "METAL"],
+  ["Chlorine","Cl₂ gas", gas("#c7e36a","Cl₂"), "rgba(199,227,106,.25)", true, "GAS"],
+];
+
+/* ======================== periodic table data ======================== */
+const SYM = "H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og".split(" ");
+const NAMES = "Hydrogen Helium Lithium Beryllium Boron Carbon Nitrogen Oxygen Fluorine Neon Sodium Magnesium Aluminium Silicon Phosphorus Sulfur Chlorine Argon Potassium Calcium Scandium Titanium Vanadium Chromium Manganese Iron Cobalt Nickel Copper Zinc Gallium Germanium Arsenic Selenium Bromine Krypton Rubidium Strontium Yttrium Zirconium Niobium Molybdenum Technetium Ruthenium Rhodium Palladium Silver Cadmium Indium Tin Antimony Tellurium Iodine Xenon Caesium Barium Lanthanum Cerium Praseodymium Neodymium Promethium Samarium Europium Gadolinium Terbium Dysprosium Holmium Erbium Thulium Ytterbium Lutetium Hafnium Tantalum Tungsten Rhenium Osmium Iridium Platinum Gold Mercury Thallium Lead Bismuth Polonium Astatine Radon Francium Radium Actinium Thorium Protactinium Uranium Neptunium Plutonium Americium Curium Berkelium Californium Einsteinium Fermium Mendelevium Nobelium Lawrencium Rutherfordium Dubnium Seaborgium Bohrium Hassium Meitnerium Darmstadtium Roentgenium Copernicium Nihonium Flerovium Moscovium Livermorium Tennessine Oganesson".split(" ");
+const cat = (z) => {
+  if ([1,6,7,8,15,16,34].includes(z)) return "nm"; if ([2,10,18,36,54,86,118].includes(z)) return "ng";
+  if ([9,17,35,53,85,117].includes(z)) return "ha"; if ([3,11,19,37,55,87].includes(z)) return "am";
+  if ([4,12,20,38,56,88].includes(z)) return "ae"; if ([5,14,32,33,51,52].includes(z)) return "md";
+  if (z>=57&&z<=71) return "la"; if (z>=89&&z<=103) return "ac";
+  if ([13,31,49,50,81,82,83,84,113,114,115,116].includes(z)) return "pt"; return "tm";
+};
+const pos = (z) => { if (z===1) return [1,1]; if (z===2) return [1,18]; if (z<=4) return [2,z-2]; if (z<=10) return [2,z+8]; if (z<=12) return [3,z-10]; if (z<=18) return [3,z]; if (z<=36) return [4,z-18]; if (z<=54) return [5,z-36]; if (z<=56) return [6,z-54]; if (z<=71) return [9,z-54]; if (z<=86) return [6,z-68]; if (z<=88) return [7,z-86]; if (z<=103) return [10,z-86]; return [7,z-100]; };
+const COL = { am:"#e5485e", ae:"#f0803c", tm:"#2f6fdc", pt:"#2a9d8f", md:"#13a3b8", nm:"#3fa2ff", ha:"#8b5cf6", ng:"#c04ad6", la:"#d6457f", ac:"#a33dd1" };
+const CATN = { am:"Alkali metals", ae:"Alkaline earth", tm:"Transition metals", pt:"Post-transition", md:"Metalloids", nm:"Non-metals", ha:"Halogens", ng:"Noble gases", la:"Lanthanides", ac:"Actinides" };
+const MASS = [1.008,4.003,6.94,9.012,10.81,12.01,14.01,16.00,19.00,20.18,22.99,24.31,26.98,28.09,30.97,32.06,35.45,39.95];
+
+/* ======================== shared chrome ======================== */
+const ICON = {
+  home:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>`,
+  exp:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg>`,
+  play:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7 15h10"/></svg>`,
+  sos:`<svg width="20" height="20" viewBox="0 0 24 24" fill="#ff4d5e"><circle cx="12" cy="12" r="10"/><path d="M10.5 6h3v4.5H18v3h-4.5V18h-3v-4.5H6v-3h4.5z" fill="#fff"/></svg>`,
+  ai:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/><path d="M18 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#38d4ff" stroke="none"/></svg>`,
+};
+const NAV = `
+<div class="nav">
+  <div class="logo">
+    <svg width="46" height="46" viewBox="0 0 48 48"><g fill="none" stroke="#38d4ff" stroke-width="2.2"><ellipse cx="24" cy="24" rx="20" ry="8"/><ellipse cx="24" cy="24" rx="20" ry="8" transform="rotate(60 24 24)"/><ellipse cx="24" cy="24" rx="20" ry="8" transform="rotate(-60 24 24)"/></g><circle cx="24" cy="24" r="4.5" fill="#ffc53d"/></svg>
+    <div><b>LAB<em>scape</em></b><small>Explore. Experiment. Discover.</small></div>
+  </div>
+  <div class="tabsnav">
+    <div class="navi">${ICON.home}Home</div><div class="navi">${ICON.exp}Experiments</div><div class="navi on">${ICON.play}Playground</div><div class="navi">${ICON.sos}Emergency</div><div class="navi">${ICON.ai}AI Assistant</div>
+  </div>
+  <div class="navr">
+    <div class="gem"><span style="font-size:20px">💎</span>2,450<i>+</i></div>
+    <div class="gem" style="padding:8px 14px"><span style="color:#ff8a3d">🔥</span>12</div>
+    <div class="ava"></div>
+    <div class="lvl"><div>Lv. 12<div class="xpline"><i></i></div></div></div>
+  </div>
+</div>`;
+
+/* ======================== FRAME 1 ======================== */
+const ptMini = SYM.slice(0, 118).map((s, i) => { const z = i+1, [r, c] = pos(z); if (r > 7) return ""; return `<i style="grid-row:${r};grid-column:${c};background:${COL[cat(z)]}"></i>`; }).join("");
+
+document.getElementById("f1").innerHTML = SCENE + NAV + `
+<div class="panel title"><div class="ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#38d4ff" stroke-width="1.8"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7.5 15h9" stroke="#38d4ff"/><path d="M6.5 17.5h11L18 19a1.3 1.3 0 0 1-1 1.6H7a1.3 1.3 0 0 1-1-1.6z" fill="#38d4ff" stroke="none"/></svg></div>
+  <div><div class="h" style="font-size:30px;line-height:1">Open Playground</div><div class="muted" style="font-size:13.5px;margin-top:3px">Mix · Explore · Discover anything (safely!)</div></div></div>
+
+<div class="panel left">
+  <div class="seg"><div class="on">🧪 Chemicals</div><div>⚛ Periodic table</div><div>🔬 Glassware</div></div>
+  <div class="search"><div class="in"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search 169 chemicals & elements…</div><div class="sq ghost">⇅</div></div>
+  <div class="chips"><span class="chip on">All</span><span class="chip">Acids</span><span class="chip">Bases</span><span class="chip">Salts</span><span class="chip">Metals</span><span class="chip">Gases</span><span class="chip">Indicators</span><span class="chip">★ Favourites</span></div>
+  <div class="grid">${CHEMS.map(([n,f,art,tint,hz,tag,sel])=>`<div class="card${sel?" sel":""}" style="--tint:${tint}"><span class="mol">${tag}</span><span class="hz${hz?"":" ok"}"></span>${art}<div class="n">${n}</div><div class="f">${f}</div></div>`).join("")}</div>
+  <div class="ptopen"><div class="miniPT">${ptMini}</div><div style="flex:1"><div style="font:700 14px Inter">Periodic table</div><div class="muted" style="font-size:11.5px">All 118 elements · click to enlarge</div></div><div class="step glowbtn" style="width:34px;height:34px">⤢</div></div>
+</div>
+
+<div class="panel contents"><span class="k" style="margin-right:4px">In beaker</span>
+  <span class="cchip"><i style="background:#5fb4ff"></i>NaOH 25 mL</span><span class="cchip"><i style="background:#f472b6"></i>Phenolphthalein 3 drops</span><span class="cchip"><i style="background:#ffd23f"></i>HCl 18.4 mL <b style="color:#38d4ff">pouring…</b></span>
+</div>
+
+<div class="hud" style="left:560px;top:300px"><small>TEMPERATURE</small><b style="color:#ffb057">31.6 °C <span style="font-size:12px;color:#2ee59d">▲ 9.4</span></b></div>
+<div class="hud" style="left:560px;top:372px"><small>pH</small><b style="color:#a77bff">8.9 <span style="font-size:12px;color:#ff8fb8">→ 7.0</span></b></div>
+<div class="angle">TILT 58° · 4.2 mL/s</div>
+<div class="hintpop"><b>💡 HINT 2 / 3</b>You're near the end point — slow to a <u>dropwise</u> pour so you don't overshoot the pink.</div>
+
+<div class="safety"><div class="ghost" style="color:#ffc53d;border-color:rgba(255,197,61,.6)">🛡 Safety first</div><div class="ghost">How it works?</div></div>
+
+<div class="panel right">
+  <div class="rtabs"><div class="on">Live result</div><div>Molecules</div><div>Notebook</div><div>Facts</div></div>
+  <div class="result"><div class="t"><span style="width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:#2ee59d;color:#062;font-size:15px">✓</span>Neutralisation in progress</div>
+    <div class="s">Acid is cancelling out the alkali. The pink colour fades as the pH drops towards 7 — and the beaker warms up.</div></div>
+  <div class="k" style="margin-top:12px">Products forming</div>
+  <div class="prods">
+    <div class="prod"><div class="sw" style="background:radial-gradient(circle at 35% 30%,#fff,#cbd5e1 60%,#94a3b8)"></div><b>NaCl</b><small>Salt · dissolved</small></div>
+    <div class="prod"><div class="sw" style="background:radial-gradient(circle at 35% 30%,#fff,#7cc8ff 60%,#2f8cff)"></div><b>H₂O</b><small>Water · liquid</small></div>
+    <div class="prod"><div class="sw" style="background:radial-gradient(circle at 35% 30%,#fff,#ffb057 60%,#ff6a2a)"></div><b>Heat</b><small>−57 kJ/mol</small></div>
+  </div>
+  <div class="eq">HCl + NaOH <span class="a">⟶</span> NaCl + H₂O</div>
+  <div class="molbox"><svg viewBox="0 0 368 96" width="100%" height="100%">
+    <g stroke="#9cc9ff" stroke-width="4"><line x1="40" y1="48" x2="68" y2="48"/><line x1="128" y1="48" x2="152" y2="48"/><line x1="152" y1="48" x2="172" y2="34"/><line x1="290" y1="54" x2="312" y2="40"/><line x1="290" y1="54" x2="314" y2="66"/></g>
+    ${[[40,48,12,"#e5e7eb","H","#1e293b"],[70,48,15,"#22c55e","Cl"],[128,48,15,"#a855f7","Na"],[152,48,13,"#ef4444","O"],[174,32,9,"#e5e7eb","H","#1e293b"],[236,48,15,"#a855f7","Na"],[262,48,15,"#22c55e","Cl"],[290,54,13,"#ef4444","O"],[314,38,9,"#e5e7eb","H","#1e293b"],[316,68,9,"#e5e7eb","H","#1e293b"]].map(([x,y,r,c,l,tc])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/><circle cx="${x-r*.35}" cy="${y-r*.35}" r="${r*.4}" fill="#fff" opacity=".55"/><text x="${x}" y="${y+4}" text-anchor="middle" font-family="Inter" font-weight="800" font-size="${r>10?10:8}" fill="${tc||'#fff'}">${l}</text>`).join("")}
+    <path d="M196 48 h18 m-6 -6 l6 6 l-6 6" stroke="#38d4ff" stroke-width="3" fill="none"/></svg></div>
+  <div class="meters">
+    <div class="m"><small>pH</small><b>8.9</b></div><div class="m"><small>Temp</small><b>31.6°</b></div><div class="m"><small>Volume</small><b>43 mL</b></div><div class="m"><small>Gas</small><b>—</b></div>
+  </div>
+  <ul class="obs">
+    <li><i>👁</i>Pink fades where the acid stream hits, then returns as you stir.</li>
+    
+  </ul>
+  <div class="smell"><span style="font-size:18px">👃</span><div><b>Smell:</b> faint sharp acid near the bottle mouth. <span style="color:#d4b56a">Waft — never sniff.</span></div></div>
+</div>
+
+<div class="panel dock">
+  <div class="sect"><div class="k"><span>Pour speed</span><span style="color:#38d4ff">Steady</span></div>
+    <div class="slider"><div class="fill" style="width:56%"></div><div class="knob" style="left:56%"></div></div>
+    <div class="ticks"><span>Drop</span><span>Slow</span><b>Steady</b><span>Fast</span></div>
+    <div class="toggle" style="margin-top:9px"><span>Tilt-to-pour</span><span class="sw2 on"></span></div>
+  </div>
+  <div class="sect"><div class="k"><span>Amount</span></div><div class="units"><span class="on">mL</span><span>g</span><span>drops</span></div>
+    <div class="amount" style="margin-top:4px"><div class="step ghost">−</div><div class="val">25.0<small>mL</small></div><div class="step ghost">+</div></div>
+    <div class="quick"><span>1</span><span>5</span><span>10</span><span class="on">25</span><span>50</span></div>
+    <div class="muted" style="font-size:10.5px;margin-top:6px">Max for this model: 50 mL · beaker 150 mL</div>
+  </div>
+  <div class="sect"><div class="k"><span>Mixing method</span><span style="color:#38d4ff">600 rpm</span></div>
+    <div class="modes">
+      <div class="mode on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v10"/><path d="M7 14c0 3 2 6 5 6s5-3 5-6"/><path d="M8 17c2-1 6-1 8 0"/></svg>Stir</div>
+      <div class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 0 1 14-5M20 12a8 8 0 0 1-14 5"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>Swirl</div>
+      <div class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="5" width="8" height="14" rx="2"/><path d="M4 8l-2 4 2 4M20 8l2 4-2 4"/></svg>Shake</div>
+      <div class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M8 12h8M12 8v8"/></svg>Magnetic</div>
+    </div>
+    <div class="slider" style="margin-top:12px"><div class="fill" style="width:60%"></div><div class="knob" style="left:60%;width:16px;height:16px"></div></div>
+  </div>
+  <div class="sect" style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center"><div><div class="k">Heat</div><div class="dial"><b>68°</b></div></div>
+    <div style="display:grid;gap:6px"><div class="toggle"><span>🔥 Hotplate</span><span class="sw2 on"></span></div><div class="toggle"><span>⚡ Spark</span><span class="sw2"></span></div><div class="toggle"><span>🧊 Ice bath</span><span class="sw2"></span></div></div>
+  </div>
+</div>
+
+<div class="bl"><div class="ghost">↺ Reset</div><div class="ghost">🗑 Clear</div><div class="ghost">↶ Undo</div></div>
+<div class="br"><div class="hint">💡 Hints</div><div class="mix glowbtn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></svg>START MIX</div></div>
+`;
+
+/* ======================== FRAME 2 ======================== */
+const sel = 11;
+const bigPT = SYM.map((s, i) => { const z = i+1, [r, c] = pos(z); const row = r; const dim = !["am","ae","nm","ha"].includes(cat(z)) && z > 0 && false;
+  return `<div class="tile${z===sel?" sel":""}${dim?" dimmed":""}" style="grid-row:${row};grid-column:${c};--c:${COL[cat(z)]};background:linear-gradient(160deg, ${COL[cat(z)]}, ${COL[cat(z)]}bb)"><div class="zz">${z}</div><div class="ss">${s}</div><div class="nn">${NAMES[i]}</div></div>`; }).join("");
+
+document.getElementById("f2").innerHTML = SCENE + NAV + `<div class="dim"></div>
+<div class="panel ptmodal">
+  <div class="pthead">
+    <div><div class="h" style="font-size:30px;line-height:1">Periodic Table</div><div class="muted" style="font-size:13px">118 elements · hover to inspect · click to add to your beaker</div></div>
+    <div class="trendbar"><span class="on">Category</span><span>State</span><span>Reactivity</span><span>Electronegativity</span><span>Radioactive</span></div>
+    <div class="search" style="margin:0 0 0 auto;width:260px"><div class="in">⌕ Search element…</div></div>
+    <div class="step ghost" style="width:40px;height:40px;font-size:18px">✕</div>
+  </div>
+  <div class="ptbody">
+    <div>
+      <div class="bigpt">${bigPT}</div>
+      <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap" class="legend2">${Object.entries(CATN).map(([k,n])=>`<span><i style="background:${COL[k]}"></i>${n}</span>`).join("")}</div>
+    </div>
+    <div class="detail">
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div class="bigtile"><div class="zz">11</div><div class="ss">Na</div><div class="nn">Sodium</div><div style="font:600 11px JetBrains Mono;opacity:.85;margin-top:2px">22.990</div></div>
+        <svg width="150" height="136" viewBox="0 0 150 136"><g fill="none" stroke="#5aa8ff" stroke-opacity=".6" stroke-width="1.4"><circle cx="75" cy="68" r="24"/><circle cx="75" cy="68" r="42"/><circle cx="75" cy="68" r="60"/></g>
+          <circle cx="75" cy="68" r="11" fill="#ff5f7e"/><circle cx="72" cy="65" r="4" fill="#fff" opacity=".6"/>
+          ${[[51,68],[99,68],[75,26],[75,110],[45,38],[105,38],[45,98],[105,98],[33,68],[117,68],[135,68]].map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="4.2" fill="${i<2?'#38d4ff':i<10?'#a77bff':'#ffc53d'}"/>`).join("")}</svg>
+      </div>
+      <div class="pill" style="margin-top:12px;background:rgba(229,72,94,.2);color:#ff9aa8;border:1px solid rgba(229,72,94,.5)">Alkali metal · Group 1 · Period 3</div>
+      <div class="props">
+        <div class="prop"><small>State</small><b>Solid</b></div><div class="prop"><small>Melts at</small><b>97.8 °C</b></div>
+        <div class="prop"><small>Electroneg.</small><b>0.93</b></div><div class="prop"><small>Reactivity</small><b style="color:#ff8a3d">Very high</b></div>
+        <div class="prop"><small>Config</small><b style="font-size:13px">[Ne] 3s¹</b></div><div class="prop"><small>Ions</small><b>Na⁺</b></div>
+      </div>
+      <div class="smell" style="margin-top:10px;font-size:12px"><span>⚠</span><div>Reacts violently with water - stored under oil.</div></div>
+      <div class="k" style="margin-top:12px">Add as</div>
+      <div class="formpick"><div class="on">Chunk</div><div>Powder</div><div>Pellet</div></div>
+      <div class="amount" style="margin-top:10px"><div class="step ghost">−</div><div class="val">0.15<small>g</small></div><div class="step ghost">+</div></div>
+      <div class="muted" style="margin-top:8px;font-size:12px;line-height:1.45">💡 Did you know? Sodium is soft enough to cut with a butter knife.</div>
+      <div class="mix glowbtn" style="margin-top:12px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;font:700 19px Rajdhani;letter-spacing:.06em">ADD TO BEAKER</div>
+    </div>
+  </div>
+</div>`;
+
+/* ======================== fit ======================== */
+function fit() {
+  const s = Math.min(1, (window.innerWidth - 24) / 1600);
+  document.querySelectorAll("[data-s]").forEach((el) => {
+    el.style.transform = `scale(${s})`;
+    el.style.marginLeft = `${Math.max(12, (window.innerWidth - 1600 * s) / 2)}px`;
+    el.style.marginBottom = el.classList.contains("wrap") ? `${-900 * (1 - s) + 40}px` : `${-36 * (1 - s) + 12}px`;
+  });
+}
+addEventListener("resize", fit); fit();
+</script>
+</body>
+</html>

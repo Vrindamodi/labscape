@@ -260,7 +260,17 @@ function baseline(contents: Content[], prev: Vessel): Vessel {
   };
 }
 
-export function ChemistryPlayground() {
+export type ChemistryPlaygroundProps = {
+  /**
+   * Called with every discovery a mix produced (new or not), after the reaction plays out. The shell
+   * turns these into ProgressEvents; the server's idempotency keys make repeats free.
+   */
+  onDiscoveries?: (ids: string[]) => void;
+};
+
+export function ChemistryPlayground({ onDiscoveries }: ChemistryPlaygroundProps = {}) {
+  const onDiscoveriesRef = useRef(onDiscoveries);
+  onDiscoveriesRef.current = onDiscoveries;
   const reduced = useReducedMotion() ?? false;
   const [cat, setCat] = useState<CatalogueResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -349,6 +359,7 @@ export function ChemistryPlayground() {
   const recordDiscoveries = useCallback(
     (r: SimulationResult, delay: number) => {
       const ids = r.presentation?.discoveryIds ?? [];
+      if (ids.length) later(delay + 400, () => onDiscoveriesRef.current?.(ids));
       const newly = ids.filter((id) => !found[id]);
       if (!newly.length) return newly;
       const next = { ...found };

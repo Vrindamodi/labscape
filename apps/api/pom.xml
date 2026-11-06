@@ -22,6 +22,19 @@
         <springdoc.version>2.8.13</springdoc.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Postgres 17 binaries for the embedded dev/test database -->
+            <dependency>
+                <groupId>io.zonky.test.postgres</groupId>
+                <artifactId>embedded-postgres-binaries-bom</artifactId>
+                <version>17.11.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -43,6 +56,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- Auth: session JWT in an httpOnly cookie, verified with Nimbus (resource server) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
 
         <!-- Database: Neon (serverless Postgres) in staging/prod, local Postgres via docker compose -->
         <dependency>
@@ -58,6 +81,13 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
+        <!-- Real Postgres for local dev (profile "dev") and tests, no Docker needed -->
+        <dependency>
+            <groupId>io.zonky.test</groupId>
+            <artifactId>embedded-postgres</artifactId>
+            <version>2.2.2</version>
+        </dependency>
+
 
         <!-- OpenAPI: generates the spec the web app's TypeScript client is generated from -->
         <dependency>
@@ -71,9 +101,24 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- Reviewed content (experiments, reactions, scenarios, quizzes) ships on the classpath. -->
+            <resource>
+                <directory>../../content</directory>
+                <targetPath>content</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
