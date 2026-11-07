@@ -26,7 +26,8 @@
     "@labscape/chem-view": "workspace:*",
     "@labscape/physics": "workspace:*",
     "@labscape/mathlab": "workspace:*",
-    "@labscape/quiz": "workspace:*"
+    "@labscape/quiz": "workspace:*",
+    "@labscape/assistant": "workspace:*"
   },
   "devDependencies": {
     "@types/katex": "0.16.7",

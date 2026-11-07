@@ -39,6 +39,23 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
   const [lens, setLens] = useState<string | null>(null);
   /** Keyboard cursor while choosing a target (Tab moves it, Enter confirms). */
   const [cursor, setCursor] = useState<string | null>(null);
+  /** "Show me" from the assistant: an item pulses as a target for a few seconds. */
+  const [shown, setShown] = useState<string | null>(null);
+  useEffect(() => {
+    let t = 0;
+    const on = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (!state.items[id]) return;
+      setShown(id);
+      window.clearTimeout(t);
+      t = window.setTimeout(() => setShown(null), 3500);
+    };
+    window.addEventListener("labscape:highlight", on);
+    return () => {
+      window.removeEventListener("labscape:highlight", on);
+      window.clearTimeout(t);
+    };
+  }, [state.items]);
   const [quality, setQuality] = useState<Quality>(() => ((navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8) < 4 ? "lite" : "high");
   const pourRef = useRef({ poured: 0, chunk: 0, peak: 0, start: 0, chunkStart: 0, rate: 0, warned: false });
   const pourLoop = useMemo(() => new LoopSound("pour"), []);
@@ -309,7 +326,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         state={state}
         cues={session.cues}
         selected={picking && cursor ? cursor : selected}
-        targets={targets}
+        targets={shown && !targets.includes(shown) ? [...targets, shown] : targets}
         onPick={onPick}
         onBackground={() => !picking && (setSelected(null), setPourTarget(null))}
         onPlace={(id, x, z, socket) => dispatch("equipment.place", { equipmentId: id, x, y: z, ...(socket ? { socket } : {}) })}

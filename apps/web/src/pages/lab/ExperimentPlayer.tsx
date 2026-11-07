@@ -1,7 +1,9 @@
-import type { LabEvent, RewardResult } from "@labscape/contracts";
+import type { LabContext, LabEvent, RewardResult } from "@labscape/contracts";
 import { recordGolden, stageFor, useLabSession, Workbench, type ExperimentContent, type Feedback, type Report, type StepSpec } from "@labscape/lab-engine";
 import "./SimStages";
 import { QuizStage } from "../../components/QuizStage";
+import { AssistantLauncher } from "../../components/AssistantDock";
+import { usePublishLabContext } from "../../lib/labContext";
 import { celebrate, useMotion } from "@labscape/motion";
 import { MolecularView, SCENES } from "@labscape/chem-view";
 import { sound } from "@labscape/audio";
@@ -122,6 +124,7 @@ function Player({ view }: { view: ExperimentView }) {
 
   return (
     <div className="flex h-screen flex-col bg-[radial-gradient(1200px_500px_at_50%_-10%,rgba(47,128,255,.18),transparent_60%),#0b1020] text-white">
+      {me && <AssistantLauncher />}
       {/* stage rail */}
       <header className="flex h-16 shrink-0 items-center gap-4 border-b border-white/[0.07] bg-[#0b1020]/80 px-4 backdrop-blur-xl">
         <button onClick={() => navigate(`/library/${content.slug}`)} className="grid h-10 w-10 place-items-center rounded-md text-white/60 hover:bg-white/[0.06] hover:text-white" aria-label="Leave the lab">
@@ -394,6 +397,28 @@ function Try({
   const current = ev?.current() ?? null;
   const report = ev?.report();
   const done = report?.completed ?? false;
+
+  // The assistant reads this snapshot with every question (contract 5).
+  const items = Object.values(session.state.items);
+  usePublishLabContext({
+    surface: "experiment",
+    subject: "chemistry",
+    attemptId: attempt.id,
+    experimentId: content.slug,
+    experimentVersion: content.version,
+    experimentTitle: content.title,
+    stage: "try",
+    ...(current ? { currentStepId: current.id } : {}),
+    currentStepText: current ? `${current.title}. ${current.instruction}` : null,
+    completedStepIds: (report?.steps ?? []).filter((s) => s.done).map((s) => s.id),
+    userLevel: (me?.profile.learningLevel ?? "school") as LabContext["userLevel"],
+    bench: items.map((it) => ({ id: it.id, kind: it.kind, ...(it.liquid && it.liquid.volumeMl > 0 ? { contents: [{ species: it.reagentId ?? "solution", volumeMl: Math.round(it.liquid.volumeMl * 10) / 10 }], temperatureC: Math.round(it.liquid.tempC) } : {}) })),
+    recentEvents: session.events.slice(-8),
+    readings: [],
+    deviations: (report?.deviations ?? []).map((d) => ({ stepId: d.stepId, code: d.code, severity: d.severity === "safety" ? "critical" : d.severity === "minor" ? "minor" : "major" })),
+    hintsShown: Object.keys(hintRung),
+    highlightableIds: items.map((it) => it.id),
+  });
 
   const showHint = () => {
     if (!current || !ev) return;

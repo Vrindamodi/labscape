@@ -7,7 +7,10 @@ import { Button, Chip, cx, Modal, useShell } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Captions, Check, CircleAlert, Eye, Gauge, Lightbulb, Pause, Play, RotateCcw, ShieldAlert, Sparkles } from "lucide-react";
 import { useMemo, useState, type ComponentType } from "react";
+import type { LabContext } from "@labscape/contracts";
 import { post } from "../../lib/api";
+import { usePublishLabContext } from "../../lib/labContext";
+import { useSession } from "../../lib/session";
 
 type Sim = { content: SimContent; model: SimModel<unknown>; Workspace: ComponentType<WorkspaceProps> };
 
@@ -119,6 +122,26 @@ function SimTry({ slug, attempt, onSaved, onSaving, onSaveError, onDone, onResta
     session.dispatch("hint.shown", { hintId: current.hints?.[next - 1] ?? `${current.id}-${next}`, rung: next, stepId: current.id });
   };
   const W = sim.Workspace;
+  const { me } = useSession();
+  usePublishLabContext({
+    surface: "experiment",
+    subject: sim.content.subject,
+    attemptId: attempt.id,
+    experimentId: slug,
+    experimentVersion: sim.content.version,
+    experimentTitle: sim.content.title,
+    stage: "try",
+    ...(current ? { currentStepId: current.id } : {}),
+    currentStepText: current ? `${current.title}. ${current.instruction}` : null,
+    completedStepIds: steps.filter((s) => session.doneSteps[s.id] != null).map((s) => s.id),
+    userLevel: (me?.profile.learningLevel ?? "school") as LabContext["userLevel"],
+    bench: [],
+    recentEvents: session.events.slice(-8),
+    readings: [],
+    deviations: report.deviations.map((d) => ({ stepId: d.stepId, code: d.code, severity: d.severity === "safety" ? "critical" : d.severity === "minor" ? "minor" : "major" })),
+    hintsShown: Object.keys(rungs),
+    highlightableIds: [],
+  });
   const devs = useMemo(() => session.feedback.filter((f): f is Extract<SimFeedback, { kind: "deviation" }> => f.kind === "deviation").slice(-3).reverse(), [session.feedback]);
   const notes = session.notes.slice(-5).reverse();
 

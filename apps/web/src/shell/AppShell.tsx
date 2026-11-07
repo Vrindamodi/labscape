@@ -1,4 +1,5 @@
 import { sound } from "@labscape/audio";
+import { AssistantDock } from "../components/AssistantDock";
 import { useMotion } from "@labscape/motion";
 import { Avatar, Button, Chip, cx, Kbd, NamedIcon, ProgressRing, Skeleton, useShell, XpBar, type ContextPanelSlotName } from "@labscape/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -528,12 +529,7 @@ function ContextPanel({ open }: { open: boolean }) {
               <div ref={slotRefs.progress} />
             </div>
             <div hidden={tab !== "assistant"} ref={slotRefs.assistant}>
-              <div className="rounded-xl border border-ai-violet/30 bg-[linear-gradient(160deg,rgba(139,92,246,.18),rgba(232,121,249,.06))] p-4">
-                <div className="flex items-center gap-2 font-heading font-semibold">
-                  <span className="ls-orb h-7 w-7 rounded-full" /> AI science assistant
-                </div>
-                <p className="mt-2 text-sm text-white/65">Ask about any reaction, formula or step. Arriving with Part 4 — it will read what's on your bench.</p>
-              </div>
+              <div className="h-[calc(100vh-170px)]">{tab === "assistant" && <AssistantDock compact />}</div>
             </div>
             <div hidden={tab !== "info"} ref={slotRefs.info}>
               <p className="text-sm text-white/50">Open an experiment or element to see details here.</p>

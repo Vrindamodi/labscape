@@ -63,6 +63,10 @@ labscape:
     quizzes: true
     scenarios: false
     molecular-view: true
+  ai:
+    # Claude answers when a key is set; otherwise the built-in grounded tutor does. Same guard either way.
+    anthropic-api-key: ${ANTHROPIC_API_KEY:}
+    model: ${AI_MODEL:claude-opus-5-5}
   safety:
     # R1 ships the safety engine behind this flag. Off => /v1/safety/resolve returns 503 and the
     # playground shows no reactions at all.
