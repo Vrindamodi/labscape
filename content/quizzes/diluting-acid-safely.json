@@ -1,0 +1,134 @@
+{
+  "id": "quiz-diluting-acid-safely",
+  "version": 1,
+  "experimentSlug": "diluting-acid-safely",
+  "title": "Diluting acid safely quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "dilution-safety": "Diluting acid safely",
+    "exothermic": "Exothermic changes",
+    "lab-safety": "Lab safety"
+  },
+  "questions": [
+    {
+      "id": "order",
+      "type": "multiple_choice",
+      "prompt": "How do you dilute concentrated sulfuric acid?",
+      "conceptIds": [
+        "dilution-safety"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Add water to the acid quickly"
+        },
+        {
+          "id": "b",
+          "text": "Add the acid slowly to plenty of water, stirring"
+        },
+        {
+          "id": "c",
+          "text": "Mix them at the same time"
+        },
+        {
+          "id": "d",
+          "text": "Heat them both first"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Add acid to water: the large volume of water absorbs the heat. Water added to acid can boil instantly and spit acid.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "hot",
+      "type": "true_false",
+      "prompt": "Diluting concentrated sulfuric acid releases a lot of heat.",
+      "conceptIds": [
+        "exothermic"
+      ],
+      "answer": true,
+      "explanation": "The reaction of the acid with water is strongly exothermic.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "wrong-way",
+      "type": "predict_outcome",
+      "prompt": "Water is poured into concentrated sulfuric acid. What can happen?",
+      "conceptIds": [
+        "dilution-safety",
+        "lab-safety"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Nothing"
+        },
+        {
+          "id": "b",
+          "text": "The water boils on contact and acid spatters"
+        },
+        {
+          "id": "c",
+          "text": "It freezes"
+        },
+        {
+          "id": "d",
+          "text": "It turns blue"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The first water meets lots of acid, gets very hot and boils, throwing out droplets of acid.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "temp",
+      "type": "numerical",
+      "prompt": "100 g of water warms from 20 °C to 35 °C. How much energy did it absorb? (c = 4.18 J/g°C)",
+      "conceptIds": [
+        "exothermic"
+      ],
+      "unit": "J",
+      "answer": 6270,
+      "tolerance": {
+        "pct": 2
+      },
+      "acceptUnits": [
+        "J",
+        "joules"
+      ],
+      "explanation": "Q = mcΔT = 100 × 4.18 × 15 = 6270 J.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "rule",
+      "type": "fill_blank",
+      "prompt": "The rule is: always add ___ to ___.",
+      "conceptIds": [
+        "dilution-safety"
+      ],
+      "blanks": 2,
+      "answer": [
+        [
+          "acid"
+        ],
+        [
+          "water"
+        ]
+      ],
+      "explanation": "Add acid to water, never water to acid.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

@@ -1,0 +1,262 @@
+{
+  "id": "quiz-flame-tests",
+  "version": 1,
+  "experimentSlug": "flame-tests",
+  "title": "Flame tests quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "flame-colours": "Flame colours",
+    "flame-technique": "Flame test technique",
+    "atomic-emission": "Atomic emission"
+  },
+  "questions": [
+    {
+      "id": "colours",
+      "type": "match",
+      "prompt": "Match each metal ion to its flame colour.",
+      "conceptIds": [
+        "flame-colours"
+      ],
+      "left": [
+        {
+          "id": "l1",
+          "text": "Lithium"
+        },
+        {
+          "id": "l2",
+          "text": "Sodium"
+        },
+        {
+          "id": "l3",
+          "text": "Potassium"
+        },
+        {
+          "id": "l4",
+          "text": "Copper"
+        },
+        {
+          "id": "l5",
+          "text": "Calcium"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Crimson red"
+        },
+        {
+          "id": "r2",
+          "text": "Yellow-orange"
+        },
+        {
+          "id": "r3",
+          "text": "Lilac"
+        },
+        {
+          "id": "r4",
+          "text": "Green-blue"
+        },
+        {
+          "id": "r5",
+          "text": "Orange-red"
+        }
+      ],
+      "answer": [
+        [
+          "l1",
+          "r1"
+        ],
+        [
+          "l2",
+          "r2"
+        ],
+        [
+          "l3",
+          "r3"
+        ],
+        [
+          "l4",
+          "r4"
+        ],
+        [
+          "l5",
+          "r5"
+        ]
+      ],
+      "explanation": "These colours identify the metal ion in a compound.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "clean",
+      "type": "multiple_choice",
+      "prompt": "Why clean the wire loop in acid and flame between tests?",
+      "conceptIds": [
+        "flame-technique"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "To sharpen it"
+        },
+        {
+          "id": "b",
+          "text": "To remove traces of the last metal, which would mix the colours"
+        },
+        {
+          "id": "c",
+          "text": "To make it hotter"
+        },
+        {
+          "id": "d",
+          "text": "To make it magnetic"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Any leftover ion colours the next flame. Sodium is the worst: its yellow hides other colours.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "bunsen",
+      "type": "label_diagram",
+      "prompt": "Label the Bunsen burner.",
+      "conceptIds": [
+        "flame-technique"
+      ],
+      "diagram": "bunsen",
+      "labels": [
+        {
+          "id": "k1",
+          "text": "Blue flame"
+        },
+        {
+          "id": "k2",
+          "text": "Barrel"
+        },
+        {
+          "id": "k3",
+          "text": "Air hole"
+        },
+        {
+          "id": "k4",
+          "text": "Gas inlet"
+        }
+      ],
+      "targets": [
+        {
+          "id": "flame",
+          "x": 50,
+          "y": 16
+        },
+        {
+          "id": "barrel",
+          "x": 62,
+          "y": 50
+        },
+        {
+          "id": "airhole",
+          "x": 50,
+          "y": 74
+        },
+        {
+          "id": "inlet",
+          "x": 84,
+          "y": 86
+        }
+      ],
+      "answer": [
+        [
+          "k1",
+          "flame"
+        ],
+        [
+          "k2",
+          "barrel"
+        ],
+        [
+          "k3",
+          "airhole"
+        ],
+        [
+          "k4",
+          "inlet"
+        ]
+      ],
+      "explanation": "Open the air hole for the hot blue flame used in flame tests.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "why",
+      "type": "multiple_choice",
+      "prompt": "Why does each metal give its own colour?",
+      "conceptIds": [
+        "atomic-emission"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "The flame burns the metal"
+        },
+        {
+          "id": "b",
+          "text": "Electrons jump to higher levels and give out light of fixed energy as they fall back"
+        },
+        {
+          "id": "c",
+          "text": "The metal reflects the flame"
+        },
+        {
+          "id": "d",
+          "text": "The acid changes colour"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Each element's energy levels are different, so it emits its own colours.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "loop",
+      "type": "identify_equipment",
+      "prompt": "What is this used for in a flame test?",
+      "conceptIds": [
+        "flame-technique"
+      ],
+      "equipmentKind": "wire_loop",
+      "options": [
+        {
+          "id": "a",
+          "text": "Holding a sample in the flame"
+        },
+        {
+          "id": "b",
+          "text": "Stirring"
+        },
+        {
+          "id": "c",
+          "text": "Measuring volume"
+        },
+        {
+          "id": "d",
+          "text": "Testing for hydrogen"
+        }
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "A nichrome wire loop holds a tiny sample at the edge of the flame.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

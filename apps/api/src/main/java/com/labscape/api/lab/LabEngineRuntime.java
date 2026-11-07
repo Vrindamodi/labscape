@@ -75,6 +75,11 @@ public class LabEngineRuntime {
         return read(call(api -> api.getMember("scoreJson").execute(slug, eventsJson, tailMs).asString()), JsonNode.class);
     }
 
+    /** Evaluates an expression with the maths engine (same parser the browser uses). */
+    public double evaluate(String expr, String scopeJson) {
+        return call(api -> api.getMember("evaluateJson").execute(expr, scopeJson).asDouble());
+    }
+
     /** Physics or maths: scores an event log for one experiment of that subject (no attempt needed). */
     public JsonNode check(String subject, String slug, String eventsJson) {
         return read(call(api -> api.getMember("checkJson").execute(subject, slug, eventsJson).asString()), JsonNode.class);

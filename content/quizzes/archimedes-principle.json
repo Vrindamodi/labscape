@@ -1,0 +1,135 @@
+{
+  "id": "quiz-archimedes-principle",
+  "version": 1,
+  "experimentSlug": "archimedes-principle",
+  "title": "Archimedes' principle quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "upthrust": "Upthrust",
+    "density": "Density",
+    "fluid-technique": "Overflow can technique"
+  },
+  "questions": [
+    {
+      "id": "upthrust",
+      "type": "numerical",
+      "prompt": "A sinker weighs 1.67 N in air and 1.47 N in water. What is the upthrust?",
+      "conceptIds": [
+        "upthrust"
+      ],
+      "unit": "N",
+      "answer": 0.2,
+      "tolerance": {
+        "abs": 0.005
+      },
+      "acceptUnits": [
+        "N",
+        "newtons"
+      ],
+      "explanation": "Upthrust = 1.67 − 1.47 = 0.20 N.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "equals",
+      "type": "multiple_choice",
+      "prompt": "Archimedes' principle: the upthrust equals…",
+      "conceptIds": [
+        "upthrust"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "the weight of the object"
+        },
+        {
+          "id": "b",
+          "text": "the weight of the fluid displaced"
+        },
+        {
+          "id": "c",
+          "text": "the volume of the object"
+        },
+        {
+          "id": "d",
+          "text": "the mass of the can"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "It is the weight of fluid pushed aside.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "wait",
+      "type": "multiple_choice",
+      "prompt": "Why wait for the overflow can to stop dripping before placing the cylinder?",
+      "conceptIds": [
+        "fluid-technique"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "So only water pushed out by the sinker is collected"
+        },
+        {
+          "id": "b",
+          "text": "To let the water warm up"
+        },
+        {
+          "id": "c",
+          "text": "To dry the bench"
+        },
+        {
+          "id": "d",
+          "text": "It does not matter"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        0
+      ],
+      "explanation": "Otherwise the cylinder also collects water the sinker never displaced.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "float",
+      "type": "true_false",
+      "prompt": "An object floats when the upthrust on it equals its weight.",
+      "conceptIds": [
+        "upthrust",
+        "density"
+      ],
+      "answer": true,
+      "explanation": "Balanced forces: it sinks until it displaces its own weight of fluid.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "displaced",
+      "type": "numerical",
+      "prompt": "A sinker displaces 20 mL of water. What is the weight of that water? (g = 9.81 N/kg)",
+      "conceptIds": [
+        "upthrust"
+      ],
+      "unit": "N",
+      "answer": 0.196,
+      "tolerance": {
+        "abs": 0.003
+      },
+      "acceptUnits": [
+        "N",
+        "newtons"
+      ],
+      "explanation": "20 mL of water has a mass of 20 g = 0.020 kg; weight = 0.020 × 9.81 = 0.196 N.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

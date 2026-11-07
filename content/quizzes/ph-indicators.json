@@ -1,0 +1,179 @@
+{
+  "id": "quiz-ph-indicators",
+  "version": 1,
+  "experimentSlug": "ph-indicators",
+  "title": "Acid-base indicators quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "ph": "The pH scale",
+    "indicators": "Indicators",
+    "acids-bases": "Acids and bases"
+  },
+  "questions": [
+    {
+      "id": "colours",
+      "type": "match",
+      "prompt": "Match each universal indicator colour to its meaning.",
+      "conceptIds": [
+        "indicators",
+        "ph"
+      ],
+      "left": [
+        {
+          "id": "l1",
+          "text": "Red"
+        },
+        {
+          "id": "l2",
+          "text": "Green"
+        },
+        {
+          "id": "l3",
+          "text": "Purple"
+        },
+        {
+          "id": "l4",
+          "text": "Yellow"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Strong acid"
+        },
+        {
+          "id": "r2",
+          "text": "Neutral"
+        },
+        {
+          "id": "r3",
+          "text": "Strong alkali"
+        },
+        {
+          "id": "r4",
+          "text": "Weak acid"
+        }
+      ],
+      "answer": [
+        [
+          "l1",
+          "r1"
+        ],
+        [
+          "l2",
+          "r2"
+        ],
+        [
+          "l3",
+          "r3"
+        ],
+        [
+          "l4",
+          "r4"
+        ]
+      ],
+      "explanation": "Universal indicator runs red (pH 1) through orange and yellow to green (7), then blue and purple (14).",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "neutral",
+      "type": "multiple_choice",
+      "prompt": "What is the pH of pure water at 25 °C?",
+      "conceptIds": [
+        "ph"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "0"
+        },
+        {
+          "id": "b",
+          "text": "1"
+        },
+        {
+          "id": "c",
+          "text": "7"
+        },
+        {
+          "id": "d",
+          "text": "14"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        2
+      ],
+      "explanation": "Pure water is neutral: pH 7.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "lower-stronger",
+      "type": "true_false",
+      "prompt": "A solution of pH 2 is more acidic than one of pH 5.",
+      "conceptIds": [
+        "ph"
+      ],
+      "answer": true,
+      "explanation": "Lower pH means more H⁺ ions. Each step is ten times more: pH 2 has 1000 times more H⁺ than pH 5.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "litmus",
+      "type": "predict_outcome",
+      "prompt": "Blue litmus is dipped in vinegar. What happens?",
+      "conceptIds": [
+        "indicators",
+        "acids-bases"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It stays blue"
+        },
+        {
+          "id": "b",
+          "text": "It turns red"
+        },
+        {
+          "id": "c",
+          "text": "It turns green"
+        },
+        {
+          "id": "d",
+          "text": "It goes colourless"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Vinegar is acidic; acids turn blue litmus red.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "tenfold",
+      "type": "numerical",
+      "prompt": "How many times more H⁺ ions does pH 3 have than pH 5?",
+      "conceptIds": [
+        "ph"
+      ],
+      "unit": "",
+      "answer": 100,
+      "tolerance": {
+        "abs": 0
+      },
+      "acceptUnits": [
+        ""
+      ],
+      "explanation": "Two pH units is 10 × 10 = 100 times.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

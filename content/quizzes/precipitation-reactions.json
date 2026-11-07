@@ -1,0 +1,145 @@
+{
+  "id": "quiz-precipitation-reactions",
+  "version": 1,
+  "experimentSlug": "precipitation-reactions",
+  "title": "Precipitation reactions quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "precipitates": "Precipitates",
+    "ionic-equations": "Ionic equations",
+    "ion-tests": "Tests for ions"
+  },
+  "questions": [
+    {
+      "id": "copper",
+      "type": "predict_outcome",
+      "prompt": "Sodium hydroxide is added to copper(II) sulfate solution. What forms?",
+      "conceptIds": [
+        "ion-tests",
+        "precipitates"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "A blue precipitate"
+        },
+        {
+          "id": "b",
+          "text": "A white precipitate"
+        },
+        {
+          "id": "c",
+          "text": "A brown gas"
+        },
+        {
+          "id": "d",
+          "text": "Nothing"
+        }
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Cu²⁺ + 2OH⁻ → Cu(OH)₂, a pale blue solid.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "barium",
+      "type": "predict_outcome",
+      "prompt": "Barium chloride is added to sodium sulfate solution. What forms?",
+      "conceptIds": [
+        "ion-tests",
+        "precipitates"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "A blue precipitate"
+        },
+        {
+          "id": "b",
+          "text": "A white precipitate"
+        },
+        {
+          "id": "c",
+          "text": "Bubbles"
+        },
+        {
+          "id": "d",
+          "text": "A colour change only"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Ba²⁺ + SO₄²⁻ → BaSO₄, an insoluble white solid. This is the test for sulfate ions.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "spectator",
+      "type": "multiple_choice",
+      "prompt": "In Cu²⁺ + 2OH⁻ → Cu(OH)₂, which ions from CuSO₄ and NaOH are spectators?",
+      "conceptIds": [
+        "ionic-equations"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Cu²⁺ and OH⁻"
+        },
+        {
+          "id": "b",
+          "text": "Na⁺ and SO₄²⁻"
+        },
+        {
+          "id": "c",
+          "text": "Cu²⁺ and Na⁺"
+        },
+        {
+          "id": "d",
+          "text": "None"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Na⁺ and SO₄²⁻ stay dissolved and take no part, so they are left out of the ionic equation.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "dissolves",
+      "type": "true_false",
+      "prompt": "A precipitate is a solid that forms when two solutions are mixed.",
+      "conceptIds": [
+        "precipitates"
+      ],
+      "answer": true,
+      "explanation": "It forms because the product is insoluble in water.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "formula",
+      "type": "fill_blank",
+      "prompt": "Copper(II) hydroxide has the formula Cu(OH)___",
+      "conceptIds": [
+        "ionic-equations"
+      ],
+      "blanks": 1,
+      "answer": [
+        [
+          "2",
+          "₂"
+        ]
+      ],
+      "explanation": "Cu²⁺ needs two OH⁻ ions to balance its charge.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

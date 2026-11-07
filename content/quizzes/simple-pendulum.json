@@ -1,0 +1,147 @@
+{
+  "id": "quiz-simple-pendulum",
+  "version": 1,
+  "experimentSlug": "simple-pendulum",
+  "title": "Simple pendulum quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "pendulum": "The simple pendulum",
+    "timing-technique": "Timing technique",
+    "graphs-g": "Finding g from a graph"
+  },
+  "questions": [
+    {
+      "id": "mass",
+      "type": "multiple_choice",
+      "prompt": "Doubling the mass of the bob makes the period…",
+      "conceptIds": [
+        "pendulum"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "double"
+        },
+        {
+          "id": "b",
+          "text": "halve"
+        },
+        {
+          "id": "c",
+          "text": "stay the same"
+        },
+        {
+          "id": "d",
+          "text": "four times longer"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        2
+      ],
+      "explanation": "Mass does not appear in T = 2π√(L/g).",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "twenty",
+      "type": "multiple_choice",
+      "prompt": "Why time 20 oscillations rather than one?",
+      "conceptIds": [
+        "timing-technique"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It is more accurate: reaction time is shared over 20 swings"
+        },
+        {
+          "id": "b",
+          "text": "The first swing is always wrong"
+        },
+        {
+          "id": "c",
+          "text": "Stopwatches can't time one"
+        },
+        {
+          "id": "d",
+          "text": "It makes T bigger"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        0
+      ],
+      "explanation": "The same ~0.2 s reaction error becomes 0.01 s per swing.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "period",
+      "type": "numerical",
+      "prompt": "What is the period of a 1.00 m pendulum on Earth (g = 9.81 m/s²)?",
+      "conceptIds": [
+        "pendulum"
+      ],
+      "unit": "s",
+      "answer": 2.006,
+      "tolerance": {
+        "abs": 0.01
+      },
+      "acceptUnits": [
+        "s",
+        "seconds"
+      ],
+      "explanation": "T = 2π√(1.00/9.81) = 2.01 s.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "length",
+      "type": "true_false",
+      "prompt": "The length of a pendulum is measured from the pivot to the top of the bob.",
+      "conceptIds": [
+        "timing-technique"
+      ],
+      "answer": false,
+      "explanation": "It is measured to the centre of the bob.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "graph",
+      "type": "multiple_choice",
+      "prompt": "Plot T² against L. What does the gradient equal?",
+      "conceptIds": [
+        "graphs-g"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "g"
+        },
+        {
+          "id": "b",
+          "text": "4π²/g"
+        },
+        {
+          "id": "c",
+          "text": "2π/g"
+        },
+        {
+          "id": "d",
+          "text": "g/4π²"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "T² = (4π²/g) L, so the gradient is 4π²/g.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

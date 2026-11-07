@@ -1,0 +1,249 @@
+{
+  "id": "quiz-acid-base-titration",
+  "version": 1,
+  "experimentSlug": "acid-base-titration",
+  "title": "Acid-base titration quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "neutralisation": "Neutralisation",
+    "burette-technique": "Burette technique",
+    "end-point": "End point",
+    "titration-calc": "Titration calculations",
+    "indicators": "Indicators"
+  },
+  "questions": [
+    {
+      "id": "why-dropwise",
+      "type": "multiple_choice",
+      "prompt": "Why is the NaOH added dropwise near the end point?",
+      "conceptIds": [
+        "burette-technique",
+        "end-point"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "To save sodium hydroxide"
+        },
+        {
+          "id": "b",
+          "text": "So you do not overshoot: one drop can change the colour"
+        },
+        {
+          "id": "c",
+          "text": "Because the burette tap is stiff"
+        },
+        {
+          "id": "d",
+          "text": "To keep the flask cool"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Near the end point a single drop turns the indicator. Adding quickly would run past it, so the titre would be too big.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "swirl",
+      "type": "true_false",
+      "prompt": "You should swirl the conical flask after each addition.",
+      "conceptIds": [
+        "burette-technique"
+      ],
+      "answer": true,
+      "explanation": "Swirling mixes the base through the acid, so the colour you see is the colour of the whole mixture, not just where the drop landed.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "calc",
+      "type": "numerical",
+      "prompt": "25.0 mL of HCl needs 20.0 mL of 0.100 M NaOH to neutralise it. What is the concentration of the HCl?",
+      "conceptIds": [
+        "titration-calc"
+      ],
+      "unit": "mol/L",
+      "answer": 0.08,
+      "tolerance": {
+        "abs": 0.002
+      },
+      "acceptUnits": [
+        "mol/L",
+        "M",
+        "mol/dm3",
+        "mol dm-3"
+      ],
+      "explanation": "Moles NaOH = 0.100 × 0.0200 = 0.00200 mol. HCl reacts 1:1, so c = 0.00200 ÷ 0.0250 = 0.0800 mol/L.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "burette-parts",
+      "type": "label_diagram",
+      "prompt": "Label the burette.",
+      "conceptIds": [
+        "burette-technique"
+      ],
+      "diagram": "burette",
+      "labels": [
+        {
+          "id": "k1",
+          "text": "Meniscus"
+        },
+        {
+          "id": "k2",
+          "text": "Graduated scale"
+        },
+        {
+          "id": "k3",
+          "text": "Stopcock (tap)"
+        },
+        {
+          "id": "k4",
+          "text": "Jet"
+        }
+      ],
+      "targets": [
+        {
+          "id": "meniscus",
+          "x": 52,
+          "y": 13
+        },
+        {
+          "id": "scale",
+          "x": 68,
+          "y": 40
+        },
+        {
+          "id": "stopcock",
+          "x": 50,
+          "y": 82
+        },
+        {
+          "id": "jet",
+          "x": 50,
+          "y": 94
+        }
+      ],
+      "answer": [
+        [
+          "k1",
+          "meniscus"
+        ],
+        [
+          "k2",
+          "scale"
+        ],
+        [
+          "k3",
+          "stopcock"
+        ],
+        [
+          "k4",
+          "jet"
+        ]
+      ],
+      "explanation": "Read the bottom of the meniscus at eye level; the stopcock controls the flow; the jet delivers single drops.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "procedure",
+      "type": "arrange_steps",
+      "prompt": "Put the titration steps in order.",
+      "conceptIds": [
+        "burette-technique"
+      ],
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Rinse the burette with a little NaOH"
+        },
+        {
+          "id": "s2",
+          "text": "Fill the burette and clear the air bubble in the jet"
+        },
+        {
+          "id": "s3",
+          "text": "Pipette 25.0 mL of acid into the flask and add indicator"
+        },
+        {
+          "id": "s4",
+          "text": "Run in NaOH quickly, then dropwise near the end point"
+        },
+        {
+          "id": "s5",
+          "text": "Record the burette reading when one drop turns it pale pink"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4",
+        "s5"
+      ],
+      "explanation": "Rinsing with the solution stops water diluting it; the bubble must go before the first reading; the end point is the first permanent pale pink.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "pink",
+      "type": "predict_outcome",
+      "prompt": "Phenolphthalein is in the acid. What do you see at the end point?",
+      "conceptIds": [
+        "indicators",
+        "end-point"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Colourless turns pale pink and stays"
+        },
+        {
+          "id": "b",
+          "text": "Red turns yellow"
+        },
+        {
+          "id": "c",
+          "text": "Blue turns green"
+        },
+        {
+          "id": "d",
+          "text": "Nothing changes"
+        }
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Phenolphthalein is colourless in acid and pink in alkali. The first drop of excess base turns it pink.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "equation",
+      "type": "fill_blank",
+      "prompt": "Neutralisation: H⁺ + ___ → H₂O",
+      "conceptIds": [
+        "neutralisation"
+      ],
+      "blanks": 1,
+      "answer": [
+        [
+          "OH-",
+          "OH⁻",
+          "OH",
+          "hydroxide"
+        ]
+      ],
+      "explanation": "An acid's hydrogen ions and an alkali's hydroxide ions combine to make water.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

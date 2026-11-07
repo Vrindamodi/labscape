@@ -1,0 +1,132 @@
+{
+  "id": "quiz-quadratic-explorer",
+  "version": 1,
+  "experimentSlug": "quadratic-explorer",
+  "title": "Quadratic explorer quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "quadratic-roots": "Roots of quadratics",
+    "discriminant": "The discriminant",
+    "quadratic-graphs": "Quadratic graphs"
+  },
+  "questions": [
+    {
+      "id": "disc",
+      "type": "multiple_choice",
+      "prompt": "If b² − 4ac < 0, how many real roots are there?",
+      "conceptIds": [
+        "discriminant"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "0"
+        },
+        {
+          "id": "b",
+          "text": "1"
+        },
+        {
+          "id": "c",
+          "text": "2"
+        },
+        {
+          "id": "d",
+          "text": "Infinitely many"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        0
+      ],
+      "explanation": "A negative discriminant has no real square root, so the curve never meets the x-axis.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "vertex",
+      "type": "numerical",
+      "prompt": "Where is the vertex (x-coordinate) of y = 2x² − 8x + 1?",
+      "conceptIds": [
+        "quadratic-graphs"
+      ],
+      "unit": "",
+      "answer": 2,
+      "tolerance": {
+        "abs": 0.001
+      },
+      "acceptUnits": [
+        ""
+      ],
+      "explanation": "x = −b/2a = 8/4 = 2.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "roots",
+      "type": "fill_blank",
+      "prompt": "y = x² − 5x + 6 has roots x = ___ and x = ___ (smaller first).",
+      "conceptIds": [
+        "quadratic-roots"
+      ],
+      "blanks": 2,
+      "answer": [
+        [
+          "2"
+        ],
+        [
+          "3"
+        ]
+      ],
+      "explanation": "x² − 5x + 6 = (x − 2)(x − 3).",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "negative-a",
+      "type": "predict_outcome",
+      "prompt": "What happens to the parabola if a becomes negative?",
+      "conceptIds": [
+        "quadratic-graphs"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It moves up"
+        },
+        {
+          "id": "b",
+          "text": "It flips upside down"
+        },
+        {
+          "id": "c",
+          "text": "It gets wider only"
+        },
+        {
+          "id": "d",
+          "text": "It becomes a line"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The x² term then pulls y down for large |x|.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "touch",
+      "type": "true_false",
+      "prompt": "When the discriminant is zero the curve just touches the x-axis.",
+      "conceptIds": [
+        "discriminant"
+      ],
+      "answer": true,
+      "explanation": "Then the two roots are equal.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

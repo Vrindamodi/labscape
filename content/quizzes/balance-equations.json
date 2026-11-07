@@ -1,0 +1,133 @@
+{
+  "id": "quiz-balance-equations",
+  "version": 1,
+  "experimentSlug": "balance-equations",
+  "title": "Solving equations on a balance quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "linear-equations": "Linear equations",
+    "inverse-operations": "Inverse operations"
+  },
+  "questions": [
+    {
+      "id": "solve",
+      "type": "numerical",
+      "prompt": "Solve 4x + 7 = 31.",
+      "conceptIds": [
+        "linear-equations"
+      ],
+      "unit": "",
+      "answer": 6,
+      "tolerance": {
+        "abs": 0
+      },
+      "acceptUnits": [
+        ""
+      ],
+      "explanation": "4x = 24, so x = 6.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "steps",
+      "type": "arrange_steps",
+      "prompt": "Put the steps to solve 3x − 5 = 16 in order.",
+      "conceptIds": [
+        "inverse-operations"
+      ],
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Add 5 to both sides"
+        },
+        {
+          "id": "s2",
+          "text": "3x = 21"
+        },
+        {
+          "id": "s3",
+          "text": "Divide both sides by 3"
+        },
+        {
+          "id": "s4",
+          "text": "x = 7"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "explanation": "Undo the − 5 first, then the × 3.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "both",
+      "type": "true_false",
+      "prompt": "You may subtract 4 from only the left side of an equation.",
+      "conceptIds": [
+        "inverse-operations"
+      ],
+      "answer": false,
+      "explanation": "Anything done to one side must be done to the other, or the two sides are no longer equal.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "both-sides",
+      "type": "numerical",
+      "prompt": "Solve 2x + 5 = x + 9.",
+      "conceptIds": [
+        "linear-equations"
+      ],
+      "unit": "",
+      "answer": 4,
+      "tolerance": {
+        "abs": 0
+      },
+      "acceptUnits": [
+        ""
+      ],
+      "explanation": "Subtract x from both sides: x + 5 = 9, so x = 4.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "first",
+      "type": "multiple_choice",
+      "prompt": "To solve x/3 + 2 = 5, what do you do first?",
+      "conceptIds": [
+        "inverse-operations"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Multiply both sides by 3"
+        },
+        {
+          "id": "b",
+          "text": "Subtract 2 from both sides"
+        },
+        {
+          "id": "c",
+          "text": "Add 2 to both sides"
+        },
+        {
+          "id": "d",
+          "text": "Divide both sides by 3"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Undo operations in reverse order: the + 2 was done last, so remove it first.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

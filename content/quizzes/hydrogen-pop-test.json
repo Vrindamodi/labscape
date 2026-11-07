@@ -1,0 +1,175 @@
+{
+  "id": "quiz-hydrogen-pop-test",
+  "version": 1,
+  "experimentSlug": "hydrogen-pop-test",
+  "title": "Magnesium and acid quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "metal-acid": "Metals and acids",
+    "gas-tests": "Gas tests",
+    "reaction-rate": "Rate of reaction"
+  },
+  "questions": [
+    {
+      "id": "gas",
+      "type": "multiple_choice",
+      "prompt": "Which gas is made when magnesium reacts with hydrochloric acid?",
+      "conceptIds": [
+        "metal-acid"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Oxygen"
+        },
+        {
+          "id": "b",
+          "text": "Hydrogen"
+        },
+        {
+          "id": "c",
+          "text": "Carbon dioxide"
+        },
+        {
+          "id": "d",
+          "text": "Chlorine"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Metal + acid → salt + hydrogen.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "tests",
+      "type": "match",
+      "prompt": "Match each gas to its test.",
+      "conceptIds": [
+        "gas-tests"
+      ],
+      "left": [
+        {
+          "id": "l1",
+          "text": "Hydrogen"
+        },
+        {
+          "id": "l2",
+          "text": "Oxygen"
+        },
+        {
+          "id": "l3",
+          "text": "Carbon dioxide"
+        },
+        {
+          "id": "l4",
+          "text": "Chlorine"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "A lit splint pops"
+        },
+        {
+          "id": "r2",
+          "text": "A glowing splint relights"
+        },
+        {
+          "id": "r3",
+          "text": "Limewater turns milky"
+        },
+        {
+          "id": "r4",
+          "text": "Damp litmus bleaches"
+        }
+      ],
+      "answer": [
+        [
+          "l1",
+          "r1"
+        ],
+        [
+          "l2",
+          "r2"
+        ],
+        [
+          "l3",
+          "r3"
+        ],
+        [
+          "l4",
+          "r4"
+        ]
+      ],
+      "explanation": "These four tests identify the common lab gases.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "salt",
+      "type": "fill_blank",
+      "prompt": "Magnesium + hydrochloric acid → magnesium ___ + hydrogen",
+      "conceptIds": [
+        "metal-acid"
+      ],
+      "blanks": 1,
+      "answer": [
+        [
+          "chloride"
+        ]
+      ],
+      "explanation": "Hydrochloric acid makes chloride salts.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "faster",
+      "type": "predict_outcome",
+      "prompt": "What happens to the fizzing if you use more concentrated acid?",
+      "conceptIds": [
+        "reaction-rate"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It is faster"
+        },
+        {
+          "id": "b",
+          "text": "It is slower"
+        },
+        {
+          "id": "c",
+          "text": "It stops"
+        },
+        {
+          "id": "d",
+          "text": "No change"
+        }
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "More acid particles in the same volume means more collisions with the magnesium each second.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "splint-in",
+      "type": "true_false",
+      "prompt": "For the pop test you push the lit splint deep into the acid.",
+      "conceptIds": [
+        "gas-tests"
+      ],
+      "answer": false,
+      "explanation": "Hold it at the mouth of the tube: the hydrogen is above the liquid, and the acid would just put the splint out.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

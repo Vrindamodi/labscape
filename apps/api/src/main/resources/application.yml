@@ -60,7 +60,7 @@ labscape:
   features:
     # Flip on as each part ships; daily challenges only offer what can actually be completed.
     experiments: true
-    quizzes: false
+    quizzes: true
     scenarios: false
     molecular-view: true
   safety:

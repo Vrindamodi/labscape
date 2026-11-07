@@ -1,0 +1,131 @@
+{
+  "id": "quiz-riemann-sums",
+  "version": 1,
+  "experimentSlug": "riemann-sums",
+  "title": "Riemann sums quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "area-under-curve": "Area under a curve",
+    "riemann-estimates": "Riemann estimates"
+  },
+  "questions": [
+    {
+      "id": "exact",
+      "type": "numerical",
+      "prompt": "What is the exact area under y = x² from 0 to 3?",
+      "conceptIds": [
+        "area-under-curve"
+      ],
+      "unit": "",
+      "answer": 9,
+      "tolerance": {
+        "abs": 0.01
+      },
+      "acceptUnits": [
+        ""
+      ],
+      "explanation": "∫₀³ x² dx = 3³/3 = 9.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "left",
+      "type": "multiple_choice",
+      "prompt": "For an increasing function, left rectangles…",
+      "conceptIds": [
+        "riemann-estimates"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "over-estimate the area"
+        },
+        {
+          "id": "b",
+          "text": "under-estimate the area"
+        },
+        {
+          "id": "c",
+          "text": "give the exact area"
+        },
+        {
+          "id": "d",
+          "text": "give a negative area"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Each uses the lowest height in its strip.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "more",
+      "type": "true_false",
+      "prompt": "Using more, thinner rectangles generally makes the estimate more accurate.",
+      "conceptIds": [
+        "riemann-estimates"
+      ],
+      "answer": true,
+      "explanation": "Thinner rectangles hug the curve more closely.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "left4",
+      "type": "numerical",
+      "prompt": "Use 2 left rectangles to estimate the area under y = x from 0 to 2.",
+      "conceptIds": [
+        "riemann-estimates"
+      ],
+      "unit": "",
+      "answer": 1,
+      "tolerance": {
+        "abs": 0.001
+      },
+      "acceptUnits": [
+        ""
+      ],
+      "explanation": "Width 1, heights f(0) = 0 and f(1) = 1: sum = 1. The true area is 2.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "best",
+      "type": "multiple_choice",
+      "prompt": "Which method usually converges fastest for a smooth curve?",
+      "conceptIds": [
+        "riemann-estimates"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Left"
+        },
+        {
+          "id": "b",
+          "text": "Right"
+        },
+        {
+          "id": "c",
+          "text": "Midpoint"
+        },
+        {
+          "id": "d",
+          "text": "They are all the same"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        2
+      ],
+      "explanation": "Midpoint errors on either side of each strip largely cancel.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

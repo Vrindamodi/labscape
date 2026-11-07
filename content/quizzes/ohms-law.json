@@ -1,0 +1,218 @@
+{
+  "id": "quiz-ohms-law",
+  "version": 1,
+  "experimentSlug": "ohms-law",
+  "title": "Ohm's law quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "ohms-law": "Ohm's law",
+    "meters": "Using meters",
+    "circuit-safety": "Circuit technique"
+  },
+  "questions": [
+    {
+      "id": "calc",
+      "type": "numerical",
+      "prompt": "A resistor has 6.0 V across it and 0.30 A through it. What is its resistance?",
+      "conceptIds": [
+        "ohms-law"
+      ],
+      "unit": "Ω",
+      "answer": 20,
+      "tolerance": {
+        "abs": 0.1
+      },
+      "acceptUnits": [
+        "Ω",
+        "ohm",
+        "ohms"
+      ],
+      "explanation": "R = V ÷ I = 6.0 ÷ 0.30 = 20 Ω.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "ammeter",
+      "type": "multiple_choice",
+      "prompt": "How is an ammeter connected?",
+      "conceptIds": [
+        "meters"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "In parallel with the component"
+        },
+        {
+          "id": "b",
+          "text": "In series with the component"
+        },
+        {
+          "id": "c",
+          "text": "Across the battery"
+        },
+        {
+          "id": "d",
+          "text": "Anywhere"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "An ammeter measures the current through something, so the current must flow through it: in series.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "switch-off",
+      "type": "multiple_choice",
+      "prompt": "Why switch off between readings?",
+      "conceptIds": [
+        "circuit-safety",
+        "ohms-law"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "To save the battery only"
+        },
+        {
+          "id": "b",
+          "text": "So the resistor does not heat up, which would change its resistance"
+        },
+        {
+          "id": "c",
+          "text": "To reset the meters"
+        },
+        {
+          "id": "d",
+          "text": "Because the rules say so"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Ohm's law holds at constant temperature. A warm resistor has a higher resistance.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "circuit",
+      "type": "label_diagram",
+      "prompt": "Label the circuit.",
+      "conceptIds": [
+        "meters"
+      ],
+      "diagram": "circuit",
+      "labels": [
+        {
+          "id": "k1",
+          "text": "Cell"
+        },
+        {
+          "id": "k2",
+          "text": "Ammeter"
+        },
+        {
+          "id": "k3",
+          "text": "Resistor"
+        },
+        {
+          "id": "k4",
+          "text": "Voltmeter"
+        }
+      ],
+      "targets": [
+        {
+          "id": "cell",
+          "x": 10,
+          "y": 50
+        },
+        {
+          "id": "ammeter",
+          "x": 50,
+          "y": 9
+        },
+        {
+          "id": "resistor",
+          "x": 72,
+          "y": 50
+        },
+        {
+          "id": "voltmeter",
+          "x": 92,
+          "y": 50
+        }
+      ],
+      "answer": [
+        [
+          "k1",
+          "cell"
+        ],
+        [
+          "k2",
+          "ammeter"
+        ],
+        [
+          "k3",
+          "resistor"
+        ],
+        [
+          "k4",
+          "voltmeter"
+        ]
+      ],
+      "explanation": "The ammeter is in the loop; the voltmeter is across the resistor.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "straight",
+      "type": "true_false",
+      "prompt": "For a fixed resistor, a graph of V against I is a straight line through the origin.",
+      "conceptIds": [
+        "ohms-law"
+      ],
+      "answer": true,
+      "explanation": "V = IR with R constant is a direct proportion.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "parallel-ammeter",
+      "type": "predict_outcome",
+      "prompt": "What happens if the ammeter is wired in parallel with the resistor?",
+      "conceptIds": [
+        "meters"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Nothing"
+        },
+        {
+          "id": "b",
+          "text": "A very large current flows: it is nearly a short circuit"
+        },
+        {
+          "id": "c",
+          "text": "The current becomes zero"
+        },
+        {
+          "id": "d",
+          "text": "The voltmeter reads double"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "An ammeter has almost no resistance, so in parallel it takes almost all the current.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

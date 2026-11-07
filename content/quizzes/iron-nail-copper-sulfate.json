@@ -1,0 +1,161 @@
+{
+  "id": "quiz-iron-nail-copper-sulfate",
+  "version": 1,
+  "experimentSlug": "iron-nail-copper-sulfate",
+  "title": "Iron nail in copper sulfate quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "displacement": "Displacement",
+    "reactivity": "Reactivity series",
+    "redox": "Oxidation and reduction"
+  },
+  "questions": [
+    {
+      "id": "coat",
+      "type": "predict_outcome",
+      "prompt": "What forms on the iron nail?",
+      "conceptIds": [
+        "displacement"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "A white coat of iron oxide"
+        },
+        {
+          "id": "b",
+          "text": "A pinky-brown coat of copper"
+        },
+        {
+          "id": "c",
+          "text": "Bubbles of hydrogen"
+        },
+        {
+          "id": "d",
+          "text": "Nothing"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Iron is more reactive, so it displaces copper, which coats the nail.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "colour",
+      "type": "predict_outcome",
+      "prompt": "What happens to the blue colour of the solution?",
+      "conceptIds": [
+        "displacement"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It gets darker"
+        },
+        {
+          "id": "b",
+          "text": "It fades as Cu²⁺ is used up"
+        },
+        {
+          "id": "c",
+          "text": "It turns red"
+        },
+        {
+          "id": "d",
+          "text": "It stays the same"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Blue comes from Cu²⁺ ions. As they become copper metal, the solution turns pale green from Fe²⁺.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "series",
+      "type": "arrange_steps",
+      "prompt": "Arrange from most reactive to least reactive.",
+      "conceptIds": [
+        "reactivity"
+      ],
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Magnesium"
+        },
+        {
+          "id": "s2",
+          "text": "Zinc"
+        },
+        {
+          "id": "s3",
+          "text": "Iron"
+        },
+        {
+          "id": "s4",
+          "text": "Copper"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "explanation": "This part of the reactivity series explains which metal displaces which.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "reverse",
+      "type": "true_false",
+      "prompt": "Copper metal placed in iron(II) sulfate solution would displace iron.",
+      "conceptIds": [
+        "reactivity",
+        "displacement"
+      ],
+      "answer": false,
+      "explanation": "Copper is less reactive than iron, so no reaction happens.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "oxidised",
+      "type": "multiple_choice",
+      "prompt": "In Fe + Cu²⁺ → Fe²⁺ + Cu, what happens to iron?",
+      "conceptIds": [
+        "redox"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It is reduced (gains electrons)"
+        },
+        {
+          "id": "b",
+          "text": "It is oxidised (loses electrons)"
+        },
+        {
+          "id": "c",
+          "text": "Nothing"
+        },
+        {
+          "id": "d",
+          "text": "It is neutralised"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "OIL RIG: Oxidation Is Loss. Each iron atom loses two electrons to a copper ion.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

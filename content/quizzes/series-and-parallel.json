@@ -1,0 +1,166 @@
+{
+  "id": "quiz-series-and-parallel",
+  "version": 1,
+  "experimentSlug": "series-and-parallel",
+  "title": "Series and parallel circuits quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "series-circuits": "Series circuits",
+    "parallel-circuits": "Parallel circuits",
+    "combined-resistance": "Combined resistance"
+  },
+  "questions": [
+    {
+      "id": "series",
+      "type": "numerical",
+      "prompt": "Two 10 Ω resistors are in series. What is the total resistance?",
+      "conceptIds": [
+        "combined-resistance",
+        "series-circuits"
+      ],
+      "unit": "Ω",
+      "answer": 20,
+      "tolerance": {
+        "abs": 0.01
+      },
+      "acceptUnits": [
+        "Ω",
+        "ohm",
+        "ohms"
+      ],
+      "explanation": "In series resistances add.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "parallel",
+      "type": "numerical",
+      "prompt": "Two 10 Ω resistors are in parallel. What is the total resistance?",
+      "conceptIds": [
+        "combined-resistance",
+        "parallel-circuits"
+      ],
+      "unit": "Ω",
+      "answer": 5,
+      "tolerance": {
+        "abs": 0.01
+      },
+      "acceptUnits": [
+        "Ω",
+        "ohm",
+        "ohms"
+      ],
+      "explanation": "1/R = 1/10 + 1/10, so R = 5 Ω.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "remove-series",
+      "type": "predict_outcome",
+      "prompt": "Two bulbs are in series. One is unscrewed. What happens to the other?",
+      "conceptIds": [
+        "series-circuits"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It gets brighter"
+        },
+        {
+          "id": "b",
+          "text": "It goes out"
+        },
+        {
+          "id": "c",
+          "text": "Nothing"
+        },
+        {
+          "id": "d",
+          "text": "It flickers"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "There is only one path: breaking it stops the current everywhere.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "remove-parallel",
+      "type": "predict_outcome",
+      "prompt": "Two bulbs are in parallel. One is unscrewed. What happens to the other?",
+      "conceptIds": [
+        "parallel-circuits"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It goes out"
+        },
+        {
+          "id": "b",
+          "text": "It stays lit"
+        },
+        {
+          "id": "c",
+          "text": "It explodes"
+        },
+        {
+          "id": "d",
+          "text": "It dims to half"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Each branch is its own complete path.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "rules",
+      "type": "match",
+      "prompt": "Match the rule to the circuit.",
+      "conceptIds": [
+        "series-circuits",
+        "parallel-circuits"
+      ],
+      "left": [
+        {
+          "id": "l1",
+          "text": "Same current everywhere"
+        },
+        {
+          "id": "l2",
+          "text": "Same voltage across each branch"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Series"
+        },
+        {
+          "id": "r2",
+          "text": "Parallel"
+        }
+      ],
+      "answer": [
+        [
+          "l1",
+          "r1"
+        ],
+        [
+          "l2",
+          "r2"
+        ]
+      ],
+      "explanation": "These are the two defining rules.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

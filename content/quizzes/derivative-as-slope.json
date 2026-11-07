@@ -1,0 +1,132 @@
+{
+  "id": "quiz-derivative-as-slope",
+  "version": 1,
+  "experimentSlug": "derivative-as-slope",
+  "title": "Tangents and the derivative quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "derivative": "The derivative",
+    "turning-points": "Turning points",
+    "power-rule": "The power rule"
+  },
+  "questions": [
+    {
+      "id": "power",
+      "type": "fill_blank",
+      "prompt": "d/dx (x⁴) = ___",
+      "conceptIds": [
+        "power-rule"
+      ],
+      "blanks": 1,
+      "answer": [
+        [
+          "4x^3",
+          "4x³",
+          "4*x^3",
+          "4 x^3"
+        ]
+      ],
+      "explanation": "Bring the power down and reduce it by one.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "slope",
+      "type": "numerical",
+      "prompt": "What is the slope of y = x² at x = 3?",
+      "conceptIds": [
+        "derivative"
+      ],
+      "unit": "",
+      "answer": 6,
+      "tolerance": {
+        "abs": 0.001
+      },
+      "acceptUnits": [
+        ""
+      ],
+      "explanation": "dy/dx = 2x = 6.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "max",
+      "type": "multiple_choice",
+      "prompt": "At a maximum of a smooth curve the derivative is…",
+      "conceptIds": [
+        "turning-points"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "positive"
+        },
+        {
+          "id": "b",
+          "text": "negative"
+        },
+        {
+          "id": "c",
+          "text": "zero"
+        },
+        {
+          "id": "d",
+          "text": "undefined"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        2
+      ],
+      "explanation": "The tangent is horizontal there.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "secant",
+      "type": "true_false",
+      "prompt": "As h shrinks to zero, the secant line becomes the tangent.",
+      "conceptIds": [
+        "derivative"
+      ],
+      "answer": true,
+      "explanation": "That limit is the definition of the derivative.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "increasing",
+      "type": "predict_outcome",
+      "prompt": "f′(x) > 0 on an interval. What does f do there?",
+      "conceptIds": [
+        "derivative"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It increases"
+        },
+        {
+          "id": "b",
+          "text": "It decreases"
+        },
+        {
+          "id": "c",
+          "text": "It is constant"
+        },
+        {
+          "id": "d",
+          "text": "It crosses zero"
+        }
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Positive slope means going up.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

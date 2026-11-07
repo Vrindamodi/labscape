@@ -11,6 +11,7 @@ import { runSession } from "./protocol/session";
 import { MATHS_CONTENT, MATHS_MODELS } from "@labscape/mathlab/labs";
 import { PHYSICS_CONTENT, PHYSICS_MODELS } from "@labscape/physics/labs";
 import { runSim, simHash, type SimContent, type SimModel } from "@labscape/physics/protocol";
+import { compile, parse } from "@labscape/mathlab/core";
 
 export const ENGINE_VERSION = "2.0.0";
 /** Physics and maths models (Part 3), reported alongside the chemistry engine version. */
@@ -67,4 +68,9 @@ export function simulateJson(benchJson: string, eventsJson: string, tailMs: numb
   }
   const vessels = Object.fromEntries(Object.values(state.items).map((it) => [it.id, look(it)]));
   return JSON.stringify({ engineVersion: ENGINE_VERSION, hash: stateHash(state), vessels, notes, cues, seen: state.seen });
+}
+
+/** Evaluates an expression with given values (quiz drafts: numerical answers are recomputed here). */
+export function evaluateJson(expr: string, scopeJson: string): number {
+  return compile(parse(expr))(JSON.parse(scopeJson) as Record<string, number>);
 }

@@ -1,6 +1,7 @@
 import type { LabEvent, RewardResult } from "@labscape/contracts";
 import { recordGolden, stageFor, useLabSession, Workbench, type ExperimentContent, type Feedback, type Report, type StepSpec } from "@labscape/lab-engine";
 import "./SimStages";
+import { QuizStage } from "../../components/QuizStage";
 import { celebrate, useMotion } from "@labscape/motion";
 import { MolecularView, SCENES } from "@labscape/chem-view";
 import { sound } from "@labscape/audio";
@@ -21,7 +22,6 @@ import {
   FlaskConical,
   Lightbulb,
   ListChecks,
-  Lock,
   Pause,
   Play,
   RotateCcw,
@@ -203,7 +203,7 @@ function Player({ view }: { view: ExperimentView }) {
                 }}
               />
             )}
-            {stage === "quiz" && <QuizSlot onNext={() => goto("results")} />}
+            {stage === "quiz" && <QuizStage quizId={`quiz-${content.slug}`} {...(attempt ? { experimentAttemptId: attempt.id } : {})} onDone={() => goto("results")} continueLabel="See my lab results" />}
             {stage === "results" && result && <Results content={content} result={result} onAgain={() => void begin(true)} />}
           </motion.div>
         </AnimatePresence>
@@ -679,19 +679,6 @@ function Recorder({ content, events }: { content: ExperimentContent; events: Lab
 }
 
 /* ================================================================== 6. quiz (Part 4) */
-
-function QuizSlot({ onNext }: { onNext: () => void }) {
-  return (
-    <div className="grid h-full place-items-center p-6">
-      <div className="max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
-        <Lock className="mx-auto h-8 w-8 text-white/40" />
-        <h2 className="mt-3 font-heading text-xl font-semibold">Quiz</h2>
-        <p className="mt-2 text-sm text-white/60">The experiment quiz arrives with Part 4's QuizRunner. Your run has already been scored.</p>
-        <Button className="mt-5" iconRight={<ArrowRight className="h-4 w-4" />} onClick={onNext}>See my results</Button>
-      </div>
-    </div>
-  );
-}
 
 /* ================================================================== results */
 

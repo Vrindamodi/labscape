@@ -1,0 +1,184 @@
+{
+  "id": "quiz-refraction-snells-law",
+  "version": 1,
+  "experimentSlug": "refraction-snells-law",
+  "title": "Refraction through a glass slab quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "refraction": "Refraction",
+    "snell": "Snell's law",
+    "pin-method": "Pin method"
+  },
+  "questions": [
+    {
+      "id": "towards",
+      "type": "multiple_choice",
+      "prompt": "When light enters glass from air, it bends…",
+      "conceptIds": [
+        "refraction"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "away from the normal"
+        },
+        {
+          "id": "b",
+          "text": "towards the normal"
+        },
+        {
+          "id": "c",
+          "text": "along the surface"
+        },
+        {
+          "id": "d",
+          "text": "not at all"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "It slows down in glass, so it bends towards the normal.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "n",
+      "type": "numerical",
+      "prompt": "In a glass slab, i = 45° and r = 28°. Find the refractive index.",
+      "conceptIds": [
+        "snell"
+      ],
+      "unit": "",
+      "answer": 1.506,
+      "tolerance": {
+        "abs": 0.01
+      },
+      "acceptUnits": [
+        ""
+      ],
+      "explanation": "n = sin 45° ÷ sin 28° = 0.707 ÷ 0.469 = 1.51.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "parallel",
+      "type": "true_false",
+      "prompt": "The emergent ray from a parallel-sided slab is parallel to the incident ray.",
+      "conceptIds": [
+        "refraction"
+      ],
+      "answer": true,
+      "explanation": "The bending at the second face undoes the first.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "slab",
+      "type": "label_diagram",
+      "prompt": "Label the ray diagram.",
+      "conceptIds": [
+        "refraction",
+        "pin-method"
+      ],
+      "diagram": "slab",
+      "labels": [
+        {
+          "id": "k1",
+          "text": "Normal"
+        },
+        {
+          "id": "k2",
+          "text": "Incident ray"
+        },
+        {
+          "id": "k3",
+          "text": "Refracted ray"
+        },
+        {
+          "id": "k4",
+          "text": "Emergent ray"
+        }
+      ],
+      "targets": [
+        {
+          "id": "normal",
+          "x": 28,
+          "y": 15
+        },
+        {
+          "id": "incident",
+          "x": 14,
+          "y": 18
+        },
+        {
+          "id": "refracted",
+          "x": 42,
+          "y": 50
+        },
+        {
+          "id": "emergent",
+          "x": 68,
+          "y": 86
+        }
+      ],
+      "answer": [
+        [
+          "k1",
+          "normal"
+        ],
+        [
+          "k2",
+          "incident"
+        ],
+        [
+          "k3",
+          "refracted"
+        ],
+        [
+          "k4",
+          "emergent"
+        ]
+      ],
+      "explanation": "Angles are always measured from the normal.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "spacing",
+      "type": "multiple_choice",
+      "prompt": "Why place P1 and P2 well apart?",
+      "conceptIds": [
+        "pin-method"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "To see them better"
+        },
+        {
+          "id": "b",
+          "text": "Two far-apart points fix the direction more precisely"
+        },
+        {
+          "id": "c",
+          "text": "So the slab fits"
+        },
+        {
+          "id": "d",
+          "text": "It does not matter"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "A small error in a pin's position changes the angle less when the pins are far apart.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

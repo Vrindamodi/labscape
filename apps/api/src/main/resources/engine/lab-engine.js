@@ -28,6 +28,7 @@ var LabEngine = (() => {
     SIM_VERSION: () => SIM_VERSION,
     checkJson: () => checkJson,
     contentJson: () => contentJson,
+    evaluateJson: () => evaluateJson,
     scoreJson: () => scoreJson,
     simulateJson: () => simulateJson,
     slugsJson: () => slugsJson
@@ -10623,6 +10624,9 @@ var LabEngine = (() => {
     }
     const vessels = Object.fromEntries(Object.values(state.items).map((it) => [it.id, look(it)]));
     return JSON.stringify({ engineVersion: ENGINE_VERSION, hash: stateHash(state), vessels, notes, cues, seen: state.seen });
+  }
+  function evaluateJson(expr, scopeJson) {
+    return compile(parse(expr))(JSON.parse(scopeJson));
   }
   return __toCommonJS(server_exports);
 })();

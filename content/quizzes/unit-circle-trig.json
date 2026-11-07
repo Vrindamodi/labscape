@@ -1,0 +1,165 @@
+{
+  "id": "quiz-unit-circle-trig",
+  "version": 1,
+  "experimentSlug": "unit-circle-trig",
+  "title": "The unit circle quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "unit-circle": "The unit circle",
+    "trig-signs": "Signs in each quadrant",
+    "radians": "Radians"
+  },
+  "questions": [
+    {
+      "id": "sin30",
+      "type": "numerical",
+      "prompt": "What is sin 30°?",
+      "conceptIds": [
+        "unit-circle"
+      ],
+      "unit": "",
+      "answer": 0.5,
+      "tolerance": {
+        "abs": 0.001
+      },
+      "acceptUnits": [
+        ""
+      ],
+      "explanation": "The point at 30° is half way up the circle of radius 1.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "quadrant",
+      "type": "multiple_choice",
+      "prompt": "In the second quadrant (90° to 180°)…",
+      "conceptIds": [
+        "trig-signs"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "sin and cos are both positive"
+        },
+        {
+          "id": "b",
+          "text": "sin is positive, cos negative"
+        },
+        {
+          "id": "c",
+          "text": "sin is negative, cos positive"
+        },
+        {
+          "id": "d",
+          "text": "both are negative"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "The point is above the x-axis but left of the y-axis.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "rad",
+      "type": "numerical",
+      "prompt": "Convert 90° to radians.",
+      "conceptIds": [
+        "radians"
+      ],
+      "unit": "rad",
+      "answer": 1.5708,
+      "tolerance": {
+        "abs": 0.002
+      },
+      "acceptUnits": [
+        "rad",
+        "radians"
+      ],
+      "explanation": "90° × π/180 = π/2 ≈ 1.571.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "special",
+      "type": "match",
+      "prompt": "Match the angle to its sine.",
+      "conceptIds": [
+        "unit-circle"
+      ],
+      "left": [
+        {
+          "id": "l1",
+          "text": "0°"
+        },
+        {
+          "id": "l2",
+          "text": "30°"
+        },
+        {
+          "id": "l3",
+          "text": "90°"
+        },
+        {
+          "id": "l4",
+          "text": "270°"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "0"
+        },
+        {
+          "id": "r2",
+          "text": "0.5"
+        },
+        {
+          "id": "r3",
+          "text": "1"
+        },
+        {
+          "id": "r4",
+          "text": "−1"
+        }
+      ],
+      "answer": [
+        [
+          "l1",
+          "r1"
+        ],
+        [
+          "l2",
+          "r2"
+        ],
+        [
+          "l3",
+          "r3"
+        ],
+        [
+          "l4",
+          "r4"
+        ]
+      ],
+      "explanation": "Read the height of the point on the unit circle.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "identity",
+      "type": "true_false",
+      "prompt": "sin²θ + cos²θ = 1 for every angle.",
+      "conceptIds": [
+        "unit-circle"
+      ],
+      "answer": true,
+      "explanation": "It is Pythagoras on the unit circle.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}
