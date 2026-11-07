@@ -46,6 +46,8 @@ type Options = {
   onBatch?: (events: LabEvent[]) => void;
   onFeedback?: (f: Feedback) => void;
   onNote?: (n: Note) => void;
+  /** Demo mode: play this script instead of the golden run (replays of a real attempt). */
+  script?: { t: number; type: LabEvent["type"]; payload: unknown }[];
 };
 
 /**
@@ -142,7 +144,7 @@ export function useLabSession(content: ExperimentContent, opts: Options): LabSes
       const dt = TICK_MS * speed;
       // Demo: fire golden-run events whose time has come.
       if (mode === "demo") {
-        const gold = content.golden.events;
+        const gold = optsRef.current.script ?? content.golden.events;
         while (demoIdx.current < gold.length && gold[demoIdx.current]!.t <= stateRef.current.t + dt) {
           const g = gold[demoIdx.current]!;
           const target = g.t - stateRef.current.t;
@@ -200,7 +202,7 @@ export function useLabSession(content: ExperimentContent, opts: Options): LabSes
   const seek = useCallback(
     (t: number) => {
       if (mode !== "demo") return;
-      const evs = content.golden.events
+      const evs = (optsRef.current.script ?? content.golden.events)
         .map((g, i) => ({ id: `demo-${i}`, attemptId: "demo", seq: i + 1, t: g.t, actor: "demo", type: g.type, payload: g.payload }) as LabEvent)
         .filter((e) => e.t <= t);
       demoIdx.current = evs.length;

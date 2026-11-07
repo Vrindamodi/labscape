@@ -22,8 +22,10 @@ import {
   CircleAlert,
   Eye,
   FlaskConical,
+  History,
   Lightbulb,
   ListChecks,
+  NotebookPen,
   Pause,
   Play,
   RotateCcw,
@@ -207,7 +209,7 @@ function Player({ view }: { view: ExperimentView }) {
               />
             )}
             {stage === "quiz" && <QuizStage quizId={`quiz-${content.slug}`} {...(attempt ? { experimentAttemptId: attempt.id } : {})} onDone={() => goto("results")} continueLabel="See my lab results" />}
-            {stage === "results" && result && <Results content={content} result={result} onAgain={() => void begin(true)} />}
+            {stage === "results" && result && <Results content={content} result={result} attemptId={attempt?.id} onAgain={() => void begin(true)} />}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -709,7 +711,7 @@ function Recorder({ content, events }: { content: ExperimentContent; events: Lab
 
 const DIM_LABEL: Record<string, string> = { equipment: "Equipment", sequence: "Sequence", quantity: "Quantities", technique: "Technique", temperature: "Temperature", timing: "Timing", measurement: "Measurement", observation: "Observations", mixing: "Mixing" };
 
-function Results({ content, result, onAgain }: { content: ExperimentContent; result: FinishResult; onAgain: () => void }) {
+function Results({ content, result, onAgain, attemptId }: { content: ExperimentContent; result: FinishResult; onAgain: () => void; attemptId?: string | undefined }) {
   const { report } = result;
   const { reduced } = useMotion();
   const fired = useRef(false);
@@ -773,7 +775,9 @@ function Results({ content, result, onAgain }: { content: ExperimentContent; res
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button variant="secondary" icon={<RotateCcw className="h-4 w-4" />} onClick={onAgain}>Try again</Button>
-          <Link to="/library?subject=chemistry"><Button iconRight={<ArrowRight className="h-4 w-4" />}>Next experiment</Button></Link>
+          {attemptId && <Link to={`/replay/${attemptId}`}><Button variant="secondary" icon={<History className="h-4 w-4" />}>Watch my replay</Button></Link>}
+          {attemptId && <Link to={`/notebook/${attemptId}`}><Button variant="secondary" icon={<NotebookPen className="h-4 w-4" />}>Open in notebook</Button></Link>}
+          <Link to={`/library?subject=${(content as unknown as { subject?: string }).subject ?? "chemistry"}`}><Button iconRight={<ArrowRight className="h-4 w-4" />}>Next experiment</Button></Link>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { AssistantPanel, type AiAction } from "@labscape/assistant";
 import { useMotion } from "@labscape/motion";
+import { useShell } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -15,6 +16,7 @@ export function AssistantDock({ compact }: { compact?: boolean }) {
   const navigate = useNavigate();
   const { me } = useSession();
   const ctx = useLabContext();
+  const { toast } = useShell();
   const onAction = (a: AiAction) => {
     if (a.type === "highlight") window.dispatchEvent(new CustomEvent("labscape:highlight", { detail: a.target }));
     else if (a.type === "openFormula") navigate(`/formulas?f=${encodeURIComponent(a.target)}`);
@@ -26,6 +28,12 @@ export function AssistantDock({ compact }: { compact?: boolean }) {
       endpoint={`${BASE}/v1/ai/chat`}
       getContext={getLabContext}
       onAction={onAction}
+      onSave={(text) => {
+        const attemptId = getLabContext()?.attemptId;
+        void post("/v1/notebook/clips", { text, source: "assistant", ...(attemptId ? { attemptId } : {}) })
+          .then(() => toast({ kind: "success", title: "Saved to your notebook" }))
+          .catch(() => toast({ kind: "danger", title: "Couldn't save that answer" }));
+      }}
       rate={(id, rating) => post(`/v1/ai/messages/${id}/rate`, { rating }).then(() => {})}
       {...(me?.profile.learningLevel ? { level: me.profile.learningLevel } : {})}
       guideText={ctx?.currentStepText ?? null}

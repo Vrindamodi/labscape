@@ -35,6 +35,8 @@ type Options = {
   onBatch?: (events: LabEvent[]) => void;
   onFeedback?: (f: SimFeedback) => void;
   onNote?: (n: SimNote) => void;
+  /** Demo mode: play this script instead of the golden run (replays of a real attempt). */
+  script?: { t: number; type: LabEventType; payload: unknown }[];
 };
 
 let uidSeq = 1;
@@ -124,10 +126,10 @@ export function useSimSession<S>(content: SimContent, model: SimModel<S>, opts: 
 
   /* ---------------------------------------------------------------- demo playback */
   const gold = useMemo(
-    () => content.golden.events.map((g, i) => ({ id: `demo-${i}`, attemptId: "demo", seq: i + 1, t: g.t, actor: "demo", type: g.type, payload: g.payload }) as LabEvent),
-    [content],
+    () => (opts.script ?? content.golden.events).map((g, i) => ({ id: `demo-${i}`, attemptId: "demo", seq: i + 1, t: g.t, actor: "demo", type: g.type, payload: g.payload }) as LabEvent),
+    [content, opts.script],
   );
-  const duration = content.golden.durationS * 1000;
+  const duration = opts.script ? (opts.script[opts.script.length - 1]?.t ?? 0) + 3000 : content.golden.durationS * 1000;
   const [demoT, setDemoT] = useState(0);
   const [playing, setPlaying] = useState(opts.mode === "demo");
   const [speed, setSpeed] = useState(1);

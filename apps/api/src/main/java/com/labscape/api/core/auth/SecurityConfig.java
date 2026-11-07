@@ -43,7 +43,8 @@ public class SecurityConfig {
         "/v1/billing/sandbox/**", "/v1/auth/logout",
         "/v1/attempts", "/v1/attempts/**", "/v1/chem/simulate", "/v1/physics/check", "/v1/maths/check",
         "/v1/quizzes/*/start", "/v1/quizzes/attempts/**", "/v1/quizzes/mastery", "/v1/recommendations",
-        "/v1/ai/**", "/v1/emergency/scenarios/*/start", "/v1/emergency/attempts/**"
+        "/v1/ai/**", "/v1/emergency/scenarios/*/start", "/v1/emergency/attempts/**",
+        "/v1/notebook", "/v1/notebook/**", "/v1/reports/**", "/v1/replay/**"
     };
 
     @Bean

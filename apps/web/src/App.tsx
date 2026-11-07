@@ -29,6 +29,10 @@ const Emergency = lazy(() => import("./pages/Emergency"));
 const EmergencyRun = lazy(() => import("./pages/Emergency").then((m) => ({ default: m.EmergencyRun })));
 const Quizzes = lazy(() => import("./pages/Quizzes"));
 const QuizSitting = lazy(() => import("./pages/Quizzes").then((m) => ({ default: m.QuizSitting })));
+const Notebook = lazy(() => import("./pages/Notebook"));
+const NotebookEntry = lazy(() => import("./pages/Notebook").then((m) => ({ default: m.NotebookEntry })));
+const Replay = lazy(() => import("./pages/Replay"));
+const Compare = lazy(() => import("./pages/Compare"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 // Part 4 route, lazy so its assets only load on the playground (performance budget).
 const ChemistryPlaygroundRoute = lazy(() => import("./routes/playground/ChemistryPlaygroundRoute"));
@@ -65,7 +69,11 @@ export function App() {
           <Route path="assistant" element={<Gate need="session"><Assistant /></Gate>} />
           <Route path="quizzes" element={<Quizzes />} />
           <Route path="quizzes/:quizId" element={<Gate need="session"><QuizSitting /></Gate>} />
-          {["notebook", "community", "playground"].map((p) => (
+          <Route path="notebook" element={<Gate need="session"><Notebook /></Gate>} />
+          <Route path="notebook/:attemptId" element={<Gate need="session"><NotebookEntry /></Gate>} />
+          <Route path="replay/:attemptId" element={<Gate need="session"><Replay /></Gate>} />
+          <Route path="compare" element={<Compare />} />
+          {["community", "playground"].map((p) => (
             <Route key={p} path={p} element={<ComingSoon />} />
           ))}
           <Route path="*" element={<NotFound />} />
