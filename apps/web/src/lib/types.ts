@@ -100,6 +100,7 @@ export type LibraryPage = {
 export type ExperimentDetail = {
   card: ExperimentCard;
   concept: string;
+  elements?: string[];
   realWorld: string[];
   materials: string[];
   safety: string[];

@@ -1,7 +1,9 @@
 import { Card, Chip, ErrorState, inputClass, Skeleton, useShell } from "@labscape/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, Ban, IndianRupee, Search, ShieldAlert, Sparkles, UserPlus, Users } from "lucide-react";
-import { useState } from "react";
+import { Activity, Ban, CircleDot, Clapperboard, IndianRupee, Search, ShieldAlert, Sparkles, UserPlus, Users } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { EXPERIMENTS, goldenEvents, runSession } from "@labscape/lab-engine";
 import { api, ApiError, patch, rupees } from "../lib/api";
 import { useSession } from "../lib/session";
 
@@ -38,7 +40,7 @@ export default function Admin() {
     <div className="mx-auto max-w-[1240px] space-y-6">
       <div>
         <h1 className="font-heading text-3xl font-bold tracking-tight">Admin</h1>
-        <p className="mt-1 text-white/55">Platform health, users and roles. The content CMS and seven-stage review arrive with Part 2's experiment schema.</p>
+        <p className="mt-1 text-white/55">Platform health, golden runs, users and roles.</p>
       </div>
       {stats.isError ? (
         <ErrorState onRetry={() => void stats.refetch()} />
@@ -58,6 +60,8 @@ export default function Admin() {
           <Bars title="Active scientists, last 14 days" data={stats.data.activeUsers} color="#22D3EE" />
         </div>
       )}
+
+      <GoldenRuns />
 
       <Card className="p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -136,6 +140,64 @@ function Bars({ title, data, color }: { title: string; data: { day: string; coun
         ))}
       </div>
       <div className="mt-2 flex justify-between text-[11px] text-white/35"><span>{data[0]?.day.slice(5)}</span><span>today</span></div>
+    </Card>
+  );
+}
+
+/** Golden runs: each shipped demo replayed in the browser, plus a link to record a new one. */
+function GoldenRuns() {
+  const rows = useMemo(
+    () =>
+      Object.values(EXPERIMENTS).map((c) => {
+        const r = runSession(c, goldenEvents(c.golden), { tailMs: 1500 });
+        return { slug: c.slug, title: c.title, subject: c.subject, stars: r.report.stars, deviations: r.report.deviations.length, events: c.golden.events.length, seconds: c.golden.durationS, review: c.reviewStatus };
+      }),
+    [],
+  );
+  return (
+    <Card className="p-6">
+      <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+        <Clapperboard className="h-5 w-5 text-accent-cyan" /> Golden runs
+      </h2>
+      <p className="mt-1 text-sm text-white/55">The demo for each experiment, replayed through the engine and scored right now. Record a new one by doing the experiment yourself; the recorder appears beside the steps.</p>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-left text-xs uppercase tracking-wide text-white/40">
+            <tr>
+              <th className="py-2">Experiment</th>
+              <th>Replay score</th>
+              <th>Events</th>
+              <th>Length</th>
+              <th>Review</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.slug} className="border-t border-white/[0.06]">
+                <td className="py-2.5 font-medium text-white">{r.title}</td>
+                <td>
+                  <span className={r.stars === 3 && r.deviations === 0 ? "text-emerald-300" : "text-amber-300"}>
+                    {"★".repeat(r.stars)}
+                    {"☆".repeat(3 - r.stars)}
+                  </span>
+                  {r.deviations > 0 && <span className="ml-2 text-xs text-amber-300">{r.deviations} deviations</span>}
+                </td>
+                <td className="text-white/70">{r.events}</td>
+                <td className="text-white/70">{r.seconds} s</td>
+                <td>
+                  <Chip tone={r.review === "approved" ? "success" : "warning"}>{r.review}</Chip>
+                </td>
+                <td className="text-right">
+                  <Link to={`/lab/${r.subject}/${r.slug}?record=1`} className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold text-red-200 ring-1 ring-inset ring-red-400/40 hover:bg-red-500/10">
+                    <CircleDot className="h-3.5 w-3.5" /> Record
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }

@@ -1,0 +1,241 @@
+{
+  "version": "2026.11.06-1",
+  "note": "Equipment encyclopedia. 'model' is the lab-engine equipment kind used for the 3D view; 'aliases' match the equipment names in content/experiments/catalogue.json so each entry links to the experiments that use it. Interim content - needs reviewer sign-off.",
+  "categories": {
+    "glassware": "Glassware",
+    "measuring": "Measuring",
+    "heating": "Heating",
+    "support": "Supports and holders",
+    "tools": "Tools",
+    "safety": "Safety"
+  },
+  "items": [
+    {
+      "id": "burette", "name": "Burette", "model": "burette_50", "category": "measuring", "aliases": ["Burette"],
+      "summary": "A long graduated tube with a tap at the bottom. It delivers a liquid in tiny, measured amounts, which is exactly what a titration needs.",
+      "precision": "±0.05 mL per reading",
+      "steps": [
+        "Rinse it with a little of the solution it will hold, then drain that rinse away.",
+        "Clamp it upright, close the tap and fill it through a small funnel to just above 0 mL. Remove the funnel.",
+        "Open the tap briefly to fill the jet below the tap and push out any air bubble.",
+        "Read the bottom of the meniscus at eye level and write down the start reading.",
+        "Add quickly at first, then drop by drop near the end point while swirling the flask."
+      ],
+      "mistakes": [
+        "Leaving the funnel in the top: drips from it change the reading.",
+        "Not clearing the air bubble in the jet: the first 0.1 mL you 'add' is just air.",
+        "Reading from above or below: parallax makes the reading wrong."
+      ],
+      "safety": ["Fill it below eye level, with the burette lowered, never standing on a stool."],
+      "fact": "Burettes read downwards: 0 mL is at the top, because they measure how much has left.",
+      "parts": [
+        { "id": "scale", "name": "Graduated scale", "detail": "Marks every 0.1 mL, from 0 at the top to 50 mL at the bottom." },
+        { "id": "tube", "name": "Precision-bore tube", "detail": "A uniform bore, so every 0.1 mL is the same length all the way down." },
+        { "id": "stopcock", "name": "Stopcock (tap)", "detail": "A PTFE key in a glass barrel. A quarter turn takes it from shut to fully open." },
+        { "id": "jet", "name": "Jet (tip)", "detail": "Narrows the stream so single drops of about 0.05 mL can be added." }
+      ]
+    },
+    {
+      "id": "pipette", "name": "Volumetric pipette", "model": "pipette_10", "category": "measuring", "aliases": ["Pipette"],
+      "summary": "Delivers one exact volume, such as 10.00 mL or 25.00 mL, more precisely than any cylinder or beaker.",
+      "precision": "±0.02 mL for a 10 mL class A pipette",
+      "steps": [
+        "Fit a pipette filler. Never pipette by mouth.",
+        "Rinse with a little of the solution and discard it.",
+        "Draw the liquid above the line, then let it fall until the bottom of the meniscus sits on the line at eye level.",
+        "Let it drain into the flask, then touch the tip on the inside of the flask. Do not blow out the last drop."
+      ],
+      "mistakes": ["Blowing out the last drop: the pipette is calibrated to leave it behind.", "Air bubbles in the stem."],
+      "safety": ["Always use a pipette filler."],
+      "fact": "The bulb in the middle holds most of the volume, so the narrow stem can make the reading line very precise."
+    },
+    {
+      "id": "measuring-cylinder", "name": "Measuring cylinder", "model": "measuring_cylinder_50", "category": "measuring", "aliases": ["Measuring cylinder"],
+      "summary": "A tall, narrow graduated cylinder for measuring volumes quickly to about 1%.",
+      "precision": "±0.5 mL for a 50 mL cylinder",
+      "steps": [
+        "Stand it on a flat bench.",
+        "Pour in until close to the mark, then add the last bit with a dropper.",
+        "Read the bottom of the meniscus with your eye level with the surface."
+      ],
+      "mistakes": ["Reading at an angle (parallax).", "Using a 100 mL cylinder to measure 5 mL: pick the smallest one that fits."],
+      "safety": ["Tall cylinders tip over easily: keep them away from the bench edge."],
+      "fact": "A narrow cylinder is more precise than a wide one, because the same volume spreads over a taller height."
+    },
+    {
+      "id": "beaker", "name": "Beaker", "model": "beaker_250", "category": "glassware", "aliases": ["Beaker"],
+      "summary": "A wide glass cup with a pouring lip. Used for mixing, heating and holding liquids. Its markings are only rough guides.",
+      "precision": "About ±5%: not for measuring",
+      "steps": ["Pour from the lip so the liquid leaves cleanly.", "Heat it on a tripod and gauze, never straight in the flame."],
+      "mistakes": ["Using beaker markings for accurate volumes."],
+      "safety": ["Hot glass looks exactly like cold glass. Use tongs or let it cool."],
+      "fact": "Lab beakers are made from borosilicate glass, which barely expands when heated, so they do not crack."
+    },
+    {
+      "id": "conical-flask", "name": "Conical flask", "model": "conical_flask_100", "category": "glassware", "aliases": ["Conical flask"],
+      "summary": "A flask with a wide base and a narrow neck. You can swirl it hard without splashing, which makes it ideal for titrations.",
+      "precision": "Rough markings only",
+      "steps": ["Hold it by the neck and swirl in small circles.", "Stand it on a white tile during a titration so colour changes are easy to see."],
+      "mistakes": ["Filling it too full to swirl."],
+      "safety": ["Never heat a stoppered flask."],
+      "fact": "It is also called an Erlenmeyer flask, after the German chemist Emil Erlenmeyer, who designed it in 1860."
+    },
+    {
+      "id": "test-tube", "name": "Test tube", "model": "test_tube", "category": "glassware", "aliases": ["Test tubes"],
+      "summary": "A small glass tube for quick reactions with a few millilitres of liquid.",
+      "precision": "Not for measuring",
+      "steps": ["Fill no more than a third full.", "Keep it in a rack when you are not holding it.", "When heating, point the open end away from everyone."],
+      "mistakes": ["Overfilling, which makes mixing and heating dangerous."],
+      "safety": ["Never look down into a tube that is reacting or being heated."],
+      "fact": "The rounded bottom spreads heat and stress evenly, so test tubes rarely crack."
+    },
+    {
+      "id": "boiling-tube", "name": "Boiling tube", "model": "boiling_tube", "category": "glassware", "aliases": ["Boiling tube"],
+      "summary": "A wider, thicker test tube with room for liquids to bubble and boil without spilling over.",
+      "precision": "Not for measuring",
+      "steps": ["Fill no more than a third full before heating.", "Heat near the top of the liquid, moving the tube gently in the flame."],
+      "mistakes": ["Heating only the bottom, which makes the liquid 'bump' out."],
+      "safety": ["Hold it with a tube holder, never your fingers."],
+      "fact": "A boiling tube holds about two and a half times as much as a test tube."
+    },
+    {
+      "id": "dropper", "name": "Dropper", "model": "dropper", "category": "tools", "aliases": ["Dropper"],
+      "summary": "A glass or plastic tube with a rubber bulb for adding liquids one drop at a time. One drop is about 0.05 mL.",
+      "precision": "About 0.05 mL per drop",
+      "steps": ["Squeeze the bulb before dipping it in.", "Release to draw up liquid.", "Hold it upright over the vessel and squeeze gently."],
+      "mistakes": ["Touching the dropper on the liquid it drops into, which contaminates the stock."],
+      "safety": ["Never turn a filled dropper upside down: liquid runs into the bulb."],
+      "fact": "Twenty drops of water make about 1 mL."
+    },
+    {
+      "id": "reagent-bottle", "name": "Reagent bottle", "model": "reagent_bottle", "category": "glassware", "aliases": [],
+      "summary": "A labelled bottle for storing stock solutions. The label shows the name, concentration and hazards.",
+      "precision": "Storage only",
+      "steps": ["Read the label twice before you pour.", "Pour with the label facing your palm so drips do not damage it.", "Put the lid back straight away."],
+      "mistakes": ["Pouring unused reagent back into the bottle."],
+      "safety": ["Hazard symbols on the label tell you what protection you need."],
+      "fact": "Brown bottles protect light-sensitive chemicals, such as silver nitrate, from daylight."
+    },
+    {
+      "id": "wash-bottle", "name": "Wash bottle", "model": "wash_bottle", "category": "tools", "aliases": [],
+      "summary": "A squeezy bottle of distilled water for rinsing glassware and topping up to a line.",
+      "precision": "Not for measuring",
+      "steps": ["Squeeze gently for a thin, controlled stream.", "Use it to rinse the inside walls of a flask during a titration."],
+      "mistakes": ["Adding so much water that a reaction is diluted more than planned."],
+      "safety": ["Only ever fill it with distilled water."],
+      "fact": "Rinsing the inside of a titration flask with water does not change the answer: water adds no acid or base."
+    },
+    {
+      "id": "white-tile", "name": "White tile", "model": "white_tile", "category": "support", "aliases": ["White tile", "Spotting tile"],
+      "summary": "A plain white tile placed under a flask so faint colour changes are easy to spot.",
+      "precision": "-",
+      "steps": ["Place it under the burette, then stand the flask on it."],
+      "mistakes": [],
+      "safety": [],
+      "fact": "A spotting tile has small dimples so you can test many drops side by side."
+    },
+    {
+      "id": "clamp-stand", "name": "Clamp stand", "model": "clamp_stand", "category": "support", "aliases": ["Clamp stand"],
+      "summary": "A heavy base and metal rod with a clamp. It holds burettes, tubes and flasks steady and upright.",
+      "precision": "-",
+      "steps": ["Put the heavy base under whatever you clamp, so it cannot tip.", "Clamp glass firmly but gently: overtightening cracks it."],
+      "mistakes": ["Clamping with the base facing away, which makes the stand top-heavy."],
+      "safety": ["Check the clamp is tight before letting go."],
+      "fact": "Clamp jaws are lined with cork or rubber to grip glass without scratching it."
+    },
+    {
+      "id": "test-tube-rack", "name": "Test-tube rack", "model": "test_tube_rack", "category": "support", "aliases": ["Test-tube rack"],
+      "summary": "Holds test tubes upright when you are not using them.",
+      "precision": "-",
+      "steps": ["Stand each tube in its own hole.", "Keep tubes in the order you labelled them."],
+      "mistakes": [],
+      "safety": ["Never lay a tube containing liquid down on the bench."],
+      "fact": "Racks are often wooden or plastic so they stay cool and do not chip glass."
+    },
+    {
+      "id": "bunsen-burner", "name": "Bunsen burner", "model": "bunsen", "category": "heating", "aliases": ["Bunsen burner"],
+      "summary": "A gas burner with an adjustable air hole. Closed, it gives a yellow safety flame; open, a hot, roaring blue flame.",
+      "precision": "Blue flame: about 1500 °C at its hottest point",
+      "steps": [
+        "Stand it on a heat-proof mat and close the air hole.",
+        "Light a splint first, then turn on the gas and bring the flame to the top of the barrel.",
+        "Open the air hole for a blue heating flame. Close it again for the yellow safety flame when you stop heating."
+      ],
+      "mistakes": ["Turning on the gas before you have a lit splint ready.", "Leaving a blue flame unattended: it is hard to see."],
+      "safety": ["Tie long hair back.", "Turn the gas off at the tap when you finish."],
+      "fact": "The hottest part of a blue flame is just above the tip of the inner blue cone."
+    },
+    {
+      "id": "tripod-gauze", "name": "Tripod and gauze", "model": "tripod", "category": "heating", "aliases": ["Tripod and gauze"],
+      "summary": "A three-legged stand with a wire mesh on top. The gauze spreads the flame's heat evenly under a beaker.",
+      "precision": "-",
+      "steps": ["Stand it over the Bunsen burner.", "Put the gauze on top, then the beaker on the gauze."],
+      "mistakes": [],
+      "safety": ["The tripod stays hot long after the flame is off."],
+      "fact": "Without the gauze, the flame heats one small spot and the glass can crack."
+    },
+    {
+      "id": "wire-loop", "name": "Nichrome wire loop", "model": "wire_loop", "category": "tools", "aliases": ["Nichrome wire loop"],
+      "summary": "A loop of nickel-chromium wire on a handle, used to hold a sample in a flame for a flame test.",
+      "precision": "-",
+      "steps": ["Clean it by dipping it in hydrochloric acid and holding it in the flame until it gives no colour.", "Dip it in the sample, then hold it at the edge of a blue flame."],
+      "mistakes": ["Not cleaning it between samples, which mixes the colours."],
+      "safety": ["The wire is red hot: rest it on a heat-proof mat."],
+      "fact": "Nichrome is used because it does not melt or colour the flame itself."
+    },
+    {
+      "id": "splint", "name": "Wooden splint", "model": "splint", "category": "tools", "aliases": ["Wooden splint"],
+      "summary": "A thin stick of wood used to light burners and to test for gases.",
+      "precision": "-",
+      "steps": ["A lit splint held at a tube's mouth pops in hydrogen.", "A glowing splint relights in oxygen."],
+      "mistakes": [],
+      "safety": ["Put used splints in water, not the bin."],
+      "fact": "The squeaky pop is a tiny explosion: hydrogen and oxygen combine to make water."
+    },
+    {
+      "id": "thermometer", "name": "Thermometer", "model": "thermometer", "category": "measuring", "aliases": ["Thermometer"],
+      "summary": "Measures temperature. It takes a few seconds to catch up with the liquid it is in.",
+      "precision": "±0.5 °C for a typical lab thermometer",
+      "steps": ["Put the bulb fully in the liquid, not touching the glass.", "Wait for the reading to stop changing, then read it at eye level."],
+      "mistakes": ["Reading too soon, before it has caught up.", "Stirring with it: use a glass rod."],
+      "safety": ["Report a broken thermometer straight away."],
+      "fact": "Modern lab thermometers use coloured alcohol rather than mercury."
+    },
+    {
+      "id": "glass-rod", "name": "Glass rod", "model": "glass_rod", "category": "tools", "aliases": ["Glass rod"],
+      "summary": "A solid glass stick for stirring, and for guiding a liquid as you pour it.",
+      "precision": "-",
+      "steps": ["Stir gently without hitting the sides.", "To pour without splashing, run the liquid down the rod."],
+      "mistakes": [],
+      "safety": [],
+      "fact": "Glass does not react with most chemicals, so it will not contaminate what you stir."
+    },
+    {
+      "id": "filter-funnel", "name": "Filter funnel", "model": "funnel", "category": "tools", "aliases": ["Filter funnel"],
+      "summary": "A funnel that holds a folded filter paper. It separates an insoluble solid from a liquid.",
+      "precision": "-",
+      "steps": ["Fold the filter paper into a cone and fit it in the funnel.", "Pour slowly down a glass rod, keeping the level below the top of the paper."],
+      "mistakes": ["Overfilling, so liquid runs past the paper."],
+      "safety": [],
+      "fact": "The solid caught in the paper is the residue; the liquid that passes through is the filtrate."
+    },
+    {
+      "id": "watch-glass", "name": "Watch glass", "model": "watch_glass", "category": "glassware", "aliases": ["Watch glass"],
+      "summary": "A shallow glass dish for holding small solid samples or evaporating a few drops of liquid.",
+      "precision": "-",
+      "steps": ["Use it to carry a solid to the bench, or to cover a beaker."],
+      "mistakes": [],
+      "safety": [],
+      "fact": "It is named after the glass that once covered the face of pocket watches."
+    },
+    {
+      "id": "goggles", "name": "Safety goggles", "model": "goggles", "category": "safety", "aliases": [],
+      "summary": "Eye protection that seals around your eyes. Wear them for every practical, from start to finish.",
+      "precision": "-",
+      "steps": ["Put them on before you touch anything.", "Keep them on until everything is put away, even if you finish early."],
+      "mistakes": ["Pushing them up onto your forehead."],
+      "safety": ["If anything goes in your eye, rinse it with water for at least 10 minutes and tell your teacher."],
+      "fact": "Splashes from the bench reach eye height more often than people expect."
+    }
+  ]
+}

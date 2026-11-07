@@ -118,7 +118,14 @@
         "indicator"
       ],
       "release": "MVP",
-      "playable": true
+      "playable": true,
+      "elements": [
+        "H",
+        "O",
+        "Na",
+        "Cl",
+        "C"
+      ]
     },
     {
       "id": "chem-indicators-ph",
@@ -168,7 +175,14 @@
         "colour change"
       ],
       "release": "MVP",
-      "playable": true
+      "playable": true,
+      "elements": [
+        "H",
+        "O",
+        "Na",
+        "Cl",
+        "C"
+      ]
     },
     {
       "id": "chem-salt-preparation",
@@ -218,7 +232,13 @@
         "filtration"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": false,
+      "elements": [
+        "Cu",
+        "O",
+        "S",
+        "H"
+      ]
     },
     {
       "id": "chem-precipitation",
@@ -268,7 +288,21 @@
         "ionic equations"
       ],
       "release": "MVP",
-      "playable": true
+      "playable": true,
+      "elements": [
+        "Cu",
+        "S",
+        "O",
+        "Na",
+        "H",
+        "Ba",
+        "Cl",
+        "Pb",
+        "N",
+        "K",
+        "I",
+        "Ag"
+      ]
     },
     {
       "id": "chem-flame-tests",
@@ -320,7 +354,17 @@
         "spectroscopy"
       ],
       "release": "MVP",
-      "playable": true
+      "playable": true,
+      "elements": [
+        "Li",
+        "Na",
+        "K",
+        "Ca",
+        "Cu",
+        "Sr",
+        "Ba",
+        "Cl"
+      ]
     },
     {
       "id": "chem-reactivity-series",
@@ -368,7 +412,15 @@
         "redox"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": false,
+      "elements": [
+        "Mg",
+        "Zn",
+        "Fe",
+        "Cu",
+        "S",
+        "O"
+      ]
     },
     {
       "id": "chem-diluting-acid",
@@ -417,7 +469,12 @@
         "dilution"
       ],
       "release": "MVP",
-      "playable": true
+      "playable": true,
+      "elements": [
+        "H",
+        "S",
+        "O"
+      ]
     },
     {
       "id": "chem-iron-copper-displacement",
@@ -462,7 +519,13 @@
         "time-lapse"
       ],
       "release": "MVP",
-      "playable": true
+      "playable": true,
+      "elements": [
+        "Fe",
+        "Cu",
+        "S",
+        "O"
+      ]
     },
     {
       "id": "chem-mg-hcl-hydrogen",
@@ -512,7 +575,13 @@
         "metals"
       ],
       "release": "MVP",
-      "playable": true
+      "playable": true,
+      "elements": [
+        "Mg",
+        "H",
+        "Cl",
+        "O"
+      ]
     },
     {
       "id": "chem-electrolysis-brine",
@@ -558,7 +627,14 @@
         "gas test"
       ],
       "release": "Later",
-      "playable": false
+      "playable": false,
+      "elements": [
+        "Na",
+        "Cl",
+        "H",
+        "O",
+        "C"
+      ]
     },
     {
       "id": "chem-rates-thiosulfate",
@@ -604,7 +680,14 @@
         "graph"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": false,
+      "elements": [
+        "Na",
+        "S",
+        "O",
+        "H",
+        "Cl"
+      ]
     },
     {
       "id": "chem-catalase-foam",
@@ -654,7 +737,13 @@
         "foam"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": false,
+      "elements": [
+        "H",
+        "O",
+        "K",
+        "I"
+      ]
     },
     {
       "id": "chem-esterification",
@@ -703,7 +792,13 @@
         "reflux"
       ],
       "release": "Later",
-      "playable": false
+      "playable": false,
+      "elements": [
+        "C",
+        "H",
+        "O",
+        "S"
+      ]
     },
     {
       "id": "phys-pendulum",

@@ -41,3 +41,12 @@ The rate of reaction and heat of dissolving experiments are Later.
 
 Chemistry content still needs a chemistry teacher's review before publishing (§2.15). Each protocol
 is marked `reviewStatus: "draft"` until then.
+
+## Status
+
+| # | State | Notes |
+|---|-------|-------|
+| M1-M5 | Done | 7 MVP experiments, server replay identical to V8 hashes. |
+| M6 | Done | `/periodic-table`: 118 elements in the IUPAC layout (group 3 = Sc, Y, Lu, Lr), colour by family, 8 trends, block or state at any temperature; Bohr model; Aufbau filling with the 20 measured exceptions and their reasons; compare tray (up to 4). `/equipment`: 22 items on a 3D turntable, exploded burette. `/v1/elements`, `/v1/elements/{symbol or Z}`, `/v1/equipment`, `/v1/equipment/{id}`, cross-linked to experiments both ways. Molecular view in Observe for all 7 experiments (atom-mapped bonds, electron transfer, atom counter; emission view for flame tests). Admin golden-run recorder (`?record=1`) and live replay scores for every shipped demo. |
+
+Still open: element and equipment data need the same teacher review as the protocols.

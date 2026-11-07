@@ -98,6 +98,18 @@ export default function ExperimentDetail() {
                 <ul className="mt-2 space-y-1 text-sm text-white/70">{materials.map((m) => <li key={m}>• {m}</li>)}</ul>
               </>
             )}
+            {(q.data.elements?.length ?? 0) > 0 && (
+              <>
+                <h3 className="mt-5 text-sm font-semibold text-white/60">Elements involved</h3>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {q.data.elements!.map((s) => (
+                    <Link key={s} to={`/periodic-table?el=${s}`} className="grid h-9 w-9 place-items-center rounded-md bg-white/[0.05] text-sm font-extrabold text-white ring-1 ring-inset ring-white/15 hover:bg-accent/20 hover:ring-accent" title={`Open ${s} in the periodic table`}>
+                      {s}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
           </Card>
           {safety.length > 0 && (
             <Callout tone="danger" title="Safety notes">

@@ -1,7 +1,7 @@
 import type { LabEvent } from "@labscape/contracts";
 import { describe, expect, it } from "vitest";
 import { EXPERIMENTS } from "./content";
-import { goldenEvents, runSession } from "./session";
+import { goldenEvents, recordGolden, runSession } from "./session";
 
 const titration = EXPERIMENTS["acid-base-titration"]!;
 
@@ -92,5 +92,18 @@ describe("cross-engine fixture", () => {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(out, null, 2) + "\n");
     expect(Object.keys(out).length).toBe(7);
+  });
+});
+
+describe("golden-run recorder", () => {
+  it("round-trips every golden run with the same score", () => {
+    for (const c of Object.values(EXPERIMENTS)) {
+      const evs = goldenEvents(c.golden, "rec", "user").map((e) => ({ ...e, t: e.t + 5000 }));
+      const { golden, report } = recordGolden(c, evs);
+      expect(report.stars, c.slug).toBe(3);
+      expect(golden.events).toHaveLength(c.golden.events.length);
+      expect(golden.events[0]!.t).toBe(1000);
+      expect(golden.captions.length, c.slug).toBe(c.steps.length);
+    }
   });
 });

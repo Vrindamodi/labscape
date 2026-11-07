@@ -47,7 +47,12 @@ public class LibraryCatalogue {
             boolean featured,
             List<String> tags,
             String release,
-            boolean playable) {
+            boolean playable,
+            List<String> elements) {
+
+        public Experiment {
+            elements = elements == null ? List.of() : List.copyOf(elements);
+        }
 
         public int stages() {
             return 6;

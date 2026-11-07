@@ -33,7 +33,7 @@ public class LibraryController {
     public record Facets(Map<String, Long> subjects, List<String> chapters, List<String> equipment) {}
 
     public record Detail(Card card, String concept, List<String> realWorld, List<String> materials,
-            List<String> safety, List<String> stageList, List<Card> related) {}
+            List<String> safety, List<String> stageList, List<Card> related, List<String> elements) {}
 
     static final List<String> STAGES = List.of(
             "Introduction", "Demo", "Try it yourself", "Hints and guidance", "Observations", "Quiz");
@@ -104,7 +104,7 @@ public class LibraryController {
                 .limit(3)
                 .map(o -> card(o, full, done, 1))
                 .toList();
-        return new Detail(card(e, full, done, 1), e.concept(), e.realWorld(), e.materials(), e.safety(), STAGES, related);
+        return new Detail(card(e, full, done, 1), e.concept(), e.realWorld(), e.materials(), e.safety(), STAGES, related, e.elements());
     }
 
     private Card card(Experiment e, boolean full, Set<String> done, double relevance) {

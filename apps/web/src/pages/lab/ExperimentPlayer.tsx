@@ -1,6 +1,7 @@
 import type { LabEvent, RewardResult } from "@labscape/contracts";
-import { useLabSession, Workbench, type ExperimentContent, type Feedback, type Report, type StepSpec } from "@labscape/lab-engine";
+import { recordGolden, useLabSession, Workbench, type ExperimentContent, type Feedback, type Report, type StepSpec } from "@labscape/lab-engine";
 import { celebrate, useMotion } from "@labscape/motion";
+import { MolecularView, SCENES } from "@labscape/chem-view";
 import { sound } from "@labscape/audio";
 import { Button, Callout, Chip, cx, ErrorState, FullscreenLab, Modal, ProgressRing, Skeleton, SubjectChip, useShell } from "@labscape/ui";
 import { useQuery } from "@tanstack/react-query";
@@ -31,7 +32,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, post } from "../../lib/api";
-import { emitReward, useSession } from "../../lib/session";
+import { emitReward, isAdmin, useSession } from "../../lib/session";
 
 type Stage = "intro" | "demo" | "try" | "observe" | "quiz" | "results";
 const RAIL: { id: Stage | "hints"; label: string }[] = [
@@ -335,6 +336,8 @@ function Try({
   const [safety, setSafety] = useState<Extract<Feedback, { kind: "safety-stop" }> | null>(null);
   const [shake, setShake] = useState(0);
   const stepDoneSeq = useRef<Record<string, number>>({});
+  const { me } = useSession();
+  const recording = isAdmin(me) && new URLSearchParams(window.location.search).get("record") === "1";
 
   const session = useLabSession(content, {
     mode: "try",
@@ -405,6 +408,7 @@ function Try({
       </motion.div>
 
       <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto border-l border-white/[0.07] bg-[#0d1426]/70 p-4" aria-label="Steps and observations">
+        {recording && <Recorder content={content} events={session.events} />}
         <div className="rounded-xl border border-accent/40 bg-accent/[0.08] p-4">
           {current ? (
             <>
@@ -525,6 +529,12 @@ function Observe({ content, attemptId, onFinished }: { content: ExperimentConten
   const [molecular, setMolecular] = useState(false);
   const eq = useMemo(() => katex.renderToString(o.equationLatex, { throwOnError: false, displayMode: true }), [o.equationLatex]);
   const allAnswered = o.prompts.every((p) => answers[p.id] !== undefined);
+  const { award } = useSession();
+  const openMolecular = () => {
+    setMolecular((m) => !m);
+    // XP once per experiment (the server dedupes on the key); feeds the "Zoom in" challenge and badge.
+    if (!molecular && SCENES[content.slug]) void award({ kind: "molecular_view.opened", refId: content.slug, subject: "chemistry", idempotencyKey: `molview:${content.slug}` }, { label: "Molecular view" }).catch(() => null);
+  };
 
   const finish = async () => {
     setBusy(true);
@@ -549,12 +559,12 @@ function Observe({ content, attemptId, onFinished }: { content: ExperimentConten
       <div className="mx-auto max-w-4xl space-y-5">
         <div className="flex flex-wrap items-center gap-2">
           <Chip tone={content.fidelity === "exact" ? "success" : content.fidelity === "approximate" ? "blue" : "violet"}>{fidelityLabel(content.fidelity)}</Chip>
-          <button onClick={() => setMolecular((m) => !m)} className={cx("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset", molecular ? "bg-ai-violet/30 text-white ring-ai-violet" : "text-[#c4b1ff] ring-ai-violet/40")} aria-pressed={molecular}>
+          <button onClick={openMolecular} className={cx("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset", molecular ? "bg-ai-violet/30 text-white ring-ai-violet" : "text-[#c4b1ff] ring-ai-violet/40")} aria-pressed={molecular}>
             <Atom className="h-3.5 w-3.5" />Molecular view
           </button>
         </div>
         <h1 className="font-heading text-3xl font-bold">What happened, and why</h1>
-        {molecular && <MolecularPreview latex={o.equationLatex} />}
+        {molecular && <MolecularPanel slug={content.slug} />}
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
             <h2 className="flex items-center gap-2 font-heading font-semibold"><Eye className="h-5 w-5 text-accent-cyan" />What you saw</h2>
@@ -593,17 +603,53 @@ function Observe({ content, attemptId, onFinished }: { content: ExperimentConten
   );
 }
 
-/** A lightweight particle preview until the full molecular view (chem-view) lands. */
-function MolecularPreview({ latex }: { latex: string }) {
+/** Molecular view (chem-view): atoms move, bonds break and form, and the atom counter balances. */
+function MolecularPanel({ slug }: { slug: string }) {
+  const { reduced } = useMotion();
+  const scene = SCENES[slug];
+  if (!scene) return <p className="rounded-xl bg-white/[0.04] p-4 text-sm text-white/60">This experiment has no molecular view yet.</p>;
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-ai-violet/30 bg-[radial-gradient(circle_at_50%_40%,rgba(139,92,246,.25),#0b1020_70%)] p-5">
-      <div className="absolute right-3 top-3 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white/60">Illustrative model, not a quantum simulation</div>
-      <svg viewBox="0 0 600 180" className="h-40 w-full" aria-label="Particles reacting">
-        {Array.from({ length: 18 }, (_, i) => (
-          <motion.circle key={i} r={i % 3 === 0 ? 12 : 8} fill={i % 3 === 0 ? "#ff3d5a" : i % 3 === 1 ? "#f1f5f9" : "#2f80ff"} initial={{ cx: 40 + (i * 37) % 520, cy: 30 + (i * 53) % 120 }} animate={{ cx: [40 + (i * 37) % 520, 300 + Math.sin(i) * 60, 40 + ((i + 5) * 41) % 520], cy: [30 + (i * 53) % 120, 90 + Math.cos(i) * 30, 30 + ((i + 3) * 29) % 120] }} transition={{ duration: 6 + (i % 4), repeat: Infinity, ease: "easeInOut" }} />
-        ))}
-      </svg>
-      <p className="text-center text-xs text-white/50">The full molecular view (bonds breaking and forming, atom counter) opens here. {latex.length > 0 ? "" : ""}</p>
+    <div>
+      <MolecularView scene={scene} reducedMotion={reduced} height={340} />
+      <p className="mt-2 text-[11px] text-white/45">Illustrative model: sizes and distances are to scale, motion is slowed down billions of times.</p>
+    </div>
+  );
+}
+
+/** Admin golden-run recorder: score the current run and copy it as a golden-run script. */
+function Recorder({ content, events }: { content: ExperimentContent; events: LabEvent[] }) {
+  const { toast } = useShell();
+  const [out, setOut] = useState<ReturnType<typeof recordGolden> | null>(null);
+  const capture = () => setOut(recordGolden(content, events));
+  const copy = async () => {
+    if (!out) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(out.golden, null, 2));
+      toast({ kind: "success", title: "Golden run copied", body: `Paste it as "golden" in content/experiments/${content.slug}.json, then edit the captions.` });
+    } catch {
+      toast({ kind: "danger", title: "Couldn't copy", body: "Your browser blocked the clipboard." });
+    }
+  };
+  return (
+    <div className="rounded-xl border border-red-400/40 bg-red-500/[0.07] p-3 text-sm">
+      <div className="flex items-center gap-2 font-semibold text-red-200">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" /> Recording golden run · {events.length} events
+      </div>
+      <div className="mt-2 flex gap-2">
+        <Button size="sm" variant="secondary" onClick={capture} disabled={!events.length}>Score this run</Button>
+        {out && <Button size="sm" onClick={() => void copy()} disabled={out.report.deviations.length > 0}>Copy JSON</Button>}
+      </div>
+      {out && (
+        <div className="mt-2 text-xs text-white/75">
+          <p>
+            <b className="text-white">{out.report.stars}★</b> · {out.report.score}% · {out.golden.durationS} s · {out.golden.captions.length} draft captions
+          </p>
+          {out.report.deviations.length > 0 ? <p className="mt-1 text-amber-200">Only runs with no deviations can be saved as golden runs.</p> : <p className="mt-1 text-emerald-200">Clean run. Observation answers come later at Observe, so that score shows 0 here.</p>}
+          {out.report.deviations.slice(0, 4).map((d, i) => (
+            <p key={i} className="mt-1 text-red-200/90">• {d.code} ({d.severity})</p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

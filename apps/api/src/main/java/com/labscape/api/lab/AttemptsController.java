@@ -128,6 +128,8 @@ public class AttemptsController {
     @Transactional
     public AttemptView start(@AuthenticationPrincipal Jwt jwt, @RequestBody StartRequest req) {
         UUID user = UUID.fromString(jwt.getSubject());
+        if (req.experimentSlug() == null || req.experimentSlug().isBlank())
+            throw ApiProblem.badRequest("EXPERIMENT_REQUIRED", "Say which experiment to start (experimentSlug).");
         JsonNode content = engine.content(req.experimentSlug())
                 .orElseThrow(() -> ApiProblem.notFound("EXPERIMENT_NOT_FOUND", "That experiment isn't on the bench yet."));
         if (!Boolean.TRUE.equals(req.fresh())) {

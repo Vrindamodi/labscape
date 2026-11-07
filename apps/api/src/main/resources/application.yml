@@ -62,7 +62,7 @@ labscape:
     experiments: true
     quizzes: false
     scenarios: false
-    molecular-view: false
+    molecular-view: true
   safety:
     # R1 ships the safety engine behind this flag. Off => /v1/safety/resolve returns 503 and the
     # playground shows no reactions at all.

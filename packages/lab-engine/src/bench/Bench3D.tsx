@@ -376,19 +376,72 @@ function Visual({ item, state, cues, quality, reducedMotion }: { item: Item; sta
     case "watch_glass":
       return <WatchGlass item={item} />;
     case "glass_rod":
-    case "funnel":
       return (
         <mesh rotation-z={Math.PI / 2} position={[0, 0.03, 0]}>
           <cylinderGeometry args={[0.02, 0.02, 1, 10]} />
           <primitive object={glass} attach="material" />
         </mesh>
       );
+    case "funnel":
+      return <Funnel glass={glass} />;
+    case "tripod":
+      return <Tripod />;
     case "burette_50":
       return <Burette item={item} glass={glass} state={state} cues={cues} />;
     default:
       if (def.capacityMl > 0) return <Vessel item={item} glass={glass} cues={cues} quality={quality} reducedMotion={reducedMotion} />;
       return null;
   }
+}
+
+/** A single piece of equipment outside the bench, for the encyclopedia turntable. */
+export function EquipmentModel({ item, state, quality = "high", reducedMotion = false }: { item: Item; state: LabState; quality?: Quality; reducedMotion?: boolean }) {
+  return <Visual item={item} state={state} cues={[]} quality={quality} reducedMotion={reducedMotion} />;
+}
+
+const FUNNEL_PROFILE: [number, number][] = [[3.5, 0], [3.5, 60], [5, 64], [36, 100], [38, 102]];
+
+function Funnel({ glass }: { glass: THREE.Material }) {
+  const geom = useMemo(() => lathe(FUNNEL_PROFILE), []);
+  return (
+    <group>
+      <mesh geometry={geom} material={glass} renderOrder={3} />
+      {/* folded filter paper */}
+      <mesh position={[0, 0.83, 0]} rotation-x={Math.PI}>
+        <coneGeometry args={[0.33, 0.36, 32, 1, true]} />
+        <meshStandardMaterial color="#f5f1e6" roughness={0.95} side={THREE.DoubleSide} transparent opacity={0.92} />
+      </mesh>
+    </group>
+  );
+}
+
+function Tripod() {
+  return (
+    <group>
+      <mesh position={[0, 0.6, 0]} rotation-x={Math.PI / 2} castShadow>
+        <torusGeometry args={[0.36, 0.018, 10, 40]} />
+        <meshStandardMaterial color="#3b4252" metalness={0.75} roughness={0.35} />
+      </mesh>
+      {[0, 1, 2].map((i) => {
+        const a = (i / 3) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 0.4, 0.3, Math.sin(a) * 0.4]} rotation={[Math.sin(a) * 0.12, 0, -Math.cos(a) * 0.12]} castShadow>
+            <cylinderGeometry args={[0.016, 0.016, 0.62, 8]} />
+            <meshStandardMaterial color="#3b4252" metalness={0.75} roughness={0.35} />
+          </mesh>
+        );
+      })}
+      {/* wire gauze with its ceramic centre */}
+      <mesh position={[0, 0.622, 0]}>
+        <boxGeometry args={[0.9, 0.008, 0.9]} />
+        <meshStandardMaterial color="#9aa3b2" metalness={0.6} roughness={0.5} wireframe />
+      </mesh>
+      <mesh position={[0, 0.624, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[0.24, 32]} />
+        <meshStandardMaterial color="#e9ecef" roughness={0.9} />
+      </mesh>
+    </group>
+  );
 }
 
 function WatchGlass({ item }: { item: Item }) {
