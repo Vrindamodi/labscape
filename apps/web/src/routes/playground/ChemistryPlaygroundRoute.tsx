@@ -1,5 +1,7 @@
 import { ChemistryPlayground } from "@labscape/playground";
-import { FullscreenLab } from "@labscape/ui";
+import { ErrorState, FullscreenLab, Skeleton } from "@labscape/ui";
+import { useNavigate } from "react-router-dom";
+import { LimitReached, usePlaygroundSession } from "../../pages/Playground";
 import { useCallback } from "react";
 import { useSession } from "../../lib/session";
 
@@ -9,6 +11,8 @@ import { useSession } from "../../lib/session";
  */
 export default function ChemistryPlaygroundRoute() {
   const { award } = useSession();
+  const navigate = useNavigate();
+  const { session, loading, limited, error, retry } = usePlaygroundSession("chemistry");
   const onDiscoveries = useCallback(
     (ids: string[]) => {
       ids.forEach((id, i) => {
@@ -24,7 +28,15 @@ export default function ChemistryPlaygroundRoute() {
   );
   return (
     <FullscreenLab>
-      <ChemistryPlayground onDiscoveries={onDiscoveries} />
+      {session ? (
+        <ChemistryPlayground onDiscoveries={onDiscoveries} />
+      ) : (
+        <div className="h-screen bg-[#0b0f1a] p-4">
+          {loading && <Skeleton className="h-full rounded-2xl" />}
+          {limited && <LimitReached onBack={() => navigate("/playground")} />}
+          {error && <ErrorState title="Couldn't start the playground" onRetry={retry} />}
+        </div>
+      )}
     </FullscreenLab>
   );
 }

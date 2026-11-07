@@ -49,7 +49,7 @@ export const NAV: NavGroup[] = [
       { to: "/library?subject=chemistry", label: "Chemistry", icon: FlaskConical, color: "#2DD4BF", part: 1, match: (p, s) => p.startsWith("/library") && s.includes("subject=chemistry") },
       { to: "/library?subject=physics", label: "Physics", icon: Orbit, color: "#38BDF8", part: 1, match: (p, s) => p.startsWith("/library") && s.includes("subject=physics") },
       { to: "/library?subject=maths", label: "Maths", icon: Sigma, color: "#FB923C", part: 1, match: (p, s) => p.startsWith("/library") && s.includes("subject=maths") },
-      { to: "/playground/chemistry", label: "Playground", icon: Beaker, color: "#E879F9", part: 4 },
+      { to: "/playground", label: "Playground", icon: Beaker, color: "#E879F9", part: 1, match: (p) => p.startsWith("/playground") },
       { to: "/emergency", label: "Emergency", icon: ShieldAlert, color: "#EF4444", part: 1 },
       { to: "/assistant", label: "Assistant", icon: Sparkles, color: "#8B5CF6", part: 1 },
       { to: "/quizzes", label: "Quizzes", icon: ListChecks, part: 1 },
@@ -85,7 +85,7 @@ export const NAV: NavGroup[] = [
 export const MOBILE_TABS: NavItem[] = [
   { to: "/", label: "Home", icon: LayoutDashboard, match: (p) => p === "/" },
   { to: "/library", label: "Labs", icon: BookOpenText, match: (p) => p.startsWith("/library") },
-  { to: "/playground/chemistry", label: "Playground", icon: Beaker },
+  { to: "/playground", label: "Playground", icon: Beaker, match: (p) => p.startsWith("/playground") },
   { to: "/assistant", label: "AI", icon: Sparkles },
   { to: "/profile", label: "Profile", icon: UserRound, match: (p) => ["/profile", "/progress", "/achievements", "/settings"].some((x) => p.startsWith(x)) },
 ];

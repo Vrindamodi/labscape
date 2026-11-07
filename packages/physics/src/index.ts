@@ -5,3 +5,5 @@ export * from "./core";
 export * from "./protocol";
 export * from "./labs";
 export * from "./ui";
+export * from "./sandbox/CircuitSandbox";
+export * from "./sandbox/MotionSandbox";

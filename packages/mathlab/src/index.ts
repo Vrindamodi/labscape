@@ -4,3 +4,4 @@
 export * from "./core";
 export * from "./labs";
 export * from "./ui";
+export * from "./sandbox/GraphSandbox";

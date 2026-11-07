@@ -33,6 +33,8 @@ const Notebook = lazy(() => import("./pages/Notebook"));
 const NotebookEntry = lazy(() => import("./pages/Notebook").then((m) => ({ default: m.NotebookEntry })));
 const Replay = lazy(() => import("./pages/Replay"));
 const Compare = lazy(() => import("./pages/Compare"));
+const Playground = lazy(() => import("./pages/Playground"));
+const PlaygroundRun = lazy(() => import("./pages/Playground").then((m) => ({ default: m.PlaygroundRun })));
 const NotFound = lazy(() => import("./pages/NotFound"));
 // Part 4 route, lazy so its assets only load on the playground (performance budget).
 const ChemistryPlaygroundRoute = lazy(() => import("./routes/playground/ChemistryPlaygroundRoute"));
@@ -59,7 +61,7 @@ export function App() {
           <Route path="plans" element={<Plans />} />
           <Route path="settings" element={<Settings />} />
           <Route path="admin" element={<Gate need="admin"><Admin /></Gate>} />
-          <Route path="playground/chemistry" element={<ChemistryPlaygroundRoute />} />
+          <Route path="playground/chemistry" element={<Gate need="session"><ChemistryPlaygroundRoute /></Gate>} />
           <Route path="lab/:subject/:slug" element={<ExperimentPlayer />} />
           <Route path="periodic-table" element={<PeriodicTable />} />
           <Route path="equipment" element={<EquipmentPage />} />
@@ -73,7 +75,9 @@ export function App() {
           <Route path="notebook/:attemptId" element={<Gate need="session"><NotebookEntry /></Gate>} />
           <Route path="replay/:attemptId" element={<Gate need="session"><Replay /></Gate>} />
           <Route path="compare" element={<Compare />} />
-          {["community", "playground"].map((p) => (
+          <Route path="playground" element={<Gate need="session"><Playground /></Gate>} />
+          <Route path="playground/:mode" element={<Gate need="session"><PlaygroundRun /></Gate>} />
+          {["community"].map((p) => (
             <Route key={p} path={p} element={<ComingSoon />} />
           ))}
           <Route path="*" element={<NotFound />} />
