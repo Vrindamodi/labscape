@@ -1,0 +1,334 @@
+{
+  "version": 1,
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "id": "maths-unit-circle",
+  "slug": "unit-circle-trig",
+  "subject": "maths",
+  "title": "The unit circle and trig graphs",
+  "setup": {},
+  "steps": [
+    {
+      "id": "thirty",
+      "title": "sin 30°",
+      "instruction": "Turn the radius to 30° and read sin 30° off the circle (the height of the point).",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "30-1",
+        "30-2",
+        "30-3"
+      ]
+    },
+    {
+      "id": "quadrant",
+      "title": "Second quadrant",
+      "instruction": "Turn to an angle between 90° and 180° and read its cosine. Watch the sign.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "q2-1",
+        "q2-2",
+        "q2-3"
+      ]
+    },
+    {
+      "id": "equal",
+      "title": "sin = cos",
+      "instruction": "Find an angle where sine and cosine are equal, and mark it.",
+      "action": "timer.mark",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "eq-1",
+        "eq-2",
+        "eq-3"
+      ]
+    },
+    {
+      "id": "radians",
+      "title": "Radians",
+      "instruction": "Switch to radians, turn to 60°, and enter it in radians.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "rad-1",
+        "rad-2",
+        "rad-3"
+      ]
+    },
+    {
+      "id": "period",
+      "title": "A full turn",
+      "instruction": "Turn all the way round to 360° and watch one full wave of sine unroll.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "per-1",
+        "per-2",
+        "per-3"
+      ]
+    }
+  ],
+  "hints": {
+    "30-1": {
+      "rung": 1,
+      "text": "sin is the vertical height of the point on the circle."
+    },
+    "30-2": {
+      "rung": 2,
+      "text": "The radius is 1, so heights go from −1 to 1."
+    },
+    "30-3": {
+      "rung": 3,
+      "text": "sin 30° = 0.5."
+    },
+    "q2-1": {
+      "rung": 1,
+      "text": "Past 90° the point is left of the vertical axis."
+    },
+    "q2-2": {
+      "rung": 2,
+      "text": "So the cosine is negative there."
+    },
+    "q2-3": {
+      "rung": 3,
+      "text": "At 120°, cos = −0.5."
+    },
+    "eq-1": {
+      "rung": 1,
+      "text": "Equal height and width."
+    },
+    "eq-2": {
+      "rung": 2,
+      "text": "Halfway between the axes."
+    },
+    "eq-3": {
+      "rung": 3,
+      "text": "45° (or 225°)."
+    },
+    "rad-1": {
+      "rung": 1,
+      "text": "180° = π radians."
+    },
+    "rad-2": {
+      "rung": 2,
+      "text": "60° = π/3."
+    },
+    "rad-3": {
+      "rung": 3,
+      "text": "π/3 ≈ 1.047."
+    },
+    "per-1": {
+      "rung": 1,
+      "text": "Keep turning."
+    },
+    "per-2": {
+      "rung": 2,
+      "text": "Go past 270°."
+    },
+    "per-3": {
+      "rung": 3,
+      "text": "Turn to 360°."
+    }
+  },
+  "observations": {
+    "whatHappened": "As the radius turned, the point's height traced the sine wave and its horizontal position traced the cosine wave. After a full turn both waves repeated.",
+    "why": "On a circle of radius 1, the point at angle θ is (cos θ, sin θ). The signs depend on the quadrant. A full turn is 360° or 2π radians, which is why sine and cosine repeat every 2π.",
+    "equationLatex": "\\sin^2\\theta + \\cos^2\\theta = 1 \\qquad 180^\\circ = \\pi\\ \\text{rad}",
+    "realWorld": [
+      "Sound and light waves",
+      "Alternating current",
+      "Ferris wheels and rotation"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "In the second quadrant (90°–180°)…",
+        "choices": [
+          "sin and cos are both positive",
+          "sin is positive, cos negative",
+          "sin is negative, cos positive",
+          "both negative"
+        ],
+        "answer": 1,
+        "explain": "The point is above the x-axis but left of the y-axis."
+      },
+      {
+        "id": "q2",
+        "question": "How many radians make a full turn?",
+        "choices": [
+          "π",
+          "2π",
+          "360",
+          "π/2"
+        ],
+        "answer": 1,
+        "explain": "360° = 2π rad."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 18,
+    "captions": [
+      {
+        "t": 1000,
+        "text": "At 30° the point is half way up: sin 30° = 0.5."
+      },
+      {
+        "t": 3400,
+        "text": "Past 90°, the point crosses left: cosine goes negative.",
+        "slow": true
+      },
+      {
+        "t": 5800,
+        "text": "At 45° height and width match."
+      },
+      {
+        "t": 9400,
+        "text": "A full turn unrolls one whole sine wave."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 30
+        }
+      },
+      {
+        "t": 2200,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "circle",
+          "reading": {
+            "key": "sin",
+            "value": 0.5,
+            "unit": ""
+          }
+        }
+      },
+      {
+        "t": 3400,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 120
+        }
+      },
+      {
+        "t": 4600,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "circle",
+          "reading": {
+            "key": "cos",
+            "value": -0.5,
+            "unit": ""
+          }
+        }
+      },
+      {
+        "t": 5800,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 45
+        }
+      },
+      {
+        "t": 7000,
+        "type": "timer.mark",
+        "payload": {
+          "label": "sin-equals-cos"
+        }
+      },
+      {
+        "t": 8200,
+        "type": "param.set",
+        "payload": {
+          "key": "units",
+          "value": "rad"
+        }
+      },
+      {
+        "t": 9400,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 60
+        }
+      },
+      {
+        "t": 10600,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "circle",
+          "reading": {
+            "key": "rad",
+            "value": 1.047,
+            "unit": "rad"
+          }
+        }
+      },
+      {
+        "t": 11800,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 180
+        }
+      },
+      {
+        "t": 12500,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 270
+        }
+      },
+      {
+        "t": 13200,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 360
+        }
+      },
+      {
+        "t": 14700,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 1
+        }
+      },
+      {
+        "t": 15100,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 1
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 0,
+    "sequence": 10,
+    "technique": 30,
+    "measurement": 45,
+    "observation": 15
+  }
+}

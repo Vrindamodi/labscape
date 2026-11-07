@@ -1,0 +1,367 @@
+{
+  "version": 1,
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "id": "phys-archimedes",
+  "slug": "archimedes-principle",
+  "subject": "physics",
+  "title": "Archimedes' principle",
+  "setup": {
+    "sinker": "brass",
+    "g": 9.81,
+    "dripMl": 4
+  },
+  "steps": [
+    {
+      "id": "weigh-air",
+      "title": "Weigh in air",
+      "instruction": "Hang the sinker on the spring balance and read its weight.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "air-1",
+        "air-2",
+        "air-3"
+      ]
+    },
+    {
+      "id": "fill-can",
+      "title": "Fill the overflow can",
+      "instruction": "Fill the can until water runs out of the spout, and wait until it stops dripping.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "can-1",
+        "can-2",
+        "can-3"
+      ]
+    },
+    {
+      "id": "cylinder",
+      "title": "Place the cylinder",
+      "instruction": "Put an empty measuring cylinder under the spout.",
+      "action": "param.set",
+      "scoring": {
+        "sequence": 1
+      },
+      "hints": [
+        "cyl-1",
+        "cyl-2",
+        "cyl-3"
+      ]
+    },
+    {
+      "id": "immerse",
+      "title": "Lower the sinker",
+      "instruction": "Lower the sinker until it is completely under water, without touching the bottom.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "imm-1",
+        "imm-2",
+        "imm-3"
+      ]
+    },
+    {
+      "id": "weigh-water",
+      "title": "Weigh in water",
+      "instruction": "Read the spring balance now.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "wat-1",
+        "wat-2",
+        "wat-3"
+      ]
+    },
+    {
+      "id": "volume",
+      "title": "Read the cylinder",
+      "instruction": "Read the volume of water that overflowed.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "vol-1",
+        "vol-2",
+        "vol-3"
+      ]
+    },
+    {
+      "id": "compare",
+      "title": "Compare",
+      "instruction": "Enter the upthrust (loss of weight) and the weight of the water displaced.",
+      "action": "param.set",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "cmp-1",
+        "cmp-2",
+        "cmp-3"
+      ]
+    }
+  ],
+  "hints": {
+    "air-1": {
+      "rung": 1,
+      "text": "The balance reads in newtons."
+    },
+    "air-2": {
+      "rung": 2,
+      "text": "Let it hang still before reading."
+    },
+    "air-3": {
+      "rung": 3,
+      "text": "Record the reading with the sinker in air."
+    },
+    "can-1": {
+      "rung": 1,
+      "text": "Any water that runs out now must not be counted later."
+    },
+    "can-2": {
+      "rung": 2,
+      "text": "Fill past the spout, then wait for the last drip."
+    },
+    "can-3": {
+      "rung": 3,
+      "text": "Fill the can, then press Wait until the dripping stops."
+    },
+    "cyl-1": {
+      "rung": 1,
+      "text": "Displaced water comes out of the spout."
+    },
+    "cyl-2": {
+      "rung": 2,
+      "text": "Put the empty cylinder under it now."
+    },
+    "cyl-3": {
+      "rung": 3,
+      "text": "Place the measuring cylinder."
+    },
+    "imm-1": {
+      "rung": 1,
+      "text": "All of it must be under water."
+    },
+    "imm-2": {
+      "rung": 2,
+      "text": "But it must hang freely."
+    },
+    "imm-3": {
+      "rung": 3,
+      "text": "Lower until fully covered, clear of the bottom."
+    },
+    "wat-1": {
+      "rung": 1,
+      "text": "It should read less than in air."
+    },
+    "wat-2": {
+      "rung": 2,
+      "text": "Wait for the overflow to finish."
+    },
+    "wat-3": {
+      "rung": 3,
+      "text": "Record the reading."
+    },
+    "vol-1": {
+      "rung": 1,
+      "text": "Read the bottom of the meniscus."
+    },
+    "vol-2": {
+      "rung": 2,
+      "text": "Eye level with the surface."
+    },
+    "vol-3": {
+      "rung": 3,
+      "text": "Record the volume in mL."
+    },
+    "cmp-1": {
+      "rung": 1,
+      "text": "Upthrust = weight in air − weight in water."
+    },
+    "cmp-2": {
+      "rung": 2,
+      "text": "1 mL of water has a mass of 1 g."
+    },
+    "cmp-3": {
+      "rung": 3,
+      "text": "Weight of water = (volume in mL ÷ 1000) × 9.81 N."
+    }
+  },
+  "observations": {
+    "whatHappened": "The sinker weighed less in water. The loss of weight was the same as the weight of the water it pushed out of the can.",
+    "why": "Water pushes up on anything in it. Archimedes' principle: the upthrust equals the weight of the fluid displaced. A brass sinker displaces its own volume of water (20 mL = 20 g), so it is pushed up with about 0.2 N.",
+    "equationLatex": "F_{\\text{up}} = \\rho_{\\text{fluid}}\\, V_{\\text{displaced}}\\, g",
+    "realWorld": [
+      "Ships float because they displace a lot of water",
+      "Hydrometers measure density",
+      "Submarines take in water to sink"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "The upthrust on a fully submerged object depends on…",
+        "choices": [
+          "its mass",
+          "its volume and the fluid's density",
+          "how deep it is",
+          "its colour"
+        ],
+        "answer": 1,
+        "explain": "Upthrust = weight of the fluid displaced = ρ V g."
+      },
+      {
+        "id": "q2",
+        "question": "Why wait for the can to stop dripping first?",
+        "choices": [
+          "To keep the bench dry",
+          "So only water pushed out by the sinker is collected",
+          "Water must settle to read the balance",
+          "No reason"
+        ],
+        "answer": 1,
+        "explain": "Otherwise the cylinder catches extra water and the volume is too big."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 18,
+    "captions": [
+      {
+        "t": 1000,
+        "text": "Weigh the sinker in air."
+      },
+      {
+        "t": 2200,
+        "text": "Fill the can to the spout and wait for the last drip.",
+        "slow": true
+      },
+      {
+        "t": 6600,
+        "text": "Lower it until fully covered, hanging freely."
+      },
+      {
+        "t": 9800,
+        "text": "Loss of weight equals the weight of water displaced."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "balance",
+          "reading": {
+            "key": "air",
+            "value": 1.67,
+            "unit": "N"
+          }
+        }
+      },
+      {
+        "t": 2200,
+        "type": "param.set",
+        "payload": {
+          "key": "fill-can",
+          "value": true
+        }
+      },
+      {
+        "t": 5400,
+        "type": "param.set",
+        "payload": {
+          "key": "wait-drip",
+          "value": true
+        }
+      },
+      {
+        "t": 6600,
+        "type": "param.set",
+        "payload": {
+          "key": "cylinder",
+          "value": true
+        }
+      },
+      {
+        "t": 7800,
+        "type": "param.set",
+        "payload": {
+          "key": "immerse",
+          "value": 1
+        }
+      },
+      {
+        "t": 9800,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "balance",
+          "reading": {
+            "key": "water",
+            "value": 1.47,
+            "unit": "N"
+          }
+        }
+      },
+      {
+        "t": 11000,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "cylinder",
+          "reading": {
+            "key": "volume",
+            "value": 20,
+            "unit": "mL"
+          }
+        }
+      },
+      {
+        "t": 12200,
+        "type": "param.set",
+        "payload": {
+          "key": "result:upthrust",
+          "value": 0.2
+        }
+      },
+      {
+        "t": 13400,
+        "type": "param.set",
+        "payload": {
+          "key": "result:displaced",
+          "value": 0.2
+        }
+      },
+      {
+        "t": 14900,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 1
+        }
+      },
+      {
+        "t": 15300,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 1
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 0,
+    "sequence": 15,
+    "technique": 25,
+    "measurement": 45,
+    "observation": 15
+  }
+}

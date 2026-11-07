@@ -1,0 +1,413 @@
+{
+  "version": 1,
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "id": "phys-series-parallel",
+  "slug": "series-and-parallel",
+  "subject": "physics",
+  "title": "Series and parallel circuits",
+  "setup": {
+    "parts": [
+      {
+        "id": "B",
+        "kind": "battery",
+        "value": 3,
+        "internal": 0.3
+      },
+      {
+        "id": "S",
+        "kind": "switch",
+        "closed": false
+      },
+      {
+        "id": "A",
+        "kind": "ammeter"
+      },
+      {
+        "id": "L1",
+        "kind": "bulb",
+        "value": 10
+      },
+      {
+        "id": "L2",
+        "kind": "bulb",
+        "value": 10
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "series",
+      "title": "Bulbs in series",
+      "instruction": "Wire both bulbs one after the other in a single loop with the switch and ammeter, then close the switch.",
+      "action": "equipment.connect",
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "series-1",
+        "series-2",
+        "series-3"
+      ]
+    },
+    {
+      "id": "series-read",
+      "title": "Read the current",
+      "instruction": "Read the ammeter.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "sread-1",
+        "sread-2",
+        "sread-3"
+      ]
+    },
+    {
+      "id": "parallel",
+      "title": "Bulbs in parallel",
+      "instruction": "Open the switch and rewire so each bulb has its own path between the same two points. Close the switch.",
+      "action": "equipment.connect",
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "par-1",
+        "par-2",
+        "par-3"
+      ]
+    },
+    {
+      "id": "parallel-read",
+      "title": "Read the current again",
+      "instruction": "Read the ammeter in the main branch.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "pread-1",
+        "pread-2",
+        "pread-3"
+      ]
+    },
+    {
+      "id": "unscrew",
+      "title": "Unscrew one bulb",
+      "instruction": "With the parallel circuit on, unscrew one bulb. What happens to the other?",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "unscrew-1",
+        "unscrew-2",
+        "unscrew-3"
+      ]
+    }
+  ],
+  "hints": {
+    "series-1": {
+      "rung": 1,
+      "text": "In series there is only one path for the current."
+    },
+    "series-2": {
+      "rung": 2,
+      "text": "Connect bulb 1's end to bulb 2's start."
+    },
+    "series-3": {
+      "rung": 3,
+      "text": "Battery + → switch → ammeter → bulb 1 → bulb 2 → battery −. Close the switch."
+    },
+    "sread-1": {
+      "rung": 1,
+      "text": "The ammeter is already in the loop."
+    },
+    "sread-2": {
+      "rung": 2,
+      "text": "Read the number on the ammeter."
+    },
+    "sread-3": {
+      "rung": 3,
+      "text": "Record the ammeter reading."
+    },
+    "par-1": {
+      "rung": 1,
+      "text": "In parallel each bulb connects across the same two points."
+    },
+    "par-2": {
+      "rung": 2,
+      "text": "Join the two left ends together and the two right ends together."
+    },
+    "par-3": {
+      "rung": 3,
+      "text": "Remove the link between the bulbs, then join L1's left end to L2's left end and L1's right end to L2's right end, and the right ends to battery −."
+    },
+    "pread-1": {
+      "rung": 1,
+      "text": "The ammeter is in the main branch, before the current splits."
+    },
+    "pread-2": {
+      "rung": 2,
+      "text": "Read it with both bulbs lit."
+    },
+    "pread-3": {
+      "rung": 3,
+      "text": "Record the ammeter reading."
+    },
+    "unscrew-1": {
+      "rung": 1,
+      "text": "Each bulb in parallel has its own path."
+    },
+    "unscrew-2": {
+      "rung": 2,
+      "text": "Click a bulb to unscrew it."
+    },
+    "unscrew-3": {
+      "rung": 3,
+      "text": "Unscrew bulb 1 and watch bulb 2."
+    }
+  },
+  "observations": {
+    "whatHappened": "In series both bulbs were dim and the current was small. In parallel both were bright, the current from the battery was about four times bigger, and one bulb stayed lit when the other was removed.",
+    "why": "In series the resistances add (10 + 10 = 20 Ω), so less current flows and each bulb gets half the voltage. In parallel each bulb gets the full battery voltage, the total resistance halves (5 Ω), and each branch works on its own.",
+    "equationLatex": "R_{\\text{series}} = R_1 + R_2 \\qquad \\frac{1}{R_{\\text{parallel}}} = \\frac{1}{R_1} + \\frac{1}{R_2}",
+    "realWorld": [
+      "House wiring is parallel so each light switches on its own",
+      "Old fairy lights were series: one dead bulb and they all went out",
+      "Batteries in series for more voltage"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "Two identical bulbs in series compared with one bulb alone are…",
+        "choices": [
+          "brighter",
+          "the same",
+          "dimmer",
+          "off"
+        ],
+        "answer": 2,
+        "explain": "Each gets half the voltage and the current is smaller."
+      },
+      {
+        "id": "q2",
+        "question": "Why are homes wired in parallel?",
+        "choices": [
+          "It uses less wire",
+          "Each appliance gets the full voltage and can be switched on its own",
+          "Parallel circuits have more resistance",
+          "So all lights go off together"
+        ],
+        "answer": 1,
+        "explain": "Every branch gets the mains voltage and works independently."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 27,
+    "captions": [
+      {
+        "t": 1000,
+        "text": "Series first: one single loop through both bulbs."
+      },
+      {
+        "t": 7000,
+        "text": "Both bulbs are dim. Note the current."
+      },
+      {
+        "t": 10600,
+        "text": "Now give each bulb its own path between the same two points.",
+        "slow": true
+      },
+      {
+        "t": 17000,
+        "text": "Brighter, and the battery supplies more current."
+      },
+      {
+        "t": 19500,
+        "text": "Unscrew one: the other stays lit. Each branch is independent."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "B.a",
+          "to": "S.a"
+        }
+      },
+      {
+        "t": 2200,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "S.b",
+          "to": "A.a"
+        }
+      },
+      {
+        "t": 3400,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "A.b",
+          "to": "L1.a"
+        }
+      },
+      {
+        "t": 4600,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "L1.b",
+          "to": "L2.a"
+        }
+      },
+      {
+        "t": 5800,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "L2.b",
+          "to": "B.b"
+        }
+      },
+      {
+        "t": 7000,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": true
+        }
+      },
+      {
+        "t": 8200,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "ammeter",
+          "reading": {
+            "key": "I",
+            "value": 0.148,
+            "unit": "A"
+          }
+        }
+      },
+      {
+        "t": 9400,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": false
+        }
+      },
+      {
+        "t": 10600,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "L1.b",
+          "to": "L2.a",
+          "port": "remove"
+        }
+      },
+      {
+        "t": 11800,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "L2.b",
+          "to": "B.b",
+          "port": "remove"
+        }
+      },
+      {
+        "t": 13000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "L1.a",
+          "to": "L2.a"
+        }
+      },
+      {
+        "t": 14200,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "L1.b",
+          "to": "L2.b"
+        }
+      },
+      {
+        "t": 15400,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "L1.b",
+          "to": "B.b"
+        }
+      },
+      {
+        "t": 16600,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": true
+        }
+      },
+      {
+        "t": 17800,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "ammeter",
+          "reading": {
+            "key": "I",
+            "value": 0.565,
+            "unit": "A"
+          }
+        }
+      },
+      {
+        "t": 19000,
+        "type": "param.set",
+        "payload": {
+          "key": "bulb:L1",
+          "value": "out"
+        }
+      },
+      {
+        "t": 20800,
+        "type": "param.set",
+        "payload": {
+          "key": "bulb:L1",
+          "value": "in"
+        }
+      },
+      {
+        "t": 22000,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": false
+        }
+      },
+      {
+        "t": 23500,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 2
+        }
+      },
+      {
+        "t": 23900,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 1
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 30,
+    "sequence": 10,
+    "technique": 10,
+    "measurement": 30,
+    "observation": 20
+  }
+}

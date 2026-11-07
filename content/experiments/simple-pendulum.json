@@ -1,0 +1,481 @@
+{
+  "version": 1,
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "id": "phys-pendulum",
+  "slug": "simple-pendulum",
+  "subject": "physics",
+  "title": "Simple pendulum",
+  "setup": {
+    "g": 9.81,
+    "bobRadiusM": 0.015
+  },
+  "steps": [
+    {
+      "id": "measure-L",
+      "title": "Measure the length",
+      "instruction": "Measure from the point of suspension to the centre of the bob.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "len-1",
+        "len-2",
+        "len-3"
+      ]
+    },
+    {
+      "id": "release",
+      "title": "Release gently",
+      "instruction": "Pull the bob aside less than 10° and let go without pushing.",
+      "action": "sim.start",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "rel-1",
+        "rel-2",
+        "rel-3"
+      ]
+    },
+    {
+      "id": "time-20",
+      "title": "Time 20 oscillations",
+      "instruction": "Start the stopwatch as the bob passes the centre, count 20 complete oscillations, and stop.",
+      "action": "measure.read",
+      "scoring": {
+        "technique": 1,
+        "measurement": 1
+      },
+      "hints": [
+        "time-1",
+        "time-2",
+        "time-3"
+      ]
+    },
+    {
+      "id": "five-lengths",
+      "title": "Five lengths",
+      "instruction": "Repeat for five different lengths.",
+      "action": "param.set",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "five-1",
+        "five-2",
+        "five-3"
+      ]
+    },
+    {
+      "id": "result",
+      "title": "Find g",
+      "instruction": "Plot T² against L. The gradient is 4π²/g. Enter your value of g.",
+      "action": "param.set",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "g-1",
+        "g-2",
+        "g-3"
+      ]
+    }
+  ],
+  "hints": {
+    "len-1": {
+      "rung": 1,
+      "text": "The length is not just the string."
+    },
+    "len-2": {
+      "rung": 2,
+      "text": "It runs to the centre of the bob: string + radius."
+    },
+    "len-3": {
+      "rung": 3,
+      "text": "Measure the string and add the bob's radius (1.5 cm)."
+    },
+    "rel-1": {
+      "rung": 1,
+      "text": "Big swings change the period."
+    },
+    "rel-2": {
+      "rung": 2,
+      "text": "Set the release angle under 10°."
+    },
+    "rel-3": {
+      "rung": 3,
+      "text": "Set about 5°, then release."
+    },
+    "time-1": {
+      "rung": 1,
+      "text": "One oscillation is there and back."
+    },
+    "time-2": {
+      "rung": 2,
+      "text": "Start and stop as the bob passes the lowest point: it moves fastest there, so the moment is sharp."
+    },
+    "time-3": {
+      "rung": 3,
+      "text": "Count \"zero\" as you start, stop on \"twenty\", and divide the time by 20."
+    },
+    "five-1": {
+      "rung": 1,
+      "text": "Spread the lengths out."
+    },
+    "five-2": {
+      "rung": 2,
+      "text": "Try about 0.3, 0.45, 0.6, 0.75 and 0.9 m."
+    },
+    "five-3": {
+      "rung": 3,
+      "text": "Measure L and time 20 swings for each."
+    },
+    "g-1": {
+      "rung": 1,
+      "text": "T² = (4π²/g) L."
+    },
+    "g-2": {
+      "rung": 2,
+      "text": "Gradient = T² / L for your best-fit line."
+    },
+    "g-3": {
+      "rung": 3,
+      "text": "g = 4π² ÷ gradient. It should be close to 9.8 m/s²."
+    }
+  },
+  "observations": {
+    "whatHappened": "Longer pendulums swung more slowly. T² against L was a straight line through the origin, and its gradient gave g close to 9.8 m/s².",
+    "why": "For small swings the period depends only on length and gravity: T = 2π√(L/g). Squaring gives T² = (4π²/g) L, a straight line. Timing 20 swings divides your reaction-time error by 20; small angles keep the formula accurate.",
+    "equationLatex": "T = 2\\pi\\sqrt{\\frac{L}{g}} \\qquad T^2 = \\frac{4\\pi^2}{g}L",
+    "realWorld": [
+      "Pendulum clocks",
+      "Swings in a playground",
+      "Measuring g at different places on Earth"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "Doubling the mass of the bob makes the period…",
+        "choices": [
+          "double",
+          "halve",
+          "stay the same",
+          "four times longer"
+        ],
+        "answer": 2,
+        "explain": "Mass does not appear in T = 2π√(L/g)."
+      },
+      {
+        "id": "q2",
+        "question": "To double the period you must make the length…",
+        "choices": [
+          "twice as long",
+          "four times as long",
+          "half as long",
+          "√2 times as long"
+        ],
+        "answer": 1,
+        "explain": "T ∝ √L, so 4× the length doubles T."
+      },
+      {
+        "id": "q3",
+        "question": "Why time 20 oscillations, not 1?",
+        "choices": [
+          "It is more fun",
+          "Your reaction-time error is spread over 20 swings",
+          "One swing is too fast to see",
+          "The first swing is always wrong"
+        ],
+        "answer": 1,
+        "explain": "The same ~0.2 s error becomes 0.01 s per swing."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 43,
+    "captions": [
+      {
+        "t": 1000,
+        "text": "A small angle: under 10°."
+      },
+      {
+        "t": 2200,
+        "text": "Measure to the centre of the bob, not the top.",
+        "slow": true
+      },
+      {
+        "t": 5800,
+        "text": "Time 20 complete oscillations from the centre of the swing."
+      },
+      {
+        "t": 12000,
+        "text": "Longer pendulum, slower swing. Five lengths in all."
+      },
+      {
+        "t": 38000,
+        "text": "T² against L is a straight line: the gradient gives g."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "param.set",
+        "payload": {
+          "key": "amplitude",
+          "value": 6
+        }
+      },
+      {
+        "t": 2200,
+        "type": "param.set",
+        "payload": {
+          "key": "length",
+          "value": 0.3
+        }
+      },
+      {
+        "t": 3400,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "metre-rule",
+          "reading": {
+            "key": "L",
+            "value": 0.315,
+            "unit": "m"
+          }
+        }
+      },
+      {
+        "t": 4600,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 6600,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "stopwatch",
+          "reading": {
+            "key": "t:20",
+            "value": 22.53,
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "t": 7800,
+        "type": "sim.reset",
+        "payload": {}
+      },
+      {
+        "t": 9000,
+        "type": "param.set",
+        "payload": {
+          "key": "length",
+          "value": 0.45
+        }
+      },
+      {
+        "t": 10200,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "metre-rule",
+          "reading": {
+            "key": "L",
+            "value": 0.465,
+            "unit": "m"
+          }
+        }
+      },
+      {
+        "t": 11400,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 13400,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "stopwatch",
+          "reading": {
+            "key": "t:20",
+            "value": 27.38,
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "t": 14600,
+        "type": "sim.reset",
+        "payload": {}
+      },
+      {
+        "t": 15800,
+        "type": "param.set",
+        "payload": {
+          "key": "length",
+          "value": 0.6
+        }
+      },
+      {
+        "t": 17000,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "metre-rule",
+          "reading": {
+            "key": "L",
+            "value": 0.615,
+            "unit": "m"
+          }
+        }
+      },
+      {
+        "t": 18200,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 20200,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "stopwatch",
+          "reading": {
+            "key": "t:20",
+            "value": 31.49,
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "t": 21400,
+        "type": "sim.reset",
+        "payload": {}
+      },
+      {
+        "t": 22600,
+        "type": "param.set",
+        "payload": {
+          "key": "length",
+          "value": 0.75
+        }
+      },
+      {
+        "t": 23800,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "metre-rule",
+          "reading": {
+            "key": "L",
+            "value": 0.765,
+            "unit": "m"
+          }
+        }
+      },
+      {
+        "t": 25000,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 27000,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "stopwatch",
+          "reading": {
+            "key": "t:20",
+            "value": 35.12,
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "t": 28200,
+        "type": "sim.reset",
+        "payload": {}
+      },
+      {
+        "t": 29400,
+        "type": "param.set",
+        "payload": {
+          "key": "length",
+          "value": 0.9
+        }
+      },
+      {
+        "t": 30600,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "metre-rule",
+          "reading": {
+            "key": "L",
+            "value": 0.915,
+            "unit": "m"
+          }
+        }
+      },
+      {
+        "t": 31800,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 33800,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "stopwatch",
+          "reading": {
+            "key": "t:20",
+            "value": 38.4,
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "t": 35000,
+        "type": "sim.reset",
+        "payload": {}
+      },
+      {
+        "t": 37700,
+        "type": "param.set",
+        "payload": {
+          "key": "result:g",
+          "value": 9.8
+        }
+      },
+      {
+        "t": 39200,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 2
+        }
+      },
+      {
+        "t": 39600,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 1
+        }
+      },
+      {
+        "t": 40000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q3",
+          "value": 1
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 0,
+    "sequence": 15,
+    "technique": 25,
+    "measurement": 45,
+    "observation": 15
+  }
+}

@@ -1,0 +1,591 @@
+{
+  "version": 1,
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "id": "phys-ohms-law",
+  "slug": "ohms-law",
+  "subject": "physics",
+  "title": "Ohm's law",
+  "setup": {
+    "parts": [
+      {
+        "id": "B",
+        "kind": "battery",
+        "value": 3,
+        "internal": 0.2
+      },
+      {
+        "id": "S",
+        "kind": "switch",
+        "closed": false
+      },
+      {
+        "id": "Rh",
+        "kind": "rheostat",
+        "value": 50,
+        "setting": 1
+      },
+      {
+        "id": "R",
+        "kind": "resistor",
+        "value": 10
+      },
+      {
+        "id": "A",
+        "kind": "ammeter"
+      },
+      {
+        "id": "V",
+        "kind": "voltmeter"
+      }
+    ],
+    "unknownId": "R"
+  },
+  "steps": [
+    {
+      "id": "build",
+      "title": "Build the circuit",
+      "instruction": "With the switch open, wire the battery, switch, rheostat, ammeter and resistor in one loop. Then connect the voltmeter across the resistor only.",
+      "action": "equipment.connect",
+      "scoring": {
+        "equipment": 1,
+        "sequence": 1
+      },
+      "hints": [
+        "build-1",
+        "build-2",
+        "build-3"
+      ]
+    },
+    {
+      "id": "close",
+      "title": "Close the switch",
+      "instruction": "Check the circuit, then close the switch.",
+      "action": "param.set",
+      "scoring": {
+        "sequence": 1
+      },
+      "hints": [
+        "close-1",
+        "close-2",
+        "close-3"
+      ]
+    },
+    {
+      "id": "readings",
+      "title": "Take five readings",
+      "instruction": "Read the voltmeter and ammeter at five rheostat settings. Open the switch between readings so the resistor does not warm up.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1,
+        "technique": 1
+      },
+      "hints": [
+        "read-1",
+        "read-2",
+        "read-3"
+      ]
+    },
+    {
+      "id": "switch-off",
+      "title": "Switch off",
+      "instruction": "Open the switch when you have your readings.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "off-1",
+        "off-2",
+        "off-3"
+      ]
+    },
+    {
+      "id": "result",
+      "title": "Find R",
+      "instruction": "Plot V against I. The gradient of the best-fit line through the origin is the resistance. Enter it.",
+      "action": "param.set",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "result-1",
+        "result-2",
+        "result-3"
+      ]
+    }
+  ],
+  "hints": {
+    "build-1": {
+      "rung": 1,
+      "text": "Trace the loop with your finger: every part except the voltmeter should be in one single path."
+    },
+    "build-2": {
+      "rung": 2,
+      "text": "The ammeter goes in series, in the same loop as the resistor. The voltmeter goes across the resistor: its two leads on the resistor's two ends."
+    },
+    "build-3": {
+      "rung": 3,
+      "text": "Battery + to switch, switch to rheostat, rheostat to ammeter +, ammeter − to resistor, resistor back to battery −. Then voltmeter + and − to the two ends of the resistor."
+    },
+    "close-1": {
+      "rung": 1,
+      "text": "Everything is wired. What lets current flow?"
+    },
+    "close-2": {
+      "rung": 2,
+      "text": "Click the switch to close it."
+    },
+    "close-3": {
+      "rung": 3,
+      "text": "Close the switch: the meters should now read."
+    },
+    "read-1": {
+      "rung": 1,
+      "text": "Change the rheostat between readings so each pair is different."
+    },
+    "read-2": {
+      "rung": 2,
+      "text": "Close the switch, read both meters, then open the switch before moving the rheostat."
+    },
+    "read-3": {
+      "rung": 3,
+      "text": "Close, record V and I, open. Move the rheostat. Repeat until you have five pairs."
+    },
+    "off-1": {
+      "rung": 1,
+      "text": "Is current still flowing?"
+    },
+    "off-2": {
+      "rung": 2,
+      "text": "Open the switch."
+    },
+    "off-3": {
+      "rung": 3,
+      "text": "Click the switch to open it."
+    },
+    "result-1": {
+      "rung": 1,
+      "text": "R = V ÷ I for each pair. They should all be about the same."
+    },
+    "result-2": {
+      "rung": 2,
+      "text": "Use the graph: the gradient of V against I is R."
+    },
+    "result-3": {
+      "rung": 3,
+      "text": "Take the gradient of the best-fit line through the origin, to two decimal places."
+    }
+  },
+  "observations": {
+    "whatHappened": "As you turned the rheostat down, both readings went up together, and the points fell on a straight line through the origin.",
+    "why": "For a resistor at constant temperature the current is proportional to the voltage across it: V = IR. The gradient of the V-I graph is the resistance. Switching off between readings keeps the resistor cool, because hot metal has a higher resistance.",
+    "equationLatex": "V = IR",
+    "realWorld": [
+      "Choosing resistors for LEDs",
+      "Heating elements and fuses",
+      "Dimmer switches"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "Doubling the voltage across a fixed resistor makes the current…",
+        "choices": [
+          "halve",
+          "stay the same",
+          "double",
+          "quadruple"
+        ],
+        "answer": 2,
+        "explain": "I = V/R, so with R fixed the current is proportional to V."
+      },
+      {
+        "id": "q2",
+        "question": "Why open the switch between readings?",
+        "choices": [
+          "To save the battery only",
+          "So the resistor does not heat up and change its resistance",
+          "Because meters only work when it is off",
+          "It makes no difference"
+        ],
+        "answer": 1,
+        "explain": "Current heats the resistor; a warmer metal has a higher resistance, which would bend the line."
+      },
+      {
+        "id": "q3",
+        "question": "Where must the voltmeter go?",
+        "choices": [
+          "In series with the resistor",
+          "Across (in parallel with) the resistor",
+          "Next to the battery only",
+          "Anywhere in the loop"
+        ],
+        "answer": 1,
+        "explain": "A voltmeter measures the difference across a component, so it connects to both its ends."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 43,
+    "captions": [
+      {
+        "t": 1000,
+        "text": "Build the loop with the switch open: battery, switch, rheostat, ammeter, resistor."
+      },
+      {
+        "t": 7000,
+        "text": "The voltmeter goes across the resistor, not in the loop.",
+        "slow": true
+      },
+      {
+        "t": 9800,
+        "text": "Close the switch, read both meters, then open it again."
+      },
+      {
+        "t": 16000,
+        "text": "A new rheostat setting gives a new pair of readings."
+      },
+      {
+        "t": 28000,
+        "text": "Five readings: V over I is the same every time. That is Ohm's law."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "B.a",
+          "to": "S.a"
+        }
+      },
+      {
+        "t": 2200,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "S.b",
+          "to": "Rh.a"
+        }
+      },
+      {
+        "t": 3400,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "Rh.b",
+          "to": "A.a"
+        }
+      },
+      {
+        "t": 4600,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "A.b",
+          "to": "R.a"
+        }
+      },
+      {
+        "t": 5800,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "R.b",
+          "to": "B.b"
+        }
+      },
+      {
+        "t": 7000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "V.a",
+          "to": "R.a"
+        }
+      },
+      {
+        "t": 8200,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "V.b",
+          "to": "R.b"
+        }
+      },
+      {
+        "t": 9400,
+        "type": "param.set",
+        "payload": {
+          "key": "rheostat",
+          "value": 1
+        }
+      },
+      {
+        "t": 10600,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": true
+        }
+      },
+      {
+        "t": 11800,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "voltmeter",
+          "reading": {
+            "key": "V",
+            "value": 0.5,
+            "unit": "V"
+          }
+        }
+      },
+      {
+        "t": 12700,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "ammeter",
+          "reading": {
+            "key": "I",
+            "value": 0.05,
+            "unit": "A"
+          }
+        }
+      },
+      {
+        "t": 13600,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": false
+        }
+      },
+      {
+        "t": 14800,
+        "type": "param.set",
+        "payload": {
+          "key": "rheostat",
+          "value": 0.75
+        }
+      },
+      {
+        "t": 16000,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": true
+        }
+      },
+      {
+        "t": 17200,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "voltmeter",
+          "reading": {
+            "key": "V",
+            "value": 0.63,
+            "unit": "V"
+          }
+        }
+      },
+      {
+        "t": 18100,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "ammeter",
+          "reading": {
+            "key": "I",
+            "value": 0.063,
+            "unit": "A"
+          }
+        }
+      },
+      {
+        "t": 19000,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": false
+        }
+      },
+      {
+        "t": 20200,
+        "type": "param.set",
+        "payload": {
+          "key": "rheostat",
+          "value": 0.5
+        }
+      },
+      {
+        "t": 21400,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": true
+        }
+      },
+      {
+        "t": 22600,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "voltmeter",
+          "reading": {
+            "key": "V",
+            "value": 0.85,
+            "unit": "V"
+          }
+        }
+      },
+      {
+        "t": 23500,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "ammeter",
+          "reading": {
+            "key": "I",
+            "value": 0.085,
+            "unit": "A"
+          }
+        }
+      },
+      {
+        "t": 24400,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": false
+        }
+      },
+      {
+        "t": 25600,
+        "type": "param.set",
+        "payload": {
+          "key": "rheostat",
+          "value": 0.3
+        }
+      },
+      {
+        "t": 26800,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": true
+        }
+      },
+      {
+        "t": 28000,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "voltmeter",
+          "reading": {
+            "key": "V",
+            "value": 1.19,
+            "unit": "V"
+          }
+        }
+      },
+      {
+        "t": 28900,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "ammeter",
+          "reading": {
+            "key": "I",
+            "value": 0.119,
+            "unit": "A"
+          }
+        }
+      },
+      {
+        "t": 29800,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": false
+        }
+      },
+      {
+        "t": 31000,
+        "type": "param.set",
+        "payload": {
+          "key": "rheostat",
+          "value": 0.15
+        }
+      },
+      {
+        "t": 32200,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": true
+        }
+      },
+      {
+        "t": 33400,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "voltmeter",
+          "reading": {
+            "key": "V",
+            "value": 1.7,
+            "unit": "V"
+          }
+        }
+      },
+      {
+        "t": 34300,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "ammeter",
+          "reading": {
+            "key": "I",
+            "value": 0.169,
+            "unit": "A"
+          }
+        }
+      },
+      {
+        "t": 35200,
+        "type": "param.set",
+        "payload": {
+          "key": "switch",
+          "value": false
+        }
+      },
+      {
+        "t": 37900,
+        "type": "param.set",
+        "payload": {
+          "key": "result:R",
+          "value": 10.03
+        }
+      },
+      {
+        "t": 39400,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 2
+        }
+      },
+      {
+        "t": 39800,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 1
+        }
+      },
+      {
+        "t": 40200,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q3",
+          "value": 1
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 15,
+    "sequence": 15,
+    "technique": 20,
+    "measurement": 35,
+    "observation": 15
+  }
+}

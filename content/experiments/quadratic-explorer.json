@@ -1,0 +1,331 @@
+{
+  "version": 1,
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "id": "maths-quadratic",
+  "slug": "quadratic-explorer",
+  "subject": "maths",
+  "title": "Quadratic explorer",
+  "setup": {},
+  "steps": [
+    {
+      "id": "vertex",
+      "title": "Move the vertex",
+      "instruction": "Make a parabola that opens upwards with its vertex at (2, −3).",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "vtx-1",
+        "vtx-2",
+        "vtx-3"
+      ]
+    },
+    {
+      "id": "touch",
+      "title": "One root",
+      "instruction": "Change c until the curve just touches the x-axis.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "touch-1",
+        "touch-2",
+        "touch-3"
+      ]
+    },
+    {
+      "id": "complex",
+      "title": "No real roots",
+      "instruction": "Lift it clear of the axis. Watch the roots leave for the complex plane.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "cx-1",
+        "cx-2",
+        "cx-3"
+      ]
+    },
+    {
+      "id": "flip",
+      "title": "Upside down",
+      "instruction": "Make a parabola that opens downwards and crosses the x-axis at −1 and 3.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "flip-1",
+        "flip-2",
+        "flip-3"
+      ]
+    },
+    {
+      "id": "roots",
+      "title": "Read the roots",
+      "instruction": "Set y = 2x² − 4x − 6 and enter both roots.",
+      "action": "param.set",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "roots-1",
+        "roots-2",
+        "roots-3"
+      ]
+    }
+  ],
+  "hints": {
+    "vtx-1": {
+      "rung": 1,
+      "text": "The vertex is at x = −b / 2a."
+    },
+    "vtx-2": {
+      "rung": 2,
+      "text": "With a = 1 you need b = −4. Now move c to put the vertex at y = −3."
+    },
+    "vtx-3": {
+      "rung": 3,
+      "text": "a = 1, b = −4, c = 1: y = (x − 2)² − 3."
+    },
+    "touch-1": {
+      "rung": 1,
+      "text": "Watch the discriminant gauge."
+    },
+    "touch-2": {
+      "rung": 2,
+      "text": "One root when b² − 4ac = 0."
+    },
+    "touch-3": {
+      "rung": 3,
+      "text": "With a = 1, b = −4, set c = 4."
+    },
+    "cx-1": {
+      "rung": 1,
+      "text": "Push the curve up."
+    },
+    "cx-2": {
+      "rung": 2,
+      "text": "b² − 4ac below zero."
+    },
+    "cx-3": {
+      "rung": 3,
+      "text": "Make c bigger, say 6."
+    },
+    "flip-1": {
+      "rung": 1,
+      "text": "Negative a flips it."
+    },
+    "flip-2": {
+      "rung": 2,
+      "text": "Roots −1 and 3 means y = a(x + 1)(x − 3)."
+    },
+    "flip-3": {
+      "rung": 3,
+      "text": "a = −1, b = 2, c = 3."
+    },
+    "roots-1": {
+      "rung": 1,
+      "text": "Set a = 2, b = −4, c = −6."
+    },
+    "roots-2": {
+      "rung": 2,
+      "text": "Roots are where the curve crosses the x-axis."
+    },
+    "roots-3": {
+      "rung": 3,
+      "text": "Read the two crossing points and enter them."
+    }
+  },
+  "observations": {
+    "whatHappened": "Changing c slid the curve up and down; changing b moved the vertex sideways along a curve; changing a's sign flipped it. As the curve lifted off the axis, the two roots merged into one and then became a complex pair.",
+    "why": "y = ax² + bx + c has its vertex at x = −b/2a. The discriminant b² − 4ac decides the roots: positive gives two, zero gives one (touching), negative gives none on the real axis, only a complex conjugate pair.",
+    "equationLatex": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+    "realWorld": [
+      "Paths of balls and fountains",
+      "Maximising area or profit",
+      "Satellite dishes and headlights (parabolic shape)"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "If b² − 4ac < 0, the graph…",
+        "choices": [
+          "crosses the x-axis twice",
+          "touches the x-axis once",
+          "does not meet the x-axis",
+          "is a straight line"
+        ],
+        "answer": 2,
+        "explain": "No real roots: the curve stays above or below the axis."
+      },
+      {
+        "id": "q2",
+        "question": "Making a negative…",
+        "choices": [
+          "moves the vertex up",
+          "flips the parabola upside down",
+          "doubles the roots",
+          "has no effect"
+        ],
+        "answer": 1,
+        "explain": "The x² term then pulls y down for large |x|."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 20,
+    "captions": [
+      {
+        "t": 1000,
+        "text": "a = 1, b = −4 puts the vertex at x = 2; c slides it to y = −3."
+      },
+      {
+        "t": 4600,
+        "text": "c = 4: the roots merge and the curve just touches.",
+        "slow": true
+      },
+      {
+        "t": 5800,
+        "text": "Above the axis the roots become a complex pair."
+      },
+      {
+        "t": 7000,
+        "text": "a negative flips it; roots at −1 and 3."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "param.set",
+        "payload": {
+          "key": "a",
+          "value": 1
+        }
+      },
+      {
+        "t": 2200,
+        "type": "param.set",
+        "payload": {
+          "key": "b",
+          "value": -4
+        }
+      },
+      {
+        "t": 3400,
+        "type": "param.set",
+        "payload": {
+          "key": "c",
+          "value": 1
+        }
+      },
+      {
+        "t": 4600,
+        "type": "param.set",
+        "payload": {
+          "key": "c",
+          "value": 4
+        }
+      },
+      {
+        "t": 5800,
+        "type": "param.set",
+        "payload": {
+          "key": "c",
+          "value": 6
+        }
+      },
+      {
+        "t": 7000,
+        "type": "param.set",
+        "payload": {
+          "key": "a",
+          "value": -1
+        }
+      },
+      {
+        "t": 8200,
+        "type": "param.set",
+        "payload": {
+          "key": "b",
+          "value": 2
+        }
+      },
+      {
+        "t": 9400,
+        "type": "param.set",
+        "payload": {
+          "key": "c",
+          "value": 3
+        }
+      },
+      {
+        "t": 10600,
+        "type": "param.set",
+        "payload": {
+          "key": "a",
+          "value": 2
+        }
+      },
+      {
+        "t": 11800,
+        "type": "param.set",
+        "payload": {
+          "key": "b",
+          "value": -4
+        }
+      },
+      {
+        "t": 13000,
+        "type": "param.set",
+        "payload": {
+          "key": "c",
+          "value": -6
+        }
+      },
+      {
+        "t": 14200,
+        "type": "param.set",
+        "payload": {
+          "key": "result:root1",
+          "value": -1
+        }
+      },
+      {
+        "t": 15400,
+        "type": "param.set",
+        "payload": {
+          "key": "result:root2",
+          "value": 3
+        }
+      },
+      {
+        "t": 16900,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 2
+        }
+      },
+      {
+        "t": 17300,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 1
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 0,
+    "sequence": 10,
+    "technique": 50,
+    "measurement": 25,
+    "observation": 15
+  }
+}

@@ -1,0 +1,298 @@
+{
+  "version": 1,
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "id": "maths-riemann",
+  "slug": "riemann-sums",
+  "subject": "maths",
+  "title": "Riemann sums",
+  "setup": {
+    "f": "x^2",
+    "a": 0,
+    "b": 2
+  },
+  "steps": [
+    {
+      "id": "left-4",
+      "title": "Left rectangles",
+      "instruction": "Use 4 left rectangles under y = x² from 0 to 2 and record the sum.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "l4-1",
+        "l4-2",
+        "l4-3"
+      ]
+    },
+    {
+      "id": "right-4",
+      "title": "Right rectangles",
+      "instruction": "Switch to right rectangles and record the sum.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "r4-1",
+        "r4-2",
+        "r4-3"
+      ]
+    },
+    {
+      "id": "converge",
+      "title": "Close in",
+      "instruction": "Keep doubling n (any method) until a sum is within 0.01 of the true area. Record it.",
+      "action": "measure.read",
+      "scoring": {
+        "technique": 1,
+        "measurement": 1
+      },
+      "hints": [
+        "conv-1",
+        "conv-2",
+        "conv-3"
+      ]
+    },
+    {
+      "id": "area",
+      "title": "The area",
+      "instruction": "Enter the exact area the sums are closing in on.",
+      "action": "param.set",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "area-1",
+        "area-2",
+        "area-3"
+      ]
+    }
+  ],
+  "hints": {
+    "l4-1": {
+      "rung": 1,
+      "text": "Each rectangle is 0.5 wide."
+    },
+    "l4-2": {
+      "rung": 2,
+      "text": "Heights f(0), f(0.5), f(1), f(1.5)."
+    },
+    "l4-3": {
+      "rung": 3,
+      "text": "Sum = 0.5 × (0 + 0.25 + 1 + 2.25) = 1.75."
+    },
+    "r4-1": {
+      "rung": 1,
+      "text": "Right ends: f(0.5) … f(2)."
+    },
+    "r4-2": {
+      "rung": 2,
+      "text": "Each rectangle pokes above the curve."
+    },
+    "r4-3": {
+      "rung": 3,
+      "text": "3.75."
+    },
+    "conv-1": {
+      "rung": 1,
+      "text": "Midpoint closes in fastest."
+    },
+    "conv-2": {
+      "rung": 2,
+      "text": "Double n: 8, 16 ..."
+    },
+    "conv-3": {
+      "rung": 3,
+      "text": "Midpoint with n = 16 gives 2.664."
+    },
+    "area-1": {
+      "rung": 1,
+      "text": "Left and right squeeze from both sides."
+    },
+    "area-2": {
+      "rung": 2,
+      "text": "It is ∫₀² x² dx = x³/3 from 0 to 2."
+    },
+    "area-3": {
+      "rung": 3,
+      "text": "8/3 ≈ 2.667."
+    }
+  },
+  "observations": {
+    "whatHappened": "Left rectangles sat under the rising curve and right ones poked over it. As n doubled, every rectangle split in two and all the sums closed in on one number, about 2.667.",
+    "why": "The area under a curve is the limit of the sums as the rectangles get thinner. For y = x² from 0 to 2 the limit is the integral, x³/3 evaluated from 0 to 2 = 8/3.",
+    "equationLatex": "\\int_0^2 x^2\\,dx = \\lim_{n \\to \\infty} \\sum_{i=1}^{n} f(x_i)\\,\\Delta x = \\frac{8}{3}",
+    "realWorld": [
+      "Distance from a speed-time graph",
+      "Work done by a varying force",
+      "Total rainfall from a rate"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "For an increasing function, left sums…",
+        "choices": [
+          "over-estimate",
+          "under-estimate",
+          "are exact",
+          "are negative"
+        ],
+        "answer": 1,
+        "explain": "Each rectangle uses the lowest height in its strip."
+      },
+      {
+        "id": "q2",
+        "question": "Doubling n makes the error…",
+        "choices": [
+          "bigger",
+          "smaller",
+          "the same",
+          "zero"
+        ],
+        "answer": 1,
+        "explain": "Thinner rectangles hug the curve more closely."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 17,
+    "captions": [
+      {
+        "t": 1000,
+        "text": "Four left rectangles: 1.75, under the curve."
+      },
+      {
+        "t": 4600,
+        "text": "Right rectangles: 3.75, over it."
+      },
+      {
+        "t": 5800,
+        "text": "Midpoints, doubling n: each rectangle splits in two.",
+        "slow": true
+      },
+      {
+        "t": 10600,
+        "text": "The sums close in on 8/3."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "param.set",
+        "payload": {
+          "key": "method",
+          "value": "left"
+        }
+      },
+      {
+        "t": 2200,
+        "type": "param.set",
+        "payload": {
+          "key": "n",
+          "value": 4
+        }
+      },
+      {
+        "t": 3400,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "sums",
+          "reading": {
+            "key": "sum",
+            "value": 1.75,
+            "unit": ""
+          }
+        }
+      },
+      {
+        "t": 4600,
+        "type": "param.set",
+        "payload": {
+          "key": "method",
+          "value": "right"
+        }
+      },
+      {
+        "t": 5800,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "sums",
+          "reading": {
+            "key": "sum",
+            "value": 3.75,
+            "unit": ""
+          }
+        }
+      },
+      {
+        "t": 7000,
+        "type": "param.set",
+        "payload": {
+          "key": "method",
+          "value": "midpoint"
+        }
+      },
+      {
+        "t": 8200,
+        "type": "param.set",
+        "payload": {
+          "key": "n",
+          "value": 8
+        }
+      },
+      {
+        "t": 9400,
+        "type": "param.set",
+        "payload": {
+          "key": "n",
+          "value": 16
+        }
+      },
+      {
+        "t": 10600,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "sums",
+          "reading": {
+            "key": "sum",
+            "value": 2.6640625,
+            "unit": ""
+          }
+        }
+      },
+      {
+        "t": 11800,
+        "type": "param.set",
+        "payload": {
+          "key": "result:area",
+          "value": 2.667
+        }
+      },
+      {
+        "t": 13300,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 1
+        }
+      },
+      {
+        "t": 13700,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 1
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 0,
+    "sequence": 10,
+    "technique": 25,
+    "measurement": 50,
+    "observation": 15
+  }
+}

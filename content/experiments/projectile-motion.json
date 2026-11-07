@@ -1,0 +1,400 @@
+{
+  "version": 1,
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "id": "phys-projectile",
+  "slug": "projectile-motion",
+  "subject": "physics",
+  "title": "Projectile motion",
+  "setup": {
+    "targetM": 30,
+    "targetTolM": 0.5
+  },
+  "steps": [
+    {
+      "id": "first-launch",
+      "title": "Launch at 45°",
+      "instruction": "On Earth, launch at 20 m/s and 45° with air resistance off.",
+      "action": "sim.start",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "launch-1",
+        "launch-2",
+        "launch-3"
+      ]
+    },
+    {
+      "id": "measure",
+      "title": "Measure the range",
+      "instruction": "Use the tape to measure from the launcher to where it landed.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "tape-1",
+        "tape-2",
+        "tape-3"
+      ]
+    },
+    {
+      "id": "complementary",
+      "title": "Complementary angles",
+      "instruction": "Launch at two angles that add up to 90° (for example 30° and 60°) at the same speed. Compare the ranges.",
+      "action": "sim.start",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "comp-1",
+        "comp-2",
+        "comp-3"
+      ]
+    },
+    {
+      "id": "target",
+      "title": "Hit the target",
+      "instruction": "The target is 30 m away. Keep 20 m/s and find an angle that lands within half a metre of it.",
+      "action": "sim.start",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "target-1",
+        "target-2",
+        "target-3"
+      ]
+    },
+    {
+      "id": "air",
+      "title": "Add air resistance",
+      "instruction": "Repeat one of your launches with air resistance on.",
+      "action": "sim.start",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "air-1",
+        "air-2",
+        "air-3"
+      ]
+    },
+    {
+      "id": "moon",
+      "title": "Try the Moon",
+      "instruction": "Optional: launch on the Moon.",
+      "action": "sim.start",
+      "optional": true,
+      "hints": [
+        "moon-1",
+        "moon-2",
+        "moon-3"
+      ]
+    }
+  ],
+  "hints": {
+    "launch-1": {
+      "rung": 1,
+      "text": "Set the speed and angle first."
+    },
+    "launch-2": {
+      "rung": 2,
+      "text": "Speed 20 m/s, angle 45°, drag off, Earth."
+    },
+    "launch-3": {
+      "rung": 3,
+      "text": "Then press Launch."
+    },
+    "tape-1": {
+      "rung": 1,
+      "text": "Wait until it lands."
+    },
+    "tape-2": {
+      "rung": 2,
+      "text": "Measure from the launch point to the centre of the landing mark."
+    },
+    "tape-3": {
+      "rung": 3,
+      "text": "Record the range shown on the tape."
+    },
+    "comp-1": {
+      "rung": 1,
+      "text": "Complementary angles add to 90°."
+    },
+    "comp-2": {
+      "rung": 2,
+      "text": "Try 30° then 60°."
+    },
+    "comp-3": {
+      "rung": 3,
+      "text": "Set 30°, launch; set 60°, launch. Same speed both times."
+    },
+    "target-1": {
+      "rung": 1,
+      "text": "45° went too far. Lower or raise the angle?"
+    },
+    "target-2": {
+      "rung": 2,
+      "text": "Range = v² sin 2θ / g. You need sin 2θ = 30 × 9.81 / 400."
+    },
+    "target-3": {
+      "rung": 3,
+      "text": "sin 2θ = 0.736, so 2θ ≈ 47.4° and θ ≈ 23.7° (or 66.3°)."
+    },
+    "air-1": {
+      "rung": 1,
+      "text": "Switch air resistance on."
+    },
+    "air-2": {
+      "rung": 2,
+      "text": "Keep the same speed and angle as before."
+    },
+    "air-3": {
+      "rung": 3,
+      "text": "Turn drag on at 20 m/s and 45°, and launch."
+    },
+    "moon-1": {
+      "rung": 1,
+      "text": "Pick the Moon."
+    },
+    "moon-2": {
+      "rung": 2,
+      "text": "g is 1.62 m/s² there."
+    },
+    "moon-3": {
+      "rung": 3,
+      "text": "Choose Moon and launch."
+    }
+  },
+  "observations": {
+    "whatHappened": "45° gave the longest range. 30° and 60° landed in the same place. With air resistance the path was lopsided and shorter. On the Moon it flew about six times further.",
+    "why": "Without air the horizontal speed stays constant while gravity changes the vertical speed. The range is v² sin 2θ / g, which is largest at 45° and the same for θ and 90° − θ. Drag slows the ball throughout, so it falls short and comes down more steeply.",
+    "equationLatex": "R = \\frac{v^2 \\sin 2\\theta}{g} \\qquad H = \\frac{v^2 \\sin^2 \\theta}{2g}",
+    "realWorld": [
+      "Long jump and javelin angles",
+      "Basketball shots",
+      "Fountains and water jets"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "With no air resistance, which angle gives the greatest range?",
+        "choices": [
+          "30°",
+          "45°",
+          "60°",
+          "90°"
+        ],
+        "answer": 1,
+        "explain": "sin 2θ is largest (1) when 2θ = 90°."
+      },
+      {
+        "id": "q2",
+        "question": "During the flight (no drag), the horizontal velocity…",
+        "choices": [
+          "increases",
+          "decreases",
+          "stays the same",
+          "becomes zero at the top"
+        ],
+        "answer": 2,
+        "explain": "No horizontal force acts, so the horizontal velocity is constant."
+      },
+      {
+        "id": "q3",
+        "question": "Air resistance makes the range…",
+        "choices": [
+          "longer",
+          "shorter",
+          "unchanged",
+          "longer for heavy balls only"
+        ],
+        "answer": 1,
+        "explain": "Drag opposes the motion and removes energy."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 36,
+    "captions": [
+      {
+        "t": 1000,
+        "text": "20 m/s at 45°, no air resistance."
+      },
+      {
+        "t": 6500,
+        "text": "Measure from the launcher to the mark."
+      },
+      {
+        "t": 7700,
+        "text": "30° and 60° add to 90°: watch them land together.",
+        "slow": true
+      },
+      {
+        "t": 15000,
+        "text": "Aim for the 30 m target: about 23.7°."
+      },
+      {
+        "t": 19500,
+        "text": "Same launch with air resistance: shorter and steeper."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "param.set",
+        "payload": {
+          "key": "planet",
+          "value": "earth"
+        }
+      },
+      {
+        "t": 2200,
+        "type": "param.set",
+        "payload": {
+          "key": "speed",
+          "value": 20
+        }
+      },
+      {
+        "t": 3400,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 45
+        }
+      },
+      {
+        "t": 4600,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 8100,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "tape",
+          "reading": {
+            "key": "range",
+            "value": 40.77,
+            "unit": "m"
+          }
+        }
+      },
+      {
+        "t": 9300,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 30
+        }
+      },
+      {
+        "t": 10500,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 13500,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 60
+        }
+      },
+      {
+        "t": 14100,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 18100,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 23.7
+        }
+      },
+      {
+        "t": 19300,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 22300,
+        "type": "param.set",
+        "payload": {
+          "key": "angle",
+          "value": 45
+        }
+      },
+      {
+        "t": 23500,
+        "type": "param.set",
+        "payload": {
+          "key": "drag",
+          "value": true
+        }
+      },
+      {
+        "t": 24700,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 28200,
+        "type": "param.set",
+        "payload": {
+          "key": "drag",
+          "value": false
+        }
+      },
+      {
+        "t": 29400,
+        "type": "param.set",
+        "payload": {
+          "key": "planet",
+          "value": "moon"
+        }
+      },
+      {
+        "t": 30600,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 32100,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 1
+        }
+      },
+      {
+        "t": 32500,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 2
+        }
+      },
+      {
+        "t": 32900,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q3",
+          "value": 1
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 0,
+    "sequence": 15,
+    "technique": 25,
+    "measurement": 40,
+    "observation": 20
+  }
+}
