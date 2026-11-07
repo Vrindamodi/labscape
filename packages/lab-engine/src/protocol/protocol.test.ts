@@ -88,10 +88,20 @@ describe("cross-engine fixture", () => {
       const r = runSession(content, goldenEvents(content.golden), { tailMs: 1000 });
       out[slug] = { hash: r.hash, score: r.report.score };
     }
+    // Part 3: physics and maths run through the same server bundle.
+    const { PHYSICS_CONTENT, PHYSICS_MODELS } = await import("@labscape/physics/labs");
+    const { MATHS_CONTENT, MATHS_MODELS } = await import("@labscape/mathlab/labs");
+    const { runSim, simGoldenEvents, simHash } = await import("@labscape/physics/protocol");
+    for (const [contents, models] of [[PHYSICS_CONTENT, PHYSICS_MODELS], [MATHS_CONTENT, MATHS_MODELS]] as const) {
+      for (const [slug, content] of Object.entries(contents)) {
+        const r = runSim(content, models[slug]!, simGoldenEvents(content));
+        out[slug] = { hash: simHash(r.state), score: r.report.score };
+      }
+    }
     const file = path.resolve(process.cwd(), "../../apps/api/src/test/resources/engine-golden-hashes.json");
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(out, null, 2) + "\n");
-    expect(Object.keys(out).length).toBe(7);
+    expect(Object.keys(out).length).toBe(19);
   });
 });
 

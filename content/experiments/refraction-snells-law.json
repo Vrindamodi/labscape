@@ -2,7 +2,7 @@
   "version": 1,
   "fidelity": "exact",
   "reviewStatus": "draft",
-  "id": "phys-glass-slab",
+  "id": "phys-refraction",
   "slug": "refraction-snells-law",
   "subject": "physics",
   "title": "Refraction through a glass slab",

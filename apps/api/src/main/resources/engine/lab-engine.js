@@ -5,26 +5,28 @@ var LabEngine = (() => {
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
-  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __defNormalProp = (obj, key2, value) => key2 in obj ? __defProp(obj, key2, { enumerable: true, configurable: true, writable: true, value }) : obj[key2] = value;
   var __export = (target2, all) => {
     for (var name in all)
       __defProp(target2, name, { get: all[name], enumerable: true });
   };
   var __copyProps = (to, from, except, desc) => {
     if (from && typeof from === "object" || typeof from === "function") {
-      for (let key of __getOwnPropNames(from))
-        if (!__hasOwnProp.call(to, key) && key !== except)
-          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+      for (let key2 of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key2) && key2 !== except)
+          __defProp(to, key2, { get: () => from[key2], enumerable: !(desc = __getOwnPropDesc(from, key2)) || desc.enumerable });
     }
     return to;
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  var __publicField = (obj, key2, value) => __defNormalProp(obj, typeof key2 !== "symbol" ? key2 + "" : key2, value);
 
   // src/server.ts
   var server_exports = {};
   __export(server_exports, {
     ENGINE_VERSION: () => ENGINE_VERSION,
+    SIM_VERSION: () => SIM_VERSION,
+    checkJson: () => checkJson,
     contentJson: () => contentJson,
     scoreJson: () => scoreJson,
     simulateJson: () => simulateJson,
@@ -115,9 +117,9 @@ var LabEngine = (() => {
     let basePh = solvePh(dissolved, volumeMl);
     let changed = false;
     for (let pass = 0; pass < (active.length > 1 ? 3 : 1); pass++) {
-      for (const key of active) {
-        const d = PRECIPITATES[key];
-        const solid = solids[key] ?? 0;
+      for (const key2 of active) {
+        const d = PRECIPITATES[key2];
+        const solid = solids[key2] ?? 0;
         const totCat = (dissolved[d.cation] ?? 0) + solid * d.nCat;
         const totAn = d.anion === "OH-" ? 0 : (dissolved[d.anion] ?? 0) + solid * d.nAn;
         const trial = { ...dissolved };
@@ -145,8 +147,8 @@ var LabEngine = (() => {
         }
         dissolved[d.cation] = Math.max(0, totCat - x * d.nCat);
         if (d.anion !== "OH-") dissolved[d.anion] = Math.max(0, totAn - x * d.nAn);
-        if (x > 1e-12) solids[key] = x;
-        else delete solids[key];
+        if (x > 1e-12) solids[key2] = x;
+        else delete solids[key2];
         if (x > 1e-12 || solid > 0) {
           changed = true;
           basePh = solvePh(dissolved, volumeMl);
@@ -542,16 +544,16 @@ var LabEngine = (() => {
     portion.volumeMl = l.volumeMl * f;
     if (l.plume) merge(l, 1);
     for (const k in l.ions) {
-      const key = k;
-      const amt = (l.ions[key] ?? 0) * f;
-      portion.ions[key] = amt;
-      l.ions[key] = (l.ions[key] ?? 0) - amt;
+      const key2 = k;
+      const amt = (l.ions[key2] ?? 0) * f;
+      portion.ions[key2] = amt;
+      l.ions[key2] = (l.ions[key2] ?? 0) - amt;
     }
     for (const k in l.solids) {
-      const key = k;
-      const amt = (l.solids[key] ?? 0) * f;
-      portion.solids[key] = amt;
-      l.solids[key] = (l.solids[key] ?? 0) - amt;
+      const key2 = k;
+      const amt = (l.solids[key2] ?? 0) * f;
+      portion.solids[key2] = amt;
+      l.solids[key2] = (l.solids[key2] ?? 0) - amt;
     }
     portion.concAcidMol = l.concAcidMol * f;
     l.concAcidMol -= portion.concAcidMol;
@@ -609,8 +611,8 @@ var LabEngine = (() => {
       l.ions[k] = (l.ions[k] ?? 0) + (add.ions[k] ?? 0);
     }
     for (const k in add.solids) {
-      const key = k;
-      l.solids[key] = (l.solids[key] ?? 0) + (add.solids[key] ?? 0);
+      const key2 = k;
+      l.solids[key2] = (l.solids[key2] ?? 0) + (add.solids[key2] ?? 0);
     }
     l.concAcidMol += add.concAcidMol;
     l.volumeMl += add.volumeMl;
@@ -711,8 +713,8 @@ var LabEngine = (() => {
         const f = l.volumeMl > 0 ? 0.01 / l.volumeMl : 0;
         from.coating = from.coating ?? {};
         for (const k in l.ions) {
-          const key = k;
-          if (FLAME[key] || key === "Cl-") from.coating[key] = (from.coating[key] ?? 0) + (l.ions[key] ?? 0) * f;
+          const key2 = k;
+          if (FLAME[key2] || key2 === "Cl-") from.coating[key2] = (from.coating[key2] ?? 0) + (l.ions[key2] ?? 0) * f;
         }
         break;
       }
@@ -746,8 +748,8 @@ var LabEngine = (() => {
         break;
     }
   }
-  function param(out, key, value) {
-    const [name, id] = key.split(":");
+  function param(out, key2, value) {
+    const [name, id] = key2.split(":");
     const it = id ? out.state.items[id] : void 0;
     if (!it) return;
     switch (name) {
@@ -872,13 +874,13 @@ var LabEngine = (() => {
   }
   function gas(out, it, gasName, ml, molPerS) {
     const s = out.state;
-    const key = `gas:${gasName}:${it.id}`;
-    const prevRate = s.seen[key] ?? 0;
+    const key2 = `gas:${gasName}:${it.id}`;
+    const prevRate = s.seen[key2] ?? 0;
     const ratePerS = molPerS * MOLAR_GAS_ML;
     if (prevRate === 0 || Math.abs(ratePerS - prevRate) / Math.max(prevRate, 1e-6) > 0.5) {
       cue(out, { kind: "gas", target: it.id, ratePerS: round(ratePerS, 3), bubble: ratePerS > 1 ? "coarse" : ratePerS > 0.2 ? "medium" : "fine", gas: gasName, durationMs: 2e3 });
       if (prevRate === 0) note(out, "Fizzing! Bubbles of gas stream off the metal.", "success", it.id, "fizz");
-      s.seen[key] = ratePerS;
+      s.seen[key2] = ratePerS;
     }
     const dest = it.gasTo ? s.items[it.gasTo] : null;
     const holder = dest ?? it;
@@ -916,8 +918,8 @@ var LabEngine = (() => {
   function cue(out, c) {
     out.cues.push(c);
   }
-  function note(out, text, tone, target2, key) {
-    out.notes.push({ text, tone, ...target2 ? { target: target2 } : {}, ...key ? { key } : {} });
+  function note(out, text, tone, target2, key2) {
+    out.notes.push({ text, tone, ...target2 ? { target: target2 } : {}, ...key2 ? { key: key2 } : {} });
   }
   function round(x, dp) {
     const f = Math.pow(10, dp);
@@ -4304,9 +4306,9 @@ var LabEngine = (() => {
       let ok;
       if (pred?.startsWith("new:")) {
         if ((spec.requires ?? []).some((r) => !this.progress(r).done)) return;
-        const key = pred.slice(4);
-        (_a = this.baselines)[_b = spec.id] ?? (_a[_b] = state.seen[key] ?? 0);
-        if ((state.seen[key] ?? 0) <= this.baselines[spec.id]) return;
+        const key2 = pred.slice(4);
+        (_a = this.baselines)[_b = spec.id] ?? (_a[_b] = state.seen[key2] ?? 0);
+        if ((state.seen[key2] ?? 0) <= this.baselines[spec.id]) return;
         ok = true;
       } else if (pred) {
         const holds = predicate(pred, state);
@@ -4397,8 +4399,8 @@ var LabEngine = (() => {
       case "seen":
         return (s.seen[[a, b, c].filter(Boolean).join(":")] ?? 0) > 0;
       case "count": {
-        const key = expr.split(":").slice(2).join(":");
-        return (s.seen[key] ?? 0) >= Number(a);
+        const key2 = expr.split(":").slice(2).join(":");
+        return (s.seen[key2] ?? 0) >= Number(a);
       }
       case "time-at-least":
         return s.t >= Number(a);
@@ -4459,21 +4461,6155 @@ var LabEngine = (() => {
     return { state, report: evaluator.report(), feedback, notes, hash: stateHash(state) };
   }
 
+  // ../../content/experiments/balance-equations.json
+  var balance_equations_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "math-balance",
+    slug: "balance-equations",
+    subject: "maths",
+    title: "Solving equations on a balance",
+    setup: {
+      equations: [
+        [
+          {
+            x: 3,
+            k: 4
+          },
+          {
+            x: 0,
+            k: 19
+          }
+        ],
+        [
+          {
+            x: 2,
+            k: 5
+          },
+          {
+            x: 1,
+            k: 9
+          }
+        ]
+      ]
+    },
+    steps: [
+      {
+        id: "isolate-1",
+        title: "Clear the units",
+        instruction: "3x + 4 = 19. Take 4 units off so only x-bags are left on that side. Keep the scale level.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "iso-1",
+          "iso-2",
+          "iso-3"
+        ]
+      },
+      {
+        id: "solve-1",
+        title: "One bag",
+        instruction: "Share both sides so one x-bag balances some units.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "div-1",
+          "div-2",
+          "div-3"
+        ]
+      },
+      {
+        id: "answer-1",
+        title: "x = ?",
+        instruction: "Enter x.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "ans-1",
+          "ans-2",
+          "ans-3"
+        ]
+      },
+      {
+        id: "collect-2",
+        title: "Bags on one side",
+        instruction: "Next equation: 2x + 5 = x + 9. Get all the x-bags on one side.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "col-1",
+          "col-2",
+          "col-3"
+        ]
+      },
+      {
+        id: "solve-2",
+        title: "Solve it",
+        instruction: "Finish so one x-bag balances some units.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "s2-1",
+          "s2-2",
+          "s2-3"
+        ]
+      },
+      {
+        id: "answer-2",
+        title: "x = ?",
+        instruction: "Enter x.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "ans-1",
+          "ans-2",
+          "ans-3"
+        ]
+      }
+    ],
+    hints: {
+      "iso-1": {
+        rung: 1,
+        text: "Whatever you take from one pan, take from the other."
+      },
+      "iso-2": {
+        rung: 2,
+        text: "Use \u201Cboth sides \u2212 4\u201D."
+      },
+      "iso-3": {
+        rung: 3,
+        text: "Both sides \u2212 4 leaves 3x = 15."
+      },
+      "div-1": {
+        rung: 1,
+        text: "Three bags balance 15 units."
+      },
+      "div-2": {
+        rung: 2,
+        text: "Divide both sides by 3."
+      },
+      "div-3": {
+        rung: 3,
+        text: "Both sides \xF7 3: x = 5."
+      },
+      "ans-1": {
+        rung: 1,
+        text: "Read the units balancing one bag."
+      },
+      "ans-2": {
+        rung: 2,
+        text: "Check by putting it back into the equation."
+      },
+      "ans-3": {
+        rung: 3,
+        text: "Enter that number."
+      },
+      "col-1": {
+        rung: 1,
+        text: "Remove an x-bag from both pans."
+      },
+      "col-2": {
+        rung: 2,
+        text: "Use \u201Cboth sides \u2212 x\u201D."
+      },
+      "col-3": {
+        rung: 3,
+        text: "Both \u2212 x gives x + 5 = 9."
+      },
+      "s2-1": {
+        rung: 1,
+        text: "Now clear the units."
+      },
+      "s2-2": {
+        rung: 2,
+        text: "Both sides \u2212 5."
+      },
+      "s2-3": {
+        rung: 3,
+        text: "x = 4."
+      }
+    },
+    observations: {
+      whatHappened: "Each operation done to both pans kept the scale level, until one x-bag balanced a number of units. Changing one side alone tipped it.",
+      why: "An equation is a balance: both sides are equal. Doing the same thing to both sides keeps them equal, so you can undo each operation in reverse order until x is on its own.",
+      equationLatex: "3x + 4 = 19 \\;\\Rightarrow\\; 3x = 15 \\;\\Rightarrow\\; x = 5",
+      realWorld: [
+        "Working out unknown prices",
+        "Rearranging formulas in physics",
+        "Balancing budgets"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "To solve 5x \u2212 2 = 13, the first step is\u2026",
+          choices: [
+            "divide both sides by 5",
+            "add 2 to both sides",
+            "subtract 13 from both sides",
+            "add 2 to the left only"
+          ],
+          answer: 1,
+          explain: "Undo the \u2212 2 first: 5x = 15."
+        },
+        {
+          id: "q2",
+          question: "Why must every step be done to both sides?",
+          choices: [
+            "It looks tidier",
+            "To keep the two sides equal",
+            "Only the left side matters",
+            "It is a convention"
+          ],
+          answer: 1,
+          explain: "Otherwise the equation is no longer true: the balance tips."
+        }
+      ]
+    },
+    golden: {
+      durationS: 13,
+      captions: [
+        {
+          t: 1e3,
+          text: "Take 4 off both pans: 3x = 15."
+        },
+        {
+          t: 2200,
+          text: "Divide both by 3: x = 5.",
+          slow: true
+        },
+        {
+          t: 4600,
+          text: "2x + 5 = x + 9: take an x-bag off both."
+        },
+        {
+          t: 5800,
+          text: "x + 5 = 9, so x = 4."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "op",
+            value: "both:-4"
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "op",
+            value: "both:/3"
+          }
+        },
+        {
+          t: 3400,
+          type: "param.set",
+          payload: {
+            key: "result:x1",
+            value: 5
+          }
+        },
+        {
+          t: 4600,
+          type: "param.set",
+          payload: {
+            key: "equation",
+            value: 1
+          }
+        },
+        {
+          t: 5800,
+          type: "param.set",
+          payload: {
+            key: "op",
+            value: "both:-x"
+          }
+        },
+        {
+          t: 7e3,
+          type: "param.set",
+          payload: {
+            key: "op",
+            value: "both:-5"
+          }
+        },
+        {
+          t: 8200,
+          type: "param.set",
+          payload: {
+            key: "result:x2",
+            value: 4
+          }
+        },
+        {
+          t: 9700,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 1
+          }
+        },
+        {
+          t: 10100,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 10,
+      technique: 50,
+      measurement: 25,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/derivative-as-slope.json
+  var derivative_as_slope_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "math-derivative-slope",
+    slug: "derivative-as-slope",
+    subject: "maths",
+    title: "Tangents and the derivative",
+    setup: {
+      f: "x^3 - 3x",
+      fprime: "3x^2 - 3"
+    },
+    steps: [
+      {
+        id: "limit",
+        title: "Secant to tangent",
+        instruction: "Put the point at x = 2. Press Limit and watch the secant swing into the tangent as h shrinks.",
+        action: "sim.start",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "lim-1",
+          "lim-2",
+          "lim-3"
+        ]
+      },
+      {
+        id: "slope-at-2",
+        title: "Slope at x = 2",
+        instruction: "Read the slope of the tangent at x = 2.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "s2-1",
+          "s2-2",
+          "s2-3"
+        ]
+      },
+      {
+        id: "flat",
+        title: "Flat tangent",
+        instruction: "Drag the point to where the tangent is horizontal and mark that x.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "flat-1",
+          "flat-2",
+          "flat-3"
+        ]
+      },
+      {
+        id: "derivative",
+        title: "The derivative",
+        instruction: "The lower graph traced the slope at every x. Type its formula.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "d-1",
+          "d-2",
+          "d-3"
+        ]
+      }
+    ],
+    hints: {
+      "lim-1": {
+        rung: 1,
+        text: "Set x to 2 first."
+      },
+      "lim-2": {
+        rung: 2,
+        text: "Limit shrinks h towards zero."
+      },
+      "lim-3": {
+        rung: 3,
+        text: "Press Limit."
+      },
+      "s2-1": {
+        rung: 1,
+        text: "Read the slope readout with h tiny."
+      },
+      "s2-2": {
+        rung: 2,
+        text: "It is the gradient of the tangent line."
+      },
+      "s2-3": {
+        rung: 3,
+        text: "At x = 2 it is 9."
+      },
+      "flat-1": {
+        rung: 1,
+        text: "Horizontal means slope 0."
+      },
+      "flat-2": {
+        rung: 2,
+        text: "Look for the top of the hump or bottom of the dip."
+      },
+      "flat-3": {
+        rung: 3,
+        text: "x = 1 or x = \u22121."
+      },
+      "d-1": {
+        rung: 1,
+        text: "Differentiate term by term."
+      },
+      "d-2": {
+        rung: 2,
+        text: "d/dx x\u207F = n x\u207F\u207B\xB9."
+      },
+      "d-3": {
+        rung: 3,
+        text: "3x\xB2 \u2212 3."
+      }
+    },
+    observations: {
+      whatHappened: "As h shrank, the secant through two points turned into the tangent at one point. Its slope at every x, plotted below, made a new curve: the derivative 3x\xB2 \u2212 3, zero exactly where the original curve had its hump and dip.",
+      why: "The derivative is the limit of the secant slope (f(x + h) \u2212 f(x)) / h as h \u2192 0. Where f has a maximum or minimum the tangent is flat, so f\u2032(x) = 0.",
+      equationLatex: "f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h} \\qquad \\frac{d}{dx}\\left(x^3 - 3x\\right) = 3x^2 - 3",
+      realWorld: [
+        "Speed is the derivative of distance",
+        "Finding maximum profit",
+        "Rates of reaction"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "At a maximum of a smooth curve, the derivative is\u2026",
+          choices: [
+            "positive",
+            "negative",
+            "zero",
+            "undefined"
+          ],
+          answer: 2,
+          explain: "The tangent there is horizontal."
+        },
+        {
+          id: "q2",
+          question: "Where f\u2032(x) > 0, the graph of f is\u2026",
+          choices: [
+            "going up",
+            "going down",
+            "flat",
+            "crossing the axis"
+          ],
+          answer: 0,
+          explain: "Positive slope means increasing."
+        }
+      ]
+    },
+    golden: {
+      durationS: 14,
+      captions: [
+        {
+          t: 1e3,
+          text: "A secant through x = 2 and x = 3."
+        },
+        {
+          t: 3400,
+          text: "Shrink h: the secant swings into the tangent.",
+          slow: true
+        },
+        {
+          t: 4600,
+          text: "Slope at x = 2 is 9."
+        },
+        {
+          t: 5800,
+          text: "At x = 1 the tangent is flat: f\u2032(1) = 0."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "x",
+            value: 2
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "h",
+            value: 1
+          }
+        },
+        {
+          t: 3400,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 5800,
+          type: "measure.read",
+          payload: {
+            instrument: "tangent",
+            reading: {
+              key: "slope",
+              value: 9,
+              unit: ""
+            }
+          }
+        },
+        {
+          t: 7e3,
+          type: "param.set",
+          payload: {
+            key: "x",
+            value: 1
+          }
+        },
+        {
+          t: 8200,
+          type: "measure.read",
+          payload: {
+            instrument: "tangent",
+            reading: {
+              key: "flat-x",
+              value: 1,
+              unit: ""
+            }
+          }
+        },
+        {
+          t: 9400,
+          type: "param.set",
+          payload: {
+            key: "result:fprime",
+            value: "3x^2 - 3"
+          }
+        },
+        {
+          t: 10900,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 2
+          }
+        },
+        {
+          t: 11300,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 0
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 10,
+      technique: 25,
+      measurement: 50,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/dice-probability.json
+  var dice_probability_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "math-probability-dice",
+    slug: "dice-probability",
+    subject: "maths",
+    title: "Coins and dice",
+    setup: {
+      seed: 20261106
+    },
+    steps: [
+      {
+        id: "ten-flips",
+        title: "Ten flips",
+        instruction: "Flip a coin 10 times. Is it exactly half heads?",
+        action: "sim.start",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "ten-1",
+          "ten-2",
+          "ten-3"
+        ]
+      },
+      {
+        id: "thousand",
+        title: "A thousand flips",
+        instruction: "Now flip 1,000 times and record the relative frequency of heads.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "k-1",
+          "k-2",
+          "k-3"
+        ]
+      },
+      {
+        id: "dice-sum",
+        title: "Two dice",
+        instruction: "Roll two dice at least 1,000 times and look at the totals.",
+        action: "sim.start",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "dice-1",
+          "dice-2",
+          "dice-3"
+        ]
+      },
+      {
+        id: "mode",
+        title: "Most likely total",
+        instruction: "Which total comes up most often? Enter it.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "mode-1",
+          "mode-2",
+          "mode-3"
+        ]
+      }
+    ],
+    hints: {
+      "ten-1": {
+        rung: 1,
+        text: "Choose Coin and 10 trials."
+      },
+      "ten-2": {
+        rung: 2,
+        text: "Press Run."
+      },
+      "ten-3": {
+        rung: 3,
+        text: "Run 10 flips."
+      },
+      "k-1": {
+        rung: 1,
+        text: "Set trials to 1,000."
+      },
+      "k-2": {
+        rung: 2,
+        text: "Relative frequency = heads \xF7 flips."
+      },
+      "k-3": {
+        rung: 3,
+        text: "Run, then record heads \xF7 1000."
+      },
+      "dice-1": {
+        rung: 1,
+        text: "Choose Two dice."
+      },
+      "dice-2": {
+        rung: 2,
+        text: "1,000 or more trials."
+      },
+      "dice-3": {
+        rung: 3,
+        text: "Run it."
+      },
+      "mode-1": {
+        rung: 1,
+        text: "Find the tallest bar."
+      },
+      "mode-2": {
+        rung: 2,
+        text: "Count the ways to make each total."
+      },
+      "mode-3": {
+        rung: 3,
+        text: "7: six ways out of 36."
+      }
+    },
+    observations: {
+      whatHappened: "Ten flips were far from half heads, but a thousand came close to 0.5. With two dice the totals made a triangle-shaped histogram peaking at 7, matching the theory bars.",
+      why: "Probability is the long-run relative frequency. Small samples wobble a lot; large ones settle near the theoretical value (the law of large numbers). Seven is the most likely total because more pairs of faces add up to it than to any other.",
+      equationLatex: "P(\\text{sum} = 7) = \\frac{6}{36} = \\frac{1}{6} \\qquad \\text{relative frequency} = \\frac{\\text{successes}}{\\text{trials}}",
+      realWorld: [
+        "Insurance and risk",
+        "Weather forecasts",
+        "Games and fairness checks"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "After 10 flips you got 7 heads. The coin is\u2026",
+          choices: [
+            "definitely biased",
+            "probably fine: 10 flips is a small sample",
+            "fair only if the next 3 are tails",
+            "impossible"
+          ],
+          answer: 1,
+          explain: "Small samples vary a lot; you need many trials."
+        },
+        {
+          id: "q2",
+          question: "P(total of 2) with two dice is\u2026",
+          choices: [
+            "1/6",
+            "1/11",
+            "1/36",
+            "2/36"
+          ],
+          answer: 2,
+          explain: "Only 1 + 1 makes 2: one way out of 36."
+        }
+      ]
+    },
+    golden: {
+      durationS: 19,
+      captions: [
+        {
+          t: 1e3,
+          text: "Ten flips: far from half."
+        },
+        {
+          t: 4600,
+          text: "A thousand flips settle close to 0.5.",
+          slow: true
+        },
+        {
+          t: 8200,
+          text: "Two dice: the totals pile up in the middle."
+        },
+        {
+          t: 11800,
+          text: "7 is the most likely total."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "kind",
+            value: "coin"
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "trials",
+            value: 10
+          }
+        },
+        {
+          t: 3400,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 5800,
+          type: "param.set",
+          payload: {
+            key: "trials",
+            value: 1e3
+          }
+        },
+        {
+          t: 7e3,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 9400,
+          type: "measure.read",
+          payload: {
+            instrument: "trials",
+            reading: {
+              key: "heads-freq",
+              value: 0.501,
+              unit: ""
+            }
+          }
+        },
+        {
+          t: 10600,
+          type: "param.set",
+          payload: {
+            key: "kind",
+            value: "two-dice"
+          }
+        },
+        {
+          t: 11800,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 14200,
+          type: "param.set",
+          payload: {
+            key: "result:mode",
+            value: 7
+          }
+        },
+        {
+          t: 15700,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 1
+          }
+        },
+        {
+          t: 16100,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 2
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 10,
+      technique: 25,
+      measurement: 50,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/quadratic-explorer.json
+  var quadratic_explorer_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "math-quadratic",
+    slug: "quadratic-explorer",
+    subject: "maths",
+    title: "Quadratic explorer",
+    setup: {},
+    steps: [
+      {
+        id: "vertex",
+        title: "Move the vertex",
+        instruction: "Make a parabola that opens upwards with its vertex at (2, \u22123).",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "vtx-1",
+          "vtx-2",
+          "vtx-3"
+        ]
+      },
+      {
+        id: "touch",
+        title: "One root",
+        instruction: "Change c until the curve just touches the x-axis.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "touch-1",
+          "touch-2",
+          "touch-3"
+        ]
+      },
+      {
+        id: "complex",
+        title: "No real roots",
+        instruction: "Lift it clear of the axis. Watch the roots leave for the complex plane.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "cx-1",
+          "cx-2",
+          "cx-3"
+        ]
+      },
+      {
+        id: "flip",
+        title: "Upside down",
+        instruction: "Make a parabola that opens downwards and crosses the x-axis at \u22121 and 3.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "flip-1",
+          "flip-2",
+          "flip-3"
+        ]
+      },
+      {
+        id: "roots",
+        title: "Read the roots",
+        instruction: "Set y = 2x\xB2 \u2212 4x \u2212 6 and enter both roots.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "roots-1",
+          "roots-2",
+          "roots-3"
+        ]
+      }
+    ],
+    hints: {
+      "vtx-1": {
+        rung: 1,
+        text: "The vertex is at x = \u2212b / 2a."
+      },
+      "vtx-2": {
+        rung: 2,
+        text: "With a = 1 you need b = \u22124. Now move c to put the vertex at y = \u22123."
+      },
+      "vtx-3": {
+        rung: 3,
+        text: "a = 1, b = \u22124, c = 1: y = (x \u2212 2)\xB2 \u2212 3."
+      },
+      "touch-1": {
+        rung: 1,
+        text: "Watch the discriminant gauge."
+      },
+      "touch-2": {
+        rung: 2,
+        text: "One root when b\xB2 \u2212 4ac = 0."
+      },
+      "touch-3": {
+        rung: 3,
+        text: "With a = 1, b = \u22124, set c = 4."
+      },
+      "cx-1": {
+        rung: 1,
+        text: "Push the curve up."
+      },
+      "cx-2": {
+        rung: 2,
+        text: "b\xB2 \u2212 4ac below zero."
+      },
+      "cx-3": {
+        rung: 3,
+        text: "Make c bigger, say 6."
+      },
+      "flip-1": {
+        rung: 1,
+        text: "Negative a flips it."
+      },
+      "flip-2": {
+        rung: 2,
+        text: "Roots \u22121 and 3 means y = a(x + 1)(x \u2212 3)."
+      },
+      "flip-3": {
+        rung: 3,
+        text: "a = \u22121, b = 2, c = 3."
+      },
+      "roots-1": {
+        rung: 1,
+        text: "Set a = 2, b = \u22124, c = \u22126."
+      },
+      "roots-2": {
+        rung: 2,
+        text: "Roots are where the curve crosses the x-axis."
+      },
+      "roots-3": {
+        rung: 3,
+        text: "Read the two crossing points and enter them."
+      }
+    },
+    observations: {
+      whatHappened: "Changing c slid the curve up and down; changing b moved the vertex sideways along a curve; changing a's sign flipped it. As the curve lifted off the axis, the two roots merged into one and then became a complex pair.",
+      why: "y = ax\xB2 + bx + c has its vertex at x = \u2212b/2a. The discriminant b\xB2 \u2212 4ac decides the roots: positive gives two, zero gives one (touching), negative gives none on the real axis, only a complex conjugate pair.",
+      equationLatex: "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+      realWorld: [
+        "Paths of balls and fountains",
+        "Maximising area or profit",
+        "Satellite dishes and headlights (parabolic shape)"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "If b\xB2 \u2212 4ac < 0, the graph\u2026",
+          choices: [
+            "crosses the x-axis twice",
+            "touches the x-axis once",
+            "does not meet the x-axis",
+            "is a straight line"
+          ],
+          answer: 2,
+          explain: "No real roots: the curve stays above or below the axis."
+        },
+        {
+          id: "q2",
+          question: "Making a negative\u2026",
+          choices: [
+            "moves the vertex up",
+            "flips the parabola upside down",
+            "doubles the roots",
+            "has no effect"
+          ],
+          answer: 1,
+          explain: "The x\xB2 term then pulls y down for large |x|."
+        }
+      ]
+    },
+    golden: {
+      durationS: 20,
+      captions: [
+        {
+          t: 1e3,
+          text: "a = 1, b = \u22124 puts the vertex at x = 2; c slides it to y = \u22123."
+        },
+        {
+          t: 4600,
+          text: "c = 4: the roots merge and the curve just touches.",
+          slow: true
+        },
+        {
+          t: 5800,
+          text: "Above the axis the roots become a complex pair."
+        },
+        {
+          t: 7e3,
+          text: "a negative flips it; roots at \u22121 and 3."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "a",
+            value: 1
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "b",
+            value: -4
+          }
+        },
+        {
+          t: 3400,
+          type: "param.set",
+          payload: {
+            key: "c",
+            value: 1
+          }
+        },
+        {
+          t: 4600,
+          type: "param.set",
+          payload: {
+            key: "c",
+            value: 4
+          }
+        },
+        {
+          t: 5800,
+          type: "param.set",
+          payload: {
+            key: "c",
+            value: 6
+          }
+        },
+        {
+          t: 7e3,
+          type: "param.set",
+          payload: {
+            key: "a",
+            value: -1
+          }
+        },
+        {
+          t: 8200,
+          type: "param.set",
+          payload: {
+            key: "b",
+            value: 2
+          }
+        },
+        {
+          t: 9400,
+          type: "param.set",
+          payload: {
+            key: "c",
+            value: 3
+          }
+        },
+        {
+          t: 10600,
+          type: "param.set",
+          payload: {
+            key: "a",
+            value: 2
+          }
+        },
+        {
+          t: 11800,
+          type: "param.set",
+          payload: {
+            key: "b",
+            value: -4
+          }
+        },
+        {
+          t: 13e3,
+          type: "param.set",
+          payload: {
+            key: "c",
+            value: -6
+          }
+        },
+        {
+          t: 14200,
+          type: "param.set",
+          payload: {
+            key: "result:root1",
+            value: -1
+          }
+        },
+        {
+          t: 15400,
+          type: "param.set",
+          payload: {
+            key: "result:root2",
+            value: 3
+          }
+        },
+        {
+          t: 16900,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 2
+          }
+        },
+        {
+          t: 17300,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 10,
+      technique: 50,
+      measurement: 25,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/riemann-sums.json
+  var riemann_sums_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "math-riemann-sums",
+    slug: "riemann-sums",
+    subject: "maths",
+    title: "Riemann sums",
+    setup: {
+      f: "x^2",
+      a: 0,
+      b: 2
+    },
+    steps: [
+      {
+        id: "left-4",
+        title: "Left rectangles",
+        instruction: "Use 4 left rectangles under y = x\xB2 from 0 to 2 and record the sum.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "l4-1",
+          "l4-2",
+          "l4-3"
+        ]
+      },
+      {
+        id: "right-4",
+        title: "Right rectangles",
+        instruction: "Switch to right rectangles and record the sum.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "r4-1",
+          "r4-2",
+          "r4-3"
+        ]
+      },
+      {
+        id: "converge",
+        title: "Close in",
+        instruction: "Keep doubling n (any method) until a sum is within 0.01 of the true area. Record it.",
+        action: "measure.read",
+        scoring: {
+          technique: 1,
+          measurement: 1
+        },
+        hints: [
+          "conv-1",
+          "conv-2",
+          "conv-3"
+        ]
+      },
+      {
+        id: "area",
+        title: "The area",
+        instruction: "Enter the exact area the sums are closing in on.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "area-1",
+          "area-2",
+          "area-3"
+        ]
+      }
+    ],
+    hints: {
+      "l4-1": {
+        rung: 1,
+        text: "Each rectangle is 0.5 wide."
+      },
+      "l4-2": {
+        rung: 2,
+        text: "Heights f(0), f(0.5), f(1), f(1.5)."
+      },
+      "l4-3": {
+        rung: 3,
+        text: "Sum = 0.5 \xD7 (0 + 0.25 + 1 + 2.25) = 1.75."
+      },
+      "r4-1": {
+        rung: 1,
+        text: "Right ends: f(0.5) \u2026 f(2)."
+      },
+      "r4-2": {
+        rung: 2,
+        text: "Each rectangle pokes above the curve."
+      },
+      "r4-3": {
+        rung: 3,
+        text: "3.75."
+      },
+      "conv-1": {
+        rung: 1,
+        text: "Midpoint closes in fastest."
+      },
+      "conv-2": {
+        rung: 2,
+        text: "Double n: 8, 16 ..."
+      },
+      "conv-3": {
+        rung: 3,
+        text: "Midpoint with n = 16 gives 2.664."
+      },
+      "area-1": {
+        rung: 1,
+        text: "Left and right squeeze from both sides."
+      },
+      "area-2": {
+        rung: 2,
+        text: "It is \u222B\u2080\xB2 x\xB2 dx = x\xB3/3 from 0 to 2."
+      },
+      "area-3": {
+        rung: 3,
+        text: "8/3 \u2248 2.667."
+      }
+    },
+    observations: {
+      whatHappened: "Left rectangles sat under the rising curve and right ones poked over it. As n doubled, every rectangle split in two and all the sums closed in on one number, about 2.667.",
+      why: "The area under a curve is the limit of the sums as the rectangles get thinner. For y = x\xB2 from 0 to 2 the limit is the integral, x\xB3/3 evaluated from 0 to 2 = 8/3.",
+      equationLatex: "\\int_0^2 x^2\\,dx = \\lim_{n \\to \\infty} \\sum_{i=1}^{n} f(x_i)\\,\\Delta x = \\frac{8}{3}",
+      realWorld: [
+        "Distance from a speed-time graph",
+        "Work done by a varying force",
+        "Total rainfall from a rate"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "For an increasing function, left sums\u2026",
+          choices: [
+            "over-estimate",
+            "under-estimate",
+            "are exact",
+            "are negative"
+          ],
+          answer: 1,
+          explain: "Each rectangle uses the lowest height in its strip."
+        },
+        {
+          id: "q2",
+          question: "Doubling n makes the error\u2026",
+          choices: [
+            "bigger",
+            "smaller",
+            "the same",
+            "zero"
+          ],
+          answer: 1,
+          explain: "Thinner rectangles hug the curve more closely."
+        }
+      ]
+    },
+    golden: {
+      durationS: 17,
+      captions: [
+        {
+          t: 1e3,
+          text: "Four left rectangles: 1.75, under the curve."
+        },
+        {
+          t: 4600,
+          text: "Right rectangles: 3.75, over it."
+        },
+        {
+          t: 5800,
+          text: "Midpoints, doubling n: each rectangle splits in two.",
+          slow: true
+        },
+        {
+          t: 10600,
+          text: "The sums close in on 8/3."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "method",
+            value: "left"
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "n",
+            value: 4
+          }
+        },
+        {
+          t: 3400,
+          type: "measure.read",
+          payload: {
+            instrument: "sums",
+            reading: {
+              key: "sum",
+              value: 1.75,
+              unit: ""
+            }
+          }
+        },
+        {
+          t: 4600,
+          type: "param.set",
+          payload: {
+            key: "method",
+            value: "right"
+          }
+        },
+        {
+          t: 5800,
+          type: "measure.read",
+          payload: {
+            instrument: "sums",
+            reading: {
+              key: "sum",
+              value: 3.75,
+              unit: ""
+            }
+          }
+        },
+        {
+          t: 7e3,
+          type: "param.set",
+          payload: {
+            key: "method",
+            value: "midpoint"
+          }
+        },
+        {
+          t: 8200,
+          type: "param.set",
+          payload: {
+            key: "n",
+            value: 8
+          }
+        },
+        {
+          t: 9400,
+          type: "param.set",
+          payload: {
+            key: "n",
+            value: 16
+          }
+        },
+        {
+          t: 10600,
+          type: "measure.read",
+          payload: {
+            instrument: "sums",
+            reading: {
+              key: "sum",
+              value: 2.6640625,
+              unit: ""
+            }
+          }
+        },
+        {
+          t: 11800,
+          type: "param.set",
+          payload: {
+            key: "result:area",
+            value: 2.667
+          }
+        },
+        {
+          t: 13300,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 1
+          }
+        },
+        {
+          t: 13700,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 10,
+      technique: 25,
+      measurement: 50,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/unit-circle-trig.json
+  var unit_circle_trig_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "math-unit-circle",
+    slug: "unit-circle-trig",
+    subject: "maths",
+    title: "The unit circle and trig graphs",
+    setup: {},
+    steps: [
+      {
+        id: "thirty",
+        title: "sin 30\xB0",
+        instruction: "Turn the radius to 30\xB0 and read sin 30\xB0 off the circle (the height of the point).",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "30-1",
+          "30-2",
+          "30-3"
+        ]
+      },
+      {
+        id: "quadrant",
+        title: "Second quadrant",
+        instruction: "Turn to an angle between 90\xB0 and 180\xB0 and read its cosine. Watch the sign.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "q2-1",
+          "q2-2",
+          "q2-3"
+        ]
+      },
+      {
+        id: "equal",
+        title: "sin = cos",
+        instruction: "Find an angle where sine and cosine are equal, and mark it.",
+        action: "timer.mark",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "eq-1",
+          "eq-2",
+          "eq-3"
+        ]
+      },
+      {
+        id: "radians",
+        title: "Radians",
+        instruction: "Switch to radians, turn to 60\xB0, and enter it in radians.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "rad-1",
+          "rad-2",
+          "rad-3"
+        ]
+      },
+      {
+        id: "period",
+        title: "A full turn",
+        instruction: "Turn all the way round to 360\xB0 and watch one full wave of sine unroll.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "per-1",
+          "per-2",
+          "per-3"
+        ]
+      }
+    ],
+    hints: {
+      "30-1": {
+        rung: 1,
+        text: "sin is the vertical height of the point on the circle."
+      },
+      "30-2": {
+        rung: 2,
+        text: "The radius is 1, so heights go from \u22121 to 1."
+      },
+      "30-3": {
+        rung: 3,
+        text: "sin 30\xB0 = 0.5."
+      },
+      "q2-1": {
+        rung: 1,
+        text: "Past 90\xB0 the point is left of the vertical axis."
+      },
+      "q2-2": {
+        rung: 2,
+        text: "So the cosine is negative there."
+      },
+      "q2-3": {
+        rung: 3,
+        text: "At 120\xB0, cos = \u22120.5."
+      },
+      "eq-1": {
+        rung: 1,
+        text: "Equal height and width."
+      },
+      "eq-2": {
+        rung: 2,
+        text: "Halfway between the axes."
+      },
+      "eq-3": {
+        rung: 3,
+        text: "45\xB0 (or 225\xB0)."
+      },
+      "rad-1": {
+        rung: 1,
+        text: "180\xB0 = \u03C0 radians."
+      },
+      "rad-2": {
+        rung: 2,
+        text: "60\xB0 = \u03C0/3."
+      },
+      "rad-3": {
+        rung: 3,
+        text: "\u03C0/3 \u2248 1.047."
+      },
+      "per-1": {
+        rung: 1,
+        text: "Keep turning."
+      },
+      "per-2": {
+        rung: 2,
+        text: "Go past 270\xB0."
+      },
+      "per-3": {
+        rung: 3,
+        text: "Turn to 360\xB0."
+      }
+    },
+    observations: {
+      whatHappened: "As the radius turned, the point's height traced the sine wave and its horizontal position traced the cosine wave. After a full turn both waves repeated.",
+      why: "On a circle of radius 1, the point at angle \u03B8 is (cos \u03B8, sin \u03B8). The signs depend on the quadrant. A full turn is 360\xB0 or 2\u03C0 radians, which is why sine and cosine repeat every 2\u03C0.",
+      equationLatex: "\\sin^2\\theta + \\cos^2\\theta = 1 \\qquad 180^\\circ = \\pi\\ \\text{rad}",
+      realWorld: [
+        "Sound and light waves",
+        "Alternating current",
+        "Ferris wheels and rotation"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "In the second quadrant (90\xB0\u2013180\xB0)\u2026",
+          choices: [
+            "sin and cos are both positive",
+            "sin is positive, cos negative",
+            "sin is negative, cos positive",
+            "both negative"
+          ],
+          answer: 1,
+          explain: "The point is above the x-axis but left of the y-axis."
+        },
+        {
+          id: "q2",
+          question: "How many radians make a full turn?",
+          choices: [
+            "\u03C0",
+            "2\u03C0",
+            "360",
+            "\u03C0/2"
+          ],
+          answer: 1,
+          explain: "360\xB0 = 2\u03C0 rad."
+        }
+      ]
+    },
+    golden: {
+      durationS: 18,
+      captions: [
+        {
+          t: 1e3,
+          text: "At 30\xB0 the point is half way up: sin 30\xB0 = 0.5."
+        },
+        {
+          t: 3400,
+          text: "Past 90\xB0, the point crosses left: cosine goes negative.",
+          slow: true
+        },
+        {
+          t: 5800,
+          text: "At 45\xB0 height and width match."
+        },
+        {
+          t: 9400,
+          text: "A full turn unrolls one whole sine wave."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 30
+          }
+        },
+        {
+          t: 2200,
+          type: "measure.read",
+          payload: {
+            instrument: "circle",
+            reading: {
+              key: "sin",
+              value: 0.5,
+              unit: ""
+            }
+          }
+        },
+        {
+          t: 3400,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 120
+          }
+        },
+        {
+          t: 4600,
+          type: "measure.read",
+          payload: {
+            instrument: "circle",
+            reading: {
+              key: "cos",
+              value: -0.5,
+              unit: ""
+            }
+          }
+        },
+        {
+          t: 5800,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 45
+          }
+        },
+        {
+          t: 7e3,
+          type: "timer.mark",
+          payload: {
+            label: "sin-equals-cos"
+          }
+        },
+        {
+          t: 8200,
+          type: "param.set",
+          payload: {
+            key: "units",
+            value: "rad"
+          }
+        },
+        {
+          t: 9400,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 60
+          }
+        },
+        {
+          t: 10600,
+          type: "measure.read",
+          payload: {
+            instrument: "circle",
+            reading: {
+              key: "rad",
+              value: 1.047,
+              unit: "rad"
+            }
+          }
+        },
+        {
+          t: 11800,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 180
+          }
+        },
+        {
+          t: 12500,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 270
+          }
+        },
+        {
+          t: 13200,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 360
+          }
+        },
+        {
+          t: 14700,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 1
+          }
+        },
+        {
+          t: 15100,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 10,
+      technique: 30,
+      measurement: 45,
+      observation: 15
+    }
+  };
+
+  // ../mathlab/src/core/expr.ts
+  var FUNCTIONS = ["sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", "sqrt", "abs", "ln", "log", "exp", "floor", "ceil", "sec", "csc", "cot"];
+  var CONSTANTS = { pi: Math.PI, \u03C0: Math.PI, e: Math.E, tau: 2 * Math.PI };
+  var ParseError = class extends Error {
+    constructor(message, at) {
+      super(message);
+      this.at = at;
+    }
+  };
+  function tokenize(src) {
+    const s = src.replace(/\*\*/g, "^").replace(/[×·]/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/²/g, "^2").replace(/³/g, "^3");
+    const out = [];
+    let i = 0;
+    while (i < s.length) {
+      const c = s[i];
+      if (/\s/.test(c)) {
+        i++;
+        continue;
+      }
+      if (/[0-9.]/.test(c)) {
+        let j = i;
+        while (j < s.length && /[0-9.]/.test(s[j])) j++;
+        if (s[j] === "e" && /[0-9+-]/.test(s[j + 1] ?? "") && /[0-9]/.test(s[j + 1] === "+" || s[j + 1] === "-" ? s[j + 2] ?? "" : s[j + 1])) {
+          j += 2;
+          while (j < s.length && /[0-9]/.test(s[j])) j++;
+        }
+        const v = s.slice(i, j);
+        if ((v.match(/\./g) ?? []).length > 1) throw new ParseError(`"${v}" is not a number`, i);
+        out.push({ t: "num", v, at: i });
+        i = j;
+        continue;
+      }
+      if (/[a-zA-Zπθ_]/.test(c)) {
+        let j = i;
+        while (j < s.length && /[a-zA-Z0-9πθ_]/.test(s[j])) j++;
+        out.push(...splitIdentifier(s.slice(i, j), i));
+        i = j;
+        continue;
+      }
+      if ("+-*/^".includes(c)) out.push({ t: "op", v: c, at: i });
+      else if (c === "(" || c === "[" || c === "{") out.push({ t: "(", v: "(", at: i });
+      else if (c === ")" || c === "]" || c === "}") out.push({ t: ")", v: ")", at: i });
+      else if (c === ",") out.push({ t: ",", v: ",", at: i });
+      else throw new ParseError(`Unexpected "${c}"`, i);
+      i++;
+    }
+    return out;
+  }
+  function splitIdentifier(word, at) {
+    if (FUNCTIONS.includes(word) || word in CONSTANTS || word === "theta") return [{ t: "id", v: word, at }];
+    const out = [];
+    let i = 0;
+    while (i < word.length) {
+      const fn = [...FUNCTIONS].sort((a, b) => b.length - a.length).find((f) => word.startsWith(f, i));
+      if (fn) {
+        out.push({ t: "id", v: fn, at: at + i });
+        i += fn.length;
+        continue;
+      }
+      if (word.startsWith("pi", i)) {
+        out.push({ t: "id", v: "pi", at: at + i });
+        i += 2;
+        continue;
+      }
+      let j = i + 1;
+      if (word[j] === "_") j++;
+      while (j < word.length && /[0-9]/.test(word[j])) j++;
+      out.push({ t: "id", v: word.slice(i, j), at: at + i });
+      i = j;
+    }
+    return out;
+  }
+  function parse(src) {
+    const toks = tokenize(src);
+    if (!toks.length) throw new ParseError("Type an expression", 0);
+    let p = 0;
+    const peek = () => toks[p];
+    const startsOperand = (t) => !!t && (t.t === "num" || t.t === "id" || t.t === "(");
+    const expr = () => {
+      let a = term();
+      while (peek()?.t === "op" && (peek().v === "+" || peek().v === "-")) {
+        const op = toks[p++].v;
+        a = { k: "bin", op, a, b: term() };
+      }
+      return a;
+    };
+    const term = () => {
+      let a = unary();
+      for (; ; ) {
+        const t = peek();
+        if (t?.t === "op" && (t.v === "*" || t.v === "/")) {
+          p++;
+          a = { k: "bin", op: t.v, a, b: unary() };
+        } else if (startsOperand(t)) {
+          a = { k: "bin", op: "*", a, b: unary() };
+        } else return a;
+      }
+    };
+    const unary = () => {
+      const t = peek();
+      if (t?.t === "op" && (t.v === "-" || t.v === "+")) {
+        p++;
+        const a = unary();
+        return t.v === "-" ? { k: "neg", a } : a;
+      }
+      return power();
+    };
+    const power = () => {
+      const base = atom();
+      if (peek()?.t === "op" && peek().v === "^") {
+        p++;
+        return { k: "bin", op: "^", a: base, b: unary() };
+      }
+      return base;
+    };
+    const atom = () => {
+      const t = toks[p++];
+      if (!t) throw new ParseError("The expression ends too early", src.length);
+      if (t.t === "num") return { k: "num", v: Number(t.v) };
+      if (t.t === "(") {
+        const e = expr();
+        if (toks[p]?.t !== ")") throw new ParseError("Missing closing bracket", toks[p]?.at ?? src.length);
+        p++;
+        return e;
+      }
+      if (t.t === "id") {
+        if (FUNCTIONS.includes(t.v)) {
+          let pow = null;
+          if (peek()?.t === "op" && peek().v === "^") {
+            p++;
+            pow = atom();
+          }
+          const arg = peek()?.t === "(" ? atom() : power();
+          const f = { k: "fn", name: t.v, a: arg };
+          return pow ? { k: "bin", op: "^", a: f, b: pow } : f;
+        }
+        if (t.v in CONSTANTS) return { k: "num", v: CONSTANTS[t.v] };
+        return { k: "var", name: t.v === "theta" ? "\u03B8" : t.v };
+      }
+      throw new ParseError(`Unexpected "${t.v}"`, t.at);
+    };
+    const tree = expr();
+    if (p < toks.length) throw new ParseError(`Unexpected "${toks[p].v}"`, toks[p].at);
+    return tree;
+  }
+  var FN = {
+    sin: Math.sin,
+    cos: Math.cos,
+    tan: Math.tan,
+    asin: Math.asin,
+    acos: Math.acos,
+    atan: Math.atan,
+    sinh: Math.sinh,
+    cosh: Math.cosh,
+    tanh: Math.tanh,
+    sqrt: Math.sqrt,
+    abs: Math.abs,
+    ln: Math.log,
+    log: Math.log10,
+    exp: Math.exp,
+    floor: Math.floor,
+    ceil: Math.ceil,
+    sec: (x) => 1 / Math.cos(x),
+    csc: (x) => 1 / Math.sin(x),
+    cot: (x) => 1 / Math.tan(x)
+  };
+  function compile(n) {
+    switch (n.k) {
+      case "num": {
+        const v = n.v;
+        return () => v;
+      }
+      case "var": {
+        const name = n.name;
+        return (s) => s[name] ?? NaN;
+      }
+      case "neg": {
+        const a = compile(n.a);
+        return (s) => -a(s);
+      }
+      case "fn": {
+        const f = FN[n.name];
+        const a = compile(n.a);
+        return (s) => f(a(s));
+      }
+      case "bin": {
+        const a = compile(n.a);
+        const b = compile(n.b);
+        switch (n.op) {
+          case "+":
+            return (s) => a(s) + b(s);
+          case "-":
+            return (s) => a(s) - b(s);
+          case "*":
+            return (s) => a(s) * b(s);
+          case "/":
+            return (s) => a(s) / b(s);
+          case "^": {
+            if (n.b.k === "bin" && n.b.op === "/" && n.b.a.k === "num" && n.b.b.k === "num" && n.b.b.v % 2 === 1) {
+              const num2 = n.b.a.v;
+              const den = n.b.b.v;
+              return (s) => {
+                const x = a(s);
+                return x < 0 ? Math.pow(-Math.pow(-x, 1 / den), num2) : Math.pow(x, num2 / den);
+              };
+            }
+            return (s) => Math.pow(a(s), b(s));
+          }
+        }
+      }
+    }
+  }
+  function fn1(src, v = "x") {
+    const f = compile(parse(src));
+    return (x) => f({ [v]: x });
+  }
+
+  // ../physics/src/core/runtime.ts
+  var STEP_S = 1 / 240;
+  function rng(seed) {
+    let a = seed >>> 0;
+    const next = () => {
+      a = a + 1831565813 >>> 0;
+      let t = a;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+    return {
+      next,
+      /** Integer in [0, n). */
+      int: (n) => Math.floor(next() * n),
+      /** Standard normal (Box–Muller). */
+      normal: () => {
+        const u = Math.max(next(), 1e-12);
+        const v = next();
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+      }
+    };
+  }
+  function rk4(f, t, y, h) {
+    const k1 = f(t, y);
+    const k2 = f(t + h / 2, y.map((v, i) => v + h / 2 * k1[i]));
+    const k3 = f(t + h / 2, y.map((v, i) => v + h / 2 * k2[i]));
+    const k4 = f(t + h, y.map((v, i) => v + h * k3[i]));
+    return y.map((v, i) => v + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+  }
+  var deg = (rad2) => rad2 * 180 / Math.PI;
+  var rad = (d) => d * Math.PI / 180;
+
+  // ../physics/src/core/circuit.ts
+  var METER = { ammeterOhm: 0.01, voltmeterOhm: 1e7 };
+  var LED = { forwardV: 2, onOhm: 10 };
+  var WIRE_OHM = 1e-3;
+  var CLOSED_SWITCH_OHM = 1e-3;
+  var FUSE_OHM = 0.05;
+  var GMIN = 1e-12;
+  var SHORT_OHM = 0.5;
+  var DSU = class {
+    constructor() {
+      __publicField(this, "p", /* @__PURE__ */ new Map());
+    }
+    find(x) {
+      if (!this.p.has(x)) this.p.set(x, x);
+      let r = x;
+      while (this.p.get(r) !== r) r = this.p.get(r);
+      let c = x;
+      while (this.p.get(c) !== r) {
+        const n = this.p.get(c);
+        this.p.set(c, r);
+        c = n;
+      }
+      return r;
+    }
+    union(a, b) {
+      this.p.set(this.find(a), this.find(b));
+    }
+  };
+  function gaussSolve(A, b) {
+    const n = b.length;
+    for (let c = 0; c < n; c++) {
+      let piv = c;
+      for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[piv][c])) piv = r;
+      if (Math.abs(A[piv][c]) < 1e-18) return null;
+      if (piv !== c) {
+        [A[c], A[piv]] = [A[piv], A[c]];
+        [b[c], b[piv]] = [b[piv], b[c]];
+      }
+      const rowC = A[c];
+      for (let r = c + 1; r < n; r++) {
+        const row = A[r];
+        const f = row[c] / rowC[c];
+        if (f === 0) continue;
+        for (let k = c; k < n; k++) row[k] -= f * rowC[k];
+        b[r] -= f * b[c];
+      }
+    }
+    const x = new Array(n).fill(0);
+    for (let r = n - 1; r >= 0; r--) {
+      let s = b[r];
+      const row = A[r];
+      for (let k = r + 1; k < n; k++) s -= row[k] * x[k];
+      x[r] = s / row[r];
+    }
+    return x;
+  }
+  function resistanceOf(c) {
+    switch (c.kind) {
+      case "resistor":
+      case "bulb":
+        return c.value ?? 10;
+      case "rheostat":
+        return Math.max(0.5, (c.value ?? 50) * (c.setting ?? 1));
+      case "ammeter":
+        return METER.ammeterOhm;
+      case "voltmeter":
+        return METER.voltmeterOhm;
+      case "wire":
+        return WIRE_OHM;
+      case "switch":
+        return c.closed ? CLOSED_SWITCH_OHM : null;
+      case "fuse":
+        return c.blown ? null : FUSE_OHM;
+      default:
+        return null;
+    }
+  }
+  var isSource = (c) => c.kind === "cell" || c.kind === "battery";
+  function solve(componentsIn, wires) {
+    let components = componentsIn.map((c) => ({ ...c }));
+    const blown = componentsIn.filter((c) => c.kind === "fuse" && c.blown).map((c) => c.id);
+    for (let pass = 0; pass < 4; pass++) {
+      const r = solveOnce(components, wires);
+      const newlyBlown = components.filter((c) => c.kind === "fuse" && !c.blown && Math.abs(r.components[c.id]?.current ?? 0) > (c.value ?? 3));
+      if (!newlyBlown.length) return { ...r, blownFuses: blown };
+      newlyBlown.forEach((c) => blown.push(c.id));
+      components = components.map((c) => newlyBlown.some((b) => b.id === c.id) ? { ...c, blown: true } : c);
+    }
+    return { ...solveOnce(components, wires), blownFuses: blown };
+  }
+  function solveOnce(components, wires) {
+    const dsu = new DSU();
+    for (const c of components) {
+      dsu.find(`${c.id}.a`);
+      dsu.find(`${c.id}.b`);
+    }
+    for (const [a, b] of wires) dsu.union(a, b);
+    const src = components.find(isSource);
+    const groundRoot = dsu.find(src ? `${src.id}.b` : `${components[0]?.id ?? "x"}.b`);
+    const roots = /* @__PURE__ */ new Map();
+    roots.set(groundRoot, 0);
+    const nodeOf = {};
+    for (const c of components)
+      for (const t of ["a", "b"]) {
+        const r = dsu.find(`${c.id}.${t}`);
+        if (!roots.has(r)) roots.set(r, roots.size);
+        nodeOf[`${c.id}.${t}`] = roots.get(r);
+      }
+    const N = roots.size - 1;
+    const ledOn = {};
+    components.filter((c) => c.kind === "led").forEach((c) => ledOn[c.id] = true);
+    let voltages = new Array(N + 1).fill(0);
+    let srcCurrents = {};
+    for (let iter = 0; iter < 12; iter++) {
+      const vsrc = components.filter((c) => isSource(c) && !(c.internal && c.internal > 0));
+      const M = N + vsrc.length;
+      const A = Array.from({ length: M }, () => new Array(M).fill(0));
+      const z = new Array(M).fill(0);
+      const idx = (n) => n - 1;
+      const stampG = (n1, n2, g) => {
+        if (n1) A[idx(n1)][idx(n1)] += g;
+        if (n2) A[idx(n2)][idx(n2)] += g;
+        if (n1 && n2) {
+          A[idx(n1)][idx(n2)] -= g;
+          A[idx(n2)][idx(n1)] -= g;
+        }
+      };
+      const stampI = (from, to, i) => {
+        if (from) z[idx(from)] -= i;
+        if (to) z[idx(to)] += i;
+      };
+      for (let n = 1; n <= N; n++) A[idx(n)][idx(n)] += GMIN;
+      for (const c of components) {
+        const na = nodeOf[`${c.id}.a`];
+        const nb = nodeOf[`${c.id}.b`];
+        if (isSource(c)) {
+          if (c.internal && c.internal > 0) {
+            const g = 1 / c.internal;
+            stampG(na, nb, g);
+            stampI(nb, na, (c.value ?? 1.5) * g);
+          }
+          continue;
+        }
+        if (c.kind === "led") {
+          if (ledOn[c.id]) {
+            const g = 1 / LED.onOhm;
+            stampG(na, nb, g);
+            stampI(na, nb, -LED.forwardV * g);
+          } else stampG(na, nb, 1e-9);
+          continue;
+        }
+        const R = resistanceOf(c);
+        if (R !== null) stampG(na, nb, 1 / R);
+      }
+      vsrc.forEach((c, k) => {
+        const row = N + k;
+        const na = nodeOf[`${c.id}.a`];
+        const nb = nodeOf[`${c.id}.b`];
+        if (na) {
+          A[idx(na)][row] += 1;
+          A[row][idx(na)] += 1;
+        }
+        if (nb) {
+          A[idx(nb)][row] -= 1;
+          A[row][idx(nb)] -= 1;
+        }
+        z[row] = c.value ?? 1.5;
+      });
+      const x = gaussSolve(A, z) ?? new Array(M).fill(0);
+      voltages = [0, ...x.slice(0, N)];
+      srcCurrents = {};
+      vsrc.forEach((c, k) => srcCurrents[c.id] = -x[N + k]);
+      let changed = false;
+      for (const c of components.filter((c2) => c2.kind === "led")) {
+        const v = voltages[nodeOf[`${c.id}.a`]] - voltages[nodeOf[`${c.id}.b`]];
+        const shouldBeOn = ledOn[c.id] ? v >= LED.forwardV - 1e-9 : v > LED.forwardV;
+        if (shouldBeOn !== ledOn[c.id]) {
+          ledOn[c.id] = shouldBeOn;
+          changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+    const results = {};
+    for (const c of components) {
+      const va = voltages[nodeOf[`${c.id}.a`]];
+      const vb = voltages[nodeOf[`${c.id}.b`]];
+      const v = va - vb;
+      let i = 0;
+      if (isSource(c)) {
+        if (c.internal && c.internal > 0) i = ((c.value ?? 1.5) - v) / c.internal;
+        else i = srcCurrents[c.id] ?? 0;
+      } else if (c.kind === "led") i = ledOn[c.id] ? Math.max(0, (v - LED.forwardV) / LED.onOhm) : 0;
+      else {
+        const R = resistanceOf(c);
+        i = R === null ? 0 : v / R;
+      }
+      results[c.id] = { id: c.id, current: i, voltage: v, power: isSource(c) ? i * v : i * v, ...c.kind === "led" ? { on: ledOn[c.id] } : {} };
+    }
+    const shorted = [];
+    for (const c of components.filter(isSource)) {
+      const r = results[c.id];
+      const ext = Math.abs(r.current) > 1e-9 ? Math.abs(r.voltage / r.current) : Infinity;
+      const emf = c.value ?? 1.5;
+      if (Math.abs(r.current) > emf / SHORT_OHM || ext < SHORT_OHM * 0.2) shorted.push(c.id);
+    }
+    const shortPath = shorted.length ? components.filter((c) => !isSource(c) && Math.abs(results[c.id].current) > (components.find(isSource)?.value ?? 1.5) / SHORT_OHM * 0.5).map((c) => c.id) : [];
+    const count = /* @__PURE__ */ new Map();
+    Object.values(nodeOf).forEach((n) => count.set(n, (count.get(n) ?? 0) + 1));
+    const floating = Object.entries(nodeOf).filter(([, n]) => count.get(n) === 1).map(([t]) => t);
+    const anyCurrent = components.filter(isSource).some((c) => Math.abs(results[c.id].current) > 1e-6);
+    const loads = components.some((c) => !isSource(c) && c.kind !== "wire");
+    const ammeterAcross = components.filter((c) => c.kind === "ammeter").filter((c) => {
+      const na = nodeOf[`${c.id}.a`];
+      const nb = nodeOf[`${c.id}.b`];
+      return components.some((o) => o.id !== c.id && o.kind !== "wire" && o.kind !== "voltmeter" && (nodeOf[`${o.id}.a`] === na && nodeOf[`${o.id}.b`] === nb || nodeOf[`${o.id}.a`] === nb && nodeOf[`${o.id}.b`] === na));
+    }).map((c) => c.id);
+    const voltmeterInSeries = components.filter((c) => c.kind === "voltmeter").filter((c) => {
+      const na = nodeOf[`${c.id}.a`];
+      const nb = nodeOf[`${c.id}.b`];
+      const parallel = components.some((o) => o.id !== c.id && o.kind !== "wire" && (nodeOf[`${o.id}.a`] === na && nodeOf[`${o.id}.b`] === nb || nodeOf[`${o.id}.a`] === nb && nodeOf[`${o.id}.b`] === na));
+      return !parallel && (count.get(na) ?? 0) > 1 && (count.get(nb) ?? 0) > 1;
+    }).map((c) => c.id);
+    return { nodeOf, voltages, components: results, shorted, shortPath, blownFuses: [], open: loads && !anyCurrent && !shorted.length, floating, ammeterAcross, voltmeterInSeries };
+  }
+  var HEAT = { alpha: 4e-3, thermalOhmKPerW: 60, tauS: 25, roomC: 20 };
+  function heatStep(tempC, powerW, dtS) {
+    const target2 = HEAT.roomC + powerW * HEAT.thermalOhmKPerW;
+    return target2 + (tempC - target2) * Math.exp(-dtS / HEAT.tauS);
+  }
+  var hotResistance = (r0, tempC) => r0 * (1 + HEAT.alpha * (tempC - HEAT.roomC));
+
+  // ../physics/src/core/mechanics.ts
+  var PLANETS = {
+    earth: { label: "Earth", g: 9.81 },
+    moon: { label: "Moon", g: 1.62 },
+    mars: { label: "Mars", g: 3.71 },
+    jupiter: { label: "Jupiter", g: 24.79 }
+  };
+  var PROJECTILES = {
+    ball: { label: "Tennis ball", massKg: 0.058, radiusM: 0.0335, cd: 0.55 },
+    shot: { label: "Shot put", massKg: 7.26, radiusM: 0.06, cd: 0.47 },
+    feather: { label: "Shuttlecock", massKg: 5e-3, radiusM: 0.033, cd: 0.6 }
+  };
+  function idealFlight({ speed, angleDeg, g, heightM = 0 }) {
+    const th = rad(angleDeg);
+    const vx = speed * Math.cos(th);
+    const vy = speed * Math.sin(th);
+    const time = (vy + Math.sqrt(vy * vy + 2 * g * heightM)) / g;
+    return { time, range: vx * time, maxHeight: heightM + vy * vy / (2 * g), apexTime: vy / g };
+  }
+  var AIR_RHO = 1.225;
+  function simulateFlight(l, h = STEP_S) {
+    const p = PROJECTILES[l.projectile ?? "ball"];
+    const k = l.drag ? 0.5 * AIR_RHO * p.cd * Math.PI * p.radiusM * p.radiusM / p.massKg : 0;
+    const f = (_t, y2) => {
+      const [, , vx, vy] = y2;
+      const v = Math.hypot(vx, vy);
+      return [vx, vy, -k * v * vx, -l.g - k * v * vy];
+    };
+    const th = rad(l.angleDeg);
+    let y = [0, l.heightM ?? 0, l.speed * Math.cos(th), l.speed * Math.sin(th)];
+    let t = 0;
+    let maxH = y[1];
+    const points = [{ t, x: y[0], y: y[1], vx: y[2], vy: y[3] }];
+    for (let i = 0; i < 240 * 600; i++) {
+      const next = rk4(f, t, y, h);
+      if (next[1] < 0 && i > 0) {
+        const s = y[1] / (y[1] - next[1]);
+        const xl = y[0] + (next[0] - y[0]) * s;
+        const tl = t + h * s;
+        points.push({ t: tl, x: xl, y: 0, vx: next[2], vy: next[3] });
+        return { points, range: xl, time: tl, maxHeight: maxH };
+      }
+      y = next;
+      t += h;
+      maxH = Math.max(maxH, y[1]);
+      if (i % 4 === 0) points.push({ t, x: y[0], y: y[1], vx: y[2], vy: y[3] });
+    }
+    return { points, range: y[0], time: t, maxHeight: maxH };
+  }
+  function agm(a, b) {
+    for (let i = 0; i < 30 && Math.abs(a - b) > 1e-15; i++) [a, b] = [(a + b) / 2, Math.sqrt(a * b)];
+    return a;
+  }
+  function pendulumPeriod(lengthM, amplitudeDeg, g = 9.81) {
+    const t0 = 2 * Math.PI * Math.sqrt(lengthM / g);
+    return t0 / agm(1, Math.cos(rad(amplitudeDeg) / 2));
+  }
+  var WATER_DENSITY = 1e3;
+  var SINKERS = [
+    { id: "brass", label: "Brass cylinder", massG: 170, volumeCm3: 20 },
+    { id: "aluminium", label: "Aluminium block", massG: 108, volumeCm3: 40 },
+    { id: "stone", label: "Stone", massG: 150, volumeCm3: 56 }
+  ];
+  function buoyancy(s, immersedFraction, g = 9.81, fluidDensity = WATER_DENSITY) {
+    const f = Math.max(0, Math.min(1, immersedFraction));
+    const weightN = s.massG / 1e3 * g;
+    const displacedMl = s.volumeCm3 * f;
+    const upthrustN = fluidDensity * (displacedMl * 1e-6) * g;
+    return { weightN, upthrustN, readingN: weightN - upthrustN, displacedMl, displacedWeightN: upthrustN };
+  }
+
+  // ../physics/src/core/optics.ts
+  function snellDeg(iDeg, n1, n2) {
+    const s = n1 / n2 * Math.sin(rad(iDeg));
+    return Math.abs(s) > 1 ? null : deg(Math.asin(s));
+  }
+
+  // ../mathlab/src/core/numeric.ts
+  function quadratic(a, b, c) {
+    if (Math.abs(a) < 1e-12) return { disc: NaN, roots: { kind: "linear", r: Math.abs(b) < 1e-12 ? null : -c / b }, vertex: null };
+    const disc = b * b - 4 * a * c;
+    const vx = -b / (2 * a);
+    const vertex = { x: vx, y: a * vx * vx + b * vx + c };
+    const eps = 1e-9 * Math.max(1, b * b, Math.abs(4 * a * c));
+    let roots;
+    if (Math.abs(disc) <= eps) roots = { kind: "one", r: vx };
+    else if (disc > 0) {
+      const q = -0.5 * (b + Math.sign(b || 1) * Math.sqrt(disc));
+      const r1 = q / a;
+      const r2 = c / q;
+      roots = { kind: "two", r1: Math.min(r1, r2), r2: Math.max(r1, r2) };
+    } else roots = { kind: "complex", re: vx, im: Math.sqrt(-disc) / (2 * Math.abs(a)) };
+    return { disc, roots, vertex };
+  }
+  function riemann(f, a, b, n, method) {
+    const h = (b - a) / n;
+    let s = 0;
+    const rects = [];
+    for (let i = 0; i < n; i++) {
+      const x0 = a + i * h;
+      const x1 = x0 + h;
+      if (method === "trapezoid") {
+        const y0 = f(x0);
+        const y1 = f(x1);
+        s += (y0 + y1) / 2 * h;
+        rects.push({ x0, x1, h: y0, h2: y1 });
+      } else {
+        const x = method === "left" ? x0 : method === "right" ? x1 : (x0 + x1) / 2;
+        const y = f(x);
+        s += y * h;
+        rects.push({ x0, x1, h: y });
+      }
+    }
+    return { sum: s, rects };
+  }
+  function integrate(f, a, b, n = 2e3) {
+    const m = n % 2 ? n + 1 : n;
+    const h = (b - a) / m;
+    let s = f(a) + f(b);
+    for (let i = 1; i < m; i++) s += f(a + i * h) * (i % 2 ? 4 : 2);
+    return s * h / 3;
+  }
+  var slopeAt = (f, x, h = 1e-5) => (f(x + h) - f(x - h)) / (2 * h);
+  function runTrials(kind, n, seed) {
+    const r = rng(seed);
+    const outcomes = new Int8Array(n);
+    const counts = /* @__PURE__ */ new Map();
+    for (let i = 0; i < n; i++) {
+      const o = kind === "coin" ? r.int(2) : kind === "die" ? 1 + r.int(6) : kind === "two-dice" ? 2 + r.int(6) + r.int(6) : r.int(4);
+      outcomes[i] = o;
+      counts.set(o, (counts.get(o) ?? 0) + 1);
+    }
+    return { outcomes, counts };
+  }
+
+  // ../mathlab/src/labs/maths.ts
+  var num = (v) => Number(v);
+  var resultKey = (k) => k.startsWith("result:") ? k.slice(7) : null;
+  function quadSeen(s) {
+    const out = new Set(s.seen);
+    const q = quadratic(s.a, s.b, s.c);
+    const v = q.vertex;
+    if (v && s.a > 0 && Math.abs(v.x - 2) <= 0.05 && Math.abs(v.y + 3) <= 0.05) out.add("vertex");
+    if (Math.abs(s.a) > 1e-9 && q.roots.kind === "one") out.add("touch");
+    if (q.roots.kind === "complex") out.add("complex");
+    if (s.a < 0 && q.roots.kind === "two" && Math.abs(q.roots.r1 + 1) <= 0.05 && Math.abs(q.roots.r2 - 3) <= 0.05) out.add("flip");
+    if (Math.abs(s.a) < 1e-9) out.add("linear");
+    return [...out];
+  }
+  var quadraticExplorer = {
+    slug: "quadratic-explorer",
+    init: () => ({ a: 1, b: 0, c: 0, seen: [], results: {} }),
+    apply: (s0, e) => {
+      let s = s0;
+      const hits = [];
+      const notes = [];
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "a" || key2 === "b" || key2 === "c") s = { ...s, [key2]: Math.max(-10, Math.min(10, Math.round(num(value) * 100) / 100)) };
+        const rk = resultKey(key2);
+        if (rk) {
+          s = { ...s, results: { ...s.results, [rk]: num(value) } };
+          if (rk === "root1" || rk === "root2") {
+            const roots = [-1, 3];
+            if (!roots.some((r) => Math.abs(num(value) - r) < 0.01)) hits.push({ code: "wrong-root", severity: "minor", message: "A root is where the curve crosses the x-axis (y = 0). Read the x-coordinates of the crossing points.", tag: "conceptual", dimension: "measurement" });
+          }
+        }
+      }
+      const before = s.seen;
+      s = { ...s, seen: quadSeen(s) };
+      if (s.seen.includes("linear") && !before.includes("linear")) notes.push({ text: "With a = 0 the x\xB2 term vanishes: this is a straight line, no longer a quadratic.", tone: "info" });
+      if (s.seen.includes("touch") && !before.includes("touch")) notes.push({ text: "Discriminant zero: the two roots merged into one, where the curve just touches the axis.", tone: "success" });
+      return { state: s, hits, notes };
+    },
+    steps: {
+      vertex: (s) => s.seen.includes("vertex"),
+      touch: (s) => s.seen.includes("touch"),
+      complex: (s) => s.seen.includes("complex"),
+      flip: (s) => s.seen.includes("flip"),
+      roots: (s) => s.a === 2 && s.b === -4 && s.c === -6 && [s.results.root1, s.results.root2].filter((r) => r !== void 0).sort((x, y) => x - y).join() === "-1,3"
+    },
+    readouts: (s) => {
+      const q = quadratic(s.a, s.b, s.c);
+      return { disc: q.disc, vertexX: q.vertex?.x ?? null, vertexY: q.vertex?.y ?? null };
+    }
+  };
+  function applyOp(side, op) {
+    const m = /^([+\-*/])(\d+(?:\.\d+)?|x)$/.exec(op);
+    if (!m) return null;
+    const [, sym, rawArg] = m;
+    if (rawArg === "x") {
+      if (sym === "+") return { x: side.x + 1, k: side.k };
+      if (sym === "-") return { x: side.x - 1, k: side.k };
+      return null;
+    }
+    const v = Number(rawArg);
+    switch (sym) {
+      case "+":
+        return { x: side.x, k: side.k + v };
+      case "-":
+        return { x: side.x, k: side.k - v };
+      case "*":
+        return { x: side.x * v, k: side.k * v };
+      case "/":
+        return v === 0 ? null : { x: side.x / v, k: side.k / v };
+    }
+    return null;
+  }
+  var solution = ([l, r]) => (r.k - l.k) / (l.x - r.x);
+  var balanceEquations = {
+    slug: "balance-equations",
+    init: (c) => {
+      const [l, r] = c.setup.equations[0];
+      return { eq: 0, left: { ...l }, right: { ...r }, level: true, history: [], solved: [], collected: [], results: {} };
+    },
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      let s = s0;
+      const hits = [];
+      const notes = [];
+      if (e.type === "param.set" && e.payload.key === "op") {
+        const [where, op] = String(e.payload.value).split(":");
+        const L = where === "both" || where === "left" ? applyOp(s.left, op) : s.left;
+        const R = where === "both" || where === "right" ? applyOp(s.right, op) : s.right;
+        if (!L || !R) hits.push({ code: "bad-op", severity: "minor", message: "That operation is not allowed (you cannot divide by zero).", tag: "conceptual", dimension: "technique" });
+        else if (where !== "both") {
+          s = { ...s, left: L, right: R, level: false, history: [...s.history, `${where}:${op}`] };
+          hits.push({ code: "one-side", severity: "major", message: "You changed only one side, so the scale tipped: the two sides are no longer equal. Whatever you do to one side, do to the other. Undo it.", tag: "conceptual", dimension: "technique" });
+        } else {
+          s = { ...s, left: L, right: R, history: [...s.history, `both:${op}`] };
+        }
+      }
+      if (e.type === "param.set" && e.payload.key === "undo" && s.history.length) {
+        const [l, r] = setup.equations[s.eq];
+        let left = { ...l };
+        let right = { ...r };
+        const history = s.history.slice(0, -1);
+        for (const h of history) {
+          const [w, op] = h.split(":");
+          if (w === "both" || w === "left") left = applyOp(left, op);
+          if (w === "both" || w === "right") right = applyOp(right, op);
+        }
+        const level = history.every((h) => h.startsWith("both:"));
+        s = { ...s, left, right, history, level };
+      }
+      if (e.type === "param.set" && e.payload.key === "equation") {
+        const i = Math.max(0, Math.min(setup.equations.length - 1, num(e.payload.value)));
+        const [l, r] = setup.equations[i];
+        s = { ...s, eq: i, left: { ...l }, right: { ...r }, history: [], level: true };
+      }
+      if (e.type === "param.set" && resultKey(e.payload.key)) {
+        const v = num(e.payload.value);
+        s = { ...s, results: { ...s.results, [resultKey(e.payload.key)]: v } };
+        const x = solution(setup.equations[s.eq]);
+        if (Math.abs(v - x) > 1e-9) hits.push({ code: "wrong-x", severity: "minor", message: "Check by substituting your answer back into both sides: they must come out equal.", tag: "conceptual", dimension: "measurement" });
+        else notes.push({ text: `x = ${x}. Check: both sides equal ${s.left.x * x + s.left.k}.`, tone: "success" });
+      }
+      if (s.level) {
+        const isolated = (a, b) => a.x !== 0 && a.k === 0 && b.x === 0;
+        const done = isolated(s.left, s.right) && Math.abs(s.left.x - 1) < 1e-9 || isolated(s.right, s.left) && Math.abs(s.right.x - 1) < 1e-9;
+        if (done && !s.solved.includes(s.eq)) s = { ...s, solved: [...s.solved, s.eq] };
+        const collected = s.left.x === 0 !== (s.right.x === 0);
+        if (collected && !s.collected.includes(s.eq)) s = { ...s, collected: [...s.collected, s.eq] };
+      }
+      return { state: s, hits, notes };
+    },
+    steps: {
+      "isolate-1": (s) => s.eq === 0 && s.level && (s.left.x !== 0 && s.left.k === 0 || s.right.x !== 0 && s.right.k === 0),
+      "solve-1": (s) => s.solved.includes(0),
+      "answer-1": (s, ctx) => s.results.x1 !== void 0 && Math.abs(s.results.x1 - solution(ctx.content.setup.equations[0])) < 1e-9,
+      "collect-2": (s) => s.collected.includes(1),
+      "solve-2": (s) => s.solved.includes(1),
+      "answer-2": (s, ctx) => s.results.x2 !== void 0 && Math.abs(s.results.x2 - solution(ctx.content.setup.equations[1])) < 1e-9
+    },
+    readouts: (s) => ({ level: s.level, left: `${s.left.x}x + ${s.left.k}`, right: `${s.right.x}x + ${s.right.k}` })
+  };
+  var unitCircle = {
+    slug: "unit-circle-trig",
+    init: () => ({ angle: 0, units: "deg", maxAngle: 0, reads: {}, marks: [] }),
+    apply: (s0, e) => {
+      let s = s0;
+      const hits = [];
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "angle") {
+          const a = num(value);
+          s = { ...s, angle: a, maxAngle: Math.max(s.maxAngle, a) };
+        }
+        if (key2 === "units") s = { ...s, units: value === "rad" ? "rad" : "deg" };
+      }
+      if (e.type === "measure.read") {
+        const { key: key2, value } = e.payload.reading;
+        const r = s.angle * Math.PI / 180;
+        const truth = { sin: Math.sin(r), cos: Math.cos(r), tan: Math.tan(r), rad: r };
+        const t = truth[key2];
+        if (t === void 0) return { state: s, hits };
+        if (Math.abs(value - t) <= 0.01) {
+          const tag = key2 === "sin" && Math.abs(s.angle - 30) < 0.5 ? "sin30" : key2 === "cos" && s.angle > 90 && s.angle < 180 ? "cosII" : key2 === "rad" && Math.abs(s.angle - 60) < 0.5 && s.units === "rad" ? "rad60" : key2;
+          s = { ...s, reads: { ...s.reads, [tag]: value } };
+        } else if (Math.abs(value + t) <= 0.01) hits.push({ code: "sign", severity: "minor", message: `Right size, wrong sign. In this quadrant ${key2} is ${t < 0 ? "negative" : "positive"}: look at which side of the axis the point is on.`, tag: "conceptual", dimension: "measurement" });
+        else hits.push({ code: "misread", severity: "minor", message: `${key2} of this angle is ${t.toFixed(3)}. For sin read the height of the point; for cos, how far across it is.`, tag: "conceptual", dimension: "measurement" });
+      }
+      if (e.type === "timer.mark" && e.payload.label === "sin-equals-cos") {
+        const r = s.angle * Math.PI / 180;
+        if (Math.abs(Math.sin(r) - Math.cos(r)) < 0.02) s = { ...s, marks: [...s.marks, "equal"] };
+        else hits.push({ code: "not-equal", severity: "minor", message: "At that angle the sine and cosine bars are different heights. Look for where they match.", tag: "conceptual", dimension: "measurement" });
+      }
+      return { state: s, hits };
+    },
+    steps: {
+      thirty: (s) => s.reads.sin30 !== void 0,
+      quadrant: (s) => s.reads.cosII !== void 0,
+      equal: (s) => s.marks.includes("equal"),
+      radians: (s) => s.reads.rad60 !== void 0,
+      period: (s) => s.maxAngle >= 360
+    },
+    readouts: (s) => ({ angle: s.angle })
+  };
+  function sameFunction(a, b) {
+    try {
+      const fa = fn1(a);
+      const fb = fn1(b);
+      return [-2.3, -1.1, -0.4, 0.3, 0.9, 1.7, 2.6].every((x) => {
+        const ya = fa(x);
+        const yb = fb(x);
+        return Number.isFinite(ya) && Math.abs(ya - yb) <= 1e-6 * Math.max(1, Math.abs(yb));
+      });
+    } catch {
+      return false;
+    }
+  }
+  var tangentDerivative = {
+    slug: "derivative-as-slope",
+    init: () => ({ x: 0, h: 1, limitRun: false, reads: {}, results: {} }),
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      const f = fn1(setup.f);
+      let s = s0;
+      const hits = [];
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "x") s = { ...s, x: num(value) };
+        if (key2 === "h") s = { ...s, h: Math.max(1e-4, num(value)), limitRun: false };
+        if (key2 === "result:fprime") {
+          s = { ...s, results: { ...s.results, fprime: String(value) } };
+          if (!sameFunction(String(value), setup.fprime)) hits.push({ code: "wrong-derivative", severity: "major", message: "That derivative does not match the slope readings. Differentiate term by term: d/dx x\u207F = n x\u207F\u207B\xB9.", tag: "conceptual", dimension: "measurement" });
+        }
+      }
+      if (e.type === "sim.start") s = { ...s, h: 1e-4, limitRun: true };
+      if (e.type === "measure.read") {
+        const { key: key2, value } = e.payload.reading;
+        const tangent = slopeAt(f, s.x);
+        if (key2 === "slope") {
+          if (s.h > 0.05) hits.push({ code: "secant-not-tangent", severity: "minor", message: "With h this large you read the slope of a secant, not the tangent. Shrink h (press Limit) first.", tag: "conceptual", dimension: "technique" });
+          else if (Math.abs(value - tangent) <= 0.1) s = { ...s, reads: { ...s.reads, [`slope@${s.x.toFixed(2)}`]: value } };
+          else hits.push({ code: "slope-misread", severity: "minor", message: `The tangent's slope here is ${tangent.toFixed(2)}.`, tag: "procedural", dimension: "measurement" });
+        }
+        if (key2 === "flat-x") {
+          if (Math.abs(slopeAt(f, value)) < 0.1 && Math.abs(value - s.x) < 0.05) s = { ...s, reads: { ...s.reads, flat: value } };
+          else hits.push({ code: "not-flat", severity: "minor", message: "At that x the tangent is not horizontal. Move the point until the slope reads 0.", tag: "conceptual", dimension: "measurement" });
+        }
+      }
+      return { state: s, hits };
+    },
+    steps: {
+      "slope-at-2": (s) => s.reads["slope@2.00"] !== void 0,
+      limit: (s) => s.limitRun,
+      flat: (s) => s.reads.flat !== void 0,
+      derivative: (s, ctx) => typeof s.results.fprime === "string" && sameFunction(s.results.fprime, ctx.content.setup.fprime)
+    },
+    readouts: (s) => ({ x: s.x, h: s.h })
+  };
+  var riemannSums = {
+    slug: "riemann-sums",
+    init: () => ({ method: "left", n: 2, reads: [], results: {} }),
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      const f = fn1(setup.f);
+      let s = s0;
+      const hits = [];
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "method" && ["left", "right", "midpoint", "trapezoid"].includes(String(value))) s = { ...s, method: value };
+        if (key2 === "n") s = { ...s, n: Math.max(1, Math.min(1024, Math.round(num(value)))) };
+        if (key2 === "result:area") {
+          s = { ...s, results: { ...s.results, area: num(value) } };
+          if (Math.abs(num(value) - integrate(f, setup.a, setup.b)) > 5e-3) hits.push({ code: "wrong-area", severity: "major", message: "The exact area is the value the sums close in on as n grows.", tag: "conceptual", dimension: "measurement" });
+        }
+      }
+      if (e.type === "measure.read" && e.payload.reading.key === "sum") {
+        const truth = riemann(f, setup.a, setup.b, s.n, s.method).sum;
+        if (Math.abs(e.payload.reading.value - truth) > 1e-3 + Math.abs(truth) * 1e-4) hits.push({ code: "sum-misread", severity: "minor", message: `The sum for these rectangles is ${truth.toFixed(4)}.`, tag: "procedural", dimension: "measurement" });
+        else s = { ...s, reads: [...s.reads, { method: s.method, n: s.n, sum: e.payload.reading.value }] };
+      }
+      return { state: s, hits };
+    },
+    steps: {
+      "left-4": (s) => s.reads.some((r) => r.method === "left" && r.n === 4),
+      "right-4": (s) => s.reads.some((r) => r.method === "right" && r.n === 4),
+      converge: (s, ctx) => {
+        const setup = ctx.content.setup;
+        const exact = integrate(fn1(setup.f), setup.a, setup.b);
+        return s.reads.some((r) => Math.abs(r.sum - exact) < 0.01);
+      },
+      area: (s, ctx) => {
+        const setup = ctx.content.setup;
+        return s.results.area !== void 0 && Math.abs(s.results.area - integrate(fn1(setup.f), setup.a, setup.b)) <= 5e-3;
+      }
+    },
+    readouts: (s) => ({ method: s.method, n: s.n })
+  };
+  var coinsDice = {
+    slug: "dice-probability",
+    init: () => ({ kind: "coin", trials: 10, runs: [], reads: {}, results: {} }),
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      let s = s0;
+      const hits = [];
+      const notes = [];
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "kind" && ["coin", "die", "two-dice", "spinner"].includes(String(value))) s = { ...s, kind: value };
+        if (key2 === "trials") s = { ...s, trials: Math.max(1, Math.min(1e4, Math.round(num(value)))) };
+        if (key2 === "result:mode") {
+          s = { ...s, results: { ...s.results, mode: num(value) } };
+          if (num(value) !== 7) hits.push({ code: "wrong-mode", severity: "minor", message: "Count the ways: 7 can be made 6 ways (1+6, 2+5 ...), more than any other total.", tag: "conceptual", dimension: "measurement" });
+        }
+      }
+      if (e.type === "sim.start") {
+        const r = runTrials(s.kind, s.trials, setup.seed + s.runs.length * 7919);
+        const counts = {};
+        r.counts.forEach((v, k) => counts[k] = v);
+        s = { ...s, runs: [...s.runs, { kind: s.kind, n: s.trials, counts }] };
+        if (s.kind === "coin") notes.push({ text: `${counts[1] ?? 0} heads out of ${s.trials} (${((counts[1] ?? 0) / s.trials * 100).toFixed(1)} %)`, tone: "info" });
+      }
+      if (e.type === "measure.read" && e.payload.reading.key === "heads-freq") {
+        const last = [...s.runs].reverse().find((r) => r.kind === "coin");
+        const truth = last ? (last.counts[1] ?? 0) / last.n : NaN;
+        if (!last || Math.abs(e.payload.reading.value - truth) > 5e-3) hits.push({ code: "freq-misread", severity: "minor", message: `Relative frequency = number of heads \xF7 number of flips = ${Number.isFinite(truth) ? truth.toFixed(3) : "?"}.`, tag: "conceptual", dimension: "measurement" });
+        else s = { ...s, reads: { ...s.reads, [`heads@${last.n}`]: e.payload.reading.value } };
+      }
+      return { state: s, hits, notes };
+    },
+    steps: {
+      "ten-flips": (s) => s.runs.some((r) => r.kind === "coin" && r.n <= 20),
+      thousand: (s) => Object.keys(s.reads).some((k) => k.startsWith("heads@") && Number(k.slice(6)) >= 1e3),
+      "dice-sum": (s) => s.runs.some((r) => r.kind === "two-dice" && r.n >= 1e3),
+      mode: (s) => s.results.mode === 7
+    },
+    readouts: (s) => ({ runs: s.runs.length })
+  };
+
+  // ../mathlab/src/labs/index.ts
+  var MATHS_CONTENT = Object.fromEntries(
+    [quadratic_explorer_default, balance_equations_default, unit_circle_trig_default, derivative_as_slope_default, riemann_sums_default, dice_probability_default].map((c) => [c.slug, c])
+  );
+  var MATHS_MODELS = Object.fromEntries(
+    // eslint-disable-line @typescript-eslint/no-explicit-any
+    [quadraticExplorer, balanceEquations, unitCircle, tangentDerivative, riemannSums, coinsDice].map((m) => [m.slug, m])
+  );
+
+  // ../../content/experiments/archimedes-principle.json
+  var archimedes_principle_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "phys-archimedes",
+    slug: "archimedes-principle",
+    subject: "physics",
+    title: "Archimedes' principle",
+    setup: {
+      sinker: "brass",
+      g: 9.81,
+      dripMl: 4
+    },
+    steps: [
+      {
+        id: "weigh-air",
+        title: "Weigh in air",
+        instruction: "Hang the sinker on the spring balance and read its weight.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "air-1",
+          "air-2",
+          "air-3"
+        ]
+      },
+      {
+        id: "fill-can",
+        title: "Fill the overflow can",
+        instruction: "Fill the can until water runs out of the spout, and wait until it stops dripping.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "can-1",
+          "can-2",
+          "can-3"
+        ]
+      },
+      {
+        id: "cylinder",
+        title: "Place the cylinder",
+        instruction: "Put an empty measuring cylinder under the spout.",
+        action: "param.set",
+        scoring: {
+          sequence: 1
+        },
+        hints: [
+          "cyl-1",
+          "cyl-2",
+          "cyl-3"
+        ]
+      },
+      {
+        id: "immerse",
+        title: "Lower the sinker",
+        instruction: "Lower the sinker until it is completely under water, without touching the bottom.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "imm-1",
+          "imm-2",
+          "imm-3"
+        ]
+      },
+      {
+        id: "weigh-water",
+        title: "Weigh in water",
+        instruction: "Read the spring balance now.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "wat-1",
+          "wat-2",
+          "wat-3"
+        ]
+      },
+      {
+        id: "volume",
+        title: "Read the cylinder",
+        instruction: "Read the volume of water that overflowed.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "vol-1",
+          "vol-2",
+          "vol-3"
+        ]
+      },
+      {
+        id: "compare",
+        title: "Compare",
+        instruction: "Enter the upthrust (loss of weight) and the weight of the water displaced.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "cmp-1",
+          "cmp-2",
+          "cmp-3"
+        ]
+      }
+    ],
+    hints: {
+      "air-1": {
+        rung: 1,
+        text: "The balance reads in newtons."
+      },
+      "air-2": {
+        rung: 2,
+        text: "Let it hang still before reading."
+      },
+      "air-3": {
+        rung: 3,
+        text: "Record the reading with the sinker in air."
+      },
+      "can-1": {
+        rung: 1,
+        text: "Any water that runs out now must not be counted later."
+      },
+      "can-2": {
+        rung: 2,
+        text: "Fill past the spout, then wait for the last drip."
+      },
+      "can-3": {
+        rung: 3,
+        text: "Fill the can, then press Wait until the dripping stops."
+      },
+      "cyl-1": {
+        rung: 1,
+        text: "Displaced water comes out of the spout."
+      },
+      "cyl-2": {
+        rung: 2,
+        text: "Put the empty cylinder under it now."
+      },
+      "cyl-3": {
+        rung: 3,
+        text: "Place the measuring cylinder."
+      },
+      "imm-1": {
+        rung: 1,
+        text: "All of it must be under water."
+      },
+      "imm-2": {
+        rung: 2,
+        text: "But it must hang freely."
+      },
+      "imm-3": {
+        rung: 3,
+        text: "Lower until fully covered, clear of the bottom."
+      },
+      "wat-1": {
+        rung: 1,
+        text: "It should read less than in air."
+      },
+      "wat-2": {
+        rung: 2,
+        text: "Wait for the overflow to finish."
+      },
+      "wat-3": {
+        rung: 3,
+        text: "Record the reading."
+      },
+      "vol-1": {
+        rung: 1,
+        text: "Read the bottom of the meniscus."
+      },
+      "vol-2": {
+        rung: 2,
+        text: "Eye level with the surface."
+      },
+      "vol-3": {
+        rung: 3,
+        text: "Record the volume in mL."
+      },
+      "cmp-1": {
+        rung: 1,
+        text: "Upthrust = weight in air \u2212 weight in water."
+      },
+      "cmp-2": {
+        rung: 2,
+        text: "1 mL of water has a mass of 1 g."
+      },
+      "cmp-3": {
+        rung: 3,
+        text: "Weight of water = (volume in mL \xF7 1000) \xD7 9.81 N."
+      }
+    },
+    observations: {
+      whatHappened: "The sinker weighed less in water. The loss of weight was the same as the weight of the water it pushed out of the can.",
+      why: "Water pushes up on anything in it. Archimedes' principle: the upthrust equals the weight of the fluid displaced. A brass sinker displaces its own volume of water (20 mL = 20 g), so it is pushed up with about 0.2 N.",
+      equationLatex: "F_{\\text{up}} = \\rho_{\\text{fluid}}\\, V_{\\text{displaced}}\\, g",
+      realWorld: [
+        "Ships float because they displace a lot of water",
+        "Hydrometers measure density",
+        "Submarines take in water to sink"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "The upthrust on a fully submerged object depends on\u2026",
+          choices: [
+            "its mass",
+            "its volume and the fluid's density",
+            "how deep it is",
+            "its colour"
+          ],
+          answer: 1,
+          explain: "Upthrust = weight of the fluid displaced = \u03C1 V g."
+        },
+        {
+          id: "q2",
+          question: "Why wait for the can to stop dripping first?",
+          choices: [
+            "To keep the bench dry",
+            "So only water pushed out by the sinker is collected",
+            "Water must settle to read the balance",
+            "No reason"
+          ],
+          answer: 1,
+          explain: "Otherwise the cylinder catches extra water and the volume is too big."
+        }
+      ]
+    },
+    golden: {
+      durationS: 18,
+      captions: [
+        {
+          t: 1e3,
+          text: "Weigh the sinker in air."
+        },
+        {
+          t: 2200,
+          text: "Fill the can to the spout and wait for the last drip.",
+          slow: true
+        },
+        {
+          t: 6600,
+          text: "Lower it until fully covered, hanging freely."
+        },
+        {
+          t: 9800,
+          text: "Loss of weight equals the weight of water displaced."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "measure.read",
+          payload: {
+            instrument: "balance",
+            reading: {
+              key: "air",
+              value: 1.67,
+              unit: "N"
+            }
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "fill-can",
+            value: true
+          }
+        },
+        {
+          t: 5400,
+          type: "param.set",
+          payload: {
+            key: "wait-drip",
+            value: true
+          }
+        },
+        {
+          t: 6600,
+          type: "param.set",
+          payload: {
+            key: "cylinder",
+            value: true
+          }
+        },
+        {
+          t: 7800,
+          type: "param.set",
+          payload: {
+            key: "immerse",
+            value: 1
+          }
+        },
+        {
+          t: 9800,
+          type: "measure.read",
+          payload: {
+            instrument: "balance",
+            reading: {
+              key: "water",
+              value: 1.47,
+              unit: "N"
+            }
+          }
+        },
+        {
+          t: 11e3,
+          type: "measure.read",
+          payload: {
+            instrument: "cylinder",
+            reading: {
+              key: "volume",
+              value: 20,
+              unit: "mL"
+            }
+          }
+        },
+        {
+          t: 12200,
+          type: "param.set",
+          payload: {
+            key: "result:upthrust",
+            value: 0.2
+          }
+        },
+        {
+          t: 13400,
+          type: "param.set",
+          payload: {
+            key: "result:displaced",
+            value: 0.2
+          }
+        },
+        {
+          t: 14900,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 1
+          }
+        },
+        {
+          t: 15300,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 15,
+      technique: 25,
+      measurement: 45,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/ohms-law.json
+  var ohms_law_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "phys-ohms-law",
+    slug: "ohms-law",
+    subject: "physics",
+    title: "Ohm's law",
+    setup: {
+      parts: [
+        {
+          id: "B",
+          kind: "battery",
+          value: 3,
+          internal: 0.2
+        },
+        {
+          id: "S",
+          kind: "switch",
+          closed: false
+        },
+        {
+          id: "Rh",
+          kind: "rheostat",
+          value: 50,
+          setting: 1
+        },
+        {
+          id: "R",
+          kind: "resistor",
+          value: 10
+        },
+        {
+          id: "A",
+          kind: "ammeter"
+        },
+        {
+          id: "V",
+          kind: "voltmeter"
+        }
+      ],
+      unknownId: "R"
+    },
+    steps: [
+      {
+        id: "build",
+        title: "Build the circuit",
+        instruction: "With the switch open, wire the battery, switch, rheostat, ammeter and resistor in one loop. Then connect the voltmeter across the resistor only.",
+        action: "equipment.connect",
+        scoring: {
+          equipment: 1,
+          sequence: 1
+        },
+        hints: [
+          "build-1",
+          "build-2",
+          "build-3"
+        ]
+      },
+      {
+        id: "close",
+        title: "Close the switch",
+        instruction: "Check the circuit, then close the switch.",
+        action: "param.set",
+        scoring: {
+          sequence: 1
+        },
+        hints: [
+          "close-1",
+          "close-2",
+          "close-3"
+        ]
+      },
+      {
+        id: "readings",
+        title: "Take five readings",
+        instruction: "Read the voltmeter and ammeter at five rheostat settings. Open the switch between readings so the resistor does not warm up.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1,
+          technique: 1
+        },
+        hints: [
+          "read-1",
+          "read-2",
+          "read-3"
+        ]
+      },
+      {
+        id: "switch-off",
+        title: "Switch off",
+        instruction: "Open the switch when you have your readings.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "off-1",
+          "off-2",
+          "off-3"
+        ]
+      },
+      {
+        id: "result",
+        title: "Find R",
+        instruction: "Plot V against I. The gradient of the best-fit line through the origin is the resistance. Enter it.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "result-1",
+          "result-2",
+          "result-3"
+        ]
+      }
+    ],
+    hints: {
+      "build-1": {
+        rung: 1,
+        text: "Trace the loop with your finger: every part except the voltmeter should be in one single path."
+      },
+      "build-2": {
+        rung: 2,
+        text: "The ammeter goes in series, in the same loop as the resistor. The voltmeter goes across the resistor: its two leads on the resistor's two ends."
+      },
+      "build-3": {
+        rung: 3,
+        text: "Battery + to switch, switch to rheostat, rheostat to ammeter +, ammeter \u2212 to resistor, resistor back to battery \u2212. Then voltmeter + and \u2212 to the two ends of the resistor."
+      },
+      "close-1": {
+        rung: 1,
+        text: "Everything is wired. What lets current flow?"
+      },
+      "close-2": {
+        rung: 2,
+        text: "Click the switch to close it."
+      },
+      "close-3": {
+        rung: 3,
+        text: "Close the switch: the meters should now read."
+      },
+      "read-1": {
+        rung: 1,
+        text: "Change the rheostat between readings so each pair is different."
+      },
+      "read-2": {
+        rung: 2,
+        text: "Close the switch, read both meters, then open the switch before moving the rheostat."
+      },
+      "read-3": {
+        rung: 3,
+        text: "Close, record V and I, open. Move the rheostat. Repeat until you have five pairs."
+      },
+      "off-1": {
+        rung: 1,
+        text: "Is current still flowing?"
+      },
+      "off-2": {
+        rung: 2,
+        text: "Open the switch."
+      },
+      "off-3": {
+        rung: 3,
+        text: "Click the switch to open it."
+      },
+      "result-1": {
+        rung: 1,
+        text: "R = V \xF7 I for each pair. They should all be about the same."
+      },
+      "result-2": {
+        rung: 2,
+        text: "Use the graph: the gradient of V against I is R."
+      },
+      "result-3": {
+        rung: 3,
+        text: "Take the gradient of the best-fit line through the origin, to two decimal places."
+      }
+    },
+    observations: {
+      whatHappened: "As you turned the rheostat down, both readings went up together, and the points fell on a straight line through the origin.",
+      why: "For a resistor at constant temperature the current is proportional to the voltage across it: V = IR. The gradient of the V-I graph is the resistance. Switching off between readings keeps the resistor cool, because hot metal has a higher resistance.",
+      equationLatex: "V = IR",
+      realWorld: [
+        "Choosing resistors for LEDs",
+        "Heating elements and fuses",
+        "Dimmer switches"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "Doubling the voltage across a fixed resistor makes the current\u2026",
+          choices: [
+            "halve",
+            "stay the same",
+            "double",
+            "quadruple"
+          ],
+          answer: 2,
+          explain: "I = V/R, so with R fixed the current is proportional to V."
+        },
+        {
+          id: "q2",
+          question: "Why open the switch between readings?",
+          choices: [
+            "To save the battery only",
+            "So the resistor does not heat up and change its resistance",
+            "Because meters only work when it is off",
+            "It makes no difference"
+          ],
+          answer: 1,
+          explain: "Current heats the resistor; a warmer metal has a higher resistance, which would bend the line."
+        },
+        {
+          id: "q3",
+          question: "Where must the voltmeter go?",
+          choices: [
+            "In series with the resistor",
+            "Across (in parallel with) the resistor",
+            "Next to the battery only",
+            "Anywhere in the loop"
+          ],
+          answer: 1,
+          explain: "A voltmeter measures the difference across a component, so it connects to both its ends."
+        }
+      ]
+    },
+    golden: {
+      durationS: 43,
+      captions: [
+        {
+          t: 1e3,
+          text: "Build the loop with the switch open: battery, switch, rheostat, ammeter, resistor."
+        },
+        {
+          t: 7e3,
+          text: "The voltmeter goes across the resistor, not in the loop.",
+          slow: true
+        },
+        {
+          t: 9800,
+          text: "Close the switch, read both meters, then open it again."
+        },
+        {
+          t: 16e3,
+          text: "A new rheostat setting gives a new pair of readings."
+        },
+        {
+          t: 28e3,
+          text: "Five readings: V over I is the same every time. That is Ohm's law."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "equipment.connect",
+          payload: {
+            from: "B.a",
+            to: "S.a"
+          }
+        },
+        {
+          t: 2200,
+          type: "equipment.connect",
+          payload: {
+            from: "S.b",
+            to: "Rh.a"
+          }
+        },
+        {
+          t: 3400,
+          type: "equipment.connect",
+          payload: {
+            from: "Rh.b",
+            to: "A.a"
+          }
+        },
+        {
+          t: 4600,
+          type: "equipment.connect",
+          payload: {
+            from: "A.b",
+            to: "R.a"
+          }
+        },
+        {
+          t: 5800,
+          type: "equipment.connect",
+          payload: {
+            from: "R.b",
+            to: "B.b"
+          }
+        },
+        {
+          t: 7e3,
+          type: "equipment.connect",
+          payload: {
+            from: "V.a",
+            to: "R.a"
+          }
+        },
+        {
+          t: 8200,
+          type: "equipment.connect",
+          payload: {
+            from: "V.b",
+            to: "R.b"
+          }
+        },
+        {
+          t: 9400,
+          type: "param.set",
+          payload: {
+            key: "rheostat",
+            value: 1
+          }
+        },
+        {
+          t: 10600,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: true
+          }
+        },
+        {
+          t: 11800,
+          type: "measure.read",
+          payload: {
+            instrument: "voltmeter",
+            reading: {
+              key: "V",
+              value: 0.5,
+              unit: "V"
+            }
+          }
+        },
+        {
+          t: 12700,
+          type: "measure.read",
+          payload: {
+            instrument: "ammeter",
+            reading: {
+              key: "I",
+              value: 0.05,
+              unit: "A"
+            }
+          }
+        },
+        {
+          t: 13600,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: false
+          }
+        },
+        {
+          t: 14800,
+          type: "param.set",
+          payload: {
+            key: "rheostat",
+            value: 0.75
+          }
+        },
+        {
+          t: 16e3,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: true
+          }
+        },
+        {
+          t: 17200,
+          type: "measure.read",
+          payload: {
+            instrument: "voltmeter",
+            reading: {
+              key: "V",
+              value: 0.63,
+              unit: "V"
+            }
+          }
+        },
+        {
+          t: 18100,
+          type: "measure.read",
+          payload: {
+            instrument: "ammeter",
+            reading: {
+              key: "I",
+              value: 0.063,
+              unit: "A"
+            }
+          }
+        },
+        {
+          t: 19e3,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: false
+          }
+        },
+        {
+          t: 20200,
+          type: "param.set",
+          payload: {
+            key: "rheostat",
+            value: 0.5
+          }
+        },
+        {
+          t: 21400,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: true
+          }
+        },
+        {
+          t: 22600,
+          type: "measure.read",
+          payload: {
+            instrument: "voltmeter",
+            reading: {
+              key: "V",
+              value: 0.85,
+              unit: "V"
+            }
+          }
+        },
+        {
+          t: 23500,
+          type: "measure.read",
+          payload: {
+            instrument: "ammeter",
+            reading: {
+              key: "I",
+              value: 0.085,
+              unit: "A"
+            }
+          }
+        },
+        {
+          t: 24400,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: false
+          }
+        },
+        {
+          t: 25600,
+          type: "param.set",
+          payload: {
+            key: "rheostat",
+            value: 0.3
+          }
+        },
+        {
+          t: 26800,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: true
+          }
+        },
+        {
+          t: 28e3,
+          type: "measure.read",
+          payload: {
+            instrument: "voltmeter",
+            reading: {
+              key: "V",
+              value: 1.19,
+              unit: "V"
+            }
+          }
+        },
+        {
+          t: 28900,
+          type: "measure.read",
+          payload: {
+            instrument: "ammeter",
+            reading: {
+              key: "I",
+              value: 0.119,
+              unit: "A"
+            }
+          }
+        },
+        {
+          t: 29800,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: false
+          }
+        },
+        {
+          t: 31e3,
+          type: "param.set",
+          payload: {
+            key: "rheostat",
+            value: 0.15
+          }
+        },
+        {
+          t: 32200,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: true
+          }
+        },
+        {
+          t: 33400,
+          type: "measure.read",
+          payload: {
+            instrument: "voltmeter",
+            reading: {
+              key: "V",
+              value: 1.7,
+              unit: "V"
+            }
+          }
+        },
+        {
+          t: 34300,
+          type: "measure.read",
+          payload: {
+            instrument: "ammeter",
+            reading: {
+              key: "I",
+              value: 0.169,
+              unit: "A"
+            }
+          }
+        },
+        {
+          t: 35200,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: false
+          }
+        },
+        {
+          t: 37900,
+          type: "param.set",
+          payload: {
+            key: "result:R",
+            value: 10.03
+          }
+        },
+        {
+          t: 39400,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 2
+          }
+        },
+        {
+          t: 39800,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        },
+        {
+          t: 40200,
+          type: "param.set",
+          payload: {
+            key: "answer:q3",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 15,
+      sequence: 15,
+      technique: 20,
+      measurement: 35,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/projectile-motion.json
+  var projectile_motion_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "phys-projectile",
+    slug: "projectile-motion",
+    subject: "physics",
+    title: "Projectile motion",
+    setup: {
+      targetM: 30,
+      targetTolM: 0.5
+    },
+    steps: [
+      {
+        id: "first-launch",
+        title: "Launch at 45\xB0",
+        instruction: "On Earth, launch at 20 m/s and 45\xB0 with air resistance off.",
+        action: "sim.start",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "launch-1",
+          "launch-2",
+          "launch-3"
+        ]
+      },
+      {
+        id: "measure",
+        title: "Measure the range",
+        instruction: "Use the tape to measure from the launcher to where it landed.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "tape-1",
+          "tape-2",
+          "tape-3"
+        ]
+      },
+      {
+        id: "complementary",
+        title: "Complementary angles",
+        instruction: "Launch at two angles that add up to 90\xB0 (for example 30\xB0 and 60\xB0) at the same speed. Compare the ranges.",
+        action: "sim.start",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "comp-1",
+          "comp-2",
+          "comp-3"
+        ]
+      },
+      {
+        id: "target",
+        title: "Hit the target",
+        instruction: "The target is 30 m away. Keep 20 m/s and find an angle that lands within half a metre of it.",
+        action: "sim.start",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "target-1",
+          "target-2",
+          "target-3"
+        ]
+      },
+      {
+        id: "air",
+        title: "Add air resistance",
+        instruction: "Repeat one of your launches with air resistance on.",
+        action: "sim.start",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "air-1",
+          "air-2",
+          "air-3"
+        ]
+      },
+      {
+        id: "moon",
+        title: "Try the Moon",
+        instruction: "Optional: launch on the Moon.",
+        action: "sim.start",
+        optional: true,
+        hints: [
+          "moon-1",
+          "moon-2",
+          "moon-3"
+        ]
+      }
+    ],
+    hints: {
+      "launch-1": {
+        rung: 1,
+        text: "Set the speed and angle first."
+      },
+      "launch-2": {
+        rung: 2,
+        text: "Speed 20 m/s, angle 45\xB0, drag off, Earth."
+      },
+      "launch-3": {
+        rung: 3,
+        text: "Then press Launch."
+      },
+      "tape-1": {
+        rung: 1,
+        text: "Wait until it lands."
+      },
+      "tape-2": {
+        rung: 2,
+        text: "Measure from the launch point to the centre of the landing mark."
+      },
+      "tape-3": {
+        rung: 3,
+        text: "Record the range shown on the tape."
+      },
+      "comp-1": {
+        rung: 1,
+        text: "Complementary angles add to 90\xB0."
+      },
+      "comp-2": {
+        rung: 2,
+        text: "Try 30\xB0 then 60\xB0."
+      },
+      "comp-3": {
+        rung: 3,
+        text: "Set 30\xB0, launch; set 60\xB0, launch. Same speed both times."
+      },
+      "target-1": {
+        rung: 1,
+        text: "45\xB0 went too far. Lower or raise the angle?"
+      },
+      "target-2": {
+        rung: 2,
+        text: "Range = v\xB2 sin 2\u03B8 / g. You need sin 2\u03B8 = 30 \xD7 9.81 / 400."
+      },
+      "target-3": {
+        rung: 3,
+        text: "sin 2\u03B8 = 0.736, so 2\u03B8 \u2248 47.4\xB0 and \u03B8 \u2248 23.7\xB0 (or 66.3\xB0)."
+      },
+      "air-1": {
+        rung: 1,
+        text: "Switch air resistance on."
+      },
+      "air-2": {
+        rung: 2,
+        text: "Keep the same speed and angle as before."
+      },
+      "air-3": {
+        rung: 3,
+        text: "Turn drag on at 20 m/s and 45\xB0, and launch."
+      },
+      "moon-1": {
+        rung: 1,
+        text: "Pick the Moon."
+      },
+      "moon-2": {
+        rung: 2,
+        text: "g is 1.62 m/s\xB2 there."
+      },
+      "moon-3": {
+        rung: 3,
+        text: "Choose Moon and launch."
+      }
+    },
+    observations: {
+      whatHappened: "45\xB0 gave the longest range. 30\xB0 and 60\xB0 landed in the same place. With air resistance the path was lopsided and shorter. On the Moon it flew about six times further.",
+      why: "Without air the horizontal speed stays constant while gravity changes the vertical speed. The range is v\xB2 sin 2\u03B8 / g, which is largest at 45\xB0 and the same for \u03B8 and 90\xB0 \u2212 \u03B8. Drag slows the ball throughout, so it falls short and comes down more steeply.",
+      equationLatex: "R = \\frac{v^2 \\sin 2\\theta}{g} \\qquad H = \\frac{v^2 \\sin^2 \\theta}{2g}",
+      realWorld: [
+        "Long jump and javelin angles",
+        "Basketball shots",
+        "Fountains and water jets"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "With no air resistance, which angle gives the greatest range?",
+          choices: [
+            "30\xB0",
+            "45\xB0",
+            "60\xB0",
+            "90\xB0"
+          ],
+          answer: 1,
+          explain: "sin 2\u03B8 is largest (1) when 2\u03B8 = 90\xB0."
+        },
+        {
+          id: "q2",
+          question: "During the flight (no drag), the horizontal velocity\u2026",
+          choices: [
+            "increases",
+            "decreases",
+            "stays the same",
+            "becomes zero at the top"
+          ],
+          answer: 2,
+          explain: "No horizontal force acts, so the horizontal velocity is constant."
+        },
+        {
+          id: "q3",
+          question: "Air resistance makes the range\u2026",
+          choices: [
+            "longer",
+            "shorter",
+            "unchanged",
+            "longer for heavy balls only"
+          ],
+          answer: 1,
+          explain: "Drag opposes the motion and removes energy."
+        }
+      ]
+    },
+    golden: {
+      durationS: 36,
+      captions: [
+        {
+          t: 1e3,
+          text: "20 m/s at 45\xB0, no air resistance."
+        },
+        {
+          t: 6500,
+          text: "Measure from the launcher to the mark."
+        },
+        {
+          t: 7700,
+          text: "30\xB0 and 60\xB0 add to 90\xB0: watch them land together.",
+          slow: true
+        },
+        {
+          t: 15e3,
+          text: "Aim for the 30 m target: about 23.7\xB0."
+        },
+        {
+          t: 19500,
+          text: "Same launch with air resistance: shorter and steeper."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "planet",
+            value: "earth"
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "speed",
+            value: 20
+          }
+        },
+        {
+          t: 3400,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 45
+          }
+        },
+        {
+          t: 4600,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 8100,
+          type: "measure.read",
+          payload: {
+            instrument: "tape",
+            reading: {
+              key: "range",
+              value: 40.77,
+              unit: "m"
+            }
+          }
+        },
+        {
+          t: 9300,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 30
+          }
+        },
+        {
+          t: 10500,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 13500,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 60
+          }
+        },
+        {
+          t: 14100,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 18100,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 23.7
+          }
+        },
+        {
+          t: 19300,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 22300,
+          type: "param.set",
+          payload: {
+            key: "angle",
+            value: 45
+          }
+        },
+        {
+          t: 23500,
+          type: "param.set",
+          payload: {
+            key: "drag",
+            value: true
+          }
+        },
+        {
+          t: 24700,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 28200,
+          type: "param.set",
+          payload: {
+            key: "drag",
+            value: false
+          }
+        },
+        {
+          t: 29400,
+          type: "param.set",
+          payload: {
+            key: "planet",
+            value: "moon"
+          }
+        },
+        {
+          t: 30600,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 32100,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 1
+          }
+        },
+        {
+          t: 32500,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 2
+          }
+        },
+        {
+          t: 32900,
+          type: "param.set",
+          payload: {
+            key: "answer:q3",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 15,
+      technique: 25,
+      measurement: 40,
+      observation: 20
+    }
+  };
+
+  // ../../content/experiments/refraction-snells-law.json
+  var refraction_snells_law_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "phys-refraction",
+    slug: "refraction-snells-law",
+    subject: "physics",
+    title: "Refraction through a glass slab",
+    setup: {
+      thicknessMm: 60,
+      widthMm: 120,
+      n: 1.5
+    },
+    steps: [
+      {
+        id: "set-1",
+        title: "First sheet",
+        instruction: "Stick P1 and P2 on a line towards the slab. Look through the slab and place P3 and P4 so all four appear in one line. Remove the slab, trace the rays, draw normals and measure i, r and e.",
+        action: "equipment.place",
+        scoring: {
+          technique: 1,
+          measurement: 1
+        },
+        hints: [
+          "pins-1",
+          "pins-2",
+          "pins-3"
+        ]
+      },
+      {
+        id: "set-2",
+        title: "Second sheet",
+        instruction: "Repeat at a clearly different angle of incidence.",
+        action: "equipment.place",
+        scoring: {
+          technique: 1,
+          measurement: 1
+        },
+        hints: [
+          "again-1",
+          "again-2",
+          "again-3"
+        ]
+      },
+      {
+        id: "set-3",
+        title: "Third sheet",
+        instruction: "And once more, at a third angle.",
+        action: "equipment.place",
+        scoring: {
+          technique: 1,
+          measurement: 1
+        },
+        hints: [
+          "again-1",
+          "again-2",
+          "again-3"
+        ]
+      },
+      {
+        id: "result",
+        title: "Refractive index",
+        instruction: "Work out sin i / sin r for each sheet and enter the mean: the refractive index of the glass.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "n-1",
+          "n-2",
+          "n-3"
+        ]
+      }
+    ],
+    hints: {
+      "pins-1": {
+        rung: 1,
+        text: "P1 and P2 make the incident ray; space them at least 3 cm apart."
+      },
+      "pins-2": {
+        rung: 2,
+        text: "Look through the bottom face at the feet of P1 and P2. Place P3 so it hides them, then P4 so it hides P3 and both images."
+      },
+      "pins-3": {
+        rung: 3,
+        text: "When all four pins line up through the glass, press Trace, then measure i at the top face, r inside, and e at the bottom face, each from the normal."
+      },
+      "again-1": {
+        rung: 1,
+        text: "Start a new sheet automatically by placing P1 again."
+      },
+      "again-2": {
+        rung: 2,
+        text: "Choose an angle at least 10\xB0 different from the last."
+      },
+      "again-3": {
+        rung: 3,
+        text: "Try 30\xB0, 45\xB0 and 60\xB0."
+      },
+      "n-1": {
+        rung: 1,
+        text: "n = sin i \xF7 sin r."
+      },
+      "n-2": {
+        rung: 2,
+        text: "Work it out for each sheet, then average."
+      },
+      "n-3": {
+        rung: 3,
+        text: "For glass it should come out close to 1.5."
+      }
+    },
+    observations: {
+      whatHappened: "Inside the glass the ray bent towards the normal (r smaller than i). It came out bent away again, parallel to where it went in but shifted sideways. On every sheet i equalled e, and sin i / sin r came out the same.",
+      why: "Light slows down in glass. Snell's law, n\u2081 sin i = n\u2082 sin r, gives a constant ratio sin i / sin r = n for glass. Because the two faces are parallel, the bending at the bottom exactly undoes the bending at the top, so the emergent ray is parallel to the incident ray but displaced.",
+      equationLatex: "n = \\frac{\\sin i}{\\sin r} \\qquad d = \\frac{t \\sin(i - r)}{\\cos r}",
+      realWorld: [
+        "Thick windows shift what you see sideways",
+        "Lenses in glasses and cameras",
+        "Optical fibres (total internal reflection)"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "Entering glass from air, the ray bends\u2026",
+          choices: [
+            "away from the normal",
+            "towards the normal",
+            "not at all",
+            "back the way it came"
+          ],
+          answer: 1,
+          explain: "Light slows in glass, so it bends towards the normal."
+        },
+        {
+          id: "q2",
+          question: "Why is the emergent ray parallel to the incident ray?",
+          choices: [
+            "The slab is thin",
+            "The two faces are parallel, so the bending cancels",
+            "Glass does not refract",
+            "Because i is small"
+          ],
+          answer: 1,
+          explain: "The refraction at the second parallel face reverses the first."
+        },
+        {
+          id: "q3",
+          question: "Why time P1 and P2 far apart?",
+          choices: [
+            "It looks neater",
+            "A small placement error then changes the angle less",
+            "The rules say so",
+            "To make i larger"
+          ],
+          answer: 1,
+          explain: "Two points far apart pin down a line more precisely."
+        }
+      ]
+    },
+    golden: {
+      durationS: 37,
+      captions: [
+        {
+          t: 1e3,
+          text: "P1 and P2 mark the incident ray, well apart."
+        },
+        {
+          t: 3400,
+          text: "Looking through the glass, P3 and P4 are placed in line with the images.",
+          slow: true
+        },
+        {
+          t: 6e3,
+          text: "Trace the outline and rays. Measure i, r and e from the normals."
+        },
+        {
+          t: 3e4,
+          text: "Three angles: sin i / sin r is about 1.5 every time."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P1",
+            x: -65,
+            y: -77.94
+          }
+        },
+        {
+          t: 2200,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P2",
+            x: -40,
+            y: -34.64
+          }
+        },
+        {
+          t: 3400,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P3",
+            x: 16.21,
+            y: 85.98
+          }
+        },
+        {
+          t: 4600,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P4",
+            x: 41.21,
+            y: 129.28
+          }
+        },
+        {
+          t: 5800,
+          type: "param.set",
+          payload: {
+            key: "trace",
+            value: true
+          }
+        },
+        {
+          t: 7400,
+          type: "measure.read",
+          payload: {
+            instrument: "protractor",
+            reading: {
+              key: "i",
+              value: 30,
+              unit: "deg"
+            }
+          }
+        },
+        {
+          t: 8600,
+          type: "measure.read",
+          payload: {
+            instrument: "protractor",
+            reading: {
+              key: "r",
+              value: 19.5,
+              unit: "deg"
+            }
+          }
+        },
+        {
+          t: 9800,
+          type: "measure.read",
+          payload: {
+            instrument: "protractor",
+            reading: {
+              key: "e",
+              value: 30,
+              unit: "deg"
+            }
+          }
+        },
+        {
+          t: 11e3,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P1",
+            x: -78.64,
+            y: -63.64
+          }
+        },
+        {
+          t: 12200,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P2",
+            x: -43.28,
+            y: -28.28
+          }
+        },
+        {
+          t: 13400,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P3",
+            x: 38.28,
+            y: 81.21
+          }
+        },
+        {
+          t: 14600,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P4",
+            x: 73.64,
+            y: 116.57
+          }
+        },
+        {
+          t: 15800,
+          type: "param.set",
+          payload: {
+            key: "trace",
+            value: true
+          }
+        },
+        {
+          t: 17400,
+          type: "measure.read",
+          payload: {
+            instrument: "protractor",
+            reading: {
+              key: "i",
+              value: 45,
+              unit: "deg"
+            }
+          }
+        },
+        {
+          t: 18600,
+          type: "measure.read",
+          payload: {
+            instrument: "protractor",
+            reading: {
+              key: "r",
+              value: 28,
+              unit: "deg"
+            }
+          }
+        },
+        {
+          t: 19800,
+          type: "measure.read",
+          payload: {
+            instrument: "protractor",
+            reading: {
+              key: "e",
+              value: 45,
+              unit: "deg"
+            }
+          }
+        },
+        {
+          t: 21e3,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P1",
+            x: -87.94,
+            y: -45
+          }
+        },
+        {
+          t: 22200,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P2",
+            x: -44.64,
+            y: -20
+          }
+        },
+        {
+          t: 23400,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P3",
+            x: 58.41,
+            y: 75
+          }
+        },
+        {
+          t: 24600,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "P4",
+            x: 101.71,
+            y: 100
+          }
+        },
+        {
+          t: 25800,
+          type: "param.set",
+          payload: {
+            key: "trace",
+            value: true
+          }
+        },
+        {
+          t: 27400,
+          type: "measure.read",
+          payload: {
+            instrument: "protractor",
+            reading: {
+              key: "i",
+              value: 60,
+              unit: "deg"
+            }
+          }
+        },
+        {
+          t: 28600,
+          type: "measure.read",
+          payload: {
+            instrument: "protractor",
+            reading: {
+              key: "r",
+              value: 35.5,
+              unit: "deg"
+            }
+          }
+        },
+        {
+          t: 29800,
+          type: "measure.read",
+          payload: {
+            instrument: "protractor",
+            reading: {
+              key: "e",
+              value: 60,
+              unit: "deg"
+            }
+          }
+        },
+        {
+          t: 32e3,
+          type: "param.set",
+          payload: {
+            key: "result:n",
+            value: 1.5
+          }
+        },
+        {
+          t: 33500,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 1
+          }
+        },
+        {
+          t: 33900,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        },
+        {
+          t: 34300,
+          type: "param.set",
+          payload: {
+            key: "answer:q3",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 15,
+      technique: 30,
+      measurement: 40,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/series-and-parallel.json
+  var series_and_parallel_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "phys-series-parallel",
+    slug: "series-and-parallel",
+    subject: "physics",
+    title: "Series and parallel circuits",
+    setup: {
+      parts: [
+        {
+          id: "B",
+          kind: "battery",
+          value: 3,
+          internal: 0.3
+        },
+        {
+          id: "S",
+          kind: "switch",
+          closed: false
+        },
+        {
+          id: "A",
+          kind: "ammeter"
+        },
+        {
+          id: "L1",
+          kind: "bulb",
+          value: 10
+        },
+        {
+          id: "L2",
+          kind: "bulb",
+          value: 10
+        }
+      ]
+    },
+    steps: [
+      {
+        id: "series",
+        title: "Bulbs in series",
+        instruction: "Wire both bulbs one after the other in a single loop with the switch and ammeter, then close the switch.",
+        action: "equipment.connect",
+        scoring: {
+          equipment: 1
+        },
+        hints: [
+          "series-1",
+          "series-2",
+          "series-3"
+        ]
+      },
+      {
+        id: "series-read",
+        title: "Read the current",
+        instruction: "Read the ammeter.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "sread-1",
+          "sread-2",
+          "sread-3"
+        ]
+      },
+      {
+        id: "parallel",
+        title: "Bulbs in parallel",
+        instruction: "Open the switch and rewire so each bulb has its own path between the same two points. Close the switch.",
+        action: "equipment.connect",
+        scoring: {
+          equipment: 1
+        },
+        hints: [
+          "par-1",
+          "par-2",
+          "par-3"
+        ]
+      },
+      {
+        id: "parallel-read",
+        title: "Read the current again",
+        instruction: "Read the ammeter in the main branch.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "pread-1",
+          "pread-2",
+          "pread-3"
+        ]
+      },
+      {
+        id: "unscrew",
+        title: "Unscrew one bulb",
+        instruction: "With the parallel circuit on, unscrew one bulb. What happens to the other?",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "unscrew-1",
+          "unscrew-2",
+          "unscrew-3"
+        ]
+      }
+    ],
+    hints: {
+      "series-1": {
+        rung: 1,
+        text: "In series there is only one path for the current."
+      },
+      "series-2": {
+        rung: 2,
+        text: "Connect bulb 1's end to bulb 2's start."
+      },
+      "series-3": {
+        rung: 3,
+        text: "Battery + \u2192 switch \u2192 ammeter \u2192 bulb 1 \u2192 bulb 2 \u2192 battery \u2212. Close the switch."
+      },
+      "sread-1": {
+        rung: 1,
+        text: "The ammeter is already in the loop."
+      },
+      "sread-2": {
+        rung: 2,
+        text: "Read the number on the ammeter."
+      },
+      "sread-3": {
+        rung: 3,
+        text: "Record the ammeter reading."
+      },
+      "par-1": {
+        rung: 1,
+        text: "In parallel each bulb connects across the same two points."
+      },
+      "par-2": {
+        rung: 2,
+        text: "Join the two left ends together and the two right ends together."
+      },
+      "par-3": {
+        rung: 3,
+        text: "Remove the link between the bulbs, then join L1's left end to L2's left end and L1's right end to L2's right end, and the right ends to battery \u2212."
+      },
+      "pread-1": {
+        rung: 1,
+        text: "The ammeter is in the main branch, before the current splits."
+      },
+      "pread-2": {
+        rung: 2,
+        text: "Read it with both bulbs lit."
+      },
+      "pread-3": {
+        rung: 3,
+        text: "Record the ammeter reading."
+      },
+      "unscrew-1": {
+        rung: 1,
+        text: "Each bulb in parallel has its own path."
+      },
+      "unscrew-2": {
+        rung: 2,
+        text: "Click a bulb to unscrew it."
+      },
+      "unscrew-3": {
+        rung: 3,
+        text: "Unscrew bulb 1 and watch bulb 2."
+      }
+    },
+    observations: {
+      whatHappened: "In series both bulbs were dim and the current was small. In parallel both were bright, the current from the battery was about four times bigger, and one bulb stayed lit when the other was removed.",
+      why: "In series the resistances add (10 + 10 = 20 \u03A9), so less current flows and each bulb gets half the voltage. In parallel each bulb gets the full battery voltage, the total resistance halves (5 \u03A9), and each branch works on its own.",
+      equationLatex: "R_{\\text{series}} = R_1 + R_2 \\qquad \\frac{1}{R_{\\text{parallel}}} = \\frac{1}{R_1} + \\frac{1}{R_2}",
+      realWorld: [
+        "House wiring is parallel so each light switches on its own",
+        "Old fairy lights were series: one dead bulb and they all went out",
+        "Batteries in series for more voltage"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "Two identical bulbs in series compared with one bulb alone are\u2026",
+          choices: [
+            "brighter",
+            "the same",
+            "dimmer",
+            "off"
+          ],
+          answer: 2,
+          explain: "Each gets half the voltage and the current is smaller."
+        },
+        {
+          id: "q2",
+          question: "Why are homes wired in parallel?",
+          choices: [
+            "It uses less wire",
+            "Each appliance gets the full voltage and can be switched on its own",
+            "Parallel circuits have more resistance",
+            "So all lights go off together"
+          ],
+          answer: 1,
+          explain: "Every branch gets the mains voltage and works independently."
+        }
+      ]
+    },
+    golden: {
+      durationS: 27,
+      captions: [
+        {
+          t: 1e3,
+          text: "Series first: one single loop through both bulbs."
+        },
+        {
+          t: 7e3,
+          text: "Both bulbs are dim. Note the current."
+        },
+        {
+          t: 10600,
+          text: "Now give each bulb its own path between the same two points.",
+          slow: true
+        },
+        {
+          t: 17e3,
+          text: "Brighter, and the battery supplies more current."
+        },
+        {
+          t: 19500,
+          text: "Unscrew one: the other stays lit. Each branch is independent."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "equipment.connect",
+          payload: {
+            from: "B.a",
+            to: "S.a"
+          }
+        },
+        {
+          t: 2200,
+          type: "equipment.connect",
+          payload: {
+            from: "S.b",
+            to: "A.a"
+          }
+        },
+        {
+          t: 3400,
+          type: "equipment.connect",
+          payload: {
+            from: "A.b",
+            to: "L1.a"
+          }
+        },
+        {
+          t: 4600,
+          type: "equipment.connect",
+          payload: {
+            from: "L1.b",
+            to: "L2.a"
+          }
+        },
+        {
+          t: 5800,
+          type: "equipment.connect",
+          payload: {
+            from: "L2.b",
+            to: "B.b"
+          }
+        },
+        {
+          t: 7e3,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: true
+          }
+        },
+        {
+          t: 8200,
+          type: "measure.read",
+          payload: {
+            instrument: "ammeter",
+            reading: {
+              key: "I",
+              value: 0.148,
+              unit: "A"
+            }
+          }
+        },
+        {
+          t: 9400,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: false
+          }
+        },
+        {
+          t: 10600,
+          type: "equipment.connect",
+          payload: {
+            from: "L1.b",
+            to: "L2.a",
+            port: "remove"
+          }
+        },
+        {
+          t: 11800,
+          type: "equipment.connect",
+          payload: {
+            from: "L2.b",
+            to: "B.b",
+            port: "remove"
+          }
+        },
+        {
+          t: 13e3,
+          type: "equipment.connect",
+          payload: {
+            from: "L1.a",
+            to: "L2.a"
+          }
+        },
+        {
+          t: 14200,
+          type: "equipment.connect",
+          payload: {
+            from: "L1.b",
+            to: "L2.b"
+          }
+        },
+        {
+          t: 15400,
+          type: "equipment.connect",
+          payload: {
+            from: "L1.b",
+            to: "B.b"
+          }
+        },
+        {
+          t: 16600,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: true
+          }
+        },
+        {
+          t: 17800,
+          type: "measure.read",
+          payload: {
+            instrument: "ammeter",
+            reading: {
+              key: "I",
+              value: 0.565,
+              unit: "A"
+            }
+          }
+        },
+        {
+          t: 19e3,
+          type: "param.set",
+          payload: {
+            key: "bulb:L1",
+            value: "out"
+          }
+        },
+        {
+          t: 20800,
+          type: "param.set",
+          payload: {
+            key: "bulb:L1",
+            value: "in"
+          }
+        },
+        {
+          t: 22e3,
+          type: "param.set",
+          payload: {
+            key: "switch",
+            value: false
+          }
+        },
+        {
+          t: 23500,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 2
+          }
+        },
+        {
+          t: 23900,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 30,
+      sequence: 10,
+      technique: 10,
+      measurement: 30,
+      observation: 20
+    }
+  };
+
+  // ../../content/experiments/simple-pendulum.json
+  var simple_pendulum_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "phys-pendulum",
+    slug: "simple-pendulum",
+    subject: "physics",
+    title: "Simple pendulum",
+    setup: {
+      g: 9.81,
+      bobRadiusM: 0.015
+    },
+    steps: [
+      {
+        id: "measure-L",
+        title: "Measure the length",
+        instruction: "Measure from the point of suspension to the centre of the bob.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "len-1",
+          "len-2",
+          "len-3"
+        ]
+      },
+      {
+        id: "release",
+        title: "Release gently",
+        instruction: "Pull the bob aside less than 10\xB0 and let go without pushing.",
+        action: "sim.start",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "rel-1",
+          "rel-2",
+          "rel-3"
+        ]
+      },
+      {
+        id: "time-20",
+        title: "Time 20 oscillations",
+        instruction: "Start the stopwatch as the bob passes the centre, count 20 complete oscillations, and stop.",
+        action: "measure.read",
+        scoring: {
+          technique: 1,
+          measurement: 1
+        },
+        hints: [
+          "time-1",
+          "time-2",
+          "time-3"
+        ]
+      },
+      {
+        id: "five-lengths",
+        title: "Five lengths",
+        instruction: "Repeat for five different lengths.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "five-1",
+          "five-2",
+          "five-3"
+        ]
+      },
+      {
+        id: "result",
+        title: "Find g",
+        instruction: "Plot T\xB2 against L. The gradient is 4\u03C0\xB2/g. Enter your value of g.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "g-1",
+          "g-2",
+          "g-3"
+        ]
+      }
+    ],
+    hints: {
+      "len-1": {
+        rung: 1,
+        text: "The length is not just the string."
+      },
+      "len-2": {
+        rung: 2,
+        text: "It runs to the centre of the bob: string + radius."
+      },
+      "len-3": {
+        rung: 3,
+        text: "Measure the string and add the bob's radius (1.5 cm)."
+      },
+      "rel-1": {
+        rung: 1,
+        text: "Big swings change the period."
+      },
+      "rel-2": {
+        rung: 2,
+        text: "Set the release angle under 10\xB0."
+      },
+      "rel-3": {
+        rung: 3,
+        text: "Set about 5\xB0, then release."
+      },
+      "time-1": {
+        rung: 1,
+        text: "One oscillation is there and back."
+      },
+      "time-2": {
+        rung: 2,
+        text: "Start and stop as the bob passes the lowest point: it moves fastest there, so the moment is sharp."
+      },
+      "time-3": {
+        rung: 3,
+        text: 'Count "zero" as you start, stop on "twenty", and divide the time by 20.'
+      },
+      "five-1": {
+        rung: 1,
+        text: "Spread the lengths out."
+      },
+      "five-2": {
+        rung: 2,
+        text: "Try about 0.3, 0.45, 0.6, 0.75 and 0.9 m."
+      },
+      "five-3": {
+        rung: 3,
+        text: "Measure L and time 20 swings for each."
+      },
+      "g-1": {
+        rung: 1,
+        text: "T\xB2 = (4\u03C0\xB2/g) L."
+      },
+      "g-2": {
+        rung: 2,
+        text: "Gradient = T\xB2 / L for your best-fit line."
+      },
+      "g-3": {
+        rung: 3,
+        text: "g = 4\u03C0\xB2 \xF7 gradient. It should be close to 9.8 m/s\xB2."
+      }
+    },
+    observations: {
+      whatHappened: "Longer pendulums swung more slowly. T\xB2 against L was a straight line through the origin, and its gradient gave g close to 9.8 m/s\xB2.",
+      why: "For small swings the period depends only on length and gravity: T = 2\u03C0\u221A(L/g). Squaring gives T\xB2 = (4\u03C0\xB2/g) L, a straight line. Timing 20 swings divides your reaction-time error by 20; small angles keep the formula accurate.",
+      equationLatex: "T = 2\\pi\\sqrt{\\frac{L}{g}} \\qquad T^2 = \\frac{4\\pi^2}{g}L",
+      realWorld: [
+        "Pendulum clocks",
+        "Swings in a playground",
+        "Measuring g at different places on Earth"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "Doubling the mass of the bob makes the period\u2026",
+          choices: [
+            "double",
+            "halve",
+            "stay the same",
+            "four times longer"
+          ],
+          answer: 2,
+          explain: "Mass does not appear in T = 2\u03C0\u221A(L/g)."
+        },
+        {
+          id: "q2",
+          question: "To double the period you must make the length\u2026",
+          choices: [
+            "twice as long",
+            "four times as long",
+            "half as long",
+            "\u221A2 times as long"
+          ],
+          answer: 1,
+          explain: "T \u221D \u221AL, so 4\xD7 the length doubles T."
+        },
+        {
+          id: "q3",
+          question: "Why time 20 oscillations, not 1?",
+          choices: [
+            "It is more fun",
+            "Your reaction-time error is spread over 20 swings",
+            "One swing is too fast to see",
+            "The first swing is always wrong"
+          ],
+          answer: 1,
+          explain: "The same ~0.2 s error becomes 0.01 s per swing."
+        }
+      ]
+    },
+    golden: {
+      durationS: 43,
+      captions: [
+        {
+          t: 1e3,
+          text: "A small angle: under 10\xB0."
+        },
+        {
+          t: 2200,
+          text: "Measure to the centre of the bob, not the top.",
+          slow: true
+        },
+        {
+          t: 5800,
+          text: "Time 20 complete oscillations from the centre of the swing."
+        },
+        {
+          t: 12e3,
+          text: "Longer pendulum, slower swing. Five lengths in all."
+        },
+        {
+          t: 38e3,
+          text: "T\xB2 against L is a straight line: the gradient gives g."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "amplitude",
+            value: 6
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "length",
+            value: 0.3
+          }
+        },
+        {
+          t: 3400,
+          type: "measure.read",
+          payload: {
+            instrument: "metre-rule",
+            reading: {
+              key: "L",
+              value: 0.315,
+              unit: "m"
+            }
+          }
+        },
+        {
+          t: 4600,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 6600,
+          type: "measure.read",
+          payload: {
+            instrument: "stopwatch",
+            reading: {
+              key: "t:20",
+              value: 22.53,
+              unit: "s"
+            }
+          }
+        },
+        {
+          t: 7800,
+          type: "sim.reset",
+          payload: {}
+        },
+        {
+          t: 9e3,
+          type: "param.set",
+          payload: {
+            key: "length",
+            value: 0.45
+          }
+        },
+        {
+          t: 10200,
+          type: "measure.read",
+          payload: {
+            instrument: "metre-rule",
+            reading: {
+              key: "L",
+              value: 0.465,
+              unit: "m"
+            }
+          }
+        },
+        {
+          t: 11400,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 13400,
+          type: "measure.read",
+          payload: {
+            instrument: "stopwatch",
+            reading: {
+              key: "t:20",
+              value: 27.38,
+              unit: "s"
+            }
+          }
+        },
+        {
+          t: 14600,
+          type: "sim.reset",
+          payload: {}
+        },
+        {
+          t: 15800,
+          type: "param.set",
+          payload: {
+            key: "length",
+            value: 0.6
+          }
+        },
+        {
+          t: 17e3,
+          type: "measure.read",
+          payload: {
+            instrument: "metre-rule",
+            reading: {
+              key: "L",
+              value: 0.615,
+              unit: "m"
+            }
+          }
+        },
+        {
+          t: 18200,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 20200,
+          type: "measure.read",
+          payload: {
+            instrument: "stopwatch",
+            reading: {
+              key: "t:20",
+              value: 31.49,
+              unit: "s"
+            }
+          }
+        },
+        {
+          t: 21400,
+          type: "sim.reset",
+          payload: {}
+        },
+        {
+          t: 22600,
+          type: "param.set",
+          payload: {
+            key: "length",
+            value: 0.75
+          }
+        },
+        {
+          t: 23800,
+          type: "measure.read",
+          payload: {
+            instrument: "metre-rule",
+            reading: {
+              key: "L",
+              value: 0.765,
+              unit: "m"
+            }
+          }
+        },
+        {
+          t: 25e3,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 27e3,
+          type: "measure.read",
+          payload: {
+            instrument: "stopwatch",
+            reading: {
+              key: "t:20",
+              value: 35.12,
+              unit: "s"
+            }
+          }
+        },
+        {
+          t: 28200,
+          type: "sim.reset",
+          payload: {}
+        },
+        {
+          t: 29400,
+          type: "param.set",
+          payload: {
+            key: "length",
+            value: 0.9
+          }
+        },
+        {
+          t: 30600,
+          type: "measure.read",
+          payload: {
+            instrument: "metre-rule",
+            reading: {
+              key: "L",
+              value: 0.915,
+              unit: "m"
+            }
+          }
+        },
+        {
+          t: 31800,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 33800,
+          type: "measure.read",
+          payload: {
+            instrument: "stopwatch",
+            reading: {
+              key: "t:20",
+              value: 38.4,
+              unit: "s"
+            }
+          }
+        },
+        {
+          t: 35e3,
+          type: "sim.reset",
+          payload: {}
+        },
+        {
+          t: 37700,
+          type: "param.set",
+          payload: {
+            key: "result:g",
+            value: 9.8
+          }
+        },
+        {
+          t: 39200,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 2
+          }
+        },
+        {
+          t: 39600,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        },
+        {
+          t: 4e4,
+          type: "param.set",
+          payload: {
+            key: "answer:q3",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 15,
+      technique: 25,
+      measurement: 45,
+      observation: 15
+    }
+  };
+
+  // ../physics/src/labs/circuits.ts
+  var switchOf = (s) => s.parts.find((p) => p.kind === "switch");
+  var isClosed = (s) => !!switchOf(s)?.closed;
+  function circuitNow(s, unknownId) {
+    const parts = s.parts.filter((p) => !s.removed.includes(p.id)).map((p) => p.id === unknownId ? { ...p, value: hotResistance(p.value ?? 10, s.tempC) } : p);
+    return solve(parts, s.wires);
+  }
+  function circuitIfClosed(s, unknownId) {
+    return circuitNow({ ...s, parts: s.parts.map((p) => p.kind === "switch" ? { ...p, closed: true } : p) }, unknownId);
+  }
+  var key = (a, b) => a < b ? `${a}|${b}` : `${b}|${a}`;
+  function wire(s, e) {
+    const { from, to, port } = e.payload;
+    if (port === "remove") return { ...s, wires: s.wires.filter(([a, b]) => key(a, b) !== key(from, to)) };
+    if (from === to || s.wires.some(([a, b]) => key(a, b) === key(from, to))) return s;
+    return { ...s, wires: [...s.wires, [from, to]] };
+  }
+  function warm(s, t, unknownId) {
+    const dt = Math.max(0, (t - s.lastT) / 1e3);
+    if (!unknownId || dt === 0) return { ...s, lastT: t, onS: s.onS + (isClosed(s) ? dt : 0) };
+    const p = isClosed(s) ? Math.abs(circuitNow(s, unknownId).components[unknownId]?.power ?? 0) : 0;
+    let temp = s.tempC;
+    for (let left = dt; left > 0; left -= 1) temp = heatStep(temp, p, Math.min(1, left));
+    return { ...s, tempC: temp, lastT: t, onS: s.onS + (isClosed(s) ? dt : 0) };
+  }
+  function meterValue(r, id, kind) {
+    const c = r.components[id];
+    if (!c) return 0;
+    const raw = kind === "ammeter" ? Math.abs(c.current) : Math.abs(c.voltage);
+    return kind === "ammeter" ? Math.round(raw * 1e3) / 1e3 : Math.round(raw * 100) / 100;
+  }
+  function circuitApply(s0, e, unknownId) {
+    let s = warm(s0, e.t, unknownId);
+    const notes = [];
+    const hits = [];
+    if (e.type === "equipment.connect") s = wire(s, e);
+    if (e.type === "param.set") {
+      const { key: k, value } = e.payload;
+      if (k === "switch") {
+        const closing = !!value && !isClosed(s);
+        s = { ...s, parts: s.parts.map((p) => p.kind === "switch" ? { ...p, closed: !!value } : p) };
+        if (!value) s = { ...s, offSinceReading: true };
+        if (closing) {
+          const r = circuitNow(s, unknownId);
+          if (r.ammeterAcross.length) hits.push({ code: "ammeter-parallel", severity: "major", message: "The ammeter was wired across a component. An ammeter has almost no resistance, so in parallel it is a near short circuit. It always goes in series.", tag: "conceptual", dimension: "equipment" });
+          if (r.voltmeterInSeries.length) hits.push({ code: "voltmeter-series", severity: "major", message: "The voltmeter was in series. Its huge resistance blocks the current, so nothing works. A voltmeter always goes across (in parallel with) the component.", tag: "conceptual", dimension: "equipment" });
+          if (r.shorted.length) notes.push({ text: "Short circuit! The wires are getting hot. Open the switch now.", tone: "danger" });
+          else if (r.open) notes.push({ text: "Nothing happens: the circuit is not a complete loop.", tone: "warning" });
+        }
+      }
+      if (k === "rheostat") s = { ...s, parts: s.parts.map((p) => p.kind === "rheostat" ? { ...p, setting: Math.max(0, Math.min(1, Number(value))) } : p) };
+      if (k.startsWith("bulb:")) {
+        const id = k.slice(5);
+        s = { ...s, removed: value === "out" ? [.../* @__PURE__ */ new Set([...s.removed, id])] : s.removed.filter((x) => x !== id) };
+      }
+      if (k.startsWith("result:")) s = { ...s, results: { ...s.results, [k.slice(7)]: typeof value === "boolean" ? String(value) : value } };
+    }
+    if (unknownId && s.tempC > 35 && s0.tempC <= 35) {
+      notes.push({ text: "The resistor is getting warm, and its resistance is creeping up.", tone: "warning" });
+      hits.push({ code: "resistor-hot", severity: "minor", message: "Current was left flowing so long that the resistor heated up and its resistance rose, which skews your readings. Switch off between readings.", tag: "procedural", dimension: "technique" });
+    }
+    return { state: s, notes, hits };
+  }
+  function initCircuit(setup) {
+    return { parts: setup.parts.map((p) => ({ ...p })), wires: [], removed: [], tempC: HEAT.roomC, lastT: 0, onS: 0, readings: [], pending: { V: null, I: null }, offSinceReading: true, results: {}, seen: [], ammeter: {}, litWhileOneRemoved: false };
+  }
+  var R_ID = "R";
+  function ohmsWiringOk(s) {
+    const r = circuitIfClosed(s, R_ID);
+    const res = r.components[R_ID];
+    const am = r.components.A;
+    const vm = r.components.V;
+    if (!res || !am || !vm || r.shorted.length || r.ammeterAcross.length || r.voltmeterInSeries.length) return false;
+    const rheo = s.parts.find((p) => p.kind === "rheostat");
+    return Math.abs(res.current) > 1e-3 && Math.abs(Math.abs(am.current) - Math.abs(res.current)) < 1e-6 && Math.abs(Math.abs(vm.voltage) - Math.abs(res.voltage)) < 1e-4 && (!rheo || Math.abs(r.components[rheo.id]?.current ?? 0) > 1e-3);
+  }
+  function fitR(readings) {
+    const pts = readings.filter((r) => r.V !== null && r.I !== null && r.I > 0);
+    if (pts.length < 2) return null;
+    const sxy = pts.reduce((a, p) => a + p.V * p.I, 0);
+    const sxx = pts.reduce((a, p) => a + p.I * p.I, 0);
+    return sxy / sxx;
+  }
+  var ohmsLaw = {
+    slug: "ohms-law",
+    init: (c) => initCircuit(c.setup),
+    apply: (s0, e) => {
+      const out = circuitApply(s0, e, R_ID);
+      let s = out.state;
+      if (e.type === "param.set" && e.payload.key === "switch" && e.payload.value && !ohmsWiringOk(s0) && !out.hits.length && !circuitNow(s, R_ID).shorted.length)
+        out.hits.push({ code: "closed-too-early", severity: "order", message: "The switch was closed before the circuit was wired correctly. Build it with the switch open and check it first.", tag: "procedural", dimension: "sequence" });
+      if (e.type === "measure.read") {
+        const inst = e.payload.instrument;
+        const r = circuitNow(s, R_ID);
+        const truth = meterValue(r, inst === "ammeter" ? "A" : "V", inst);
+        const read = e.payload.reading.value;
+        if (!isClosed(s)) out.hits.push({ code: "read-while-off", severity: "minor", message: "That reading was taken with the switch open, so no current was flowing.", tag: "procedural", dimension: "measurement" });
+        if (Math.abs(read - truth) > (inst === "ammeter" ? 2e-3 : 0.02) + Math.abs(truth) * 0.01) out.hits.push({ code: "misread", severity: "minor", message: `That reading does not match the meter (it shows ${truth}). Read the scale again at eye level.`, tag: "procedural", dimension: "measurement" });
+        const pending = { ...s.pending, [inst === "ammeter" ? "I" : "V"]: read };
+        s = { ...s, pending };
+        if (pending.V !== null && pending.I !== null) {
+          if (!s.offSinceReading && s.readings.length) out.hits.push({ code: "left-on", severity: "minor", message: "The current stayed on between readings. Open the switch between readings so the resistor stays at room temperature.", tag: "procedural", dimension: "technique" });
+          const rheo = s.parts.find((p) => p.kind === "rheostat")?.setting ?? 1;
+          s = { ...s, readings: [...s.readings, { V: pending.V, I: pending.I, rheo, t: e.t, config: "ohm" }], pending: { V: null, I: null }, offSinceReading: false };
+          out.notes.push({ text: `Reading ${s.readings.length}: ${pending.V} V, ${pending.I} A`, tone: "success" });
+        }
+      }
+      if (e.type === "param.set" && e.payload.key === "result:R") {
+        const truth = s.parts.find((p) => p.id === R_ID)?.value ?? 10;
+        if (Math.abs(Number(e.payload.value) - truth) / truth > 0.05) out.hits.push({ code: "wrong-R", severity: "major", message: "That resistance is more than 5 % from the gradient of your V-I graph. R = V / I: take the slope of the best-fit line.", tag: "conceptual", dimension: "measurement" });
+      }
+      return { ...out, state: s };
+    },
+    steps: {
+      build: (s) => ohmsWiringOk(s) && !isClosed(s),
+      close: (s) => ohmsWiringOk(s) && isClosed(s),
+      readings: (s) => {
+        const distinct = s.readings.filter((r, i, a) => a.findIndex((o) => Math.abs((o.I ?? 0) - (r.I ?? 0)) <= 0.05 * Math.max(r.I ?? 0, 1e-3)) === i);
+        return distinct.length >= 5;
+      },
+      "switch-off": (s) => !isClosed(s),
+      result: (s) => typeof s.results.R === "number" && Math.abs(s.results.R - (s.parts.find((p) => p.id === R_ID)?.value ?? 10)) / 10 <= 0.05
+    },
+    safety: (s) => isClosed(s) && circuitNow(s, R_ID).shorted.length ? { code: "short-circuit", title: "Short circuit", message: "The battery was connected straight across with almost no resistance. In a real lab the wires get hot enough to burn. Always check the circuit with the switch open." } : null,
+    readouts: (s) => {
+      const r = circuitNow(s, R_ID);
+      return { V: meterValue(r, "V", "voltmeter"), I: meterValue(r, "A", "ammeter"), tempC: Math.round(s.tempC * 10) / 10, Rfit: fitR(s.readings), readings: s.readings.length };
+    }
+  };
+  function bulbConfig(s) {
+    const r = circuitIfClosed({ ...s, removed: [] });
+    const l1 = r.components.L1;
+    const l2 = r.components.L2;
+    const am = r.components.A;
+    if (!l1 || !l2 || !am || r.shorted.length || r.ammeterAcross.length) return null;
+    const i1 = Math.abs(l1.current);
+    const i2 = Math.abs(l2.current);
+    if (i1 < 1e-3 || i2 < 1e-3) return null;
+    const supply = Math.abs(r.components.B?.voltage ?? 0);
+    const ia = Math.abs(am.current);
+    if (Math.abs(i1 - i2) / i1 < 0.01 && Math.abs(ia - i1) / i1 < 0.01 && Math.abs(l1.voltage) < supply * 0.75) return "series";
+    if (Math.abs(Math.abs(l1.voltage) - Math.abs(l2.voltage)) < 1e-3 && Math.abs(ia - (i1 + i2)) / (i1 + i2) < 0.01) return "parallel";
+    return null;
+  }
+  var bulbLit = (r, id) => Math.abs(r.components[id]?.current ?? 0) > 0.02;
+  var seriesParallel = {
+    slug: "series-and-parallel",
+    init: (c) => initCircuit(c.setup),
+    apply: (s0, e) => {
+      const out = circuitApply(s0, e);
+      let s = out.state;
+      const cfg = bulbConfig(s);
+      if (isClosed(s) && cfg && !s.removed.length && !s.seen.includes(cfg)) s = { ...s, seen: [...s.seen, cfg] };
+      if (e.type === "measure.read" && e.payload.instrument === "ammeter") {
+        const truth = meterValue(circuitNow(s), "A", "ammeter");
+        if (!isClosed(s)) out.hits.push({ code: "read-while-off", severity: "minor", message: "The switch was open, so there was no current to read.", tag: "procedural", dimension: "measurement" });
+        else if (Math.abs(e.payload.reading.value - truth) > 2e-3 + truth * 0.01) out.hits.push({ code: "misread", severity: "minor", message: `The ammeter shows ${truth} A. Read it again.`, tag: "procedural", dimension: "measurement" });
+        else if (cfg && !s.removed.length) s = { ...s, ammeter: { ...s.ammeter, [cfg]: e.payload.reading.value } };
+      }
+      if (isClosed(s) && cfg === "parallel" && s.removed.length === 1) {
+        const r = circuitNow(s);
+        const other = s.removed[0] === "L1" ? "L2" : "L1";
+        if (bulbLit(r, other)) s = { ...s, litWhileOneRemoved: true };
+      }
+      return { ...out, state: s };
+    },
+    steps: {
+      series: (s) => s.seen.includes("series"),
+      "series-read": (s) => s.ammeter.series !== void 0,
+      parallel: (s) => s.seen.includes("parallel"),
+      "parallel-read": (s) => s.ammeter.parallel !== void 0,
+      unscrew: (s) => s.litWhileOneRemoved
+    },
+    safety: (s) => isClosed(s) && circuitNow(s).shorted.length ? { code: "short-circuit", title: "Short circuit", message: "A wire or the ammeter went straight across the battery. The current would be huge and the wires would get hot. Open the switch and rewire." } : null,
+    readouts: (s) => {
+      const r = circuitNow(s);
+      return { I: meterValue(r, "A", "ammeter"), config: bulbConfig(s), L1: bulbLit(r, "L1"), L2: bulbLit(r, "L2"), P1: Math.abs(r.components.L1?.power ?? 0), P2: Math.abs(r.components.L2?.power ?? 0) };
+    }
+  };
+
+  // ../physics/src/labs/mechanics.ts
+  function flightOf(speed, angle, planet, drag) {
+    const g = PLANETS[planet].g;
+    if (!drag) {
+      const a = idealFlight({ speed, angleDeg: angle, g });
+      return { range: a.range, maxHeight: a.maxHeight, time: a.time };
+    }
+    const s = simulateFlight({ speed, angleDeg: angle, g, drag: true });
+    return { range: s.range, maxHeight: s.maxHeight, time: s.time };
+  }
+  var projectile = {
+    slug: "projectile-motion",
+    init: () => ({ speed: 15, angle: 30, planet: "earth", drag: false, launches: [], measured: [], results: {} }),
+    apply: (s0, e) => {
+      let s = s0;
+      const hits = [];
+      const notes = [];
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "speed") s = { ...s, speed: Math.max(1, Math.min(40, Number(value))) };
+        if (key2 === "angle") s = { ...s, angle: Math.max(1, Math.min(89, Number(value))) };
+        if (key2 === "planet" && typeof value === "string" && value in PLANETS) s = { ...s, planet: value };
+        if (key2 === "drag") s = { ...s, drag: !!value };
+        if (key2.startsWith("result:")) s = { ...s, results: { ...s.results, [key2.slice(7)]: Number(value) } };
+      }
+      if (e.type === "sim.start") {
+        const f = flightOf(s.speed, s.angle, s.planet, s.drag);
+        s = { ...s, launches: [...s.launches, { speed: s.speed, angle: s.angle, planet: s.planet, drag: s.drag, ...f, t: e.t }] };
+        notes.push({ text: `Landed ${f.range.toFixed(2)} m away after ${f.time.toFixed(2)} s.`, tone: "info" });
+      }
+      if (e.type === "measure.read" && e.payload.instrument === "tape") {
+        const last = s.launches[s.launches.length - 1];
+        if (!last) hits.push({ code: "nothing-to-measure", severity: "minor", message: "Launch first, then measure where it landed.", tag: "procedural", dimension: "sequence" });
+        else if (Math.abs(e.payload.reading.value - last.range) > Math.max(0.05, last.range * 5e-3)) hits.push({ code: "tape-misread", severity: "minor", message: `The landing mark is at ${last.range.toFixed(2)} m. Read the tape from the launch point to the centre of the mark.`, tag: "procedural", dimension: "measurement" });
+        else s = { ...s, measured: [...s.measured, s.launches.length - 1] };
+      }
+      return { state: s, hits, notes };
+    },
+    steps: {
+      "first-launch": (s) => s.launches.some((l) => l.angle === 45 && l.planet === "earth" && !l.drag),
+      measure: (s) => s.measured.length > 0,
+      complementary: (s) => {
+        const ideal = s.launches.filter((l) => !l.drag && l.planet === "earth" && Math.abs(l.angle - 45) > 2);
+        return ideal.some((a) => ideal.some((b) => a !== b && Math.abs(a.angle + b.angle - 90) < 0.6 && Math.abs(a.speed - b.speed) < 1e-9));
+      },
+      target: (s, ctx) => {
+        const t = ctx.content.setup;
+        return s.launches.some((l) => !l.drag && l.planet === "earth" && Math.abs(l.range - t.targetM) <= t.targetTolM);
+      },
+      air: (s) => s.launches.some((l) => l.drag && s.launches.some((m) => !m.drag && m.speed === l.speed && m.angle === l.angle && m.planet === l.planet)),
+      moon: (s) => s.launches.some((l) => l.planet === "moon")
+    },
+    readouts: (s) => {
+      const last = s.launches[s.launches.length - 1];
+      return { range: last?.range ?? null, maxHeight: last?.maxHeight ?? null, time: last?.time ?? null, launches: s.launches.length };
+    }
+  };
+  var lkey = (m) => m.toFixed(3);
+  var pendulum = {
+    slug: "simple-pendulum",
+    init: () => ({ stringM: 0.5, amplitude: 25, released: false, measuredL: {}, periods: {}, results: {} }),
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      let s = s0;
+      const hits = [];
+      const notes = [];
+      const L = () => s.stringM + setup.bobRadiusM;
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "length") s = { ...s, stringM: Math.max(0.1, Math.min(1.5, Number(value))), released: false };
+        if (key2 === "amplitude") s = { ...s, amplitude: Math.max(1, Math.min(60, Number(value))), released: false };
+        if (key2.startsWith("result:")) {
+          s = { ...s, results: { ...s.results, [key2.slice(7)]: Number(value) } };
+          if (key2 === "result:g" && Math.abs(Number(value) - setup.g) / setup.g > 0.03) hits.push({ code: "wrong-g", severity: "major", message: "That value of g is more than 3 % out. Plot T\xB2 against L: the gradient is 4\u03C0\xB2/g, so g = 4\u03C0\xB2 / gradient.", tag: "conceptual", dimension: "measurement" });
+        }
+      }
+      if (e.type === "sim.start") {
+        s = { ...s, released: true };
+        if (s.amplitude > 10) hits.push({ code: "big-swing", severity: "minor", message: "Released from more than 10\xB0. Above that the period grows with amplitude, so T = 2\u03C0\u221A(L/g) no longer holds well.", tag: "procedural", dimension: "technique" });
+      }
+      if (e.type === "sim.reset") s = { ...s, released: false };
+      if (e.type === "measure.read") {
+        const { key: key2, value } = e.payload.reading;
+        if (e.payload.instrument === "metre-rule") {
+          if (Math.abs(value - L()) <= 2e-3) s = { ...s, measuredL: { ...s.measuredL, [lkey(s.stringM)]: value } };
+          else if (Math.abs(value - s.stringM) <= 2e-3) hits.push({ code: "length-to-top", severity: "minor", message: "That is the string only. The length of a pendulum runs from the pivot to the centre of the bob, so add the bob's radius.", tag: "conceptual", dimension: "measurement" });
+          else hits.push({ code: "length-misread", severity: "minor", message: "That length does not match the rule. Read it at eye level.", tag: "procedural", dimension: "measurement" });
+        }
+        if (e.payload.instrument === "stopwatch" && key2.startsWith("t:")) {
+          const n = Number(key2.slice(2));
+          const truth = pendulumPeriod(L(), s.amplitude, setup.g);
+          if (!s.released) hits.push({ code: "not-swinging", severity: "minor", message: "Release the bob before you start timing.", tag: "procedural", dimension: "sequence" });
+          else {
+            if (n < 10) hits.push({ code: "one-swing", severity: "minor", message: "Timing one or a few swings makes your reaction time a large part of the result. Time 20 oscillations and divide by 20.", tag: "procedural", dimension: "technique" });
+            const T = value / n;
+            if (Math.abs(T - truth) / truth > 0.02) hits.push({ code: "timing-off", severity: "minor", message: `That timing gives T = ${T.toFixed(3)} s, but this pendulum's period is ${truth.toFixed(3)} s. Start and stop the watch as the bob passes the centre.`, tag: "procedural", dimension: "measurement" });
+            else if (n >= 20) {
+              s = { ...s, periods: { ...s.periods, [lkey(s.stringM)]: T } };
+              notes.push({ text: `T = ${T.toFixed(3)} s for L = ${L().toFixed(3)} m`, tone: "success" });
+            }
+          }
+        }
+      }
+      return { state: s, hits, notes };
+    },
+    steps: {
+      "measure-L": (s) => Object.keys(s.measuredL).length > 0,
+      release: (s) => s.released && s.amplitude <= 10,
+      "time-20": (s) => Object.keys(s.periods).length > 0,
+      "five-lengths": (s) => Object.keys(s.periods).filter((k) => k in s.measuredL).length >= 5,
+      result: (s, ctx) => s.results.g !== void 0 && Math.abs(s.results.g - ctx.content.setup.g) / 9.81 <= 0.03
+    },
+    readouts: (s) => ({ lengths: Object.keys(s.periods).length, amplitude: s.amplitude, stringM: s.stringM })
+  };
+  var archimedes = {
+    slug: "archimedes-principle",
+    init: () => ({ canFull: false, dripStopped: false, cylinderPlaced: false, extraMl: 0, immersed: 0, touching: false, readings: {}, results: {} }),
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      const sinker = SINKERS.find((x) => x.id === setup.sinker) ?? SINKERS[0];
+      let s = s0;
+      const hits = [];
+      const notes = [];
+      const truth = () => buoyancy(sinker, s.immersed, setup.g);
+      const near = (a, b, tol) => Math.abs(a - b) <= tol;
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "fill-can") s = { ...s, canFull: true, dripStopped: false };
+        if (key2 === "wait-drip") s = { ...s, dripStopped: s.canFull };
+        if (key2 === "cylinder") {
+          s = { ...s, cylinderPlaced: !!value };
+          if (value && s.canFull && !s.dripStopped) {
+            s = { ...s, extraMl: setup.dripMl };
+            hits.push({ code: "extra-water", severity: "minor", message: "The can was still dripping when you put the cylinder under the spout, so it caught water the sinker never displaced. Wait for the last drip first.", tag: "procedural", dimension: "measurement" });
+          }
+          if (value && !s.canFull) hits.push({ code: "can-not-full", severity: "major", message: "The overflow can was not filled to the spout first, so the first water the sinker displaces stays in the can.", tag: "procedural", dimension: "sequence" });
+        }
+        if (key2 === "immerse") {
+          const f = Math.max(0, Math.min(1, Number(value)));
+          if (f > 0 && !s.cylinderPlaced) hits.push({ code: "no-cylinder", severity: "major", message: "The sinker went in before the measuring cylinder was under the spout, so the displaced water was lost.", tag: "procedural", dimension: "sequence" });
+          s = { ...s, immersed: f };
+        }
+        if (key2 === "touching") {
+          s = { ...s, touching: !!value };
+        }
+        if (key2.startsWith("result:")) s = { ...s, results: { ...s.results, [key2.slice(7)]: Number(value) } };
+      }
+      if (e.type === "measure.read") {
+        const { key: key2, value } = e.payload.reading;
+        if (key2 === "air") {
+          if (s.immersed > 0) hits.push({ code: "air-wet", severity: "minor", message: "Weigh it in air before it goes in the water.", tag: "procedural", dimension: "sequence" });
+          if (near(value, truth().weightN, 0.02)) s = { ...s, readings: { ...s.readings, air: value } };
+          else hits.push({ code: "balance-misread", severity: "minor", message: `The spring balance reads ${truth().weightN.toFixed(2)} N.`, tag: "procedural", dimension: "measurement" });
+        }
+        if (key2 === "water") {
+          if (s.touching) hits.push({ code: "touching", severity: "major", message: "The sinker was resting on the bottom of the can, which holds some of its weight. The reading is too low. Lift it until it hangs freely.", tag: "procedural", dimension: "technique" });
+          if (s.immersed < 1) hits.push({ code: "partial", severity: "major", message: "The sinker was only partly under water, so the upthrust was smaller. Lower it until it is completely covered.", tag: "procedural", dimension: "technique" });
+          const shown = truth().readingN - (s.touching ? truth().readingN * 0.5 : 0);
+          if (!near(value, shown, 0.02)) hits.push({ code: "balance-misread", severity: "minor", message: `The spring balance reads ${shown.toFixed(2)} N.`, tag: "procedural", dimension: "measurement" });
+          else if (!s.touching && s.immersed >= 1) s = { ...s, readings: { ...s.readings, water: value } };
+        }
+        if (key2 === "volume") {
+          const shown = truth().displacedMl * (s.cylinderPlaced ? 1 : 0) + s.extraMl;
+          if (!near(value, shown, 1)) hits.push({ code: "cylinder-misread", severity: "minor", message: `The cylinder holds ${shown.toFixed(0)} mL. Read the bottom of the meniscus.`, tag: "procedural", dimension: "measurement" });
+          else s = { ...s, readings: { ...s.readings, volume: value } };
+        }
+      }
+      if (e.type === "param.set" && e.payload.key === "result:upthrust") {
+        const ok = s.readings.air !== void 0 && s.readings.water !== void 0 && near(Number(e.payload.value), s.readings.air - s.readings.water, 0.03);
+        if (!ok) hits.push({ code: "wrong-upthrust", severity: "major", message: "Upthrust = weight in air \u2212 weight in water.", tag: "conceptual", dimension: "measurement" });
+        else notes.push({ text: "Upthrust found.", tone: "success" });
+      }
+      if (e.type === "param.set" && e.payload.key === "result:displaced") {
+        const expect = (s.readings.volume ?? 0) / 1e3 * setup.g;
+        if (!near(Number(e.payload.value), expect, 0.03)) hits.push({ code: "wrong-displaced", severity: "major", message: "Weight of water = mass \xD7 g, and 1 mL of water has a mass of 1 g (0.001 kg).", tag: "conceptual", dimension: "measurement" });
+      }
+      return { state: s, hits, notes };
+    },
+    steps: {
+      "weigh-air": (s) => s.readings.air !== void 0,
+      "fill-can": (s) => s.canFull && s.dripStopped,
+      cylinder: (s) => s.cylinderPlaced,
+      immerse: (s) => s.immersed >= 1 && !s.touching,
+      "weigh-water": (s) => s.readings.water !== void 0,
+      volume: (s) => s.readings.volume !== void 0,
+      compare: (s, ctx) => {
+        const g = ctx.content.setup.g;
+        return s.readings.air !== void 0 && s.readings.water !== void 0 && s.results.upthrust !== void 0 && s.results.displaced !== void 0 && Math.abs(s.results.upthrust - (s.readings.air - s.readings.water)) <= 0.03 && Math.abs(s.results.displaced - (s.readings.volume ?? 0) / 1e3 * g) <= 0.03;
+      }
+    },
+    readouts: (s) => ({ immersed: s.immersed, cylinder: s.cylinderPlaced })
+  };
+
+  // ../physics/src/labs/refraction.ts
+  var emptySet = () => ({ pins: {}, traced: false, angles: {}, done: false });
+  function slabRay(set, setup) {
+    const { P1, P2 } = set.pins;
+    if (!P1 || !P2 || P1.y >= 0 || P2.y >= 0) return null;
+    const dx = P2.x - P1.x;
+    const dy = P2.y - P1.y;
+    if (dy <= 0) return null;
+    const len = Math.hypot(dx, dy);
+    const dir = { x: dx / len, y: dy / len };
+    const entry = { x: P2.x + dir.x * (-P2.y / dir.y), y: 0 };
+    const i = deg(Math.atan2(Math.abs(dir.x), dir.y));
+    const r = snellDeg(i, 1, setup.n);
+    const side = Math.sign(dir.x) || 1;
+    const exit = { x: entry.x + side * setup.thicknessMm * Math.tan(rad(r)), y: setup.thicknessMm };
+    const shift = setup.thicknessMm * Math.sin(rad(i - r)) / Math.cos(rad(r));
+    return { dir, entry, exit, i, r, e: i, shift, pinGap: len };
+  }
+  function offEmergent(p, ray) {
+    const w = { x: p.x - ray.exit.x, y: p.y - ray.exit.y };
+    return Math.abs(w.x * ray.dir.y - w.y * ray.dir.x);
+  }
+  var ALIGN_MM = 0.8;
+  var refraction = {
+    slug: "refraction-snells-law",
+    init: () => ({ sets: [emptySet()], results: {} }),
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      const hits = [];
+      const notes = [];
+      let sets = s0.sets.map((x) => ({ ...x, pins: { ...x.pins }, angles: { ...x.angles } }));
+      let cur = sets[sets.length - 1];
+      if (cur.done) {
+        cur = emptySet();
+        sets = [...sets, cur];
+      }
+      const ray = () => slabRay(cur, setup);
+      let results = s0.results;
+      if (e.type === "equipment.place") {
+        const id = e.payload.equipmentId;
+        if (cur.traced) hits.push({ code: "pins-after-trace", severity: "minor", message: "Start a new sheet before placing more pins.", tag: "procedural", dimension: "sequence" });
+        else {
+          cur.pins[id] = { x: e.payload.x, y: e.payload.y };
+          if ((id === "P3" || id === "P4") && !ray()) hits.push({ code: "p3-before-p1p2", severity: "order", message: "Place P1 and P2 on the incident ray first.", tag: "procedural", dimension: "sequence" });
+          if (id === "P2" && ray() && ray().pinGap < 30) hits.push({ code: "pins-close", severity: "minor", message: "P1 and P2 are very close together, so a small error in either swings the line a lot. Space pins at least 3 cm apart.", tag: "procedural", dimension: "technique" });
+          if (id === "P2" && ray() && (ray().i < 15 || ray().i > 75)) hits.push({ code: "angle-extreme", severity: "minor", message: "Pick an angle of incidence between about 20\xB0 and 70\xB0. Near 0\xB0 the bending is too small to measure; near 90\xB0 the ray barely enters.", tag: "procedural", dimension: "technique" });
+        }
+      }
+      if (e.type === "param.set" && e.payload.key === "trace") {
+        const r = ray();
+        const { P3, P4 } = cur.pins;
+        if (!r || !P3 || !P4) hits.push({ code: "trace-early", severity: "order", message: "Place all four pins before removing the slab and tracing.", tag: "procedural", dimension: "sequence" });
+        else {
+          if (offEmergent(P3, r) > ALIGN_MM || offEmergent(P4, r) > ALIGN_MM) hits.push({ code: "misaligned", severity: "major", message: "P3 and P4 are not in line with the images of P1 and P2, so the emergent ray you trace is wrong. Look through the slab at the feet of the pins and line all four up.", tag: "procedural", dimension: "technique" });
+          cur.traced = true;
+          notes.push({ text: "Slab outline and rays traced. Draw the normals and measure i, r and e.", tone: "info" });
+        }
+      }
+      if (e.type === "param.set" && e.payload.key === "new-sheet" && !cur.done) {
+        sets = [...sets.slice(0, -1), emptySet()];
+        cur = sets[sets.length - 1];
+      }
+      if (e.type === "measure.read" && e.payload.instrument === "protractor") {
+        const k = e.payload.reading.key;
+        const r = ray();
+        if (!cur.traced || !r) hits.push({ code: "measure-early", severity: "order", message: "Trace the rays and draw the normals first.", tag: "procedural", dimension: "sequence" });
+        else {
+          const truth = r[k];
+          if (Math.abs(e.payload.reading.value - truth) > 1) hits.push({ code: "angle-misread", severity: "minor", message: `Measure from the normal, not the surface. ${k} is ${truth.toFixed(0)}\xB0 here.`, tag: "procedural", dimension: "measurement" });
+          else cur.angles[k] = e.payload.reading.value;
+        }
+      }
+      {
+        const r = ray();
+        const { P3, P4 } = cur.pins;
+        if (!cur.done && cur.traced && r && P3 && P4 && offEmergent(P3, r) <= ALIGN_MM && offEmergent(P4, r) <= ALIGN_MM && cur.angles.i !== void 0 && cur.angles.r !== void 0 && cur.angles.e !== void 0) {
+          const others = sets.filter((x) => x !== cur && x.done).map((x) => slabRay(x, setup).i);
+          if (others.some((i) => Math.abs(i - r.i) < 10)) hits.push({ code: "same-angle", severity: "minor", message: "Use a clearly different angle of incidence (at least 10\xB0 apart) for each sheet.", tag: "procedural", dimension: "technique" });
+          else {
+            cur.done = true;
+            notes.push({ text: `Sheet ${sets.filter((x) => x.done).length}: i = ${cur.angles.i}\xB0, r = ${cur.angles.r}\xB0, e = ${cur.angles.e}\xB0. sin i / sin r = ${(Math.sin(rad(cur.angles.i)) / Math.sin(rad(cur.angles.r))).toFixed(2)}`, tone: "success" });
+          }
+        }
+      }
+      if (e.type === "param.set" && typeof e.payload.key === "string" && e.payload.key.startsWith("result:")) {
+        results = { ...results, [e.payload.key.slice(7)]: Number(e.payload.value) };
+        if (e.payload.key === "result:n" && Math.abs(Number(e.payload.value) - setup.n) > 0.05) hits.push({ code: "wrong-n", severity: "major", message: "n = sin i / sin r. Work it out for each sheet and take the mean.", tag: "conceptual", dimension: "measurement" });
+      }
+      return { state: { sets, results }, hits, notes };
+    },
+    steps: {
+      "set-1": (s) => s.sets.filter((x) => x.done).length >= 1,
+      "set-2": (s) => s.sets.filter((x) => x.done).length >= 2,
+      "set-3": (s) => s.sets.filter((x) => x.done).length >= 3,
+      result: (s, ctx) => s.results.n !== void 0 && Math.abs(s.results.n - ctx.content.setup.n) <= 0.05
+    },
+    readouts: (s) => ({ sheets: s.sets.filter((x) => x.done).length })
+  };
+
+  // ../physics/src/labs/index.ts
+  var PHYSICS_CONTENT = Object.fromEntries(
+    [ohms_law_default, series_and_parallel_default, projectile_motion_default, refraction_snells_law_default, simple_pendulum_default, archimedes_principle_default].map((c) => [c.slug, c])
+  );
+  var PHYSICS_MODELS = Object.fromEntries(
+    // eslint-disable-line @typescript-eslint/no-explicit-any
+    [ohmsLaw, seriesParallel, projectile, refraction, pendulum, archimedes].map((m) => [m.slug, m])
+  );
+
+  // ../physics/src/protocol/evaluator.ts
+  var SIM_WEIGHTS = {
+    equipment: 15,
+    sequence: 20,
+    quantity: 0,
+    technique: 20,
+    mixing: 0,
+    temperature: 0,
+    timing: 0,
+    measurement: 30,
+    observation: 15
+  };
+  var PENALTY2 = { minor: 0.25, major: 0.6, order: 0.4, safety: 1 };
+  var DEFAULT_STEP_DIMS = { sequence: 1, technique: 1 };
+  var SimEvaluator = class {
+    constructor(content, model) {
+      this.content = content;
+      this.model = model;
+      __publicField(this, "state");
+      __publicField(this, "done", {});
+      __publicField(this, "deviations", []);
+      __publicField(this, "answers", {});
+      __publicField(this, "hints", 0);
+      __publicField(this, "stopped", false);
+      __publicField(this, "t", 0);
+      this.state = model.init(content);
+      content.steps.forEach((s) => this.done[s.id] = null);
+    }
+    current() {
+      return this.content.steps.find((s) => this.done[s.id] === null) ?? null;
+    }
+    push(e) {
+      const feedback = [];
+      if (this.stopped) return { feedback, notes: [] };
+      this.t = Math.max(this.t, e.t);
+      if (e.type === "hint.shown") {
+        this.hints++;
+        return { feedback, notes: [] };
+      }
+      if (e.type === "param.set" && typeof e.payload.key === "string" && e.payload.key.startsWith("answer:")) {
+        this.answers[e.payload.key.slice(7)] = Number(e.payload.value);
+        return { feedback, notes: [] };
+      }
+      const ctx = { t: e.t, content: this.content };
+      const stepNow = this.current();
+      const r = this.model.apply(this.state, e, ctx);
+      this.state = r.state;
+      for (const h of r.hits ?? []) {
+        const stepId = h.stepId ?? stepNow?.id ?? "end";
+        if (this.deviations.some((d) => d.code === h.code && d.stepId === stepId)) continue;
+        const dev = { ...h, stepId, t: e.t };
+        this.deviations.push(dev);
+        feedback.push({ kind: "deviation", deviation: dev });
+      }
+      const stop = this.model.safety?.(this.state);
+      if (stop) {
+        this.stopped = true;
+        feedback.push({ kind: "safety-stop", ...stop, t: e.t });
+        return { feedback, notes: r.notes ?? [] };
+      }
+      for (let s = this.current(); s && this.model.steps[s.id]?.(this.state, ctx); s = this.current()) {
+        this.done[s.id] = e.t;
+        feedback.push({ kind: "step-complete", stepId: s.id, t: e.t });
+      }
+      return { feedback, notes: r.notes ?? [] };
+    }
+    penalty(dim) {
+      return this.deviations.filter((d) => d.dimension === dim).reduce((s, d) => s + PENALTY2[d.severity], 0);
+    }
+    report() {
+      const weights = { ...SIM_WEIGHTS, ...this.content.scoring ?? {} };
+      const byDimension = {};
+      let total = 0;
+      let wsum = 0;
+      for (const dim of Object.keys(weights)) {
+        const w = weights[dim];
+        if (!w) {
+          byDimension[dim] = null;
+          continue;
+        }
+        let score2;
+        if (dim === "observation") {
+          const ps = this.content.observations.prompts;
+          score2 = ps.length ? ps.filter((p) => this.answers[p.id] === p.answer).length / ps.length : null;
+        } else {
+          const relevant = this.content.steps.filter((s) => ((s.scoring ?? DEFAULT_STEP_DIMS)[dim] ?? 0) > 0);
+          if (!relevant.length) score2 = this.deviations.some((d) => d.dimension === dim) || dim === "sequence" ? 1 - this.penalty(dim) * 0.5 : null;
+          else score2 = relevant.filter((s) => this.done[s.id] !== null).length / relevant.length - this.penalty(dim) * 0.5;
+        }
+        byDimension[dim] = score2 === null ? null : Math.round(Math.max(0, Math.min(1, score2)) * 100) / 100;
+        if (score2 !== null) {
+          total += w * Math.max(0, Math.min(1, score2));
+          wsum += w;
+        }
+      }
+      let pct = wsum ? total / wsum * 100 : 0;
+      pct *= 1 - Math.min(0.1, this.hints * 0.02);
+      if (this.stopped) pct = Math.min(pct, 40);
+      const completed = !this.stopped && this.content.steps.filter((s) => !s.optional).every((s) => this.done[s.id] !== null);
+      const score = Math.round(pct);
+      return {
+        score,
+        stars: !completed ? 0 : score >= 90 ? 3 : score >= 70 ? 2 : 1,
+        byDimension,
+        deviations: [...this.deviations],
+        steps: this.content.steps.map((s) => ({ id: s.id, title: s.title, done: this.done[s.id] !== null })),
+        hintsUsed: this.hints,
+        completed,
+        stoppedForSafety: this.stopped
+      };
+    }
+  };
+  function runSim(content, model, events) {
+    const ev = new SimEvaluator(content, model);
+    const feedback = [];
+    const notes = [];
+    for (const e of [...events].sort((a, b) => a.seq - b.seq)) {
+      const r = ev.push(e);
+      feedback.push(...r.feedback);
+      notes.push(...r.notes);
+    }
+    return { state: ev.state, report: ev.report(), feedback, notes, t: ev.t };
+  }
+  function simHash(x) {
+    const s = JSON.stringify(x, (_k, v) => typeof v === "number" && Number.isFinite(v) && !Number.isInteger(v) ? Number(v.toPrecision(6)) : v);
+    let h1 = 3735928559;
+    let h2 = 1103547991;
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      h1 = Math.imul(h1 ^ c, 2654435761);
+      h2 = Math.imul(h2 ^ c, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ h1 >>> 16, 2246822507) ^ Math.imul(h2 ^ h2 >>> 13, 3266489909);
+    h2 = Math.imul(h2 ^ h2 >>> 16, 2246822507) ^ Math.imul(h1 ^ h1 >>> 13, 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, "0");
+  }
+
   // src/server.ts
   var ENGINE_VERSION = "2.0.0";
+  var SIM_VERSION = "3.0.0";
+  var SIM = Object.fromEntries(
+    [...Object.entries(PHYSICS_CONTENT).map(([k, c]) => [k, { content: c, model: PHYSICS_MODELS[k] }]), ...Object.entries(MATHS_CONTENT).map(([k, c]) => [k, { content: c, model: MATHS_MODELS[k] }])]
+  );
+  function scoreSim(slug, events) {
+    const s = SIM[slug];
+    const r = runSim(s.content, s.model, events);
+    return JSON.stringify({ engineVersion: SIM_VERSION, hash: simHash(r.state), report: r.report, simTimeMs: r.t });
+  }
+  function checkJson(subject, slug, eventsJson) {
+    const s = SIM[slug];
+    if (!s || s.content.subject !== subject) throw new Error(`Unknown ${subject} experiment ${slug}`);
+    return scoreSim(slug, JSON.parse(eventsJson));
+  }
   function scoreJson(slug, eventsJson, tailMs) {
     const content = EXPERIMENTS[slug];
+    if (!content && SIM[slug]) return scoreSim(slug, JSON.parse(eventsJson));
     if (!content) throw new Error(`Unknown experiment ${slug}`);
     const events = JSON.parse(eventsJson);
     const r = runSession(content, events, { tailMs });
     return JSON.stringify({ engineVersion: ENGINE_VERSION, hash: r.hash, report: r.report, simTimeMs: r.state.t });
   }
   function contentJson(slug) {
-    const c = EXPERIMENTS[slug];
+    const c = EXPERIMENTS[slug] ?? SIM[slug]?.content;
     return c ? JSON.stringify(c) : null;
   }
   function slugsJson() {
-    return JSON.stringify(Object.keys(EXPERIMENTS));
+    return JSON.stringify([...Object.keys(EXPERIMENTS), ...Object.keys(SIM)]);
   }
   function simulateJson(benchJson, eventsJson, tailMs) {
     const bench = JSON.parse(benchJson);

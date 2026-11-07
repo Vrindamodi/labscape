@@ -75,6 +75,11 @@ public class LabEngineRuntime {
         return read(call(api -> api.getMember("scoreJson").execute(slug, eventsJson, tailMs).asString()), JsonNode.class);
     }
 
+    /** Physics or maths: scores an event log for one experiment of that subject (no attempt needed). */
+    public JsonNode check(String subject, String slug, String eventsJson) {
+        return read(call(api -> api.getMember("checkJson").execute(subject, slug, eventsJson).asString()), JsonNode.class);
+    }
+
     /** Sandbox: bench + events in, final vessel looks, notes and cues out. */
     public JsonNode simulate(String benchJson, String eventsJson, long tailMs) {
         return read(call(api -> api.getMember("simulateJson").execute(benchJson, eventsJson, tailMs).asString()), JsonNode.class);

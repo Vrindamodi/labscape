@@ -159,9 +159,15 @@ importers:
       '@labscape/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@labscape/mathlab':
+        specifier: workspace:*
+        version: link:../mathlab
       '@labscape/motion':
         specifier: workspace:^
         version: link:../motion
+      '@labscape/physics':
+        specifier: workspace:*
+        version: link:../physics
       '@labscape/ui':
         specifier: workspace:^
         version: link:../ui

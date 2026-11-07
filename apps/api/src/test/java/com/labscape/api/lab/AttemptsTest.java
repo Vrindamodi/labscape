@@ -48,7 +48,7 @@ class AttemptsTest {
             assertThat(result.path("report").path("score").asInt()).as(e.getKey()).isEqualTo(e.getValue().path("score").asInt());
             checked++;
         }
-        assertThat(checked).isEqualTo(7);
+        assertThat(checked).isEqualTo(19); // 7 chemistry + 6 physics + 6 maths
     }
 
     @Test
@@ -84,6 +84,39 @@ class AttemptsTest {
         mvc.perform(post("/v1/attempts/" + id + "/finish").cookie(c).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reward.duplicate").value(true));
+    }
+
+    @Test
+    void physicsAndMathsAttemptsAreScoredOnTheServer() throws Exception {
+        Cookie c = mvc.perform(post("/v1/auth/guest").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andReturn().getResponse().getCookie("ls_session");
+        for (String slug : new String[] {"ohms-law", "riemann-sums"}) {
+            JsonNode attempt = send(c, "/v1/attempts", Map.of("experimentSlug", slug));
+            String id = attempt.path("id").asText();
+            send(c, "/v1/attempts/" + id + "/events", Map.of("events", golden(engine.content(slug).orElseThrow()), "stage", "try"));
+            JsonNode done = send(c, "/v1/attempts/" + id + "/finish", Map.of());
+            assertThat(done.path("report").path("stars").asInt()).as(slug).isEqualTo(3);
+            assertThat(done.path("reward").path("xpAwarded").asInt()).as(slug).isGreaterThan(0);
+        }
+    }
+
+    @Test
+    void checkEndpointsReDeriveReadings() throws Exception {
+        Cookie c = mvc.perform(post("/v1/auth/guest").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andReturn().getResponse().getCookie("ls_session");
+        ArrayNode events = golden(engine.content("projectile-motion").orElseThrow());
+        assertThat(send(c, "/v1/physics/check", Map.of("experimentSlug", "projectile-motion", "events", events)).path("report").path("stars").asInt()).isEqualTo(3);
+
+        // A tape reading that does not match where the ball landed is caught by the server.
+        for (JsonNode e : events)
+            if (e.path("type").asText().equals("measure.read")) ((ObjectNode) e.path("payload").path("reading")).put("value", 38.0);
+        JsonNode bad = send(c, "/v1/physics/check", Map.of("experimentSlug", "projectile-motion", "events", events));
+        assertThat(bad.path("report").path("deviations").toString()).contains("tape-misread");
+
+        // Subjects are not interchangeable, and anonymous calls are refused.
+        mvc.perform(post("/v1/maths/check").cookie(c).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"experimentSlug\":\"projectile-motion\",\"events\":[]}")).andExpect(status().isNotFound());
+        mvc.perform(post("/v1/maths/check").contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isUnauthorized());
     }
 
     @Test

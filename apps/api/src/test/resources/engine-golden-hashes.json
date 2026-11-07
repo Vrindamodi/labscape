@@ -26,5 +26,53 @@
   "flame-tests": {
     "hash": "1f185411be5b24",
     "score": 100
+  },
+  "ohms-law": {
+    "hash": "18d20c7696d74b",
+    "score": 100
+  },
+  "series-and-parallel": {
+    "hash": "0f93e9a5ee7318",
+    "score": 100
+  },
+  "projectile-motion": {
+    "hash": "1c7c9ef349053c",
+    "score": 100
+  },
+  "refraction-snells-law": {
+    "hash": "0b501b9e1918ff",
+    "score": 100
+  },
+  "simple-pendulum": {
+    "hash": "1eadb78bf805eb",
+    "score": 100
+  },
+  "archimedes-principle": {
+    "hash": "154e0a8eafe7bd",
+    "score": 100
+  },
+  "quadratic-explorer": {
+    "hash": "0de1ee28c3cd5c",
+    "score": 100
+  },
+  "balance-equations": {
+    "hash": "1a9b831bf4cd60",
+    "score": 100
+  },
+  "unit-circle-trig": {
+    "hash": "034e8f05042b05",
+    "score": 100
+  },
+  "derivative-as-slope": {
+    "hash": "186711aebace0f",
+    "score": 100
+  },
+  "riemann-sums": {
+    "hash": "1ab858c12fbf29",
+    "score": 100
+  },
+  "dice-probability": {
+    "hash": "1f40d3dbaff5f0",
+    "score": 100
   }
 }

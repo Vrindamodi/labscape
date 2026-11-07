@@ -41,7 +41,7 @@ public class SecurityConfig {
         "/v1/notifications", "/v1/notifications/**", "/v1/leaderboards/**", "/v1/billing/checkout",
         "/v1/billing/subscription", "/v1/billing/subscription/**", "/v1/billing/invoices",
         "/v1/billing/sandbox/**", "/v1/auth/logout",
-        "/v1/attempts", "/v1/attempts/**", "/v1/chem/simulate"
+        "/v1/attempts", "/v1/attempts/**", "/v1/chem/simulate", "/v1/physics/check", "/v1/maths/check"
     };
 
     @Bean

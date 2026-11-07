@@ -66,6 +66,17 @@
       "precipitation",
       "insoluble",
       "solid forms"
+    ],
+    "buoyancy": [
+      "upthrust",
+      "archimedes",
+      "floating",
+      "sinking"
+    ],
+    "quadratic": [
+      "parabola",
+      "discriminant",
+      "roots"
     ]
   },
   "experiments": [
@@ -844,7 +855,7 @@
         "gravity"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "phys-projectile",
@@ -887,7 +898,7 @@
         "motion"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "phys-newton-2",
@@ -929,7 +940,7 @@
         "forces",
         "graph"
       ],
-      "release": "MVP",
+      "release": "Later",
       "playable": false
     },
     {
@@ -938,8 +949,8 @@
       "subject": "physics",
       "chapter": "Waves and optics",
       "topic": "Refraction",
-      "title": "Bending light: Snell's law",
-      "summary": "Shine a ray box through a glass block, measure angles and find the refractive index.",
+      "title": "Refraction through a glass slab",
+      "summary": "The pin method: line up four pins through a glass slab, trace the rays and find its refractive index.",
       "difficulty": "intermediate",
       "levels": [
         "school",
@@ -948,9 +959,9 @@
       "estimatedMinutes": 15,
       "xpReward": 100,
       "objectives": [
-        "Draw normals and measure angles",
-        "Find n from sin i / sin r",
-        "Spot total internal reflection"
+        "Line up pins by eye through the slab",
+        "Measure i, r and e from the normal",
+        "Find n from sin i / sin r"
       ],
       "concept": "Light slows down in glass and bends towards the normal.",
       "realWorld": [
@@ -959,13 +970,15 @@
         "Rainbows"
       ],
       "equipment": [
-        "Ray box",
-        "Glass block",
-        "Protractor"
+        "Glass slab",
+        "Drawing pins",
+        "Protractor",
+        "Drawing board"
       ],
       "materials": [],
       "safety": [
-        "Ray boxes get hot"
+        "Handle the glass slab by its sides",
+        "Press pins in gently"
       ],
       "premium": false,
       "featured": true,
@@ -974,7 +987,7 @@
         "refraction"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "phys-ohms-law",
@@ -1019,7 +1032,7 @@
         "graph"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "phys-series-parallel",
@@ -1061,7 +1074,55 @@
         "circuit"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
+    },
+    {
+      "id": "phys-archimedes",
+      "slug": "archimedes-principle",
+      "subject": "physics",
+      "chapter": "Pressure and fluids",
+      "topic": "Upthrust",
+      "title": "Archimedes' principle",
+      "summary": "Weigh a sinker in air and in water, catch the water it pushes out, and show the upthrust equals its weight.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 12,
+      "xpReward": 100,
+      "objectives": [
+        "Use a spring balance and overflow can correctly",
+        "Measure upthrust",
+        "Compare it with the weight of water displaced"
+      ],
+      "concept": "A body in a fluid is pushed up with a force equal to the weight of fluid it displaces.",
+      "realWorld": [
+        "Why ships float",
+        "Hydrometers",
+        "Submarines"
+      ],
+      "equipment": [
+        "Spring balance",
+        "Overflow can",
+        "Measuring cylinder",
+        "Sinker"
+      ],
+      "materials": [
+        "Water"
+      ],
+      "safety": [
+        "Wipe up spills so nobody slips"
+      ],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "upthrust",
+        "density",
+        "fluids"
+      ],
+      "release": "MVP",
+      "playable": true
     },
     {
       "id": "phys-specific-heat",
@@ -1142,8 +1203,88 @@
         "graphs",
         "functions"
       ],
-      "release": "MVP",
+      "release": "Later",
       "playable": false
+    },
+    {
+      "id": "math-quadratic",
+      "slug": "quadratic-explorer",
+      "subject": "maths",
+      "chapter": "Algebra",
+      "topic": "Quadratics",
+      "title": "Quadratic explorer",
+      "summary": "Drag a, b and c and watch the parabola move, its roots merge, and slip into the complex plane.",
+      "difficulty": "intermediate",
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "estimatedMinutes": 12,
+      "xpReward": 100,
+      "objectives": [
+        "Link a, b and c to the shape",
+        "Use the discriminant",
+        "Read roots from a graph"
+      ],
+      "concept": "The discriminant b² − 4ac decides whether a quadratic has two, one or no real roots.",
+      "realWorld": [
+        "Projectile paths",
+        "Maximising area",
+        "Parabolic dishes"
+      ],
+      "equipment": [
+        "Function plotter"
+      ],
+      "materials": [],
+      "safety": [],
+      "premium": false,
+      "featured": true,
+      "tags": [
+        "quadratics",
+        "roots",
+        "discriminant"
+      ],
+      "release": "MVP",
+      "playable": true
+    },
+    {
+      "id": "math-balance",
+      "slug": "balance-equations",
+      "subject": "maths",
+      "chapter": "Algebra",
+      "topic": "Linear equations",
+      "title": "Solving equations on a balance",
+      "summary": "Keep the scale level: whatever you do to one side, do to the other, until x stands alone.",
+      "difficulty": "beginner",
+      "levels": [
+        "school",
+        "exploring"
+      ],
+      "estimatedMinutes": 8,
+      "xpReward": 80,
+      "objectives": [
+        "Do the same to both sides",
+        "Undo operations in reverse order",
+        "Check a solution"
+      ],
+      "concept": "An equation is a balance; equal operations on both sides keep it true.",
+      "realWorld": [
+        "Unknown prices",
+        "Rearranging formulas"
+      ],
+      "equipment": [
+        "Balance scale"
+      ],
+      "materials": [],
+      "safety": [],
+      "premium": false,
+      "featured": false,
+      "tags": [
+        "equations",
+        "algebra"
+      ],
+      "release": "MVP",
+      "playable": true
     },
     {
       "id": "math-unit-circle",
@@ -1183,7 +1324,7 @@
         "waves"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "math-derivative-slope",
@@ -1222,7 +1363,7 @@
         "limits"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "math-riemann-sums",
@@ -1261,7 +1402,7 @@
         "area"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     },
     {
       "id": "math-probability-dice",
@@ -1302,7 +1443,7 @@
         "statistics"
       ],
       "release": "MVP",
-      "playable": false
+      "playable": true
     }
   ]
 }
