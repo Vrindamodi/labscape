@@ -30,3 +30,20 @@ MVP experiments (§3.11):
 - Maths: quadratic explorer; linear equations on a balance; unit circle and trig graphs; tangent and derivative; Riemann sums; coins and dice.
 
 All content is `reviewStatus: "draft"` until a subject teacher signs it off.
+
+## Status
+
+| # | State | Notes |
+|---|-------|-------|
+| M1 | Done | 22 reference circuits within 0.1 %; projectile within 0.5 % (RK4 vs analytic); TIR at 41.8°; exact pendulum period; buoyancy. |
+| M2 | Done | Parser/compiler, symbolic derivative, LaTeX, solver; tan(x) and 1/x without false vertical lines; 10,000 seeded flips well under 1 s. |
+| M3 | Done | 12 experiments (content + models); every demo scores 3 stars; key mistakes caught (ammeter in parallel, voltmeter in series, dead short, current left on, misaligned pins, big swing, one-swing timing, length to the top of the bob, dripping can, sinker on the bottom, one-sided balance, sign errors, secant read as tangent). |
+| M4 | Done | 12 workspaces in the player through `registerStage`; keyboard wiring, sliders, handles and the unit circle are keyboard operable. A full Ohm's law run through the UI scored 3 stars on the server. |
+| M5 | Done | 58 formulas, `/v1/formulas`, `/formulas` page: symbol hover, solve for any variable, copy LaTeX, favourites, "Open in lab". |
+| M6 | Done | Server replay for physics and maths (V8 and GraalJS agree on all 19 demos); `/v1/physics/check`, `/v1/maths/check`. |
+
+Still open:
+- Opening a formula from inside a lab with its symbols tracking the live values (§3.10, last bullet).
+- Compare view, ghost runs and snapshots of the controls bar (§3.1) beyond the projectile's earlier-launch ghosts.
+- Sandbox mode for Part 4's playground (the models already run without an evaluator).
+- Teacher review of all 12 experiments and the formula library (`reviewStatus: "draft"`).

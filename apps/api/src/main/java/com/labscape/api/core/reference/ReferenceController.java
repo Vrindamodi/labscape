@@ -42,6 +42,20 @@ public class ReferenceController {
         return ResponseEntity.ok().cacheControl(CACHE).body(e);
     }
 
+    public record Formulas(List<JsonNode> items) {}
+
+    @GetMapping("/formulas")
+    public ResponseEntity<Formulas> formulas() {
+        return ResponseEntity.ok().cacheControl(CACHE).body(new Formulas(data.formulas()));
+    }
+
+    @GetMapping("/formulas/{id}")
+    public ResponseEntity<JsonNode> formula(@PathVariable String id) {
+        JsonNode n = data.formula(id).orElseThrow(() ->
+                new ApiProblem(HttpStatus.NOT_FOUND, "FORMULA_NOT_FOUND", "No formula " + id + "."));
+        return ResponseEntity.ok().cacheControl(CACHE).body(n);
+    }
+
     @GetMapping("/equipment")
     public ResponseEntity<Equipment> equipment() {
         return ResponseEntity.ok().cacheControl(CACHE).body(new Equipment(data.equipmentCategories(), data.equipment()));

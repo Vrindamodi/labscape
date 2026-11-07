@@ -67,7 +67,7 @@ export const NAV: NavGroup[] = [
     items: [
       { to: "/periodic-table", label: "Periodic Table", icon: Atom, part: 1 },
       { to: "/equipment", label: "Equipment", icon: Wrench, part: 1 },
-      { to: "/formulas", label: "Formulas", icon: FunctionSquare, part: 3 },
+      { to: "/formulas", label: "Formulas", icon: FunctionSquare, part: 1 },
       { to: "/notebook", label: "Notebook", icon: NotebookPen, part: 4 },
       { to: "/community", label: "Community", icon: Brain, part: 1 },
     ],

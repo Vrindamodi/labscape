@@ -62,6 +62,18 @@ class ReferenceTest {
     }
 
     @Test
+    void formulasOpenTheirLabs() throws Exception {
+        JsonNode items = getJson("/v1/formulas").get("items");
+        assertThat(items.size()).isGreaterThanOrEqualTo(50);
+        JsonNode ohm = getJson("/v1/formulas/ohms-law");
+        assertThat(ohm.get("expr").asText()).isEqualTo("V - I*R");
+        JsonNode lab = ohm.get("experiments").get(0);
+        assertThat(lab.get("slug").asText()).isEqualTo("ohms-law");
+        assertThat(lab.get("playable").asBoolean()).isTrue();
+        mvc.perform(get("/v1/formulas/nope")).andExpect(status().isNotFound());
+    }
+
+    @Test
     void equipmentLinksToExperimentsAndHidesAliases() throws Exception {
         JsonNode eq = getJson("/v1/equipment");
         assertThat(eq.get("items").size()).isGreaterThanOrEqualTo(20);

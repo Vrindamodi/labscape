@@ -467,7 +467,9 @@ export function solveFor(src: string, variable: string, known: Scope, guess = 1)
         fa = fm;
       }
     }
-    return (a + b) / 2;
+    const root = (a + b) / 2;
+    // A sign change across a pole (1/sin x at 0) is not a root: the value there blows up.
+    if (Math.abs(g(root)) <= 1e-6 * Math.max(1, Math.abs(fb))) return root;
   }
   return null;
 }

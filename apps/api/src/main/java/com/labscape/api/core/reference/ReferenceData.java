@@ -41,6 +41,7 @@ public class ReferenceData {
     private final Map<String, Element> bySymbol;
     private final List<JsonNode> equipment;
     private final JsonNode equipmentCategories;
+    private final List<JsonNode> formulas;
 
     public ReferenceData(ObjectMapper mapper, LibraryCatalogue catalogue) {
         JsonNode ids = read(mapper, "catalogue/elements.json").get("elements");
@@ -88,6 +89,29 @@ public class ReferenceData {
             items.add(o);
         }
         this.equipment = List.copyOf(items);
+
+        // Formula library: experiment slugs become links with titles (V = IR opens Ohm's law).
+        Map<String, Experiment> bySlug = catalogue.all().stream().collect(Collectors.toMap(Experiment::slug, Function.identity()));
+        List<JsonNode> fs = new ArrayList<>();
+        for (JsonNode n : read(mapper, "content/formulas/formulas.json").get("formulas")) {
+            ObjectNode o = n.deepCopy();
+            ArrayNode links = mapper.createArrayNode();
+            n.get("experiments").forEach(s -> {
+                Experiment e = bySlug.get(s.asText());
+                if (e != null) links.add(mapper.valueToTree(link(e)));
+            });
+            o.set("experiments", links);
+            fs.add(o);
+        }
+        this.formulas = List.copyOf(fs);
+    }
+
+    public List<JsonNode> formulas() {
+        return formulas;
+    }
+
+    public Optional<JsonNode> formula(String id) {
+        return formulas.stream().filter(n -> n.get("id").asText().equals(id)).findFirst();
     }
 
     public List<Element> elements() {

@@ -1,0 +1,2107 @@
+{
+  "version": "2026.11.06-1",
+  "note": "Formula library (build plan 3.10). latex marks symbols with \\v{...}; expr is the formula as 'expression = 0' in the maths engine's syntax for the solver (null: display only). Interim content - needs reviewer sign-off.",
+  "formulas": [
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Pure substance"
+      ],
+      "experiments": [],
+      "id": "moles",
+      "subject": "chemistry",
+      "topic": "Amount of substance",
+      "title": "Moles from mass",
+      "latex": "\\v{n} = \\frac{\\v{m}}{\\v{M}}",
+      "expr": "n - m/M",
+      "variables": [
+        {
+          "key": "n",
+          "latex": "n",
+          "name": "amount of substance",
+          "unit": "mol"
+        },
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "mass",
+          "unit": "g"
+        },
+        {
+          "key": "M",
+          "latex": "M",
+          "name": "molar mass",
+          "unit": "g/mol"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "acid-base-titration"
+      ],
+      "id": "concentration",
+      "subject": "chemistry",
+      "topic": "Solutions",
+      "title": "Concentration",
+      "latex": "\\v{c} = \\frac{\\v{n}}{\\v{V}}",
+      "expr": "c - n/V",
+      "variables": [
+        {
+          "key": "c",
+          "latex": "c",
+          "name": "concentration",
+          "unit": "mol/L"
+        },
+        {
+          "key": "n",
+          "latex": "n",
+          "name": "amount of solute",
+          "unit": "mol"
+        },
+        {
+          "key": "V",
+          "latex": "V",
+          "name": "volume of solution",
+          "unit": "L"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "No solute is lost; only solvent is added"
+      ],
+      "experiments": [
+        "diluting-acid-safely"
+      ],
+      "id": "dilution",
+      "subject": "chemistry",
+      "topic": "Solutions",
+      "title": "Dilution",
+      "latex": "\\v{c1}\\v{V1} = \\v{c2}\\v{V2}",
+      "expr": "c1*V1 - c2*V2",
+      "variables": [
+        {
+          "key": "c1",
+          "latex": "c_1",
+          "name": "starting concentration",
+          "unit": "mol/L"
+        },
+        {
+          "key": "V1",
+          "latex": "V_1",
+          "name": "starting volume",
+          "unit": "mL"
+        },
+        {
+          "key": "c2",
+          "latex": "c_2",
+          "name": "final concentration",
+          "unit": "mol/L"
+        },
+        {
+          "key": "V2",
+          "latex": "V_2",
+          "name": "final volume",
+          "unit": "mL"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Acid and base react 1:1 (e.g. HCl + NaOH)"
+      ],
+      "experiments": [
+        "acid-base-titration"
+      ],
+      "id": "titration",
+      "subject": "chemistry",
+      "topic": "Titration",
+      "title": "Titration (1:1 acid and base)",
+      "latex": "\\v{a}\\v{A} = \\v{b}\\v{B}",
+      "expr": "a*A - b*B",
+      "variables": [
+        {
+          "key": "a",
+          "latex": "c_a",
+          "name": "acid concentration",
+          "unit": "mol/L"
+        },
+        {
+          "key": "A",
+          "latex": "V_a",
+          "name": "acid volume",
+          "unit": "mL"
+        },
+        {
+          "key": "b",
+          "latex": "c_b",
+          "name": "base concentration",
+          "unit": "mol/L"
+        },
+        {
+          "key": "B",
+          "latex": "V_b",
+          "name": "base volume at the end point",
+          "unit": "mL"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Dilute aqueous solution at 25 °C"
+      ],
+      "experiments": [
+        "ph-indicators",
+        "acid-base-titration"
+      ],
+      "id": "ph",
+      "subject": "chemistry",
+      "topic": "Acids and bases",
+      "title": "pH",
+      "latex": "\\v{p} = -\\log_{10}\\left[\\v{h}\\right]",
+      "expr": "p + log(h)",
+      "variables": [
+        {
+          "key": "p",
+          "latex": "pH",
+          "name": "pH",
+          "unit": ""
+        },
+        {
+          "key": "h",
+          "latex": "H^+",
+          "name": "hydrogen ion concentration",
+          "unit": "mol/L"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "assumptions": [
+        "Ideal gas: no forces between particles"
+      ],
+      "experiments": [],
+      "id": "ideal-gas",
+      "subject": "chemistry",
+      "topic": "Gases",
+      "title": "Ideal gas equation",
+      "latex": "\\v{p}\\v{V} = \\v{n}\\v{R}\\v{T}",
+      "expr": "p*V - n*R*T",
+      "variables": [
+        {
+          "key": "p",
+          "latex": "p",
+          "name": "pressure",
+          "unit": "Pa"
+        },
+        {
+          "key": "V",
+          "latex": "V",
+          "name": "volume",
+          "unit": "m³"
+        },
+        {
+          "key": "n",
+          "latex": "n",
+          "name": "amount of gas",
+          "unit": "mol"
+        },
+        {
+          "key": "R",
+          "latex": "R",
+          "name": "gas constant (8.314)",
+          "unit": "J/(mol·K)"
+        },
+        {
+          "key": "T",
+          "latex": "T",
+          "name": "temperature",
+          "unit": "K"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Room temperature and pressure (20 °C, 1 atm)"
+      ],
+      "experiments": [
+        "hydrogen-pop-test"
+      ],
+      "id": "gas-volume",
+      "subject": "chemistry",
+      "topic": "Gases",
+      "title": "Molar gas volume",
+      "latex": "\\v{V} = \\v{n} \\times 24",
+      "expr": "V - 24*n",
+      "variables": [
+        {
+          "key": "V",
+          "latex": "V",
+          "name": "volume of gas",
+          "unit": "dm³"
+        },
+        {
+          "key": "n",
+          "latex": "n",
+          "name": "amount of gas",
+          "unit": "mol"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "yield",
+      "subject": "chemistry",
+      "topic": "Reactions",
+      "title": "Percentage yield",
+      "latex": "\\v{Y} = \\frac{\\v{a}}{\\v{t}} \\times 100",
+      "expr": "Y - 100*a/t",
+      "variables": [
+        {
+          "key": "Y",
+          "latex": "\\%\\,\\text{yield}",
+          "name": "percentage yield",
+          "unit": "%"
+        },
+        {
+          "key": "a",
+          "latex": "\\text{actual}",
+          "name": "actual mass",
+          "unit": "g"
+        },
+        {
+          "key": "t",
+          "latex": "\\text{theoretical}",
+          "name": "theoretical mass",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "diluting-acid-safely"
+      ],
+      "id": "heat-energy",
+      "subject": "chemistry",
+      "topic": "Energy changes",
+      "title": "Energy from a temperature change",
+      "latex": "\\v{Q} = \\v{m}\\v{c}\\Delta\\v{T}",
+      "expr": "Q - m*c*T",
+      "variables": [
+        {
+          "key": "Q",
+          "latex": "Q",
+          "name": "energy transferred",
+          "unit": "J"
+        },
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "mass of water",
+          "unit": "g"
+        },
+        {
+          "key": "c",
+          "latex": "c",
+          "name": "specific heat capacity (4.18 for water)",
+          "unit": "J/(g·°C)"
+        },
+        {
+          "key": "T",
+          "latex": "T",
+          "name": "temperature change",
+          "unit": "°C"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Constant acceleration"
+      ],
+      "experiments": [],
+      "id": "suvat-v",
+      "subject": "physics",
+      "topic": "Motion",
+      "title": "Velocity after accelerating",
+      "latex": "\\v{v} = \\v{u} + \\v{a}\\v{t}",
+      "expr": "v - (u + a*t)",
+      "variables": [
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "final velocity",
+          "unit": "m/s"
+        },
+        {
+          "key": "u",
+          "latex": "u",
+          "name": "initial velocity",
+          "unit": "m/s"
+        },
+        {
+          "key": "a",
+          "latex": "a",
+          "name": "acceleration",
+          "unit": "m/s²"
+        },
+        {
+          "key": "t",
+          "latex": "t",
+          "name": "time",
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Constant acceleration"
+      ],
+      "experiments": [
+        "projectile-motion"
+      ],
+      "id": "suvat-s",
+      "subject": "physics",
+      "topic": "Motion",
+      "title": "Displacement with constant acceleration",
+      "latex": "\\v{s} = \\v{u}\\v{t} + \\tfrac{1}{2}\\v{a}\\v{t}^2",
+      "expr": "s - (u*t + 0.5*a*t^2)",
+      "variables": [
+        {
+          "key": "s",
+          "latex": "s",
+          "name": "displacement",
+          "unit": "m"
+        },
+        {
+          "key": "u",
+          "latex": "u",
+          "name": "initial velocity",
+          "unit": "m/s"
+        },
+        {
+          "key": "t",
+          "latex": "t",
+          "name": "time",
+          "unit": "s"
+        },
+        {
+          "key": "a",
+          "latex": "a",
+          "name": "acceleration",
+          "unit": "m/s²"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Constant acceleration"
+      ],
+      "experiments": [],
+      "id": "suvat-v2",
+      "subject": "physics",
+      "topic": "Motion",
+      "title": "Velocity and displacement",
+      "latex": "\\v{v}^2 = \\v{u}^2 + 2\\v{a}\\v{s}",
+      "expr": "v^2 - (u^2 + 2*a*s)",
+      "variables": [
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "final velocity",
+          "unit": "m/s"
+        },
+        {
+          "key": "u",
+          "latex": "u",
+          "name": "initial velocity",
+          "unit": "m/s"
+        },
+        {
+          "key": "a",
+          "latex": "a",
+          "name": "acceleration",
+          "unit": "m/s²"
+        },
+        {
+          "key": "s",
+          "latex": "s",
+          "name": "displacement",
+          "unit": "m"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "speed",
+      "subject": "physics",
+      "topic": "Motion",
+      "title": "Average speed",
+      "latex": "\\v{v} = \\frac{\\v{d}}{\\v{t}}",
+      "expr": "v - d/t",
+      "variables": [
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "speed",
+          "unit": "m/s"
+        },
+        {
+          "key": "d",
+          "latex": "d",
+          "name": "distance",
+          "unit": "m"
+        },
+        {
+          "key": "t",
+          "latex": "t",
+          "name": "time",
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Level ground",
+        "No air resistance"
+      ],
+      "experiments": [
+        "projectile-motion"
+      ],
+      "id": "range",
+      "subject": "physics",
+      "topic": "Projectiles",
+      "title": "Projectile range",
+      "latex": "\\v{R} = \\frac{\\v{v}^2 \\sin 2\\v{q}}{\\v{g}}",
+      "expr": "R - v^2*sin(2*q*pi/180)/g",
+      "variables": [
+        {
+          "key": "R",
+          "latex": "R",
+          "name": "range",
+          "unit": "m"
+        },
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "launch speed",
+          "unit": "m/s"
+        },
+        {
+          "key": "q",
+          "latex": "\\theta",
+          "name": "launch angle",
+          "unit": "°"
+        },
+        {
+          "key": "g",
+          "latex": "g",
+          "name": "gravitational field strength",
+          "unit": "m/s²"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "No air resistance"
+      ],
+      "experiments": [
+        "projectile-motion"
+      ],
+      "id": "max-height",
+      "subject": "physics",
+      "topic": "Projectiles",
+      "title": "Maximum height",
+      "latex": "\\v{H} = \\frac{\\v{v}^2 \\sin^2 \\v{q}}{2\\v{g}}",
+      "expr": "H - (v*sin(q*pi/180))^2/(2*g)",
+      "variables": [
+        {
+          "key": "H",
+          "latex": "H",
+          "name": "maximum height",
+          "unit": "m"
+        },
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "launch speed",
+          "unit": "m/s"
+        },
+        {
+          "key": "q",
+          "latex": "\\theta",
+          "name": "launch angle",
+          "unit": "°"
+        },
+        {
+          "key": "g",
+          "latex": "g",
+          "name": "gravitational field strength",
+          "unit": "m/s²"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Level ground",
+        "No air resistance"
+      ],
+      "experiments": [
+        "projectile-motion"
+      ],
+      "id": "flight-time",
+      "subject": "physics",
+      "topic": "Projectiles",
+      "title": "Time of flight",
+      "latex": "\\v{t} = \\frac{2\\v{v}\\sin\\v{q}}{\\v{g}}",
+      "expr": "t - 2*v*sin(q*pi/180)/g",
+      "variables": [
+        {
+          "key": "t",
+          "latex": "t",
+          "name": "time of flight",
+          "unit": "s"
+        },
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "launch speed",
+          "unit": "m/s"
+        },
+        {
+          "key": "q",
+          "latex": "\\theta",
+          "name": "launch angle",
+          "unit": "°"
+        },
+        {
+          "key": "g",
+          "latex": "g",
+          "name": "gravitational field strength",
+          "unit": "m/s²"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "newton-2",
+      "subject": "physics",
+      "topic": "Forces",
+      "title": "Newton's second law",
+      "latex": "\\v{F} = \\v{m}\\v{a}",
+      "expr": "F - m*a",
+      "variables": [
+        {
+          "key": "F",
+          "latex": "F",
+          "name": "resultant force",
+          "unit": "N"
+        },
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "mass",
+          "unit": "kg"
+        },
+        {
+          "key": "a",
+          "latex": "a",
+          "name": "acceleration",
+          "unit": "m/s²"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "archimedes-principle"
+      ],
+      "id": "weight",
+      "subject": "physics",
+      "topic": "Forces",
+      "title": "Weight",
+      "latex": "\\v{W} = \\v{m}\\v{g}",
+      "expr": "W - m*g",
+      "variables": [
+        {
+          "key": "W",
+          "latex": "W",
+          "name": "weight",
+          "unit": "N"
+        },
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "mass",
+          "unit": "kg"
+        },
+        {
+          "key": "g",
+          "latex": "g",
+          "name": "gravitational field strength (9.81 on Earth)",
+          "unit": "N/kg"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "momentum",
+      "subject": "physics",
+      "topic": "Momentum",
+      "title": "Momentum",
+      "latex": "\\v{p} = \\v{m}\\v{v}",
+      "expr": "p - m*v",
+      "variables": [
+        {
+          "key": "p",
+          "latex": "p",
+          "name": "momentum",
+          "unit": "kg·m/s"
+        },
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "mass",
+          "unit": "kg"
+        },
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "velocity",
+          "unit": "m/s"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "impulse",
+      "subject": "physics",
+      "topic": "Momentum",
+      "title": "Impulse",
+      "latex": "\\v{F}\\Delta\\v{t} = \\Delta\\v{p}",
+      "expr": "F*t - p",
+      "variables": [
+        {
+          "key": "F",
+          "latex": "F",
+          "name": "force",
+          "unit": "N"
+        },
+        {
+          "key": "t",
+          "latex": "t",
+          "name": "time the force acts",
+          "unit": "s"
+        },
+        {
+          "key": "p",
+          "latex": "p",
+          "name": "change in momentum",
+          "unit": "kg·m/s"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "kinetic-energy",
+      "subject": "physics",
+      "topic": "Energy",
+      "title": "Kinetic energy",
+      "latex": "\\v{E} = \\tfrac{1}{2}\\v{m}\\v{v}^2",
+      "expr": "E - 0.5*m*v^2",
+      "variables": [
+        {
+          "key": "E",
+          "latex": "E_k",
+          "name": "kinetic energy",
+          "unit": "J"
+        },
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "mass",
+          "unit": "kg"
+        },
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "speed",
+          "unit": "m/s"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "gpe",
+      "subject": "physics",
+      "topic": "Energy",
+      "title": "Gravitational potential energy",
+      "latex": "\\v{E} = \\v{m}\\v{g}\\v{h}",
+      "expr": "E - m*g*h",
+      "variables": [
+        {
+          "key": "E",
+          "latex": "E_p",
+          "name": "energy gained",
+          "unit": "J"
+        },
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "mass",
+          "unit": "kg"
+        },
+        {
+          "key": "g",
+          "latex": "g",
+          "name": "gravitational field strength",
+          "unit": "N/kg"
+        },
+        {
+          "key": "h",
+          "latex": "h",
+          "name": "height change",
+          "unit": "m"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "work",
+      "subject": "physics",
+      "topic": "Energy",
+      "title": "Work done",
+      "latex": "\\v{W} = \\v{F}\\v{d}",
+      "expr": "W - F*d",
+      "variables": [
+        {
+          "key": "W",
+          "latex": "W",
+          "name": "work done",
+          "unit": "J"
+        },
+        {
+          "key": "F",
+          "latex": "F",
+          "name": "force",
+          "unit": "N"
+        },
+        {
+          "key": "d",
+          "latex": "d",
+          "name": "distance moved along the force",
+          "unit": "m"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "power",
+      "subject": "physics",
+      "topic": "Energy",
+      "title": "Power",
+      "latex": "\\v{P} = \\frac{\\v{W}}{\\v{t}}",
+      "expr": "P - W/t",
+      "variables": [
+        {
+          "key": "P",
+          "latex": "P",
+          "name": "power",
+          "unit": "W"
+        },
+        {
+          "key": "W",
+          "latex": "W",
+          "name": "energy transferred",
+          "unit": "J"
+        },
+        {
+          "key": "t",
+          "latex": "t",
+          "name": "time",
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Within the limit of proportionality"
+      ],
+      "experiments": [],
+      "id": "hooke",
+      "subject": "physics",
+      "topic": "Forces",
+      "title": "Hooke's law",
+      "latex": "\\v{F} = \\v{k}\\v{x}",
+      "expr": "F - k*x",
+      "variables": [
+        {
+          "key": "F",
+          "latex": "F",
+          "name": "force",
+          "unit": "N"
+        },
+        {
+          "key": "k",
+          "latex": "k",
+          "name": "spring constant",
+          "unit": "N/m"
+        },
+        {
+          "key": "x",
+          "latex": "x",
+          "name": "extension",
+          "unit": "m"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Small swings (under about 10°)",
+        "Light, inextensible string"
+      ],
+      "experiments": [
+        "simple-pendulum"
+      ],
+      "id": "pendulum",
+      "subject": "physics",
+      "topic": "Oscillations",
+      "title": "Period of a simple pendulum",
+      "latex": "\\v{T} = 2\\pi\\sqrt{\\frac{\\v{L}}{\\v{g}}}",
+      "expr": "T - 2*pi*sqrt(L/g)",
+      "variables": [
+        {
+          "key": "T",
+          "latex": "T",
+          "name": "period",
+          "unit": "s"
+        },
+        {
+          "key": "L",
+          "latex": "L",
+          "name": "length to the centre of the bob",
+          "unit": "m"
+        },
+        {
+          "key": "g",
+          "latex": "g",
+          "name": "gravitational field strength",
+          "unit": "m/s²"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "density",
+      "subject": "physics",
+      "topic": "Matter",
+      "title": "Density",
+      "latex": "\\v{r} = \\frac{\\v{m}}{\\v{V}}",
+      "expr": "r - m/V",
+      "variables": [
+        {
+          "key": "r",
+          "latex": "\\rho",
+          "name": "density",
+          "unit": "kg/m³"
+        },
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "mass",
+          "unit": "kg"
+        },
+        {
+          "key": "V",
+          "latex": "V",
+          "name": "volume",
+          "unit": "m³"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "pressure",
+      "subject": "physics",
+      "topic": "Pressure",
+      "title": "Pressure",
+      "latex": "\\v{p} = \\frac{\\v{F}}{\\v{A}}",
+      "expr": "p - F/A",
+      "variables": [
+        {
+          "key": "p",
+          "latex": "p",
+          "name": "pressure",
+          "unit": "Pa"
+        },
+        {
+          "key": "F",
+          "latex": "F",
+          "name": "force",
+          "unit": "N"
+        },
+        {
+          "key": "A",
+          "latex": "A",
+          "name": "area",
+          "unit": "m²"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "fluid-pressure",
+      "subject": "physics",
+      "topic": "Pressure",
+      "title": "Pressure in a fluid",
+      "latex": "\\v{p} = \\v{r}\\v{g}\\v{h}",
+      "expr": "p - r*g*h",
+      "variables": [
+        {
+          "key": "p",
+          "latex": "p",
+          "name": "pressure due to the fluid",
+          "unit": "Pa"
+        },
+        {
+          "key": "r",
+          "latex": "\\rho",
+          "name": "fluid density",
+          "unit": "kg/m³"
+        },
+        {
+          "key": "g",
+          "latex": "g",
+          "name": "gravitational field strength",
+          "unit": "N/kg"
+        },
+        {
+          "key": "h",
+          "latex": "h",
+          "name": "depth",
+          "unit": "m"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "archimedes-principle"
+      ],
+      "id": "upthrust",
+      "subject": "physics",
+      "topic": "Pressure",
+      "title": "Archimedes' principle",
+      "latex": "\\v{U} = \\v{r}\\v{V}\\v{g}",
+      "expr": "U - r*V*g",
+      "variables": [
+        {
+          "key": "U",
+          "latex": "U",
+          "name": "upthrust",
+          "unit": "N"
+        },
+        {
+          "key": "r",
+          "latex": "\\rho",
+          "name": "fluid density",
+          "unit": "kg/m³"
+        },
+        {
+          "key": "V",
+          "latex": "V",
+          "name": "volume displaced",
+          "unit": "m³"
+        },
+        {
+          "key": "g",
+          "latex": "g",
+          "name": "gravitational field strength",
+          "unit": "N/kg"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Ohmic conductor at constant temperature"
+      ],
+      "experiments": [
+        "ohms-law",
+        "series-and-parallel"
+      ],
+      "id": "ohms-law",
+      "subject": "physics",
+      "topic": "Electricity",
+      "title": "Ohm's law",
+      "latex": "\\v{V} = \\v{I}\\v{R}",
+      "expr": "V - I*R",
+      "variables": [
+        {
+          "key": "V",
+          "latex": "V",
+          "name": "potential difference",
+          "unit": "V"
+        },
+        {
+          "key": "I",
+          "latex": "I",
+          "name": "current",
+          "unit": "A"
+        },
+        {
+          "key": "R",
+          "latex": "R",
+          "name": "resistance",
+          "unit": "Ω"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "series-and-parallel"
+      ],
+      "id": "elec-power",
+      "subject": "physics",
+      "topic": "Electricity",
+      "title": "Electrical power",
+      "latex": "\\v{P} = \\v{I}\\v{V}",
+      "expr": "P - I*V",
+      "variables": [
+        {
+          "key": "P",
+          "latex": "P",
+          "name": "power",
+          "unit": "W"
+        },
+        {
+          "key": "I",
+          "latex": "I",
+          "name": "current",
+          "unit": "A"
+        },
+        {
+          "key": "V",
+          "latex": "V",
+          "name": "potential difference",
+          "unit": "V"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "ohms-law"
+      ],
+      "id": "power-i2r",
+      "subject": "physics",
+      "topic": "Electricity",
+      "title": "Power in a resistor",
+      "latex": "\\v{P} = \\v{I}^2\\v{R}",
+      "expr": "P - I^2*R",
+      "variables": [
+        {
+          "key": "P",
+          "latex": "P",
+          "name": "power",
+          "unit": "W"
+        },
+        {
+          "key": "I",
+          "latex": "I",
+          "name": "current",
+          "unit": "A"
+        },
+        {
+          "key": "R",
+          "latex": "R",
+          "name": "resistance",
+          "unit": "Ω"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "charge",
+      "subject": "physics",
+      "topic": "Electricity",
+      "title": "Charge",
+      "latex": "\\v{Q} = \\v{I}\\v{t}",
+      "expr": "Q - I*t",
+      "variables": [
+        {
+          "key": "Q",
+          "latex": "Q",
+          "name": "charge",
+          "unit": "C"
+        },
+        {
+          "key": "I",
+          "latex": "I",
+          "name": "current",
+          "unit": "A"
+        },
+        {
+          "key": "t",
+          "latex": "t",
+          "name": "time",
+          "unit": "s"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "series-and-parallel"
+      ],
+      "id": "series-r",
+      "subject": "physics",
+      "topic": "Electricity",
+      "title": "Resistors in series",
+      "latex": "\\v{R} = \\v{R1} + \\v{R2}",
+      "expr": "R - (R1 + R2)",
+      "variables": [
+        {
+          "key": "R",
+          "latex": "R",
+          "name": "total resistance",
+          "unit": "Ω"
+        },
+        {
+          "key": "R1",
+          "latex": "R_1",
+          "name": "first resistance",
+          "unit": "Ω"
+        },
+        {
+          "key": "R2",
+          "latex": "R_2",
+          "name": "second resistance",
+          "unit": "Ω"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "series-and-parallel"
+      ],
+      "id": "parallel-r",
+      "subject": "physics",
+      "topic": "Electricity",
+      "title": "Resistors in parallel",
+      "latex": "\\frac{1}{\\v{R}} = \\frac{1}{\\v{R1}} + \\frac{1}{\\v{R2}}",
+      "expr": "1/R - (1/R1 + 1/R2)",
+      "variables": [
+        {
+          "key": "R",
+          "latex": "R",
+          "name": "total resistance",
+          "unit": "Ω"
+        },
+        {
+          "key": "R1",
+          "latex": "R_1",
+          "name": "first resistance",
+          "unit": "Ω"
+        },
+        {
+          "key": "R2",
+          "latex": "R_2",
+          "name": "second resistance",
+          "unit": "Ω"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "wave-speed",
+      "subject": "physics",
+      "topic": "Waves",
+      "title": "Wave speed",
+      "latex": "\\v{v} = \\v{f}\\v{l}",
+      "expr": "v - f*l",
+      "variables": [
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "wave speed",
+          "unit": "m/s"
+        },
+        {
+          "key": "f",
+          "latex": "f",
+          "name": "frequency",
+          "unit": "Hz"
+        },
+        {
+          "key": "l",
+          "latex": "\\lambda",
+          "name": "wavelength",
+          "unit": "m"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "refraction-snells-law"
+      ],
+      "id": "snell",
+      "subject": "physics",
+      "topic": "Optics",
+      "title": "Snell's law (from air)",
+      "latex": "\\v{n} = \\frac{\\sin \\v{i}}{\\sin \\v{r}}",
+      "expr": "n - sin(i*pi/180)/sin(r*pi/180)",
+      "variables": [
+        {
+          "key": "n",
+          "latex": "n",
+          "name": "refractive index",
+          "unit": ""
+        },
+        {
+          "key": "i",
+          "latex": "i",
+          "name": "angle of incidence",
+          "unit": "°"
+        },
+        {
+          "key": "r",
+          "latex": "r",
+          "name": "angle of refraction",
+          "unit": "°"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Light going from the denser medium into air"
+      ],
+      "experiments": [
+        "refraction-snells-law"
+      ],
+      "id": "critical-angle",
+      "subject": "physics",
+      "topic": "Optics",
+      "title": "Critical angle",
+      "latex": "\\sin \\v{C} = \\frac{1}{\\v{n}}",
+      "expr": "sin(C*pi/180) - 1/n",
+      "variables": [
+        {
+          "key": "C",
+          "latex": "C",
+          "name": "critical angle",
+          "unit": "°"
+        },
+        {
+          "key": "n",
+          "latex": "n",
+          "name": "refractive index",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "refraction-snells-law"
+      ],
+      "id": "lateral-shift",
+      "subject": "physics",
+      "topic": "Optics",
+      "title": "Lateral shift through a slab",
+      "latex": "\\v{d} = \\frac{\\v{t}\\sin(\\v{i} - \\v{r})}{\\cos \\v{r}}",
+      "expr": "d - t*sin((i - r)*pi/180)/cos(r*pi/180)",
+      "variables": [
+        {
+          "key": "d",
+          "latex": "d",
+          "name": "lateral shift",
+          "unit": "mm"
+        },
+        {
+          "key": "t",
+          "latex": "t",
+          "name": "slab thickness",
+          "unit": "mm"
+        },
+        {
+          "key": "i",
+          "latex": "i",
+          "name": "angle of incidence",
+          "unit": "°"
+        },
+        {
+          "key": "r",
+          "latex": "r",
+          "name": "angle of refraction",
+          "unit": "°"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "high_school"
+      ],
+      "assumptions": [
+        "Thin lens",
+        "Cartesian sign convention (NCERT)"
+      ],
+      "experiments": [],
+      "id": "lens",
+      "subject": "physics",
+      "topic": "Optics",
+      "title": "Lens formula",
+      "latex": "\\frac{1}{\\v{v}} - \\frac{1}{\\v{u}} = \\frac{1}{\\v{f}}",
+      "expr": "1/v - 1/u - 1/f",
+      "variables": [
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "image distance",
+          "unit": "cm"
+        },
+        {
+          "key": "u",
+          "latex": "u",
+          "name": "object distance (negative for a real object)",
+          "unit": "cm"
+        },
+        {
+          "key": "f",
+          "latex": "f",
+          "name": "focal length",
+          "unit": "cm"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "high_school"
+      ],
+      "assumptions": [
+        "Cartesian sign convention"
+      ],
+      "experiments": [],
+      "id": "magnification",
+      "subject": "physics",
+      "topic": "Optics",
+      "title": "Magnification",
+      "latex": "\\v{m} = \\frac{\\v{v}}{\\v{u}}",
+      "expr": "m - v/u",
+      "variables": [
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "magnification",
+          "unit": ""
+        },
+        {
+          "key": "v",
+          "latex": "v",
+          "name": "image distance",
+          "unit": "cm"
+        },
+        {
+          "key": "u",
+          "latex": "u",
+          "name": "object distance",
+          "unit": "cm"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "a ≠ 0; the solver finds the root nearest its starting guess"
+      ],
+      "experiments": [
+        "quadratic-explorer"
+      ],
+      "id": "quadratic-formula",
+      "subject": "maths",
+      "topic": "Algebra",
+      "title": "Quadratic formula",
+      "latex": "\\v{x} = \\frac{-\\v{b} \\pm \\sqrt{\\v{b}^2 - 4\\v{a}\\v{c}}}{2\\v{a}}",
+      "expr": "a*x^2 + b*x + c",
+      "variables": [
+        {
+          "key": "x",
+          "latex": "x",
+          "name": "root",
+          "unit": ""
+        },
+        {
+          "key": "a",
+          "latex": "a",
+          "name": "coefficient of x²",
+          "unit": ""
+        },
+        {
+          "key": "b",
+          "latex": "b",
+          "name": "coefficient of x",
+          "unit": ""
+        },
+        {
+          "key": "c",
+          "latex": "c",
+          "name": "constant term",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "quadratic-explorer"
+      ],
+      "id": "discriminant",
+      "subject": "maths",
+      "topic": "Algebra",
+      "title": "Discriminant",
+      "latex": "\\v{D} = \\v{b}^2 - 4\\v{a}\\v{c}",
+      "expr": "D - (b^2 - 4*a*c)",
+      "variables": [
+        {
+          "key": "D",
+          "latex": "\\Delta",
+          "name": "discriminant",
+          "unit": ""
+        },
+        {
+          "key": "a",
+          "latex": "a",
+          "name": "coefficient of x²",
+          "unit": ""
+        },
+        {
+          "key": "b",
+          "latex": "b",
+          "name": "coefficient of x",
+          "unit": ""
+        },
+        {
+          "key": "c",
+          "latex": "c",
+          "name": "constant term",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "balance-equations"
+      ],
+      "id": "straight-line",
+      "subject": "maths",
+      "topic": "Coordinate geometry",
+      "title": "Straight line",
+      "latex": "\\v{y} = \\v{m}\\v{x} + \\v{c}",
+      "expr": "y - (m*x + c)",
+      "variables": [
+        {
+          "key": "y",
+          "latex": "y",
+          "name": "y-coordinate",
+          "unit": ""
+        },
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "gradient",
+          "unit": ""
+        },
+        {
+          "key": "x",
+          "latex": "x",
+          "name": "x-coordinate",
+          "unit": ""
+        },
+        {
+          "key": "c",
+          "latex": "c",
+          "name": "y-intercept",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "derivative-as-slope"
+      ],
+      "id": "gradient",
+      "subject": "maths",
+      "topic": "Coordinate geometry",
+      "title": "Gradient between two points",
+      "latex": "\\v{m} = \\frac{\\v{y2} - \\v{y1}}{\\v{x2} - \\v{x1}}",
+      "expr": "m - (y2 - y1)/(x2 - x1)",
+      "variables": [
+        {
+          "key": "m",
+          "latex": "m",
+          "name": "gradient",
+          "unit": ""
+        },
+        {
+          "key": "y2",
+          "latex": "y_2",
+          "name": "second y",
+          "unit": ""
+        },
+        {
+          "key": "y1",
+          "latex": "y_1",
+          "name": "first y",
+          "unit": ""
+        },
+        {
+          "key": "x2",
+          "latex": "x_2",
+          "name": "second x",
+          "unit": ""
+        },
+        {
+          "key": "x1",
+          "latex": "x_1",
+          "name": "first x",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "Right-angled triangle"
+      ],
+      "experiments": [],
+      "id": "pythagoras",
+      "subject": "maths",
+      "topic": "Geometry",
+      "title": "Pythagoras' theorem",
+      "latex": "\\v{a}^2 + \\v{b}^2 = \\v{c}^2",
+      "expr": "a^2 + b^2 - c^2",
+      "variables": [
+        {
+          "key": "a",
+          "latex": "a",
+          "name": "shorter side",
+          "unit": ""
+        },
+        {
+          "key": "b",
+          "latex": "b",
+          "name": "other shorter side",
+          "unit": ""
+        },
+        {
+          "key": "c",
+          "latex": "c",
+          "name": "hypotenuse",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "circle-area",
+      "subject": "maths",
+      "topic": "Geometry",
+      "title": "Area of a circle",
+      "latex": "\\v{A} = \\pi \\v{r}^2",
+      "expr": "A - pi*r^2",
+      "variables": [
+        {
+          "key": "A",
+          "latex": "A",
+          "name": "area",
+          "unit": ""
+        },
+        {
+          "key": "r",
+          "latex": "r",
+          "name": "radius",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "circumference",
+      "subject": "maths",
+      "topic": "Geometry",
+      "title": "Circumference",
+      "latex": "\\v{C} = 2\\pi\\v{r}",
+      "expr": "C - 2*pi*r",
+      "variables": [
+        {
+          "key": "C",
+          "latex": "C",
+          "name": "circumference",
+          "unit": ""
+        },
+        {
+          "key": "r",
+          "latex": "r",
+          "name": "radius",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "unit-circle-trig"
+      ],
+      "id": "pythagorean-identity",
+      "subject": "maths",
+      "topic": "Trigonometry",
+      "title": "Pythagorean identity",
+      "latex": "\\sin^2\\theta + \\cos^2\\theta = 1",
+      "expr": null,
+      "variables": []
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "unit-circle-trig"
+      ],
+      "id": "radians",
+      "subject": "maths",
+      "topic": "Trigonometry",
+      "title": "Degrees to radians",
+      "latex": "\\v{r} = \\v{d} \\times \\frac{\\pi}{180}",
+      "expr": "r - d*pi/180",
+      "variables": [
+        {
+          "key": "r",
+          "latex": "\\theta_{\\text{rad}}",
+          "name": "angle in radians",
+          "unit": "rad"
+        },
+        {
+          "key": "d",
+          "latex": "\\theta_{\\text{deg}}",
+          "name": "angle in degrees",
+          "unit": "°"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "sine-rule",
+      "subject": "maths",
+      "topic": "Trigonometry",
+      "title": "Sine rule",
+      "latex": "\\frac{\\v{a}}{\\sin \\v{A}} = \\frac{\\v{b}}{\\sin \\v{B}}",
+      "expr": "a/sin(A*pi/180) - b/sin(B*pi/180)",
+      "variables": [
+        {
+          "key": "a",
+          "latex": "a",
+          "name": "side opposite A",
+          "unit": ""
+        },
+        {
+          "key": "A",
+          "latex": "A",
+          "name": "angle A",
+          "unit": "°"
+        },
+        {
+          "key": "b",
+          "latex": "b",
+          "name": "side opposite B",
+          "unit": ""
+        },
+        {
+          "key": "B",
+          "latex": "B",
+          "name": "angle B",
+          "unit": "°"
+        }
+      ]
+    },
+    {
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "derivative-as-slope"
+      ],
+      "id": "power-rule",
+      "subject": "maths",
+      "topic": "Calculus",
+      "title": "Power rule",
+      "latex": "\\frac{d}{dx}\\,x^n = n x^{n-1}",
+      "expr": null,
+      "variables": []
+    },
+    {
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "assumptions": [],
+      "experiments": [
+        "derivative-as-slope"
+      ],
+      "id": "derivative-limit",
+      "subject": "maths",
+      "topic": "Calculus",
+      "title": "Derivative as a limit",
+      "latex": "f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}",
+      "expr": null,
+      "variables": []
+    },
+    {
+      "levels": [
+        "high_school",
+        "undergraduate"
+      ],
+      "assumptions": [
+        "n ≠ −1"
+      ],
+      "experiments": [
+        "riemann-sums"
+      ],
+      "id": "integral-power",
+      "subject": "maths",
+      "topic": "Calculus",
+      "title": "Integrating a power",
+      "latex": "\\int_a^b x^n\\,dx = \\left[\\frac{x^{n+1}}{n+1}\\right]_a^b",
+      "expr": null,
+      "variables": []
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "arithmetic-nth",
+      "subject": "maths",
+      "topic": "Sequences",
+      "title": "nth term of an arithmetic sequence",
+      "latex": "\\v{u} = \\v{a} + (\\v{n} - 1)\\v{d}",
+      "expr": "u - (a + (n - 1)*d)",
+      "variables": [
+        {
+          "key": "u",
+          "latex": "u_n",
+          "name": "nth term",
+          "unit": ""
+        },
+        {
+          "key": "a",
+          "latex": "a",
+          "name": "first term",
+          "unit": ""
+        },
+        {
+          "key": "n",
+          "latex": "n",
+          "name": "position",
+          "unit": ""
+        },
+        {
+          "key": "d",
+          "latex": "d",
+          "name": "common difference",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [
+        "All outcomes equally likely"
+      ],
+      "experiments": [
+        "dice-probability"
+      ],
+      "id": "probability",
+      "subject": "maths",
+      "topic": "Probability",
+      "title": "Probability of an event",
+      "latex": "\\v{P} = \\frac{\\v{f}}{\\v{N}}",
+      "expr": "P - f/N",
+      "variables": [
+        {
+          "key": "P",
+          "latex": "P(A)",
+          "name": "probability",
+          "unit": ""
+        },
+        {
+          "key": "f",
+          "latex": "f",
+          "name": "favourable outcomes",
+          "unit": ""
+        },
+        {
+          "key": "N",
+          "latex": "N",
+          "name": "equally likely outcomes",
+          "unit": ""
+        }
+      ]
+    },
+    {
+      "levels": [
+        "school",
+        "high_school"
+      ],
+      "assumptions": [],
+      "experiments": [],
+      "id": "mean",
+      "subject": "maths",
+      "topic": "Statistics",
+      "title": "Mean",
+      "latex": "\\v{m} = \\frac{\\v{S}}{\\v{n}}",
+      "expr": "m - S/n",
+      "variables": [
+        {
+          "key": "m",
+          "latex": "\\bar{x}",
+          "name": "mean",
+          "unit": ""
+        },
+        {
+          "key": "S",
+          "latex": "\\sum x",
+          "name": "sum of the values",
+          "unit": ""
+        },
+        {
+          "key": "n",
+          "latex": "n",
+          "name": "number of values",
+          "unit": ""
+        }
+      ]
+    }
+  ]
+}
