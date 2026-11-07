@@ -44,9 +44,15 @@ importers:
       '@labscape/lab-engine':
         specifier: workspace:^
         version: link:../../packages/lab-engine
+      '@labscape/mathlab':
+        specifier: workspace:*
+        version: link:../../packages/mathlab
       '@labscape/motion':
         specifier: workspace:*
         version: link:../../packages/motion
+      '@labscape/physics':
+        specifier: workspace:*
+        version: link:../../packages/physics
       '@labscape/playground':
         specifier: workspace:*
         version: link:../../packages/playground

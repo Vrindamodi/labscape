@@ -4,8 +4,8 @@ import type { RuleHit, SimModel, SimNote } from "../protocol/types";
 /* ================================================================== projectile motion */
 
 export type ProjectileSetup = { targetM: number; targetTolM: number };
-export type Launch = { speed: number; angle: number; planet: Planet; drag: boolean; range: number; maxHeight: number; time: number; t: number };
-export type ProjectileState = { speed: number; angle: number; planet: Planet; drag: boolean; launches: Launch[]; measured: number[]; results: Record<string, number> };
+export type LaunchRecord = { speed: number; angle: number; planet: Planet; drag: boolean; range: number; maxHeight: number; time: number; t: number };
+export type ProjectileState = { speed: number; angle: number; planet: Planet; drag: boolean; launches: LaunchRecord[]; measured: number[]; results: Record<string, number> };
 
 export function flightOf(speed: number, angle: number, planet: Planet, drag: boolean) {
   const g = PLANETS[planet].g;

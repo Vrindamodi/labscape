@@ -1,5 +1,6 @@
 import type { LabEvent, RewardResult } from "@labscape/contracts";
-import { recordGolden, useLabSession, Workbench, type ExperimentContent, type Feedback, type Report, type StepSpec } from "@labscape/lab-engine";
+import { recordGolden, stageFor, useLabSession, Workbench, type ExperimentContent, type Feedback, type Report, type StepSpec } from "@labscape/lab-engine";
+import "./SimStages";
 import { celebrate, useMotion } from "@labscape/motion";
 import { MolecularView, SCENES } from "@labscape/chem-view";
 import { sound } from "@labscape/audio";
@@ -71,8 +72,18 @@ export default function ExperimentPlayer() {
   );
 }
 
+const SUBJECT_LAB: Record<string, string> = { chemistry: "Chemistry lab", physics: "Physics lab", maths: "Maths lab" };
+
+/** Physics and maths bring their own Demo and Try stages (registered by Part 3). */
+function useSubject(content: ExperimentContent) {
+  const subject = (content as unknown as { subject: string }).subject;
+  const mod = subject === "chemistry" ? undefined : stageFor(subject);
+  return { subject, sim: mod && mod.has(content.slug) ? mod : undefined };
+}
+
 function Player({ view }: { view: ExperimentView }) {
-  const { content, card } = view;
+  const { content } = view;
+  const { subject, sim } = useSubject(content);
   const navigate = useNavigate();
   const { me, startGuest } = useSession();
   const { toast, announce, setAutosaveState } = useShell();
@@ -118,7 +129,7 @@ function Player({ view }: { view: ExperimentView }) {
         </button>
         <div className="min-w-0">
           <div className="truncate font-heading text-base font-semibold">{content.title}</div>
-          <div className="text-xs text-white/45">{card?.subject ? "Chemistry lab" : ""}</div>
+          <div className="text-xs text-white/45">{SUBJECT_LAB[subject] ?? ""}</div>
         </div>
         <nav className="ml-auto flex items-center gap-1 overflow-x-auto" aria-label="Experiment stages">
           {RAIL.map((r, i) => {
@@ -153,9 +164,21 @@ function Player({ view }: { view: ExperimentView }) {
         <AnimatePresence mode="wait">
           <motion.div key={stage} className="h-full" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
             {stage === "intro" && <Intro view={view} onDemo={() => goto("demo")} onTry={() => void begin(false)} starting={starting} />}
-            {stage === "demo" && <Demo content={content} onTry={() => void begin(false)} />}
+            {stage === "demo" && (sim ? <sim.Demo slug={content.slug} onTry={() => void begin(false)} /> : <Demo content={content} onTry={() => void begin(false)} />)}
             {stage === "try" &&
-              (attempt ? (
+              (attempt && sim ? (
+                <sim.Try
+                  key={attempt.id}
+                  slug={content.slug}
+                  attempt={attempt}
+                  onSaved={(at) => setAutosaveState("saved", at)}
+                  onSaving={() => setAutosaveState("saving")}
+                  onSaveError={() => setAutosaveState("error")}
+                  onDone={() => goto("observe")}
+                  announce={announce}
+                  onRestart={() => void begin(true)}
+                />
+              ) : attempt ? (
                 <Try
                   key={attempt.id}
                   content={content}
@@ -193,12 +216,13 @@ function Player({ view }: { view: ExperimentView }) {
 
 function Intro({ view, onDemo, onTry, starting }: { view: ExperimentView; onDemo: () => void; onTry: () => void; starting: boolean }) {
   const { content, card } = view;
+  const { subject } = useSubject(content);
   return (
     <div className="h-full overflow-y-auto px-4 py-8 sm:px-8">
       <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div>
           <div className="flex flex-wrap gap-2">
-            <SubjectChip subject="chemistry" size="md" />
+            <SubjectChip subject={subject} size="md" />
             <Chip tone={content.fidelity === "exact" ? "success" : content.fidelity === "approximate" ? "blue" : "violet"}>{fidelityLabel(content.fidelity)}</Chip>
             {content.reviewStatus !== "approved" && <Chip tone="warning">Awaiting teacher review</Chip>}
           </div>
@@ -226,7 +250,7 @@ function Intro({ view, onDemo, onTry, starting }: { view: ExperimentView; onDemo
         </div>
         <div className="space-y-4">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <h2 className="flex items-center gap-2 font-heading font-semibold"><FlaskConical className="h-5 w-5 text-subject-chemistry" />On your bench</h2>
+            <h2 className="flex items-center gap-2 font-heading font-semibold"><FlaskConical className={cx("h-5 w-5", subject === "physics" ? "text-subject-physics" : subject === "maths" ? "text-subject-maths" : "text-subject-chemistry")} />{subject === "maths" ? "Your tools" : "On your bench"}</h2>
             <div className="mt-3 flex flex-wrap gap-1.5">{(card?.equipment ?? []).map((e) => <Chip key={e} tone="blue">{e}</Chip>)}</div>
             <div className="mt-3 flex flex-wrap gap-1.5">{(card?.materials ?? []).map((e) => <Chip key={e}>{e}</Chip>)}</div>
           </div>
@@ -559,9 +583,9 @@ function Observe({ content, attemptId, onFinished }: { content: ExperimentConten
       <div className="mx-auto max-w-4xl space-y-5">
         <div className="flex flex-wrap items-center gap-2">
           <Chip tone={content.fidelity === "exact" ? "success" : content.fidelity === "approximate" ? "blue" : "violet"}>{fidelityLabel(content.fidelity)}</Chip>
-          <button onClick={openMolecular} className={cx("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset", molecular ? "bg-ai-violet/30 text-white ring-ai-violet" : "text-[#c4b1ff] ring-ai-violet/40")} aria-pressed={molecular}>
+          {SCENES[content.slug] && <button onClick={openMolecular} className={cx("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset", molecular ? "bg-ai-violet/30 text-white ring-ai-violet" : "text-[#c4b1ff] ring-ai-violet/40")} aria-pressed={molecular}>
             <Atom className="h-3.5 w-3.5" />Molecular view
-          </button>
+          </button>}
         </div>
         <h1 className="font-heading text-3xl font-bold">What happened, and why</h1>
         {molecular && <MolecularPanel slug={content.slug} />}

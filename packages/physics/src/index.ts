@@ -1,4 +1,7 @@
 // @labscape/physics - owned by Part 3.
-// Physics engine, simulation stages and circuit solver.
-// Placeholder created during shared-foundation setup; implementation starts in Part 3.
-export {};
+// Physics engine (circuits, mechanics, optics), the sim-protocol runtime shared with maths,
+// six physics experiments and their interactive workspaces.
+export * from "./core";
+export * from "./protocol";
+export * from "./labs";
+export * from "./ui";
