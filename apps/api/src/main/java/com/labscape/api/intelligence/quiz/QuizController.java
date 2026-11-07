@@ -83,6 +83,7 @@ public class QuizController {
     }
 
     private String subjectOf(String slug) {
+        if (slug != null && slug.startsWith("emergency-")) return "safety";
         return catalogue.bySlug(slug).map(LibraryCatalogue.Experiment::subject).orElse("chemistry");
     }
 

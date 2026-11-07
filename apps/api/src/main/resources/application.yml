@@ -61,7 +61,7 @@ labscape:
     # Flip on as each part ships; daily challenges only offer what can actually be completed.
     experiments: true
     quizzes: true
-    scenarios: false
+    scenarios: true
     molecular-view: true
   ai:
     # Claude answers when a key is set; otherwise the built-in grounded tutor does. Same guard either way.

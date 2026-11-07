@@ -49,7 +49,7 @@ export const NAV: NavGroup[] = [
       { to: "/library?subject=physics", label: "Physics", icon: Orbit, color: "#38BDF8", part: 1, match: (p, s) => p.startsWith("/library") && s.includes("subject=physics") },
       { to: "/library?subject=maths", label: "Maths", icon: Sigma, color: "#FB923C", part: 1, match: (p, s) => p.startsWith("/library") && s.includes("subject=maths") },
       { to: "/playground/chemistry", label: "Playground", icon: Beaker, color: "#E879F9", part: 4 },
-      { to: "/emergency", label: "Emergency", icon: ShieldAlert, color: "#EF4444", part: 4 },
+      { to: "/emergency", label: "Emergency", icon: ShieldAlert, color: "#EF4444", part: 1 },
       { to: "/assistant", label: "Assistant", icon: Sparkles, color: "#8B5CF6", part: 1 },
       { to: "/quizzes", label: "Quizzes", icon: ListChecks, part: 1 },
     ],

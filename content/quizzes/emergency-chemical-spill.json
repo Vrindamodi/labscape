@@ -1,0 +1,139 @@
+{
+  "id": "quiz-emergency-chemical-spill",
+  "version": 1,
+  "experimentSlug": "emergency-chemical-spill",
+  "title": "Chemical spill in the lab: safety check",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "safety-chemical-spill": "Chemical spill in the lab safety"
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "Acid splashes on your skin. What do you do?",
+      "conceptIds": [
+        "safety-chemical-spill"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "multiple_choice",
+      "options": [
+        {
+          "id": "a",
+          "text": "Wipe it off with paper"
+        },
+        {
+          "id": "b",
+          "text": "Rinse with plenty of running water"
+        },
+        {
+          "id": "c",
+          "text": "Put alkali on it"
+        },
+        {
+          "id": "d",
+          "text": "Leave it to dry"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        "b"
+      ],
+      "explanation": "Running water dilutes and washes it away."
+    },
+    {
+      "id": "q2",
+      "prompt": "You should pick up broken glass from a spill with your hands to make the area safe.",
+      "conceptIds": [
+        "safety-chemical-spill"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "true_false",
+      "answer": false,
+      "explanation": "Leave it for the teacher with the right equipment."
+    },
+    {
+      "id": "q3",
+      "prompt": "Who should clean up a chemical spill in a school lab?",
+      "conceptIds": [
+        "safety-chemical-spill"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "multiple_choice",
+      "options": [
+        {
+          "id": "a",
+          "text": "Whoever is nearest"
+        },
+        {
+          "id": "b",
+          "text": "The teacher, with a spill kit"
+        },
+        {
+          "id": "c",
+          "text": "The student who spilled it"
+        },
+        {
+          "id": "d",
+          "text": "Nobody: let it evaporate"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        "b"
+      ],
+      "explanation": "Spill kits and gloves are needed."
+    },
+    {
+      "id": "q4",
+      "prompt": "Telling the teacher what spilled helps them deal with it safely.",
+      "conceptIds": [
+        "safety-chemical-spill"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "true_false",
+      "answer": true,
+      "explanation": "Clear information leads to the right treatment and clean-up."
+    },
+    {
+      "id": "q5",
+      "prompt": "Put these in order.",
+      "conceptIds": [
+        "safety-chemical-spill"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "arrange_steps",
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Tell the teacher"
+        },
+        {
+          "id": "s2",
+          "text": "Rinse the splash with running water"
+        },
+        {
+          "id": "s3",
+          "text": "Keep others away"
+        },
+        {
+          "id": "s4",
+          "text": "Explain exactly what happened"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "explanation": "Raise the alarm, treat, protect others, inform."
+    }
+  ]
+}

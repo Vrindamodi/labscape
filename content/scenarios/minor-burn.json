@@ -1,0 +1,158 @@
+{
+  "slug": "minor-burn",
+  "title": "Minor burn first aid",
+  "kind": "burn",
+  "minutes": 4,
+  "summary": "A friend touches a hot beaker. Give the right first aid, and know when it isn't minor.",
+  "sources": [
+    "NHS: Burns and scalds (treatment)",
+    "St John Ambulance: how to treat burns"
+  ],
+  "scenes": [
+    {
+      "id": "detect",
+      "stage": "detection",
+      "timerS": 10,
+      "growth": 0.8,
+      "hazard": 20,
+      "narration": "Your friend grabs a beaker that has just come off the tripod and yelps. The skin on two fingertips is red and stinging.",
+      "choices": [
+        {
+          "id": "recognise",
+          "label": "That's a burn: act now",
+          "quality": "best",
+          "feedback": "Yes. Cooling a burn quickly reduces the damage.",
+          "next": "assess",
+          "hazardDelta": -15,
+          "recognise": true
+        },
+        {
+          "id": "ignore",
+          "label": "Shake it off, it'll be fine",
+          "quality": "poor",
+          "feedback": "Cooling a burn straight away limits the damage. Don't wait.",
+          "next": "assess",
+          "hazardDelta": 10
+        }
+      ]
+    },
+    {
+      "id": "assess",
+      "stage": "assessment",
+      "timerS": 15,
+      "growth": 0.8,
+      "hazard": 25,
+      "narration": "The red area is smaller than her palm and the skin isn't broken. She isn't feeling faint.",
+      "choices": [
+        {
+          "id": "minor",
+          "label": "It looks like a small, minor burn: start first aid and tell the teacher",
+          "quality": "best",
+          "feedback": "Right. Small, unbroken burns can be treated with first aid. Still tell the teacher.",
+          "next": "decide",
+          "hazardDelta": -15,
+          "escalate": true
+        },
+        {
+          "id": "severe",
+          "label": "It's severe: call an ambulance",
+          "quality": "poor",
+          "feedback": "This one is minor, but call 112 for large or deep burns, burns on the face or hands of a young child, or chemical or electrical burns.",
+          "next": "decide",
+          "hazardDelta": 10,
+          "escalate": true
+        }
+      ]
+    },
+    {
+      "id": "decide",
+      "stage": "decision",
+      "timerS": 15,
+      "growth": 0.6,
+      "hazard": 25,
+      "narration": "What first aid do you give?",
+      "choices": [
+        {
+          "id": "cool",
+          "label": "Cool it under cool or lukewarm running water for 20 minutes",
+          "quality": "best",
+          "feedback": "Correct. Cool running water for 20 minutes is the most important step.",
+          "next": "cover",
+          "hazardDelta": -15
+        },
+        {
+          "id": "ice",
+          "label": "Hold ice on it",
+          "quality": "unsafe",
+          "feedback": "Ice can damage the skin further. Use cool running water instead.",
+          "next": "cover",
+          "hazardDelta": 25
+        },
+        {
+          "id": "butter",
+          "label": "Put butter or toothpaste on it",
+          "quality": "unsafe",
+          "feedback": "Never use butter, oil or toothpaste: they trap heat and can cause infection.",
+          "next": "cover",
+          "hazardDelta": 25
+        }
+      ]
+    },
+    {
+      "id": "cover",
+      "stage": "consequence",
+      "timerS": 15,
+      "growth": 0.4,
+      "hazard": 15,
+      "narration": "After 20 minutes the stinging has eased. A small blister is forming.",
+      "choices": [
+        {
+          "id": "cling",
+          "label": "Remove any rings, then cover loosely with cling film or a clean, non-fluffy dressing",
+          "quality": "best",
+          "feedback": "Yes. Remove jewellery before swelling, and cover to keep it clean.",
+          "next": "end-safe",
+          "hazardDelta": -15
+        },
+        {
+          "id": "pop",
+          "label": "Pop the blister so it heals faster",
+          "quality": "unsafe",
+          "feedback": "Don't burst blisters: they protect the skin underneath from infection.",
+          "next": "end-safe",
+          "hazardDelta": 25
+        },
+        {
+          "id": "cotton",
+          "label": "Wrap it in cotton wool",
+          "quality": "poor",
+          "feedback": "Cotton wool sticks to burns. Use cling film or a non-fluffy dressing.",
+          "next": "end-safe",
+          "hazardDelta": 10
+        }
+      ]
+    }
+  ],
+  "endings": {
+    "end-safe": {
+      "outcome": "safe",
+      "text": "The burn heals over the next week. Quick cooling made all the difference."
+    },
+    "end-unsafe": {
+      "outcome": "unsafe",
+      "text": "The burn was made worse."
+    }
+  },
+  "learn": [
+    "Cool a burn under cool or lukewarm running water for 20 minutes.",
+    "Remove rings or watches near the burn before it swells.",
+    "Cover loosely with cling film or a clean non-fluffy dressing.",
+    "No ice, butter, oil or toothpaste; don't burst blisters.",
+    "Get medical help for large or deep burns, burns to the face, hands or genitals, chemical or electrical burns, or burns on young children."
+  ],
+  "id": "emergency-minor-burn",
+  "version": 1,
+  "reviewStatus": "draft",
+  "disclaimer": "Training only. This is not a substitute for emergency services or certified first-aid and fire-safety training. In a real emergency in India, call 112.",
+  "quizId": "quiz-emergency-minor-burn"
+}

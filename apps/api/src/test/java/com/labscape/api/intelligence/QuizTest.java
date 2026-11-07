@@ -62,7 +62,7 @@ class QuizTest {
 
     @Test
     void everyExperimentHasAQuizCoveringAllNineTypes() {
-        assertThat(bank.all()).hasSize(19);
+        assertThat(bank.all()).hasSize(23); // 19 experiments + 4 emergency scenarios
         var types = new java.util.HashSet<String>();
         bank.all().forEach(quiz -> {
             assertThat(quiz.questions().size()).as(quiz.id()).isBetween(5, 7);

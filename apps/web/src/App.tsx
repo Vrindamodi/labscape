@@ -25,6 +25,8 @@ const PeriodicTable = lazy(() => import("./pages/PeriodicTable"));
 const EquipmentPage = lazy(() => import("./pages/Equipment"));
 const Formulas = lazy(() => import("./pages/Formulas"));
 const Assistant = lazy(() => import("./pages/Assistant"));
+const Emergency = lazy(() => import("./pages/Emergency"));
+const EmergencyRun = lazy(() => import("./pages/Emergency").then((m) => ({ default: m.EmergencyRun })));
 const Quizzes = lazy(() => import("./pages/Quizzes"));
 const QuizSitting = lazy(() => import("./pages/Quizzes").then((m) => ({ default: m.QuizSitting })));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -58,10 +60,12 @@ export function App() {
           <Route path="periodic-table" element={<PeriodicTable />} />
           <Route path="equipment" element={<EquipmentPage />} />
           <Route path="formulas" element={<Formulas />} />
+          <Route path="emergency" element={<Emergency />} />
+          <Route path="emergency/:slug" element={<Gate need="session"><EmergencyRun /></Gate>} />
           <Route path="assistant" element={<Gate need="session"><Assistant /></Gate>} />
           <Route path="quizzes" element={<Quizzes />} />
           <Route path="quizzes/:quizId" element={<Gate need="session"><QuizSitting /></Gate>} />
-          {["emergency", "notebook", "community", "playground"].map((p) => (
+          {["notebook", "community", "playground"].map((p) => (
             <Route key={p} path={p} element={<ComingSoon />} />
           ))}
           <Route path="*" element={<NotFound />} />

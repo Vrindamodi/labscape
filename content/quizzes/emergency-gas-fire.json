@@ -1,0 +1,147 @@
+{
+  "id": "quiz-emergency-gas-fire",
+  "version": 1,
+  "experimentSlug": "emergency-gas-fire",
+  "title": "Gas fire in the kitchen: safety check",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "safety-gas-fire": "Gas fire in the kitchen safety"
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "You smell gas in the kitchen. Which should you NOT do?",
+      "conceptIds": [
+        "safety-gas-fire"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "multiple_choice",
+      "options": [
+        {
+          "id": "a",
+          "text": "Open doors and windows"
+        },
+        {
+          "id": "b",
+          "text": "Switch on the light to look for the leak"
+        },
+        {
+          "id": "c",
+          "text": "Turn off the regulator if there is no fire"
+        },
+        {
+          "id": "d",
+          "text": "Get everyone out"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        "b"
+      ],
+      "explanation": "Switches can spark and ignite gas."
+    },
+    {
+      "id": "q2",
+      "prompt": "A fire breaks out at an LPG cylinder. What comes first?",
+      "conceptIds": [
+        "safety-gas-fire"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "multiple_choice",
+      "options": [
+        {
+          "id": "a",
+          "text": "Fetch water"
+        },
+        {
+          "id": "b",
+          "text": "Get everyone out and alert others"
+        },
+        {
+          "id": "c",
+          "text": "Find the fire extinguisher"
+        },
+        {
+          "id": "d",
+          "text": "Take photos"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        "b"
+      ],
+      "explanation": "People first: evacuate and alert."
+    },
+    {
+      "id": "q3",
+      "prompt": "What number do you call for emergencies anywhere in India?",
+      "conceptIds": [
+        "safety-gas-fire"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "numerical",
+      "unit": "",
+      "answer": 112,
+      "tolerance": {
+        "abs": 0
+      },
+      "acceptUnits": [
+        "minutes",
+        "mins"
+      ],
+      "explanation": "112 connects to police, fire and ambulance."
+    },
+    {
+      "id": "q4",
+      "prompt": "After escaping a fire you may go back in for a phone if the smoke looks light.",
+      "conceptIds": [
+        "safety-gas-fire"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "true_false",
+      "answer": false,
+      "explanation": "Never go back into a burning building."
+    },
+    {
+      "id": "q5",
+      "prompt": "Put these actions in order.",
+      "conceptIds": [
+        "safety-gas-fire"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "arrange_steps",
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Recognise the danger"
+        },
+        {
+          "id": "s2",
+          "text": "Alert everyone and get out"
+        },
+        {
+          "id": "s3",
+          "text": "Close doors behind you"
+        },
+        {
+          "id": "s4",
+          "text": "Call 112 from outside"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "explanation": "Out first, then call for help."
+    }
+  ]
+}

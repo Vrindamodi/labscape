@@ -1,0 +1,148 @@
+{
+  "id": "quiz-emergency-minor-burn",
+  "version": 1,
+  "experimentSlug": "emergency-minor-burn",
+  "title": "Minor burn first aid: safety check",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "safety-minor-burn": "Minor burn first aid safety"
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "For how many minutes should you cool a burn under running water?",
+      "conceptIds": [
+        "safety-minor-burn"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "numerical",
+      "unit": "min",
+      "answer": 20,
+      "tolerance": {
+        "abs": 0
+      },
+      "acceptUnits": [
+        "min",
+        "minutes",
+        "mins"
+      ],
+      "explanation": "At least 20 minutes of cool running water."
+    },
+    {
+      "id": "q2",
+      "prompt": "Which should you put on a burn?",
+      "conceptIds": [
+        "safety-minor-burn"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "multiple_choice",
+      "options": [
+        {
+          "id": "a",
+          "text": "Butter"
+        },
+        {
+          "id": "b",
+          "text": "Toothpaste"
+        },
+        {
+          "id": "c",
+          "text": "Cling film, loosely"
+        },
+        {
+          "id": "d",
+          "text": "Ice"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        "c"
+      ],
+      "explanation": "Cling film keeps it clean without sticking."
+    },
+    {
+      "id": "q3",
+      "prompt": "You should burst a burn blister so it heals faster.",
+      "conceptIds": [
+        "safety-minor-burn"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "true_false",
+      "answer": false,
+      "explanation": "Blisters protect against infection."
+    },
+    {
+      "id": "q4",
+      "prompt": "Which burn needs medical help?",
+      "conceptIds": [
+        "safety-minor-burn"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "multiple_choice",
+      "options": [
+        {
+          "id": "a",
+          "text": "A small red patch on the arm"
+        },
+        {
+          "id": "b",
+          "text": "A burn on the face"
+        },
+        {
+          "id": "c",
+          "text": "A tiny burn from a hot pan, now cooled"
+        },
+        {
+          "id": "d",
+          "text": "None of these"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        "b"
+      ],
+      "explanation": "Burns to the face always need checking."
+    },
+    {
+      "id": "q5",
+      "prompt": "Put the first aid in order.",
+      "conceptIds": [
+        "safety-minor-burn"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "arrange_steps",
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Stop the burning: move away from the heat"
+        },
+        {
+          "id": "s2",
+          "text": "Cool under running water for 20 minutes"
+        },
+        {
+          "id": "s3",
+          "text": "Remove rings near the burn"
+        },
+        {
+          "id": "s4",
+          "text": "Cover loosely with cling film"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "explanation": "Stop, cool, remove, cover."
+    }
+  ]
+}

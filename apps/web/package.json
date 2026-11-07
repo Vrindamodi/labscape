@@ -27,7 +27,8 @@
     "@labscape/physics": "workspace:*",
     "@labscape/mathlab": "workspace:*",
     "@labscape/quiz": "workspace:*",
-    "@labscape/assistant": "workspace:*"
+    "@labscape/assistant": "workspace:*",
+    "@labscape/scenarios": "workspace:*"
   },
   "devDependencies": {
     "@types/katex": "0.16.7",

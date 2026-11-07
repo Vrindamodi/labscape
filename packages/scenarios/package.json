@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Emergency simulator engine and scenes.",
+  "description": "Emergency simulator player and scenes (Part 4).",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
@@ -13,6 +13,15 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@labscape/contracts": "workspace:*"
+    "@labscape/contracts": "workspace:*",
+    "framer-motion": "11.11.17",
+    "lucide-react": "0.453.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "react": "18.3.1"
+  },
+  "peerDependencies": {
+    "react": "18.3.1"
   }
 }

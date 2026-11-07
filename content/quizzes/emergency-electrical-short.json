@@ -1,0 +1,139 @@
+{
+  "id": "quiz-emergency-electrical-short",
+  "version": 1,
+  "experimentSlug": "emergency-electrical-short",
+  "title": "Electrical short circuit: safety check",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "safety-electrical-short": "Electrical short circuit safety"
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "Water is safe to use on an electrical fire if the flames are small.",
+      "conceptIds": [
+        "safety-electrical-short"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "true_false",
+      "answer": false,
+      "explanation": "Water conducts electricity."
+    },
+    {
+      "id": "q2",
+      "prompt": "A board sparks and smokes. What is the safest first step?",
+      "conceptIds": [
+        "safety-electrical-short"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "multiple_choice",
+      "options": [
+        {
+          "id": "a",
+          "text": "Unplug everything"
+        },
+        {
+          "id": "b",
+          "text": "Switch off at the mains if it's safe to reach"
+        },
+        {
+          "id": "c",
+          "text": "Pour water on it"
+        },
+        {
+          "id": "d",
+          "text": "Open a window"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        "b"
+      ],
+      "explanation": "Isolate the supply without touching the fault."
+    },
+    {
+      "id": "q3",
+      "prompt": "Which extinguisher is used on electrical fires?",
+      "conceptIds": [
+        "safety-electrical-short"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "multiple_choice",
+      "options": [
+        {
+          "id": "a",
+          "text": "Water"
+        },
+        {
+          "id": "b",
+          "text": "Foam"
+        },
+        {
+          "id": "c",
+          "text": "CO₂ or dry powder"
+        },
+        {
+          "id": "d",
+          "text": "Any"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        "c"
+      ],
+      "explanation": "CO₂ and dry powder don't conduct."
+    },
+    {
+      "id": "q4",
+      "prompt": "Plugging many high-power devices into one extension board is a fire risk.",
+      "conceptIds": [
+        "safety-electrical-short"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "true_false",
+      "answer": true,
+      "explanation": "Overloading heats the board."
+    },
+    {
+      "id": "q5",
+      "prompt": "Put these in order.",
+      "conceptIds": [
+        "safety-electrical-short"
+      ],
+      "status": "approved",
+      "source": "author",
+      "type": "arrange_steps",
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Recognise the fault"
+        },
+        {
+          "id": "s2",
+          "text": "Switch off at the mains if safe"
+        },
+        {
+          "id": "s3",
+          "text": "Get everyone out if it spreads"
+        },
+        {
+          "id": "s4",
+          "text": "Call 112"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "explanation": "Recognise, isolate, escape, call."
+    }
+  ]
+}

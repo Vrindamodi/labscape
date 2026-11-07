@@ -1,0 +1,132 @@
+{
+  "slug": "electrical-short",
+  "title": "Electrical short circuit",
+  "kind": "electric",
+  "minutes": 4,
+  "summary": "An overloaded extension board sparks and starts to smoke. Stay safe around electricity.",
+  "sources": [
+    "National Disaster Management Authority (India): fire safety guidance",
+    "Standard electrical safety advice: isolate the supply, never use water on electrical fires"
+  ],
+  "scenes": [
+    {
+      "id": "detect",
+      "stage": "detection",
+      "timerS": 10,
+      "growth": 1.3,
+      "hazard": 20,
+      "narration": "You're charging a laptop on an extension board crowded with plugs. There's a burning-plastic smell, a crackle, and sparks from the board.",
+      "choices": [
+        {
+          "id": "recognise",
+          "label": "That's an electrical fault: danger",
+          "quality": "best",
+          "feedback": "Right. Sparks, crackling and a burning smell mean an electrical fault that can start a fire.",
+          "next": "assess",
+          "hazardDelta": -15,
+          "recognise": true
+        },
+        {
+          "id": "ignore",
+          "label": "It always does that. Ignore it.",
+          "quality": "unsafe",
+          "feedback": "Sparks and burning smells are never normal. Overloaded boards cause many house fires.",
+          "next": "assess",
+          "hazardDelta": 25
+        }
+      ]
+    },
+    {
+      "id": "assess",
+      "stage": "assessment",
+      "timerS": 12,
+      "growth": 1.6,
+      "hazard": 35,
+      "narration": "A thin line of smoke rises from the board. The plastic is starting to melt.",
+      "choices": [
+        {
+          "id": "mains",
+          "label": "Switch off the power at the main switch (MCB) if you can reach it safely",
+          "quality": "best",
+          "feedback": "Yes. Cutting the supply at the mains stops the fault feeding the fire.",
+          "next": "decide",
+          "hazardDelta": -15
+        },
+        {
+          "id": "unplug",
+          "label": "Pull out the plugs from the smoking board",
+          "quality": "unsafe",
+          "feedback": "Don't touch a sparking, melting board: you could get a shock or burn. Isolate at the mains instead.",
+          "next": "decide",
+          "hazardDelta": 25
+        },
+        {
+          "id": "water",
+          "label": "Throw water on it",
+          "quality": "unsafe",
+          "feedback": "Never put water on an electrical fire: water conducts electricity and can electrocute you.",
+          "next": "decide",
+          "hazardDelta": 25
+        }
+      ]
+    },
+    {
+      "id": "decide",
+      "stage": "decision",
+      "timerS": 12,
+      "growth": 1.5,
+      "hazard": 40,
+      "narration": "The power is off, but small flames have caught the curtain next to the board.",
+      "choices": [
+        {
+          "id": "evacuate",
+          "label": "Get everyone out, close the door, and call 112",
+          "quality": "best",
+          "feedback": "Right. Once it spreads to furnishings, get out and call the fire service.",
+          "next": "end-safe",
+          "hazardDelta": -15,
+          "escalate": true
+        },
+        {
+          "id": "fight",
+          "label": "Try to beat out the curtain flames with a towel",
+          "quality": "unsafe",
+          "feedback": "Spreading fires grow fast. Unless you're trained and the fire is tiny, get out and call for help.",
+          "next": "end-unsafe",
+          "hazardDelta": 25
+        },
+        {
+          "id": "extinguisher",
+          "label": "Use a CO₂ extinguisher only if you've been trained and have a clear way out",
+          "quality": "ok",
+          "feedback": "That can be right for a trained person on a very small fire, with the power off and an exit behind you. If in doubt, get out.",
+          "next": "end-safe",
+          "hazardDelta": 0,
+          "escalate": false
+        }
+      ]
+    }
+  ],
+  "endings": {
+    "end-safe": {
+      "outcome": "safe",
+      "text": "The fire service makes the room safe. Everyone is fine. The electrician later finds the board was badly overloaded."
+    },
+    "end-unsafe": {
+      "outcome": "unsafe",
+      "text": "The curtain fire spread while you fought it. You escape, but with smoke in your lungs. Get out early."
+    }
+  },
+  "learn": [
+    "Sparks, crackles and burning smells mean an electrical fault.",
+    "Switch off at the main switch (MCB) if you can do it safely; don't touch the faulty item.",
+    "Never use water on an electrical fire.",
+    "If the fire spreads, get out, close the door and call 112.",
+    "Don't overload extension boards."
+  ],
+  "id": "emergency-electrical-short",
+  "version": 1,
+  "reviewStatus": "draft",
+  "disclaimer": "Training only. This is not a substitute for emergency services or certified first-aid and fire-safety training. In a real emergency in India, call 112.",
+  "quizId": "quiz-emergency-electrical-short"
+}

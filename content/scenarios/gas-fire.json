@@ -1,0 +1,176 @@
+{
+  "slug": "gas-fire",
+  "title": "Gas fire in the kitchen",
+  "kind": "fire",
+  "minutes": 5,
+  "free": true,
+  "summary": "Flames appear around an LPG cylinder's regulator while the stove is on. Get everyone safe.",
+  "sources": [
+    "National Disaster Management Authority (India): fire safety guidance",
+    "Indian Oil / Bharat Gas / HP Gas LPG consumer safety advice",
+    "112 India: national emergency number"
+  ],
+  "scenes": [
+    {
+      "id": "detect",
+      "stage": "detection",
+      "timerS": 12,
+      "growth": 1.2,
+      "hazard": 15,
+      "narration": "You're making tea. There's a strong smell of gas, then a hiss, and small flames flicker around the cylinder's regulator under the counter.",
+      "choices": [
+        {
+          "id": "recognise",
+          "label": "Stop: there's a gas fire at the cylinder",
+          "quality": "best",
+          "feedback": "Right. A smell of gas plus flames at the cylinder is an emergency. Recognising it fast buys you time.",
+          "next": "assess",
+          "hazardDelta": -15,
+          "recognise": true
+        },
+        {
+          "id": "ignore",
+          "label": "It's probably just the burner. Keep cooking.",
+          "quality": "unsafe",
+          "feedback": "Flames at the regulator are not the burner. Fires around gas cylinders can grow very quickly.",
+          "next": "assess",
+          "hazardDelta": 25
+        }
+      ]
+    },
+    {
+      "id": "assess",
+      "stage": "assessment",
+      "timerS": 15,
+      "growth": 1.6,
+      "hazard": 30,
+      "narration": "The flames are growing around the cylinder. Your little brother is watching TV in the next room, and your grandmother is upstairs.",
+      "choices": [
+        {
+          "id": "people",
+          "label": "Others are in danger: everyone must get out",
+          "quality": "best",
+          "feedback": "Yes. People come first. The fire is near a gas cylinder, which you must not approach.",
+          "next": "decide",
+          "hazardDelta": -15
+        },
+        {
+          "id": "tackle",
+          "label": "It's small. I can handle it myself.",
+          "quality": "unsafe",
+          "feedback": "A fire at a gas cylinder is not a beginner's fire. Approaching it puts you at serious risk.",
+          "next": "decide",
+          "hazardDelta": 25
+        },
+        {
+          "id": "look",
+          "label": "Switch on the kitchen light and fan to see better",
+          "quality": "unsafe",
+          "feedback": "Never operate electrical switches when there is gas in the air: a switch can spark and ignite it.",
+          "next": "decide",
+          "hazardDelta": 25
+        }
+      ]
+    },
+    {
+      "id": "decide",
+      "stage": "decision",
+      "timerS": 12,
+      "growth": 2,
+      "hazard": 45,
+      "narration": "Smoke is gathering at the ceiling. What do you do now?",
+      "choices": [
+        {
+          "id": "evacuate",
+          "label": "Shout \"Fire! Get out!\" and lead everyone outside, closing doors behind you",
+          "quality": "best",
+          "feedback": "Exactly. Alert, get out and close doors to slow the fire and smoke.",
+          "next": "outside",
+          "hazardDelta": -15,
+          "escalate": true
+        },
+        {
+          "id": "approach",
+          "label": "Go to the cylinder and try to turn off the regulator",
+          "quality": "unsafe",
+          "feedback": "Do not approach a burning cylinder. Get out and let the fire service deal with it.",
+          "next": "outside",
+          "hazardDelta": 25
+        },
+        {
+          "id": "water",
+          "label": "Throw a bucket of water on the flames",
+          "quality": "unsafe",
+          "feedback": "Water does not stop burning gas, and you'd have to get close. Leave it to firefighters.",
+          "next": "outside",
+          "hazardDelta": 25
+        },
+        {
+          "id": "call-first",
+          "label": "Stay in the kitchen and call 112",
+          "quality": "poor",
+          "feedback": "Calling is right, but do it from a safe place outside. Get everyone out first.",
+          "next": "outside",
+          "hazardDelta": 10,
+          "escalate": true
+        }
+      ]
+    },
+    {
+      "id": "outside",
+      "stage": "consequence",
+      "timerS": 15,
+      "growth": 0.8,
+      "hazard": 40,
+      "narration": "Everyone is out on the street. Smoke is coming from the kitchen window.",
+      "choices": [
+        {
+          "id": "call",
+          "label": "Call 112 and give the full address and what's burning",
+          "quality": "best",
+          "feedback": "Right. Tell them it's an LPG cylinder fire so the fire service comes prepared. Warn the neighbours too.",
+          "next": "end-safe",
+          "hazardDelta": -15,
+          "escalate": true
+        },
+        {
+          "id": "back",
+          "label": "Run back in to grab your phone and valuables",
+          "quality": "unsafe",
+          "feedback": "Never go back into a burning building. Things can be replaced; people cannot.",
+          "next": "end-unsafe",
+          "hazardDelta": 25
+        },
+        {
+          "id": "wait",
+          "label": "Wait and see if it burns itself out",
+          "quality": "poor",
+          "feedback": "Fires near gas cylinders can get worse suddenly. Call for help straight away.",
+          "next": "end-safe",
+          "hazardDelta": 10
+        }
+      ]
+    }
+  ],
+  "endings": {
+    "end-safe": {
+      "outcome": "safe",
+      "text": "Firefighters arrive and put out the fire. Everyone is safe because you got out early and called for help."
+    },
+    "end-unsafe": {
+      "outcome": "unsafe",
+      "text": "Going back inside exposed you to heavy smoke. Firefighters bring you out coughing. In real life this is how people get hurt."
+    }
+  },
+  "learn": [
+    "Smell of gas or flames at a cylinder: get everyone out and call 112 from outside.",
+    "Never operate switches, lighters or phones near leaking gas: sparks can ignite it.",
+    "Do not approach a burning cylinder or try to fight the fire yourself.",
+    "Close doors behind you to slow fire and smoke, and never go back inside."
+  ],
+  "id": "emergency-gas-fire",
+  "version": 1,
+  "reviewStatus": "draft",
+  "disclaimer": "Training only. This is not a substitute for emergency services or certified first-aid and fire-safety training. In a real emergency in India, call 112.",
+  "quizId": "quiz-emergency-gas-fire"
+}
