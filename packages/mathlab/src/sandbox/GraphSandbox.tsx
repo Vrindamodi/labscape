@@ -1,5 +1,5 @@
 import { Btn, GuideCard, Hint, Panel, ParamSlider, sf } from "@labscape/physics";
-import { Eye, EyeOff, Pause, Play, Plus, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Pause, Play, Plus, Redo2, Trash2, Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { compile, parse, ParseError, toLatex, toText, typoHints, variables, type Node } from "../core/expr";
 import { slopeAt } from "../core/numeric";
@@ -99,9 +99,42 @@ export function GraphSandbox({ initial, onChange, renderTex }: { initial?: Graph
     return () => cancelAnimationFrame(raf);
   }, [sweep]);
 
-  const setFn = (i: number, p: Partial<GraphFn>) => setB((x) => ({ ...x, fns: x.fns.map((f, j) => (j === i ? { ...f, ...p } : f)) }));
-  const addFn = () => setB((x) => (x.fns.length >= MAX_FNS ? x : { ...x, fns: [...x.fns, { src: "", colour: COLOURS.find((c) => !x.fns.some((f) => f.colour === c)) ?? COLOURS[0]! }] }));
-  const removeFn = (i: number) => setB((x) => ({ ...x, fns: x.fns.filter((_, j) => j !== i) }));
+  // Undo/redo: every edit snapshots the build first; typing in one box (or dragging one slider) within 800 ms counts as one edit.
+  const past = useRef<GraphBuild[]>([]);
+  const future = useRef<GraphBuild[]>([]);
+  const lastKey = useRef<{ key: string; at: number } | null>(null);
+  const [, bump] = useState(0);
+  const edit = (update: (x: GraphBuild) => GraphBuild, key?: string) => {
+    const now = Date.now();
+    const merge = !!key && lastKey.current?.key === key && now - lastKey.current.at < 800;
+    lastKey.current = key ? { key, at: now } : null;
+    if (!merge) {
+      past.current = [...past.current.slice(-49), b];
+      future.current = [];
+      bump((n) => n + 1);
+    }
+    setB(update);
+  };
+  const undo = () => {
+    const prev = past.current.pop();
+    if (!prev) return;
+    setSweep(null);
+    future.current.push(b);
+    lastKey.current = null;
+    setB(prev);
+    bump((n) => n + 1);
+  };
+  const redo = () => {
+    const next = future.current.pop();
+    if (!next) return;
+    past.current.push(b);
+    lastKey.current = null;
+    setB(next);
+    bump((n) => n + 1);
+  };
+  const setFn = (i: number, p: Partial<GraphFn>, key?: string) => edit((x) => ({ ...x, fns: x.fns.map((f, j) => (j === i ? { ...f, ...p } : f)) }), key);
+  const addFn = () => edit((x) => (x.fns.length >= MAX_FNS ? x : { ...x, fns: [...x.fns, { src: "", colour: COLOURS.find((c) => !x.fns.some((f) => f.colour === c)) ?? COLOURS[0]! }] }));
+  const removeFn = (i: number) => edit((x) => ({ ...x, fns: x.fns.filter((_, j) => j !== i) }));
 
   const visible = b.fns.map((f, i) => ({ f, fn: fns[i], c: compiled[i]! })).filter((v): v is { f: GraphFn; fn: (x: number) => number; c: Extract<Compiled, { ok: true }> } => !!v.fn && v.c.ok && !v.f.hidden && v.f.src.trim() !== "");
   /** Letters used by the other functions: the likely meaning of a glued-together typo. */
@@ -146,7 +179,16 @@ export function GraphSandbox({ initial, onChange, renderTex }: { initial?: Graph
         />
       </div>
       <div className="space-y-3">
-        <Panel title="Functions" right={<Btn tone="ghost" onClick={addFn} disabled={b.fns.length >= MAX_FNS} title="Add a function"><Plus className="h-4 w-4" /></Btn>}>
+        <Panel
+          title="Functions"
+          right={
+            <div className="flex gap-1">
+              <Btn tone="ghost" onClick={undo} disabled={!past.current.length} title="Undo"><Undo2 className="h-4 w-4" /></Btn>
+              <Btn tone="ghost" onClick={redo} disabled={!future.current.length} title="Redo"><Redo2 className="h-4 w-4" /></Btn>
+              <Btn tone="ghost" onClick={addFn} disabled={b.fns.length >= MAX_FNS} title="Add a function"><Plus className="h-4 w-4" /></Btn>
+            </div>
+          }
+        >
           <ul className="space-y-2">
             {b.fns.map((f, i) => {
               const c = compiled[i]!;
@@ -155,7 +197,7 @@ export function GraphSandbox({ initial, onChange, renderTex }: { initial?: Graph
                   <div className="flex items-center gap-1.5">
                     <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: f.colour }} />
                     <span className="font-mono text-sm text-white/60">y =</span>
-                    <input value={f.src} onChange={(e) => setFn(i, { src: e.target.value })} placeholder="e.g. sin(k*x)" spellCheck={false} aria-label={`Function ${i + 1}`} aria-invalid={!c.ok && f.src.trim() !== ""} className="min-w-0 flex-1 rounded-md bg-white/[0.06] px-2 py-1.5 font-mono text-sm text-white ring-1 ring-inset ring-white/10 focus:outline-none focus:ring-[#2f80ff]" />
+                    <input value={f.src} onChange={(e) => setFn(i, { src: e.target.value }, `src${i}`)} placeholder="e.g. sin(k*x)" spellCheck={false} aria-label={`Function ${i + 1}`} aria-invalid={!c.ok && f.src.trim() !== ""} className="min-w-0 flex-1 rounded-md bg-white/[0.06] px-2 py-1.5 font-mono text-sm text-white ring-1 ring-inset ring-white/10 focus:outline-none focus:ring-[#2f80ff]" />
                     <button onClick={() => setFn(i, { hidden: !f.hidden })} className="grid h-8 w-8 place-items-center rounded text-white/50 hover:text-white" aria-label={f.hidden ? "Show" : "Hide"} aria-pressed={!f.hidden}>
                       {f.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -195,7 +237,7 @@ export function GraphSandbox({ initial, onChange, renderTex }: { initial?: Graph
                 <div key={p} className="space-y-1">
                   <div className="flex items-end gap-2">
                     <div className="min-w-0 flex-1">
-                      <ParamSlider label={p} value={scope[p]!} min={Math.min(-5, Math.floor(-2 * Math.abs(scope[p]!)))} max={Math.max(5, Math.ceil(2 * Math.abs(scope[p]!)))} step={0.1} onChange={(v) => setB((x) => ({ ...x, params: { ...x.params, [p]: v } }))} onCommit={(v) => setB((x) => ({ ...x, params: { ...x.params, [p]: v } }))} />
+                      <ParamSlider label={p} value={scope[p]!} min={Math.min(-5, Math.floor(-2 * Math.abs(scope[p]!)))} max={Math.max(5, Math.ceil(2 * Math.abs(scope[p]!)))} step={0.1} onChange={(v) => edit((x) => ({ ...x, params: { ...x.params, [p]: v } }), `param${p}`)} onCommit={(v) => edit((x) => ({ ...x, params: { ...x.params, [p]: v } }), `param${p}`)} />
                     </div>
                     <Btn tone={sweep === p ? "primary" : "ghost"} pressed={sweep === p} title={`Sweep ${p}`} onClick={() => setSweep((s) => (s === p ? null : p))}>
                       {sweep === p ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}

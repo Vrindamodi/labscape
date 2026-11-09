@@ -5,7 +5,7 @@ import { cx, ErrorState, FullscreenLab, Skeleton } from "@labscape/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Crown, Droplets, Flame, Hand, Lock, ShieldAlert, Zap } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { AssistantDock, EMERGENCY_CHIPS } from "../components/AssistantDock";
+import { AssistantDock, emergencyChips } from "../components/AssistantDock";
 import { QuizStage } from "../components/QuizStage";
 import { api, post } from "../lib/api";
 import { setLabContext, type PublishedContext } from "../lib/labContext";
@@ -99,7 +99,7 @@ export function EmergencyRun() {
                 panel={{
                   getContext: h.getContext,
                   onSend: h.onAsk,
-                  suggestions: EMERGENCY_CHIPS,
+                  suggestions: emergencyChips(slug),
                   title: "Safety coach",
                   subtitle: "Talks you through it; the clock is paused",
                   intro: "Stuck? Tell me what you're unsure about. I'll help you think it through first, and if you're still stuck, I'll tell you the safe move. Real emergency in India: call 112.",

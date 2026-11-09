@@ -14,6 +14,14 @@ const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 /** Suggestion chips inside the emergency simulator. */
 export const EMERGENCY_CHIPS = ["I don't know what to do", "What is the safest first step?", "Why not water?"];
+/** The third chip asks about the tempting wrong move in that scenario (cool water is right for a burn). */
+const WHY_NOT: Record<string, string> = {
+  "gas-fire": "Why not water?",
+  "chemical-spill": "Why not mop it up with paper towels?",
+  "electrical-short": "Why not wiggle the plugs?",
+  "minor-burn": "Why not put ice on it?",
+};
+export const emergencyChips = (slug?: string) => [EMERGENCY_CHIPS[0]!, EMERGENCY_CHIPS[1]!, (slug && WHY_NOT[slug]) || "What should I avoid?"];
 
 type PanelOverrides = Partial<Pick<AssistantPanelProps, "getContext" | "suggestions" | "title" | "subtitle" | "intro" | "placeholder" | "onSend" | "fallback" | "onClose" | "closeLabel">>;
 
