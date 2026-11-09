@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gradientThroughOrigin, newtonMasses, newtonRun, slopeResidual, type NewtonSetup, type NewtonState } from "../labs/dynamics";
 import { GhostHand, LabStyles, paramOf, Stage, Tag, useDemoPreview, useFocusStep, V3, type Pt } from "./interact";
 import { Btn, LiveGraph, Panel, ParamSlider, ReadingInput, Readout, sf } from "./kit";
+import { submitted } from "./guide";
 import type { SimSession } from "./useSimSession";
 
 const W = 640;
@@ -230,7 +231,7 @@ export function TrolleyWorkspace({ session }: { session: SimSession<NewtonState>
             <p className="text-sm text-[#8fa6d1]">Release the trolley to time the 10 cm card through both gates.</p>
           )}
           <div className="mt-2">
-            <ReadingInput label="Acceleration a" unit="m/s²" disabled={ro || !last} onRecord={(v) => session.dispatch("measure.read", { instrument: "light-gates", reading: { key: "a", value: v, unit: "m/s²" } })} />
+            <ReadingInput label="Acceleration a" unit="m/s²" disabled={ro || !last} onRecord={(v) => session.dispatch("measure.read", { instrument: "light-gates", reading: { key: "a", value: v, unit: "m/s²" } })} value={submitted(session.events, "a", "light-gates")} />
           </div>
         </Panel>
         <Panel title={`a against F (${points.length} forces)`} glow={!ro && focus === "result"}>
@@ -258,7 +259,7 @@ export function TrolleyWorkspace({ session }: { session: SimSession<NewtonState>
             <Readout label="1 ÷ gradient" value={grad ? sf(1 / grad, 3) : "–"} unit="kg" />
           </div>
           <div className="mt-2">
-            <ReadingInput label="Mass being accelerated, m" unit="kg" disabled={ro || points.length < 2} onRecord={(v) => session.dispatch("param.set", { key: "result:m", value: v })} />
+            <ReadingInput label="Mass being accelerated, m" unit="kg" disabled={ro || points.length < 2} onRecord={(v) => session.dispatch("param.set", { key: "result:m", value: v })} value={submitted(session.events, "result:m")} />
           </div>
           <p className="mt-2 text-[11px] text-[#8fa6d1]">Keep your feet clear: catch the trolley before the end and do not let masses drop on the floor.</p>
         </Panel>

@@ -2,6 +2,7 @@ import { Clock, Flame, Power, Thermometer } from "lucide-react";
 import { cFromReadings, thermoShown, type HeatSetup, type HeatState } from "../labs/thermal";
 import { GhostHand, LabStyles, paramOf, Stage, Tag, useDemoPreview, useFocusStep, V3, type Pt } from "./interact";
 import { AnalogMeter, Btn, LiveGraph, Panel, ReadingInput, Readout, sf } from "./kit";
+import { submitted } from "./guide";
 import type { SimSession } from "./useSimSession";
 
 const W = 520;
@@ -145,7 +146,7 @@ export function HeatCapacityWorkspace({ session }: { session: SimSession<HeatSta
               <Readout label="Power V × I" value={live ? (setup.volts * setup.amps).toFixed(1) : "0"} unit="W" tone={live ? "warn" : "default"} />
             </div>
             <div className="mt-2">
-              <ReadingInput label="Thermometer" unit="°C" disabled={ro} onRecord={(v) => session.dispatch("measure.read", { instrument: "thermometer", reading: { key: "T", value: v, unit: "°C" } })} />
+              <ReadingInput label="Thermometer" unit="°C" disabled={ro} onRecord={(v) => session.dispatch("measure.read", { instrument: "thermometer", reading: { key: "T", value: v, unit: "°C" } })} value={submitted(session.events, "T", "thermometer")} />
             </div>
           </Panel>
         </div>
@@ -158,8 +159,8 @@ export function HeatCapacityWorkspace({ session }: { session: SimSession<HeatSta
             <AnalogMeter label="Ammeter" value={live ? setup.amps : 0} max={5} unit="A" size={130} colour={V3.amber} />
           </div>
           <div className="mt-2 grid gap-2">
-            <ReadingInput label="Voltage V" unit="V" disabled={ro} onRecord={(v) => session.dispatch("measure.read", { instrument: "voltmeter", reading: { key: "V", value: v, unit: "V" } })} />
-            <ReadingInput label="Current I" unit="A" disabled={ro} onRecord={(v) => session.dispatch("measure.read", { instrument: "ammeter", reading: { key: "I", value: v, unit: "A" } })} />
+            <ReadingInput label="Voltage V" unit="V" disabled={ro} onRecord={(v) => session.dispatch("measure.read", { instrument: "voltmeter", reading: { key: "V", value: v, unit: "V" } })} value={submitted(session.events, "V", "voltmeter")} />
+            <ReadingInput label="Current I" unit="A" disabled={ro} onRecord={(v) => session.dispatch("measure.read", { instrument: "ammeter", reading: { key: "I", value: v, unit: "A" } })} value={submitted(session.events, "I", "ammeter")} />
           </div>
         </Panel>
         <Panel title={`Temperature against time (${pts.length} readings)`} glow={!ro && (focus === "energy" || focus === "result")}>
@@ -178,8 +179,8 @@ export function HeatCapacityWorkspace({ session }: { session: SimSession<HeatSta
             <Readout label="E ÷ (m Δθ)" value={cEst ? sf(cEst, 3) : "–"} unit="J/kg°C" />
           </div>
           <div className="mt-2 grid gap-2">
-            <ReadingInput label="Energy E = VIt" unit="J" disabled={ro || s.onS === 0} onRecord={(v) => session.dispatch("param.set", { key: "result:E", value: v })} />
-            <ReadingInput label="Specific heat capacity c" unit="J/kg°C" disabled={ro || pts.length < 2} onRecord={(v) => session.dispatch("param.set", { key: "result:c", value: v })} />
+            <ReadingInput label="Energy E = VIt" unit="J" disabled={ro || s.onS === 0} onRecord={(v) => session.dispatch("param.set", { key: "result:E", value: v })} value={submitted(session.events, "result:E")} />
+            <ReadingInput label="Specific heat capacity c" unit="J/kg°C" disabled={ro || pts.length < 2} onRecord={(v) => session.dispatch("param.set", { key: "result:c", value: v })} value={submitted(session.events, "result:c")} />
           </div>
           <p className="mt-2 flex items-center gap-1.5 text-[11px] text-[#8fa6d1]">
             <Flame className="h-3.5 w-3.5 text-[#ffc23d]" /> The block stays hot long after switching off. Let it cool before you move it.

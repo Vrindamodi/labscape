@@ -1,6 +1,6 @@
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { Download, Pause, Play } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { Num, RANGE_CSS } from "./interact";
 
 /* ------------------------------------------------------------------ layout bits */
@@ -154,15 +154,33 @@ export function ParamSlider({ label, value, min, max, step, unit, onChange, onCo
   );
 }
 
-/** Type what you read off an instrument and record it. Enter records. */
-export function ReadingInput({ label, unit, onRecord, disabled, step = "any", placeholder, width = "w-24" }: { label: string; unit?: string; onRecord: (v: number) => void; disabled?: boolean; step?: string; placeholder?: string; width?: string }) {
+/**
+ * Shows what was submitted last, so an answer recorded by "Do this step for me", an undo, or a
+ * reopened attempt fills the box. The typing state follows it whenever the submitted value changes.
+ */
+export function useSubmittedText(value: number | string | null): [string, Dispatch<SetStateAction<string>>] {
+  const text = value === null ? "" : String(value);
+  const [v, setV] = useState(text);
+  const [seen, setSeen] = useState(text);
+  if (seen !== text) {
+    setSeen(text);
+    setV(text);
+  }
+  return [v, setV];
+}
+
+/**
+ * Type what you read off an instrument and record it. Enter records. `value` is the answer already
+ * submitted for this box (see `submitted`): the box shows it, and focusing selects it so typing
+ * replaces it.
+ */
+export function ReadingInput({ label, unit, onRecord, value = null, disabled, step = "any", placeholder, width = "w-24" }: { label: string; unit?: string; onRecord: (v: number) => void; value?: number | string | null; disabled?: boolean; step?: string; placeholder?: string; width?: string }) {
   const id = useId();
-  const [v, setV] = useState("");
+  const [v, setV] = useSubmittedText(value);
   const ok = v.trim() !== "" && Number.isFinite(Number(v));
   const record = () => {
     if (!ok) return;
     onRecord(Number(v));
-    setV("");
   };
   return (
     <div className="flex items-end gap-2">
@@ -179,6 +197,7 @@ export function ReadingInput({ label, unit, onRecord, disabled, step = "any", pl
             disabled={disabled}
             placeholder={placeholder}
             onChange={(e) => setV(e.target.value)}
+            onFocus={(e) => e.currentTarget.select()}
             onKeyDown={(e) => e.key === "Enter" && record()}
             className={`${width} h-10 rounded-[11px] border border-[rgba(140,180,255,.16)] bg-[#040a1c]/60 px-2.5 font-mono text-sm text-white placeholder:text-white/25 focus:border-[#3d8bff] focus:outline-none focus:ring-2 focus:ring-[#3d8bff]/30 disabled:opacity-40`}
           />

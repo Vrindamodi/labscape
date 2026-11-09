@@ -5,6 +5,7 @@ import { PLANETS, simulateFlight, type Planet } from "../core/mechanics";
 import type { ProjectileSetup, ProjectileState } from "../labs/mechanics";
 import { DragHandle, easeInOut, GhostHand, LabStyles, mix, Num, paramOf, Stage, Tag, useCommitLater, useDemoPreview, useFocusStep, V3, type Pt } from "./interact";
 import { Btn, LiveGraph, Panel, ParamSlider, ReadingInput, Readout, sf } from "./kit";
+import { submitted } from "./guide";
 import type { SimSession } from "./useSimSession";
 
 const COLOURS = ["#39d6ff", "#ffc23d", "#ff8a96", "#a98bff", "#3de8a8", "#ffa94d"];
@@ -446,7 +447,7 @@ export function ProjectileWorkspace({ session }: { session: SimSession<Projectil
         </Panel>
         <Panel title="Measure" glow={tapePulse}>
           <p className="mb-2 text-[11px] text-[#8fa6d1]">{landed ? "Pull the tape hook out to the landing mark and read it." : "Launch first."}</p>
-          <ReadingInput label="Range from the tape" unit="m" onRecord={(v) => session.dispatch("measure.read", { instrument: "tape", reading: { key: "range", value: v, unit: "m" } })} disabled={ro || !landed} />
+          <ReadingInput label="Range from the tape" unit="m" onRecord={(v) => session.dispatch("measure.read", { instrument: "tape", reading: { key: "range", value: v, unit: "m" } })} value={submitted(session.events, "range", "tape")} disabled={ro || !landed} />
         </Panel>
         <Panel title="Launches">
           {launches.length === 0 ? (

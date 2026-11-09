@@ -4,6 +4,7 @@ import { rad } from "../core/runtime";
 import { offEmergent, slabRay, type PinSet, type SlabSetup, type SlabState } from "../labs/refraction";
 import { DragHandle, easeInOut, GhostHand, LabStyles, mix, PulseRect, Stage, Tag, toSvgPoint, useCommitLater, useDemoPreview, useFocusStep, V3, type Pt } from "./interact";
 import { Btn, Panel, ReadingInput, Readout } from "./kit";
+import { submitted } from "./guide";
 import type { SimSession } from "./useSimSession";
 
 const PINS = ["P1", "P2", "P3", "P4"] as const;
@@ -288,7 +289,7 @@ export function SlabWorkspace({ session }: { session: SimSession<SlabState> }) {
           </div>
           <div className="space-y-2">
             {(["i", "r", "e"] as const).map((k2) => (
-              <ReadingInput key={k2} label={k2 === "i" ? "Angle of incidence i" : k2 === "r" ? "Angle of refraction r" : "Angle of emergence e"} unit="°" onRecord={(v) => session.dispatch("measure.read", { instrument: "protractor", reading: { key: k2, value: v, unit: "deg" } })} disabled={ro || !stored.traced} width="w-20" />
+              <ReadingInput key={k2} label={k2 === "i" ? "Angle of incidence i" : k2 === "r" ? "Angle of refraction r" : "Angle of emergence e"} unit="°" onRecord={(v) => session.dispatch("measure.read", { instrument: "protractor", reading: { key: k2, value: v, unit: "deg" } })} value={stored.angles[k2] ?? null} disabled={ro || !stored.traced} width="w-20" />
             ))}
           </div>
           <div className="mt-2 grid grid-cols-3 gap-1.5">
@@ -328,7 +329,7 @@ export function SlabWorkspace({ session }: { session: SimSession<SlabState> }) {
             <p className="text-xs text-[#8fa6d1]">Complete a sheet to see it here.</p>
           )}
           <div className="mt-2">
-            <ReadingInput label="Refractive index n (mean)" onRecord={(v) => session.dispatch("param.set", { key: "result:n", value: v })} disabled={ro || done.length < 1} />
+            <ReadingInput label="Refractive index n (mean)" onRecord={(v) => session.dispatch("param.set", { key: "result:n", value: v })} value={submitted(session.events, "result:n")} disabled={ro || done.length < 1} />
           </div>
         </Panel>
       </div>

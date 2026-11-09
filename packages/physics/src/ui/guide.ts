@@ -25,6 +25,24 @@ export function goldenSteps<S>(content: SimContent, model: SimModel<S>): Record<
   return out;
 }
 
+/**
+ * The value last submitted through an answer box, read back from the session's events, so the box
+ * shows it after "Do this step for me", an undo, or reopening a saved attempt (its own typing state
+ * starts empty). `submitted(events, "result:R")` is a param.set answer; pass an instrument for a
+ * measure.read (`submitted(events, "V", "voltmeter")`). Null when nothing was submitted.
+ */
+export function submitted(events: readonly LabEvent[], key: string, instrument?: string): number | string | null {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i]!;
+    let v: unknown;
+    if (instrument === undefined && e.type === "param.set" && e.payload.key === key) v = e.payload.value;
+    else if (instrument !== undefined && e.type === "measure.read" && e.payload.instrument === instrument && e.payload.reading.key === key) v = e.payload.reading.value;
+    else continue;
+    return typeof v === "number" || typeof v === "string" ? v : null;
+  }
+  return null;
+}
+
 /** The first sentence of an instruction: the one line Guide me shows. */
 export function firstSentence(text: string): string {
   const parts = text.trim().split(/(?<=[.!?])\s+/).filter(Boolean);

@@ -1,4 +1,4 @@
-import { Btn, DragHandle, easeInOut, GhostHand, LabStyles, LiveGraph, mix, Num, Panel, paramOf, ReadingInput, Readout, sf, Stage, Tag, useCommitLater, useDemoPreview, useEased, useFocusStep, V3, type SimSession } from "@labscape/physics";
+import { Btn, DragHandle, easeInOut, GhostHand, LabStyles, LiveGraph, mix, Num, Panel, paramOf, ReadingInput, Readout, sf, Stage, submitted, Tag, useCommitLater, useDemoPreview, useEased, useFocusStep, V3, type SimSession } from "@labscape/physics";
 import { motion, useReducedMotion } from "framer-motion";
 import { Crosshair, Dice5, Divide, Play, X as Times } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -207,13 +207,13 @@ export function TangentWorkspace({ session }: { session: SimSession<TangentState
           </Btn>
         </Panel>
         <Panel title="Record" glow={!ro && (focus === "slope-at-2" || focus === "flat")}>
-          <ReadingInput label="Slope of the tangent here" onRecord={(v) => session.dispatch("measure.read", { instrument: "tangent", reading: { key: "slope", value: v, unit: "" } })} disabled={ro} />
+          <ReadingInput label="Slope of the tangent here" onRecord={(v) => session.dispatch("measure.read", { instrument: "tangent", reading: { key: "slope", value: v, unit: "" } })} value={submitted(session.events, "slope", "tangent")} disabled={ro} />
           <Btn className="mt-2 w-full" onClick={() => session.dispatch("measure.read", { instrument: "tangent", reading: { key: "flat-x", value: x, unit: "" } })} disabled={ro}>
             <Crosshair className="h-4 w-4" /> Mark: the tangent is flat at x = {xs.toFixed(2)}
           </Btn>
         </Panel>
         <Panel title="The derivative" glow={!ro && focus === "derivative"}>
-          <MathInput label="f′(x) =" onSubmit={(e) => session.dispatch("param.set", { key: "result:fprime", value: e })} disabled={ro} />
+          <MathInput label="f′(x) =" onSubmit={(e) => session.dispatch("param.set", { key: "result:fprime", value: e })} value={submitted(session.events, "result:fprime")} disabled={ro} />
         </Panel>
       </div>
     </div>
@@ -355,7 +355,7 @@ export function RiemannWorkspace({ session }: { session: SimSession<RiemannState
           </div>
         </Panel>
         <Panel title="Record" glow={!ro && (focus === "left-4" || focus === "right-4" || focus === "converge") && !methodPulse && !nPulse}>
-          <ReadingInput label="Sum" onRecord={(v) => session.dispatch("measure.read", { instrument: "sums", reading: { key: "sum", value: v, unit: "" } })} disabled={ro} />
+          <ReadingInput label="Sum" onRecord={(v) => session.dispatch("measure.read", { instrument: "sums", reading: { key: "sum", value: v, unit: "" } })} value={submitted(session.events, "sum", "sums")} disabled={ro} />
           {s.reads.length > 0 && (
             <table className="mt-2 w-full text-xs">
               <thead className="text-[#8fa6d1]">
@@ -378,7 +378,7 @@ export function RiemannWorkspace({ session }: { session: SimSession<RiemannState
           )}
         </Panel>
         <Panel title="The exact area" glow={!ro && focus === "area"}>
-          <ReadingInput label="Area" onRecord={(v) => session.dispatch("param.set", { key: "result:area", value: v })} disabled={ro} />
+          <ReadingInput label="Area" onRecord={(v) => session.dispatch("param.set", { key: "result:area", value: v })} value={submitted(session.events, "result:area")} disabled={ro} />
         </Panel>
       </div>
     </div>
@@ -654,9 +654,9 @@ export function DiceWorkspace({ session }: { session: SimSession<ProbState> }) {
           </Panel>
         )}
         <Panel title="Record" glow={!ro && (focus === "thousand" ? s.runs.some((r) => r.kind === "coin" && r.n >= 1000) : focus === "mode")}>
-          <ReadingInput label="Relative frequency of heads" onRecord={(v) => session.dispatch("measure.read", { instrument: "trials", reading: { key: "heads-freq", value: v, unit: "" } })} disabled={ro} />
+          <ReadingInput label="Relative frequency of heads" onRecord={(v) => session.dispatch("measure.read", { instrument: "trials", reading: { key: "heads-freq", value: v, unit: "" } })} value={submitted(session.events, "heads-freq", "trials")} disabled={ro} />
           <div className="mt-2">
-            <ReadingInput label="Most likely total of two dice" onRecord={(v) => session.dispatch("param.set", { key: "result:mode", value: v })} disabled={ro} />
+            <ReadingInput label="Most likely total of two dice" onRecord={(v) => session.dispatch("param.set", { key: "result:mode", value: v })} value={submitted(session.events, "result:mode")} disabled={ro} />
           </div>
         </Panel>
       </div>
