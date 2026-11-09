@@ -18,3 +18,4 @@ export * from "./bench/EquipmentViewer";
 export * from "./bench/colour";
 export * from "./bench/stages";
 export * from "./studio/Glass";
+export * from "./studio/SuitUp";

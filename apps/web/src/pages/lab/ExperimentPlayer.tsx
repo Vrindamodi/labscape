@@ -1,5 +1,5 @@
 import type { LabContext, LabEvent, RewardResult } from "@labscape/contracts";
-import { recordGolden, stageFor, useLabSession, Workbench, type ExperimentContent, type Feedback, type Report, type StepSpec } from "@labscape/lab-engine";
+import { reagent, recordGolden, stageFor, SuitUp, useLabSession, Workbench, type ExperimentContent, type Feedback, type PpeNeed, type Report, type StepSpec } from "@labscape/lab-engine";
 import "./SimStages";
 import { QuizStage } from "../../components/QuizStage";
 import { AssistantLauncher } from "../../components/AssistantDock";
@@ -442,6 +442,35 @@ function Try({
   };
 
   const curHint = current && hintRung[current.id] ? ev?.hint(current.id, hintRung[current.id] as 1 | 2 | 3) : null;
+
+  // Suit up before the bench: goggles and a coat always, gloves when anything is corrosive,
+  // toxic or an irritant. Wearing the goggles here is the experiment's own "goggles on".
+  const suitKey = `labscape.suited.${attempt.id}`;
+  const gogglesItem = items.find((i) => i.kind === "goggles");
+  const [suited, setSuited] = useState(() => {
+    try {
+      return sessionStorage.getItem(suitKey) === "1" || gogglesItem?.socket === "worn" || attempt.events.length > 0;
+    } catch {
+      return attempt.events.length > 0;
+    }
+  });
+  const ppe = useMemo<PpeNeed[]>(() => {
+    const hz = new Set<string>();
+    for (const it of items) {
+      try {
+        if (it.reagentId) reagent(it.reagentId).hazards.forEach((h) => hz.add(h));
+      } catch {
+        /* not a reagent */
+      }
+    }
+    const gloves = hz.has("corrosive") || hz.has("toxic") || hz.has("irritant");
+    return [
+      { id: "coat", required: true, why: "Keeps splashes off your clothes and skin." },
+      { id: "goggles", required: true, why: hz.has("corrosive") ? "Corrosive liquids on this bench can blind." : "Splashes and sparks happen without warning." },
+      { id: "gloves", required: gloves, why: gloves ? `Something here is ${[...hz].filter((h) => ["corrosive", "toxic", "irritant"].includes(h)).join(" and ")}.` : "Nothing harsh here, but good habit." },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content.slug]);
   const latestNotes = session.notes.slice(-6).reverse();
 
   return (
@@ -456,6 +485,22 @@ function Try({
           }}
           className={cx(shake ? "ring-2 ring-state-warning/60" : "")}
         />
+        {!suited && (
+          <SuitUp
+            needs={ppe}
+            title={content.title}
+            onDone={(worn) => {
+              setSuited(true);
+              try {
+                sessionStorage.setItem(suitKey, "1");
+              } catch {
+                /* private mode */
+              }
+              if (worn.includes("goggles") && gogglesItem && gogglesItem.socket !== "worn") session.dispatch("equipment.place", { equipmentId: gogglesItem.id, x: 0, y: 0, socket: "worn" });
+              sound.play("success");
+            }}
+          />
+        )}
       </motion.div>
 
       <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto border-l border-white/[0.07] bg-[#0d1426]/70 p-4" aria-label="Steps and observations">
