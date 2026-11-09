@@ -7,6 +7,7 @@ import { SlabWorkspace } from "./SlabWorkspace";
 import type { SimSession } from "./useSimSession";
 
 export * from "./kit";
+export * from "./interact";
 export * from "./useSimSession";
 export { ScaleLens } from "./ArchimedesWorkspace";
 

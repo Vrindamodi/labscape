@@ -23,7 +23,7 @@ export type SimSession<S = unknown> = {
   stopped: boolean;
   readOnly: boolean;
   /** Demo: playback controls. */
-  demo: { t: number; playing: boolean; setPlaying: (p: boolean) => void; seek: (t: number) => void; speed: number; setSpeed: (s: number) => void; duration: number };
+  demo: { t: number; playing: boolean; setPlaying: (p: boolean) => void; seek: (t: number) => void; speed: number; setSpeed: (s: number) => void; duration: number; /** The next scripted event (display only: lets the bench animate toward it). */ upcoming: LabEvent | null };
   /** Restart from scratch (keeps nothing). */
   restart: () => void;
 };
@@ -181,7 +181,7 @@ export function useSimSession<S>(content: SimContent, model: SimModel<S>, opts: 
     doneSteps: ev.done,
     stopped: ev.stopped,
     readOnly: opts.mode === "demo",
-    demo: { t: demoT, playing, setPlaying: (p) => (p && demoTRef.current >= duration ? (seek(0), setPlaying(true)) : setPlaying(p)), seek, speed, setSpeed, duration },
+    demo: { t: demoT, playing, setPlaying: (p) => (p && demoTRef.current >= duration ? (seek(0), setPlaying(true)) : setPlaying(p)), seek, speed, setSpeed, duration, upcoming: opts.mode === "demo" ? (gold[demoIdx.current] ?? null) : null },
     restart: () => {
       pending.current = [];
       reset([]);

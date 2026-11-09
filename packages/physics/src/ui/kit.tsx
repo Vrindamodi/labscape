@@ -1,15 +1,24 @@
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { Download, Pause, Play } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { Num, RANGE_CSS } from "./interact";
 
 /* ------------------------------------------------------------------ layout bits */
 
-export function Panel({ title, children, className = "", right }: { title?: ReactNode; children: ReactNode; className?: string; right?: ReactNode }) {
+/** A v3 glass panel: navy gradient, hairline border, inner highlight. `glow` rings it when it holds the next step. */
+export function Panel({ title, children, className = "", right, glow }: { title?: ReactNode; children: ReactNode; className?: string; right?: ReactNode; glow?: boolean }) {
   return (
-    <section className={`rounded-xl bg-white/[0.035] p-3 ring-1 ring-inset ring-white/[0.08] ${className}`}>
+    <section
+      className={`relative rounded-[16px] border p-3.5 transition-[border-color,box-shadow] duration-300 ${glow ? "border-[rgba(57,214,255,.55)] shadow-[inset_0_1px_0_rgba(200,220,255,.10),0_0_0_3px_rgba(57,214,255,.12),0_24px_60px_-24px_rgba(0,0,0,.8)]" : "border-[rgba(140,180,255,.16)] shadow-[inset_0_1px_0_rgba(200,220,255,.10),0_24px_60px_-24px_rgba(0,0,0,.8)]"} bg-[linear-gradient(180deg,rgba(14,26,56,.72),rgba(8,16,38,.78))] backdrop-blur-xl ${className}`}
+    >
       {(title || right) && (
-        <div className="mb-2 flex items-center justify-between gap-2">
-          {title && <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/50">{title}</h3>}
+        <div className="mb-2.5 flex items-center justify-between gap-2">
+          {title && (
+            <h3 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8fa6d1]">
+              {glow && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#39d6ff] motion-reduce:animate-none" aria-hidden />}
+              {title}
+            </h3>
+          )}
           {right}
         </div>
       )}
@@ -18,14 +27,20 @@ export function Panel({ title, children, className = "", right }: { title?: Reac
   );
 }
 
+const NUMERIC = /^-?\d+(\.\d+)?$/;
+
+/** Label over a mono value. Plain numbers (or numeric strings) ease to each new value. */
 export function Readout({ label, value, unit, tone = "default" }: { label: string; value: ReactNode; unit?: string; tone?: "default" | "good" | "warn" | "bad" }) {
-  const c = tone === "good" ? "text-emerald-300" : tone === "warn" ? "text-amber-300" : tone === "bad" ? "text-red-300" : "text-white";
+  const c = tone === "good" ? "text-[#3de8a8]" : tone === "warn" ? "text-[#ffc23d]" : tone === "bad" ? "text-[#ff8a96]" : "text-white";
+  const str = typeof value === "number" ? String(value) : typeof value === "string" ? value : null;
+  const animate = str !== null && NUMERIC.test(str);
+  const digits = animate ? (str!.split(".")[1]?.length ?? 0) : 0;
   return (
-    <div className="min-w-0 rounded-lg bg-black/20 px-2.5 py-1.5">
-      <div className="truncate text-[10px] font-semibold uppercase tracking-wide text-white/45">{label}</div>
-      <div className={`font-mono text-sm font-semibold tabular-nums ${c}`}>
-        {value}
-        {unit && <span className="ml-1 text-xs font-normal text-white/50">{unit}</span>}
+    <div className="min-w-0 rounded-[12px] bg-[#040a1c]/55 px-2.5 py-1.5 ring-1 ring-inset ring-[rgba(140,180,255,.10)]">
+      <div className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#8fa6d1]">{label}</div>
+      <div className={`font-mono text-[15px] font-bold tabular-nums leading-6 ${c}`}>
+        {animate ? <Num value={Number(str)} digits={digits} /> : value}
+        {unit && <span className="ml-1 text-xs font-medium text-white/45">{unit}</span>}
       </div>
     </div>
   );
@@ -34,14 +49,14 @@ export function Readout({ label, value, unit, tone = "default" }: { label: strin
 export function Btn({ children, onClick, disabled, tone = "secondary", className = "", title, pressed }: { children: ReactNode; onClick?: () => void; disabled?: boolean; tone?: "primary" | "secondary" | "danger" | "ghost"; className?: string; title?: string; pressed?: boolean }) {
   const t =
     tone === "primary"
-      ? "bg-accent text-white hover:brightness-110 shadow-[0_6px_20px_-8px_#2f80ff]"
+      ? "text-white border border-[#6aa8ff] bg-[linear-gradient(180deg,#3d8bff,#1d5fe0)] shadow-[0_8px_24px_-8px_rgba(61,139,255,.9),inset_0_1px_0_rgba(255,255,255,.35)] hover:brightness-110"
       : tone === "danger"
-        ? "bg-red-500/80 text-white hover:bg-red-500"
+        ? "text-white border border-[#ff8a96] bg-[linear-gradient(180deg,#ff5b6b,#d93348)] shadow-[0_8px_24px_-10px_rgba(255,91,107,.9),inset_0_1px_0_rgba(255,255,255,.3)] hover:brightness-110"
         : tone === "ghost"
-          ? "text-white/70 hover:bg-white/[0.06] hover:text-white"
-          : "bg-white/[0.07] text-white ring-1 ring-inset ring-white/10 hover:bg-white/[0.12]";
+          ? "text-[#a9bde4] hover:bg-white/[0.06] hover:text-white"
+          : "text-[#dbe7ff] border border-[rgba(140,180,255,.16)] bg-[rgba(120,160,255,.10)] hover:bg-[rgba(120,160,255,.17)]";
   return (
-    <button type="button" title={title} aria-pressed={pressed} onClick={onClick} disabled={disabled} className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${t} ${className}`}>
+    <button type="button" title={title} aria-pressed={pressed} onClick={onClick} disabled={disabled} className={`inline-flex h-10 items-center justify-center gap-2 rounded-[12px] px-3.5 text-sm font-semibold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#39d6ff] ${t} ${className}`}>
       {children}
     </button>
   );
@@ -94,11 +109,11 @@ export function ParamSlider({ label, value, min, max, step, unit, onChange, onCo
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={id} className="text-xs font-semibold text-white/70">
+        <label htmlFor={id} className="text-xs font-semibold text-[#c8d6f3]">
           {label}
         </label>
         <span className="flex items-center gap-1.5">
-          <span className="font-mono text-xs font-semibold text-white tabular-nums">
+          <span className="font-mono text-[13px] font-bold text-white tabular-nums">
             {shown}
             {unit && <span className="ml-0.5 text-white/50">{unit}</span>}
           </span>
@@ -129,8 +144,10 @@ export function ParamSlider({ label, value, min, max, step, unit, onChange, onCo
             set(local - step * 10);
           }
         }}
-        className="h-1.5 w-full cursor-pointer accent-[#2f80ff] disabled:opacity-40"
+        className="ls-range"
+        style={{ ["--p" as string]: `${((local - min) / (max - min || 1)) * 100}%` }}
       />
+      <style>{RANGE_CSS}</style>
     </div>
   );
 }
@@ -161,7 +178,7 @@ export function ReadingInput({ label, unit, onRecord, disabled, step = "any", pl
             placeholder={placeholder}
             onChange={(e) => setV(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && record()}
-            className={`${width} h-9 rounded-md bg-black/30 px-2 font-mono text-sm text-white ring-1 ring-inset ring-white/15 placeholder:text-white/25 focus:outline-none focus:ring-accent disabled:opacity-40`}
+            className={`${width} h-10 rounded-[11px] border border-[rgba(140,180,255,.16)] bg-[#040a1c]/60 px-2.5 font-mono text-sm text-white placeholder:text-white/25 focus:border-[#3d8bff] focus:outline-none focus:ring-2 focus:ring-[#3d8bff]/30 disabled:opacity-40`}
           />
           {unit && <span className="text-xs text-white/50">{unit}</span>}
         </div>
@@ -259,8 +276,9 @@ export function LiveGraph({ series, xLabel, yLabel, height = 180, fitOrigin, pla
   }, []);
 
   const pts = series.flatMap((s) => s.points);
-  const targetX = Math.max(1e-9, ...pts.map((p) => p.x), xMin ?? 0) * 1.08;
-  const targetY = Math.max(1e-9, ...pts.map((p) => p.y)) * 1.12;
+  // With nothing plotted yet, show a calm 0..1 frame instead of 1e-9 tick noise.
+  const targetX = pts.length ? Math.max(1e-9, ...pts.map((p) => p.x), xMin ?? 0) * 1.08 : Math.max(1, xMin ?? 0);
+  const targetY = pts.length ? Math.max(1e-9, ...pts.map((p) => p.y)) * 1.12 : 1;
   const targetLo = Math.min(yMin, ...pts.map((p) => p.y));
   const fit = useMemo(() => {
     if (!fitOrigin) return null;
