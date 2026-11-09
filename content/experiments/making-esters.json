@@ -1,0 +1,541 @@
+{
+  "id": "chem-making-esters",
+  "slug": "making-esters",
+  "version": 1,
+  "subject": "chemistry",
+  "title": "Making an ester: ethyl ethanoate",
+  "fidelity": "qualitative",
+  "reviewStatus": "draft",
+  "bench": {
+    "items": [
+      {
+        "id": "ethanol",
+        "kind": "reagent_bottle",
+        "label": "Ethanol",
+        "x": -340,
+        "z": -70,
+        "fill": {
+          "reagentId": "ethanol",
+          "volumeMl": 60
+        }
+      },
+      {
+        "id": "acid",
+        "kind": "reagent_bottle",
+        "label": "Glacial ethanoic acid",
+        "x": -250,
+        "z": -70,
+        "fill": {
+          "reagentId": "ethanoic-glacial",
+          "volumeMl": 60
+        }
+      },
+      {
+        "id": "conc",
+        "kind": "dropper_bottle",
+        "label": "Concentrated sulfuric acid",
+        "x": -160,
+        "z": 60,
+        "fill": {
+          "reagentId": "h2so4-conc",
+          "volumeMl": 20
+        }
+      },
+      {
+        "id": "rack",
+        "kind": "test_tube_rack",
+        "x": 0,
+        "z": 40
+      },
+      {
+        "id": "tube",
+        "kind": "boiling_tube",
+        "label": "Boiling tube",
+        "x": -20,
+        "z": 40,
+        "socket": "rack:rack"
+      },
+      {
+        "id": "bath",
+        "kind": "beaker_250",
+        "label": "Hot water bath (from a kettle)",
+        "x": 140,
+        "z": 20,
+        "fill": {
+          "reagentId": "water",
+          "volumeMl": 150,
+          "tempC": 75
+        }
+      },
+      {
+        "id": "bunsen",
+        "kind": "bunsen",
+        "label": "Bunsen burner (leave OFF)",
+        "x": 300,
+        "z": -60
+      },
+      {
+        "id": "goggles",
+        "kind": "goggles",
+        "x": 320,
+        "z": 110
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "goggles",
+      "title": "Put on goggles",
+      "instruction": "Concentrated sulfuric acid and glacial ethanoic acid are corrosive. Ethanol is highly flammable: no flames today. Goggles on.",
+      "action": "equipment.place",
+      "from": "goggles",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "safe-1",
+        "safe-2",
+        "safe-3"
+      ],
+      "whatIf": {
+        "no_ppe": "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+      }
+    },
+    {
+      "id": "ethanol-in",
+      "title": "2 mL ethanol",
+      "instruction": "Pour 2 mL of ethanol into the boiling tube.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "ethanol",
+      "to": "tube",
+      "quantity": {
+        "target": 2,
+        "plusMinus": 0.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 2
+      },
+      "hints": [
+        "eth-1",
+        "eth-2",
+        "eth-3"
+      ],
+      "whatIf": {
+        "no_ppe": "Ethanol vapour catches fire from a flame a long way off; the Bunsen must stay off."
+      }
+    },
+    {
+      "id": "acid-in",
+      "title": "2 mL ethanoic acid",
+      "instruction": "Add 2 mL of glacial ethanoic acid. Pour slowly: it is corrosive and smells strongly of vinegar.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "acid",
+      "to": "tube",
+      "quantity": {
+        "target": 2,
+        "plusMinus": 0.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 2
+      },
+      "hints": [
+        "acid-1",
+        "acid-2",
+        "acid-3"
+      ],
+      "whatIf": {
+        "too_fast": "Glacial ethanoic acid burns skin and its vapour stings the eyes and nose."
+      }
+    },
+    {
+      "id": "catalyst",
+      "title": "3 drops of concentrated sulfuric acid",
+      "instruction": "Add 3 drops of concentrated sulfuric acid, one at a time. It is the catalyst.",
+      "requires": [
+        "ethanol-in",
+        "acid-in"
+      ],
+      "action": "liquid.drop",
+      "from": "conc",
+      "to": "tube",
+      "quantity": {
+        "target": 0.15,
+        "plusMinus": 0.06,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "dropwise",
+        "dropVolumeMl": 0.05,
+        "maxRateMlPerS": 0.5
+      },
+      "hints": [
+        "cat-1",
+        "cat-2",
+        "cat-3"
+      ],
+      "whatIf": {
+        "wrong_amount": "More concentrated acid makes the mixture spit and char; a few drops is enough to catalyse it.",
+        "too_fast": "Concentrated sulfuric acid gets hot as it mixes; adding it fast can make the mixture spit."
+      }
+    },
+    {
+      "id": "bath",
+      "title": "Into the hot water bath",
+      "instruction": "Stand the boiling tube in the beaker of hot water from the kettle. Never use a Bunsen with ethanol.",
+      "requires": [
+        "catalyst"
+      ],
+      "action": "equipment.connect",
+      "from": "tube",
+      "to": "bath",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "bath-1",
+        "bath-2",
+        "bath-3"
+      ],
+      "whatIf": {
+        "wrong_order": "Heating with a naked flame instead of a water bath can set the ethanol vapour alight."
+      }
+    },
+    {
+      "id": "react",
+      "title": "Let it react",
+      "instruction": "Leave it in the bath for a few minutes (speed up time) while the ester forms.",
+      "requires": [
+        "bath"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "seen:ester:tube"
+      },
+      "hints": [
+        "wait-1",
+        "wait-2",
+        "wait-3"
+      ]
+    },
+    {
+      "id": "waft",
+      "title": "Waft and smell",
+      "instruction": "Waft the vapour towards your nose with your hand. Never sniff directly from the tube.",
+      "requires": [
+        "react"
+      ],
+      "action": "param.set",
+      "from": "tube",
+      "complete": {
+        "predicate": "seen:smell:ester"
+      },
+      "hints": [
+        "waft-1",
+        "waft-2",
+        "waft-3"
+      ],
+      "whatIf": {
+        "no_ppe": "Sniffing straight from the tube pulls a strong dose of acid vapour into your nose and lungs."
+      }
+    }
+  ],
+  "hints": {
+    "safe-1": {
+      "rung": 1,
+      "text": "What protects your eyes?"
+    },
+    "safe-2": {
+      "rung": 2,
+      "text": "Pick up the goggles and put them on before you touch any bottle."
+    },
+    "safe-3": {
+      "rung": 3,
+      "text": "Watch the goggles go on."
+    },
+    "eth-1": {
+      "rung": 1,
+      "text": "The alcohol goes in first."
+    },
+    "eth-2": {
+      "rung": 2,
+      "text": "Pick up the ethanol and pour 2 mL into the boiling tube."
+    },
+    "eth-3": {
+      "rung": 3,
+      "text": "Watch a slow 2 mL pour."
+    },
+    "acid-1": {
+      "rung": 1,
+      "text": "Now the carboxylic acid."
+    },
+    "acid-2": {
+      "rung": 2,
+      "text": "Pour 2 mL of glacial ethanoic acid into the same tube."
+    },
+    "acid-3": {
+      "rung": 3,
+      "text": "Watch a slow 2 mL pour."
+    },
+    "cat-1": {
+      "rung": 1,
+      "text": "A catalyst speeds up the reaction."
+    },
+    "cat-2": {
+      "rung": 2,
+      "text": "Pick up the concentrated sulfuric acid and add drops one at a time to the tube."
+    },
+    "cat-3": {
+      "rung": 3,
+      "text": "Watch three single drops."
+    },
+    "bath-1": {
+      "rung": 1,
+      "text": "Warm it without a flame."
+    },
+    "bath-2": {
+      "rung": 2,
+      "text": "Pick up the boiling tube and choose Into water bath, then the beaker."
+    },
+    "bath-3": {
+      "rung": 3,
+      "text": "Watch the tube go into the bath."
+    },
+    "wait-1": {
+      "rung": 1,
+      "text": "Esterification is slow, even warm."
+    },
+    "wait-2": {
+      "rung": 2,
+      "text": "Wait or speed up time until a note says the ester has formed."
+    },
+    "wait-3": {
+      "rung": 3,
+      "text": "Watch the tube."
+    },
+    "waft-1": {
+      "rung": 1,
+      "text": "Smell it safely."
+    },
+    "waft-2": {
+      "rung": 2,
+      "text": "Select the tube and choose Waft to smell."
+    },
+    "waft-3": {
+      "rung": 3,
+      "text": "Watch a careful waft."
+    }
+  },
+  "observations": {
+    "whatHappened": "At first the mixture smelled sharply of vinegar. After a few minutes in the hot water bath a sweet, fruity smell like pear drops appeared and a thin oily layer formed.",
+    "why": "An alcohol (ethanol) and a carboxylic acid (ethanoic acid) react to make an ester (ethyl ethanoate) and water. The reaction is slow and reversible, so a few drops of concentrated sulfuric acid are used as a catalyst and the mixture is warmed. A water bath is used instead of a flame because ethanol is very flammable. Esters have sweet, fruity smells, which is why they are used in perfumes and flavourings.",
+    "equationLatex": "\\mathrm{CH_3COOH + C_2H_5OH \\rightleftharpoons CH_3COOC_2H_5 + H_2O}",
+    "realWorld": [
+      "Fruit flavourings and perfumes",
+      "Nail-varnish remover and glues (ethyl ethanoate)",
+      "Fats and oils are esters too"
+    ],
+    "prompts": [
+      {
+        "id": "q-smell",
+        "question": "What did the product smell like?",
+        "choices": [
+          "Rotten eggs",
+          "Sweet and fruity",
+          "Swimming pool",
+          "No smell"
+        ],
+        "answer": 1,
+        "explain": "Esters have sweet, fruity smells. Ethyl ethanoate smells like pear drops."
+      },
+      {
+        "id": "q-cat",
+        "question": "What was the concentrated sulfuric acid for?",
+        "choices": [
+          "It is a reactant that ends up in the ester",
+          "It is a catalyst",
+          "It cools the mixture",
+          "It colours the product"
+        ],
+        "answer": 1,
+        "explain": "It speeds up the reaction without being used up."
+      },
+      {
+        "id": "q-bath",
+        "question": "Why warm the tube in a water bath, not over a Bunsen?",
+        "choices": [
+          "Water baths are faster",
+          "Ethanol is flammable",
+          "Bunsens are too cold",
+          "The ester is blue"
+        ],
+        "answer": 1,
+        "explain": "Ethanol vapour catches fire easily, so no naked flames."
+      }
+    ]
+  },
+  "safety": [
+    {
+      "when": "seen:flame-near-ethanol",
+      "code": "flame-ethanol",
+      "title": "Naked flame near ethanol",
+      "message": "You lit a Bunsen with ethanol on the bench. Its vapour can catch fire and flash back to the bottle. Always warm ethanol in a hot water bath.",
+      "restartFrom": "bath"
+    }
+  ],
+  "golden": {
+    "durationS": 58,
+    "captions": [
+      {
+        "t": 0,
+        "text": "Goggles on. No flames today: ethanol is highly flammable."
+      },
+      {
+        "t": 4000,
+        "text": "An alcohol (ethanol)..."
+      },
+      {
+        "t": 8000,
+        "text": "...and a carboxylic acid (ethanoic acid): it smells of vinegar."
+      },
+      {
+        "t": 12000,
+        "text": "Three drops of concentrated sulfuric acid: the catalyst."
+      },
+      {
+        "t": 16000,
+        "text": "Warm it in hot water from a kettle, never over a flame.",
+        "slow": true
+      },
+      {
+        "t": 30000,
+        "text": "Alcohol + carboxylic acid → ester + water. The reaction is slow and reversible."
+      },
+      {
+        "t": 47000,
+        "text": "Waft, don't sniff: a sweet, fruity smell. That's ethyl ethanoate, an ester."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "goggles",
+          "x": 0,
+          "y": 0,
+          "socket": "worn"
+        }
+      },
+      {
+        "t": 4000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "ethanol",
+          "to": "tube",
+          "volumeMl": 2,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 1.13,
+          "peakRateMlPerS": 1.5,
+          "durationMs": 1778
+        }
+      },
+      {
+        "t": 8000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "acid",
+          "to": "tube",
+          "volumeMl": 2,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 1.13,
+          "peakRateMlPerS": 1.5,
+          "durationMs": 1778
+        }
+      },
+      {
+        "t": 12000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "conc",
+          "to": "tube",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 12700,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "conc",
+          "to": "tube",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 13400,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "conc",
+          "to": "tube",
+          "drops": 1,
+          "volumeMl": 0.05
+        }
+      },
+      {
+        "t": 16000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "tube",
+          "to": "bath",
+          "port": "bath"
+        }
+      },
+      {
+        "t": 48000,
+        "type": "param.set",
+        "payload": {
+          "key": "waft:tube",
+          "value": true
+        }
+      },
+      {
+        "t": 52000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-smell",
+          "value": 1
+        }
+      },
+      {
+        "t": 53000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-cat",
+          "value": 1
+        }
+      },
+      {
+        "t": 54000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-bath",
+          "value": 1
+        }
+      }
+    ]
+  }
+}

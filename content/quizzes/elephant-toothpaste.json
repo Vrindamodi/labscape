@@ -1,0 +1,224 @@
+{
+  "id": "quiz-elephant-toothpaste",
+  "version": 1,
+  "experimentSlug": "elephant-toothpaste",
+  "title": "Elephant toothpaste quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "catalysts": "Catalysts",
+    "gas-tests": "Gas tests",
+    "energy": "Exothermic reactions"
+  },
+  "questions": [
+    {
+      "id": "gas",
+      "type": "multiple_choice",
+      "prompt": "Hydrogen peroxide breaks down into water and which gas?",
+      "conceptIds": [
+        "gas-tests"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Hydrogen"
+        },
+        {
+          "id": "b",
+          "text": "Oxygen"
+        },
+        {
+          "id": "c",
+          "text": "Carbon dioxide"
+        },
+        {
+          "id": "d",
+          "text": "Nitrogen"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "2H₂O₂ → 2H₂O + O₂.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "tests",
+      "type": "match",
+      "prompt": "Match each gas to its test.",
+      "conceptIds": [
+        "gas-tests"
+      ],
+      "left": [
+        {
+          "id": "l1",
+          "text": "Oxygen"
+        },
+        {
+          "id": "l2",
+          "text": "Hydrogen"
+        },
+        {
+          "id": "l3",
+          "text": "Carbon dioxide"
+        },
+        {
+          "id": "l4",
+          "text": "Chlorine"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Relights a glowing splint"
+        },
+        {
+          "id": "r2",
+          "text": "Squeaky pop with a lit splint"
+        },
+        {
+          "id": "r3",
+          "text": "Turns limewater milky"
+        },
+        {
+          "id": "r4",
+          "text": "Bleaches damp litmus paper"
+        }
+      ],
+      "answer": [
+        [
+          "l1",
+          "r1"
+        ],
+        [
+          "l2",
+          "r2"
+        ],
+        [
+          "l3",
+          "r3"
+        ],
+        [
+          "l4",
+          "r4"
+        ]
+      ],
+      "explanation": "These are the four standard gas tests.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "used-up",
+      "type": "true_false",
+      "prompt": "A catalyst is used up during the reaction it speeds up.",
+      "conceptIds": [
+        "catalysts"
+      ],
+      "answer": false,
+      "explanation": "A catalyst is left unchanged at the end, so it can be used again.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "how",
+      "type": "multiple_choice",
+      "prompt": "How does a catalyst speed up a reaction?",
+      "conceptIds": [
+        "catalysts"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It gives the particles more energy"
+        },
+        {
+          "id": "b",
+          "text": "It provides a route with a lower activation energy"
+        },
+        {
+          "id": "c",
+          "text": "It makes more product"
+        },
+        {
+          "id": "d",
+          "text": "It raises the temperature"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "With a lower energy barrier, more collisions have enough energy to react.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "no-soap",
+      "type": "predict_outcome",
+      "prompt": "The experiment is repeated without washing-up liquid. What do you expect?",
+      "conceptIds": [
+        "catalysts"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "The same foam column"
+        },
+        {
+          "id": "b",
+          "text": "Fast fizzing but almost no foam"
+        },
+        {
+          "id": "c",
+          "text": "No reaction at all"
+        },
+        {
+          "id": "d",
+          "text": "A blue solution"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "The peroxide still breaks down fast, but nothing traps the oxygen in bubbles.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "warm",
+      "type": "multiple_choice",
+      "prompt": "The foam felt warm. This means the reaction is...",
+      "conceptIds": [
+        "energy"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Endothermic"
+        },
+        {
+          "id": "b",
+          "text": "Exothermic"
+        },
+        {
+          "id": "c",
+          "text": "Reversible"
+        },
+        {
+          "id": "d",
+          "text": "A neutralisation"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Energy is given out to the surroundings, so the temperature rises.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

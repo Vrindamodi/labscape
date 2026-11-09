@@ -1,0 +1,199 @@
+{
+  "id": "quiz-electrolysis-of-brine",
+  "version": 1,
+  "experimentSlug": "electrolysis-of-brine",
+  "title": "Electrolysis of brine quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "electrolysis": "Electrolysis",
+    "electrode-products": "Products at electrodes",
+    "gas-tests": "Gas tests"
+  },
+  "questions": [
+    {
+      "id": "products",
+      "type": "match",
+      "prompt": "Match each product to where it forms.",
+      "conceptIds": [
+        "electrode-products"
+      ],
+      "left": [
+        {
+          "id": "l1",
+          "text": "Hydrogen"
+        },
+        {
+          "id": "l2",
+          "text": "Chlorine"
+        },
+        {
+          "id": "l3",
+          "text": "Sodium hydroxide"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Cathode (negative)"
+        },
+        {
+          "id": "r2",
+          "text": "Anode (positive)"
+        },
+        {
+          "id": "r3",
+          "text": "Left in the solution"
+        }
+      ],
+      "answer": [
+        [
+          "l1",
+          "r1"
+        ],
+        [
+          "l2",
+          "r2"
+        ],
+        [
+          "l3",
+          "r3"
+        ]
+      ],
+      "explanation": "H⁺ is discharged at the cathode, Cl⁻ at the anode, Na⁺ and OH⁻ stay.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "why-h2",
+      "type": "multiple_choice",
+      "prompt": "Why is hydrogen made at the cathode, not sodium?",
+      "conceptIds": [
+        "electrode-products"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Sodium is less reactive than hydrogen"
+        },
+        {
+          "id": "b",
+          "text": "Hydrogen ions gain electrons more easily than sodium ions"
+        },
+        {
+          "id": "c",
+          "text": "Sodium is a gas"
+        },
+        {
+          "id": "d",
+          "text": "There are no sodium ions"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "The less reactive element is discharged: sodium is far more reactive than hydrogen.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "indicator",
+      "type": "predict_outcome",
+      "prompt": "Universal indicator is added to the brine before switching on. What colour does it become near the cathode?",
+      "conceptIds": [
+        "electrode-products"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Red"
+        },
+        {
+          "id": "b",
+          "text": "Green"
+        },
+        {
+          "id": "c",
+          "text": "Purple"
+        },
+        {
+          "id": "d",
+          "text": "It is bleached"
+        }
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "OH⁻ ions build up, making sodium hydroxide: strongly alkaline.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "cl-test",
+      "type": "multiple_choice",
+      "prompt": "Which test shows that the anode gas is chlorine?",
+      "conceptIds": [
+        "gas-tests"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It relights a glowing splint"
+        },
+        {
+          "id": "b",
+          "text": "It bleaches damp litmus paper"
+        },
+        {
+          "id": "c",
+          "text": "It gives a squeaky pop"
+        },
+        {
+          "id": "d",
+          "text": "It turns limewater milky"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Chlorine bleaches damp litmus (often turning it red first).",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "dc",
+      "type": "true_false",
+      "prompt": "Electrolysis needs a direct current (d.c.) supply.",
+      "conceptIds": [
+        "electrolysis"
+      ],
+      "answer": true,
+      "explanation": "Each electrode must stay positive or negative so ions move one way.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "half",
+      "type": "fill_blank",
+      "prompt": "At the anode: 2Cl⁻ → Cl₂ + 2___",
+      "conceptIds": [
+        "electrolysis"
+      ],
+      "blanks": 1,
+      "answer": [
+        [
+          "e-",
+          "e⁻",
+          "electrons",
+          "e"
+        ]
+      ],
+      "explanation": "Chloride ions lose electrons (oxidation) at the anode.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import { look, type Item } from "../engine/state";
 import type { StepSpec } from "../protocol/types";
 import { DockButton, DockSeparator, Glass, GhostButton, Kicker, PrimaryButton, Readout, Segmented, SquareButton, TiltGauge } from "../studio/Glass";
 import { Bench3D, PourStream, type HandState, type MixKind, type PourAnim, type Quality } from "./Bench3D";
+import { EXTRA_MASS_G, extraAccepts, extraEvents, extraVerbsFor, type ExtraVerbId } from "./extraVerbs";
 import { labSound, LoopSound } from "./labSound";
 import type { LabSession } from "./useLabSession";
 
@@ -27,7 +28,7 @@ export type WorkbenchProps = {
 
 const MASS_G: Record<string, number> = { "mg-ribbon": 0.05, "iron-nail": 3 };
 
-type Verb = "pour" | "drop" | "draw" | "deliver" | "dip" | "flame" | "mouth" | "collect" | "thermo" | "add-solid";
+type Verb = "pour" | "drop" | "draw" | "deliver" | "dip" | "flame" | "mouth" | "collect" | "thermo" | "add-solid" | ExtraVerbId;
 type Speed = "drop" | "slow" | "steady" | "fast" | "custom";
 const SPEED_RATE: Record<Exclude<Speed, "custom">, number> = { drop: 0.35, slow: 1.4, steady: 4, fast: 10 };
 const SPEED_LABEL: Record<Speed, string> = { drop: "Dropwise", slow: "Slow pour", steady: "Steady pour", fast: "Fast pour", custom: "Your tilt" };
@@ -46,7 +47,7 @@ export function tiltForRate(kind: EquipmentKind, volumeMl: number, rate: number)
   return hi;
 }
 
-type VerbDef = { id: Verb; label: string; icon: ReactNode; target: boolean };
+type VerbDef = { id: Verb; label: string; icon: ReactNode; target: boolean; button?: string };
 
 /** What an item can do when it is in the learner's hand. Empty: it is not something you pick up. */
 function verbsFor(it: Item): VerbDef[] {
@@ -66,7 +67,8 @@ function verbsFor(it: Item): VerbDef[] {
   return v;
 }
 
-function accepts(verb: Verb, it: Item): boolean {
+function accepts(verb: Verb, it: Item, held?: Item | null): boolean {
+  if (held && extraAccepts(verb, held, it)) return true;
   switch (verb) {
     case "pour":
       return !!it.liquid && it.kind !== "reagent_bottle" && it.kind !== "dropper_bottle" && it.kind !== "pipette_10" && it.kind !== "wash_bottle";
@@ -143,7 +145,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
 
   const items = useMemo(() => Object.values(state.items), [state.items]);
   const sel = selected ? state.items[selected] ?? null : null;
-  const verbs = useMemo(() => (sel ? verbsFor(sel) : []), [sel]);
+  const verbs = useMemo(() => (sel ? [...verbsFor(sel), ...extraVerbsFor(sel, Object.values(state.items))] : []), [sel, state.items]);
   const holding = !!sel && verbs.length > 0;
   const activeVerb = holding ? verbs.find((v) => v.id === verb) ?? verbs[0]! : null;
   const flash = useCallback((text: string) => {
@@ -163,7 +165,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
   /* ---------------------------------------------------------------- targets and guidance */
 
   const choosing = holding && activeVerb?.target && !pourTarget;
-  const targets = choosing ? items.filter((it) => it.id !== sel!.id && accepts(activeVerb!.id, it)).map((i) => i.id) : pourTarget ? [pourTarget.to] : [];
+  const targets = choosing ? items.filter((it) => it.id !== sel!.id && accepts(activeVerb!.id, it, sel)).map((i) => i.id) : pourTarget ? [pourTarget.to] : [];
   // Guidance: with nothing in hand, the step's source glows; once it is in hand, its destination does.
   const guide = !readOnly && step ? (!holding && step.from && state.items[step.from] ? step.from : holding && step.to && sel?.id === step.from && targets.includes(step.to) ? step.to : null) : null;
   const glow = [...targets, ...(guide && !targets.includes(guide) ? [guide] : []), ...(shown && !targets.includes(shown) ? [shown] : [])];
@@ -213,14 +215,25 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         break;
       case "add-solid": {
         const r = src?.reagentId ?? from;
-        dispatch("solid.add", { from: r, to, massG: MASS_G[r] ?? 0.1 });
+        dispatch("solid.add", { from: r, to, massG: MASS_G[r] ?? EXTRA_MASS_G[r] ?? 0.1 });
         labSound.plink();
         putDown();
         break;
       }
       case "flame":
         break;
+      default:
+        // Part 5 verbs (heat, litmus, water bath, filter): plain events, then put the item down.
+        if (src) for (const e of extraEvents(v, src, to)) dispatch(e.type as never, e.payload as never);
+        putDown();
+        break;
     }
+  };
+
+  /** Part 5 verbs with no target (blow out a splint, power on, waft). */
+  const extraNow = () => {
+    if (!sel || !activeVerb) return;
+    for (const e of extraEvents(activeVerb.id as ExtraVerbId, sel)) dispatch(e.type as never, e.payload as never);
   };
 
   const onPick = (id: string) => {
@@ -237,7 +250,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
 
   const onDropOnto = (held: string, target: string) => {
     if (readOnly || held !== selected || !activeVerb?.target) return;
-    if (accepts(activeVerb.id, state.items[target]!)) complete(activeVerb.id, held, target);
+    if (accepts(activeVerb.id, state.items[target]!, sel)) complete(activeVerb.id, held, target);
   };
 
   const flameIt = () => {
@@ -655,6 +668,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
                   setVerb={setVerb}
                   targetsCount={targets.length}
                   onFlame={flameIt}
+                  onExtra={extraNow}
                   onPutDown={putDown}
                   onGoggles={() => {
                     dispatch("equipment.place", { equipmentId: sel.id, x: 0, y: 0, socket: "worn" });
@@ -809,6 +823,7 @@ function HandCard(p: {
   setVerb: (v: Verb) => void;
   targetsCount: number;
   onFlame: () => void;
+  onExtra?: () => void;
   onPutDown: () => void;
   onGoggles: () => void;
   onGas: () => void;
@@ -839,6 +854,11 @@ function HandCard(p: {
             "Nothing on the bench can take this right now."
           )}
         </p>
+      )}
+      {p.active && !p.active.target && p.active.button && p.onExtra && (
+        <PrimaryButton className="w-full" onClick={p.onExtra}>
+          {p.active.icon} {p.active.button}
+        </PrimaryButton>
       )}
       {p.active?.id === "flame" && (
         <PrimaryButton className="w-full" onClick={p.onFlame}>

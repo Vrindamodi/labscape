@@ -1,0 +1,451 @@
+{
+  "version": 1,
+  "fidelity": "exact",
+  "reviewStatus": "draft",
+  "id": "math-graph-transformations",
+  "slug": "graph-transformations",
+  "subject": "maths",
+  "title": "Slide, stretch, flip",
+  "setup": {
+    "targets": [
+      {
+        "id": "up",
+        "label": "y = x² + 3",
+        "f": "x^2",
+        "a": 1,
+        "b": 1,
+        "c": 0,
+        "d": 3
+      },
+      {
+        "id": "right",
+        "label": "y = (x − 2)²",
+        "f": "x^2",
+        "a": 1,
+        "b": 1,
+        "c": 2,
+        "d": 0
+      },
+      {
+        "id": "flip",
+        "label": "y = −|x|",
+        "f": "abs",
+        "a": -1,
+        "b": 1,
+        "c": 0,
+        "d": 0
+      },
+      {
+        "id": "squash",
+        "label": "y = sin(2x)",
+        "f": "sin",
+        "a": 1,
+        "b": 2,
+        "c": 0,
+        "d": 0
+      },
+      {
+        "id": "combo",
+        "label": "y = −(x + 1)² + 4",
+        "f": "x^2",
+        "a": -1,
+        "b": 1,
+        "c": -1,
+        "d": 4
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "up",
+      "title": "Slide it up",
+      "instruction": "Move y = x² up by 3 so it lands on the dashed target y = x² + 3. Then press Check match.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "up-1",
+        "up-2",
+        "up-3"
+      ]
+    },
+    {
+      "id": "right",
+      "title": "Slide it right",
+      "instruction": "Move y = x² two units to the right to match y = (x − 2)².",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "right-1",
+        "right-2",
+        "right-3"
+      ]
+    },
+    {
+      "id": "flip",
+      "title": "Flip it",
+      "instruction": "Switch to y = |x| and reflect it in the x-axis to match y = −|x|.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "flip-1",
+        "flip-2",
+        "flip-3"
+      ]
+    },
+    {
+      "id": "squash",
+      "title": "Squash it",
+      "instruction": "Switch to y = sin x and squash it sideways to match y = sin(2x).",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "squash-1",
+        "squash-2",
+        "squash-3"
+      ]
+    },
+    {
+      "id": "combo",
+      "title": "Put it all together",
+      "instruction": "Back to y = x². Match y = −(x + 1)² + 4: flip it, slide it left 1 and up 4.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "combo-1",
+        "combo-2",
+        "combo-3"
+      ]
+    }
+  ],
+  "hints": {
+    "up-1": {
+      "rung": 1,
+      "text": "Adding a number outside the function changes every y-value."
+    },
+    "up-2": {
+      "rung": 2,
+      "text": "d moves the whole graph up or down."
+    },
+    "up-3": {
+      "rung": 3,
+      "text": "Set d = 3, then press Check match."
+    },
+    "right-1": {
+      "rung": 1,
+      "text": "Changes inside the bracket act on x."
+    },
+    "right-2": {
+      "rung": 2,
+      "text": "y = f(x − c): a positive c moves the graph right. It feels backwards!"
+    },
+    "right-3": {
+      "rung": 3,
+      "text": "Set c = 2 (not −2), then Check match."
+    },
+    "flip-1": {
+      "rung": 1,
+      "text": "Base graph first: choose |x|."
+    },
+    "flip-2": {
+      "rung": 2,
+      "text": "Multiplying the whole function by −1 reflects it in the x-axis."
+    },
+    "flip-3": {
+      "rung": 3,
+      "text": "Pick |x|, set a = −1, Check match."
+    },
+    "squash-1": {
+      "rung": 1,
+      "text": "Base graph first: choose sin x."
+    },
+    "squash-2": {
+      "rung": 2,
+      "text": "b inside the function squashes the graph sideways by a factor 1/b, so the waves come twice as often when b = 2."
+    },
+    "squash-3": {
+      "rung": 3,
+      "text": "Pick sin x, set b = 2, Check match."
+    },
+    "combo-1": {
+      "rung": 1,
+      "text": "Do one transformation at a time: flip, then shift sideways, then shift up."
+    },
+    "combo-2": {
+      "rung": 2,
+      "text": "−(x + 1)² + 4 means a = −1, c = −1 and d = 4. The vertex ends up at (−1, 4)."
+    },
+    "combo-3": {
+      "rung": 3,
+      "text": "Pick x², set a = −1, c = −1, d = 4, Check match."
+    }
+  },
+  "observations": {
+    "whatHappened": "Changing d slid the graph up and down, changing a stretched it vertically and a negative a flipped it upside down. Changing c slid it sideways, but in the opposite direction to the sign you see in the bracket, and changing b squashed it sideways.",
+    "why": "In y = a·f(b(x − c)) + d, the numbers outside f (a and d) act on the y-values, so they do what you expect: multiply or add. The numbers inside act on x before f sees it. To get the same y-value as before at x − c = 0 you need x = c, so the graph moves right by c; and b(x) reaches each value 1/b of the way along, so the graph squashes by a factor of 1/b. That is why changes inside feel backwards.",
+    "equationLatex": "y = a,f\big(b(x - c)\big) + d",
+    "realWorld": [
+      "Animators shifting and stretching motion curves",
+      "Audio equalisers and sound waves (stretching sin x changes the pitch)",
+      "Fitting a model curve to experimental data"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "How does the graph of y = f(x − 3) compare with y = f(x)?",
+        "choices": [
+          "Moved 3 left",
+          "Moved 3 right",
+          "Moved 3 up",
+          "Moved 3 down"
+        ],
+        "answer": 1,
+        "explain": "Inside the bracket feels backwards: x − 3 moves the graph 3 to the right."
+      },
+      {
+        "id": "q2",
+        "question": "Which equation reflects y = f(x) in the x-axis?",
+        "choices": [
+          "y = f(−x)",
+          "y = f(x) − 1",
+          "y = −f(x)",
+          "y = f(x + 1)"
+        ],
+        "answer": 2,
+        "explain": "Multiplying every y-value by −1 flips the graph over the x-axis. f(−x) reflects it in the y-axis instead."
+      },
+      {
+        "id": "q3",
+        "question": "y = sin(2x) compared with y = sin x is…",
+        "choices": [
+          "squashed sideways by a factor of ½",
+          "stretched sideways by a factor of 2",
+          "twice as tall",
+          "moved 2 right"
+        ],
+        "answer": 0,
+        "explain": "b = 2 inside the function makes the waves repeat twice as often: a horizontal stretch by factor ½."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 26,
+    "captions": [
+      {
+        "t": 800,
+        "text": "d is outside the function: it adds to every y-value, so the whole graph slides up."
+      },
+      {
+        "t": 4200,
+        "text": "c is inside the bracket. f(x − 2) slides the graph RIGHT by 2: inside changes feel backwards.",
+        "slow": true
+      },
+      {
+        "t": 7600,
+        "text": "A negative a multiplies every y-value by −1: the graph flips over the x-axis."
+      },
+      {
+        "t": 12200,
+        "text": "b inside squashes sideways: sin(2x) fits two waves where sin x had one."
+      },
+      {
+        "t": 16800,
+        "text": "Combine them: flip with a, slide left with c = −1, lift with d = 4. The vertex lands at (−1, 4)."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "param.set",
+        "payload": {
+          "key": "d",
+          "value": 3
+        }
+      },
+      {
+        "t": 2200,
+        "type": "param.set",
+        "payload": {
+          "key": "check",
+          "value": true
+        }
+      },
+      {
+        "t": 3400,
+        "type": "param.set",
+        "payload": {
+          "key": "reset",
+          "value": true
+        }
+      },
+      {
+        "t": 4400,
+        "type": "param.set",
+        "payload": {
+          "key": "c",
+          "value": 2
+        }
+      },
+      {
+        "t": 5600,
+        "type": "param.set",
+        "payload": {
+          "key": "check",
+          "value": true
+        }
+      },
+      {
+        "t": 6800,
+        "type": "param.set",
+        "payload": {
+          "key": "reset",
+          "value": true
+        }
+      },
+      {
+        "t": 7800,
+        "type": "param.set",
+        "payload": {
+          "key": "f",
+          "value": "abs"
+        }
+      },
+      {
+        "t": 9000,
+        "type": "param.set",
+        "payload": {
+          "key": "a",
+          "value": -1
+        }
+      },
+      {
+        "t": 10200,
+        "type": "param.set",
+        "payload": {
+          "key": "check",
+          "value": true
+        }
+      },
+      {
+        "t": 11400,
+        "type": "param.set",
+        "payload": {
+          "key": "reset",
+          "value": true
+        }
+      },
+      {
+        "t": 12400,
+        "type": "param.set",
+        "payload": {
+          "key": "f",
+          "value": "sin"
+        }
+      },
+      {
+        "t": 13600,
+        "type": "param.set",
+        "payload": {
+          "key": "b",
+          "value": 2
+        }
+      },
+      {
+        "t": 14800,
+        "type": "param.set",
+        "payload": {
+          "key": "check",
+          "value": true
+        }
+      },
+      {
+        "t": 16000,
+        "type": "param.set",
+        "payload": {
+          "key": "reset",
+          "value": true
+        }
+      },
+      {
+        "t": 17000,
+        "type": "param.set",
+        "payload": {
+          "key": "f",
+          "value": "x^2"
+        }
+      },
+      {
+        "t": 18200,
+        "type": "param.set",
+        "payload": {
+          "key": "a",
+          "value": -1
+        }
+      },
+      {
+        "t": 19400,
+        "type": "param.set",
+        "payload": {
+          "key": "c",
+          "value": -1
+        }
+      },
+      {
+        "t": 20600,
+        "type": "param.set",
+        "payload": {
+          "key": "d",
+          "value": 4
+        }
+      },
+      {
+        "t": 21800,
+        "type": "param.set",
+        "payload": {
+          "key": "check",
+          "value": true
+        }
+      },
+      {
+        "t": 23300,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 1
+        }
+      },
+      {
+        "t": 23800,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 2
+        }
+      },
+      {
+        "t": 24300,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q3",
+          "value": 0
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 0,
+    "sequence": 10,
+    "technique": 75,
+    "measurement": 0,
+    "observation": 15
+  }
+}

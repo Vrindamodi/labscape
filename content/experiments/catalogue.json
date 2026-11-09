@@ -235,7 +235,7 @@
         "Hot acid: heat gently and never to dryness",
         "Copper sulfate is harmful if swallowed"
       ],
-      "premium": true,
+      "premium": false,
       "featured": false,
       "tags": [
         "crystals",
@@ -243,7 +243,7 @@
         "filtration"
       ],
       "release": "MVP",
-      "playable": false,
+      "playable": true,
       "elements": [
         "Cu",
         "O",
@@ -402,15 +402,15 @@
         "Galvanising and sacrificial protection"
       ],
       "equipment": [
-        "Spotting tile",
+        "Test tubes and rack",
         "Dropper",
         "Tweezers"
       ],
       "materials": [
         "Magnesium ribbon",
-        "Zinc granules",
+        "Zinc foil",
         "Iron filings",
-        "Copper turnings",
+        "Copper foil",
         "Metal sulfate solutions"
       ],
       "safety": [
@@ -423,7 +423,7 @@
         "redox"
       ],
       "release": "MVP",
-      "playable": false,
+      "playable": true,
       "elements": [
         "Mg",
         "Zn",
@@ -631,14 +631,14 @@
       "safety": [
         "Chlorine is toxic: small volumes, good ventilation"
       ],
-      "premium": true,
+      "premium": false,
       "featured": false,
       "tags": [
         "electrolysis",
         "gas test"
       ],
       "release": "Later",
-      "playable": false,
+      "playable": true,
       "elements": [
         "Na",
         "Cl",
@@ -652,9 +652,9 @@
       "slug": "disappearing-cross",
       "subject": "chemistry",
       "chapter": "Rates of reaction",
-      "topic": "Temperature and rate",
+      "topic": "Concentration and rate",
       "title": "The disappearing cross",
-      "summary": "Time how long sodium thiosulfate takes to hide a cross at different temperatures and plot the rate.",
+      "summary": "Time how long sodium thiosulfate takes to hide a cross at two concentrations and work out the rate (1/time).",
       "difficulty": "intermediate",
       "levels": [
         "school",
@@ -664,9 +664,9 @@
       "xpReward": 100,
       "objectives": [
         "Control variables fairly",
-        "Plot 1/time against temperature"
+        "Use rate = 1/time to compare two concentrations"
       ],
-      "concept": "Hotter particles collide more often and with more energy, so the reaction speeds up.",
+      "concept": "More particles in the same volume collide more often, so the reaction speeds up. Heating does the same.",
       "realWorld": [
         "Refrigerating food",
         "Industrial reactor design"
@@ -691,7 +691,7 @@
         "graph"
       ],
       "release": "MVP",
-      "playable": false,
+      "playable": true,
       "elements": [
         "Na",
         "S",
@@ -748,7 +748,7 @@
         "foam"
       ],
       "release": "MVP",
-      "playable": false,
+      "playable": true,
       "elements": [
         "H",
         "O",
@@ -795,7 +795,7 @@
         "Ethanol is flammable: water bath only, no open flame",
         "Concentrated acid is corrosive"
       ],
-      "premium": true,
+      "premium": false,
       "featured": false,
       "tags": [
         "organic",
@@ -803,7 +803,7 @@
         "reflux"
       ],
       "release": "Later",
-      "playable": false,
+      "playable": true,
       "elements": [
         "C",
         "H",
@@ -934,14 +934,14 @@
       "safety": [
         "Keep feet clear of falling masses"
       ],
-      "premium": true,
+      "premium": false,
       "featured": false,
       "tags": [
         "forces",
         "graph"
       ],
       "release": "Later",
-      "playable": false
+      "playable": true
     },
     {
       "id": "phys-refraction",
@@ -1158,14 +1158,14 @@
       "safety": [
         "The heater and block get very hot"
       ],
-      "premium": true,
+      "premium": false,
       "featured": false,
       "tags": [
         "heat",
         "energy"
       ],
       "release": "Later",
-      "playable": false
+      "playable": true
     },
     {
       "id": "math-graph-transformations",
@@ -1204,7 +1204,7 @@
         "functions"
       ],
       "release": "Later",
-      "playable": false
+      "playable": true
     },
     {
       "id": "math-quadratic",

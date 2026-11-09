@@ -11,6 +11,8 @@ export type Reagent = {
   concAcidPerMl?: number;
   /** Solid metal: molar mass, g/mol. */
   metal?: { symbol: "Mg" | "Fe" | "Zn" | "Cu"; molarMass: number; /** surface area factor */ area: number };
+  /** Basic oxide powder (copper(II) oxide): dissolves in acid over time. */
+  oxide?: { molarMass: number };
   densityGPerMl: number;
   hazards: ("corrosive" | "irritant" | "toxic" | "flammable" | "oxidiser" | "harmful" | "environment")[];
   corrosive?: boolean;
@@ -50,6 +52,22 @@ export const REAGENTS: Record<string, Reagent> = Object.fromEntries(
     sol("h2so4-conc", "Concentrated sulfuric acid", "H₂SO₄", { "SO4^2-": 18 }, "#f3f1ea", ["corrosive"], { corrosive: true, concAcidPerMl: 0.018, densityGPerMl: 1.84 }),
     { id: "mg-ribbon", name: "Magnesium ribbon", formula: "Mg", metal: { symbol: "Mg", molarMass: 24.31, area: 1 }, densityGPerMl: 1.74, hazards: ["flammable"], hex: "#c9ccd2" },
     { id: "iron-nail", name: "Iron nail (cleaned)", formula: "Fe", metal: { symbol: "Fe", molarMass: 55.85, area: 0.12 }, densityGPerMl: 7.87, hazards: [], hex: "#8a8f99" },
+    // Part 5: the rest of the library.
+    { id: "zn-foil", name: "Zinc foil strip", formula: "Zn", metal: { symbol: "Zn", molarMass: 65.38, area: 0.6 }, densityGPerMl: 7.14, hazards: [], hex: "#a9b1bb" },
+    { id: "iron-filings", name: "Iron filings", formula: "Fe", metal: { symbol: "Fe", molarMass: 55.85, area: 1 }, densityGPerMl: 7.87, hazards: [], hex: "#6f7680" },
+    { id: "cu-foil", name: "Copper foil strip", formula: "Cu", metal: { symbol: "Cu", molarMass: 63.55, area: 0.6 }, densityGPerMl: 8.96, hazards: [], hex: "#c27a4a" },
+    { id: "cuo", name: "Copper(II) oxide powder", formula: "CuO", oxide: { molarMass: 79.55 }, densityGPerMl: 6.3, hazards: ["harmful", "environment"], hex: "#1b1b1d" },
+    sol("znso4-0.5", "Zinc sulfate 0.50 M", "ZnSO₄", { "Zn2+": 0.5, "SO4^2-": 0.5 }, "#eef6ff", ["irritant"]),
+    sol("feso4-0.5", "Iron(II) sulfate 0.50 M", "FeSO₄", { "Fe2+": 0.5, "SO4^2-": 0.5 }, "#dcefd2", ["harmful"]),
+    sol("mgso4-0.5", "Magnesium sulfate 0.50 M", "MgSO₄", { "Mg2+": 0.5, "SO4^2-": 0.5 }, "#eef6ff"),
+    sol("h2o2-6", "Hydrogen peroxide 6% (20 vol)", "H₂O₂", { H2O2: 1.76 }, "#eef6ff", ["irritant", "oxidiser"]),
+    sol("ki-1", "Potassium iodide solution 1.0 M", "KI", { "K+": 1, "I-": 1 }, "#f2f4ff"),
+    sol("detergent", "Washing-up liquid", "detergent", { soap: 0.2 }, "#9fe3a8"),
+    sol("thio-0.15", "Sodium thiosulfate 0.15 M", "Na₂S₂O₃", { "Na+": 0.3, "S2O3^2-": 0.15 }, "#eef6ff"),
+    sol("h2so4-1", "Dilute sulfuric acid 1.0 M", "H₂SO₄", { "SO4^2-": 1 }, "#eef6ff", ["irritant"]),
+    sol("ethanol", "Ethanol", "C₂H₅OH", { EtOH: 17.1 }, "#f6f8ff", ["flammable"], { densityGPerMl: 0.79, odour: "sharp, like surgical spirit" }),
+    sol("ethanoic-glacial", "Glacial ethanoic acid", "CH₃COOH", { CH3COOH_T: 17.4 }, "#f6f8ff", ["corrosive", "flammable"], { corrosive: true, densityGPerMl: 1.05, odour: "strong vinegar" }),
+    sol("brine", "Sodium chloride solution (brine) 3 M", "NaCl", { "Na+": 3, "Cl-": 3 }, "#eef6ff"),
   ] satisfies Reagent[]).map((r) => [r.id, r]),
 );
 

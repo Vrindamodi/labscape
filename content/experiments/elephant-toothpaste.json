@@ -1,0 +1,551 @@
+{
+  "id": "chem-elephant-toothpaste",
+  "slug": "elephant-toothpaste",
+  "version": 1,
+  "subject": "chemistry",
+  "title": "Elephant toothpaste: a catalyst at work",
+  "fidelity": "approximate",
+  "reviewStatus": "draft",
+  "bench": {
+    "items": [
+      {
+        "id": "h2o2",
+        "kind": "reagent_bottle",
+        "label": "Hydrogen peroxide 6%",
+        "x": -320,
+        "z": -60,
+        "fill": {
+          "reagentId": "h2o2-6",
+          "volumeMl": 150
+        }
+      },
+      {
+        "id": "soap",
+        "kind": "dropper_bottle",
+        "label": "Washing-up liquid",
+        "x": -220,
+        "z": 60,
+        "fill": {
+          "reagentId": "detergent",
+          "volumeMl": 30
+        }
+      },
+      {
+        "id": "ki",
+        "kind": "reagent_bottle",
+        "label": "Potassium iodide (catalyst)",
+        "x": -140,
+        "z": -70,
+        "fill": {
+          "reagentId": "ki-1",
+          "volumeMl": 80
+        }
+      },
+      {
+        "id": "cyl",
+        "kind": "measuring_cylinder_50",
+        "label": "Measuring cylinder in a tray",
+        "x": 20,
+        "z": 20
+      },
+      {
+        "id": "bunsen",
+        "kind": "bunsen",
+        "x": 220,
+        "z": -40
+      },
+      {
+        "id": "splint",
+        "kind": "splint",
+        "x": 220,
+        "z": 100
+      },
+      {
+        "id": "goggles",
+        "kind": "goggles",
+        "x": 320,
+        "z": 110
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "goggles",
+      "title": "Put on goggles",
+      "instruction": "Hydrogen peroxide irritates skin and eyes and the foam comes out hot. Goggles on (and gloves in a real lab).",
+      "action": "equipment.place",
+      "from": "goggles",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "safe-1",
+        "safe-2",
+        "safe-3"
+      ],
+      "whatIf": {
+        "no_ppe": "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+      }
+    },
+    {
+      "id": "peroxide",
+      "title": "20 mL hydrogen peroxide",
+      "instruction": "Pour 20 mL of 6% hydrogen peroxide into the measuring cylinder. It stands in a tray to catch the foam.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "h2o2",
+      "to": "cyl",
+      "quantity": {
+        "target": 20,
+        "plusMinus": 2,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 6
+      },
+      "hints": [
+        "vol-1",
+        "vol-2",
+        "vol-3"
+      ],
+      "whatIf": {
+        "too_fast": "Fast pouring splashes peroxide, which bleaches and stings skin.",
+        "wrong_amount": "More peroxide makes a bigger, hotter foam that can overflow the tray."
+      }
+    },
+    {
+      "id": "detergent",
+      "title": "5 drops of washing-up liquid",
+      "instruction": "Add about 5 drops of washing-up liquid. It will trap the gas as bubbles.",
+      "requires": [
+        "peroxide"
+      ],
+      "action": "liquid.drop",
+      "from": "soap",
+      "to": "cyl",
+      "quantity": {
+        "target": 0.25,
+        "plusMinus": 0.1,
+        "unit": "mL"
+      },
+      "hints": [
+        "soap-1",
+        "soap-2",
+        "soap-3"
+      ],
+      "whatIf": {
+        "wrong_order": "Without detergent already in, the gas just escapes and you see fizzing, not foam."
+      }
+    },
+    {
+      "id": "light-burner",
+      "title": "Light the Bunsen",
+      "instruction": "Light the Bunsen burner: you need a glowing splint ready before the catalyst goes in.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "heat.set",
+      "from": "bunsen",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "burn-1",
+        "burn-2",
+        "burn-3"
+      ]
+    },
+    {
+      "id": "light-splint",
+      "title": "Light a splint",
+      "instruction": "Hold the wooden splint in the flame until it catches.",
+      "requires": [
+        "light-burner"
+      ],
+      "action": "equipment.connect",
+      "from": "splint",
+      "to": "bunsen",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "burn-1",
+        "burn-2",
+        "burn-3"
+      ]
+    },
+    {
+      "id": "blow-out",
+      "title": "Blow it out so it glows",
+      "instruction": "Blow the flame out. The tip should keep glowing red: this is a glowing splint.",
+      "requires": [
+        "light-splint"
+      ],
+      "action": "param.set",
+      "from": "splint",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "glow-1",
+        "glow-2",
+        "glow-3"
+      ]
+    },
+    {
+      "id": "catalyst",
+      "title": "Add the catalyst",
+      "instruction": "Pour in 5 mL of potassium iodide solution in one go, then step back.",
+      "requires": [
+        "detergent",
+        "blow-out"
+      ],
+      "action": "liquid.pour",
+      "from": "ki",
+      "to": "cyl",
+      "quantity": {
+        "target": 5,
+        "plusMinus": 1,
+        "unit": "mL"
+      },
+      "hints": [
+        "cat-1",
+        "cat-2",
+        "cat-3"
+      ],
+      "whatIf": {
+        "no_ppe": "The foam is hot and contains peroxide and iodine, which stain and irritate skin and eyes.",
+        "wrong_amount": "More catalyst only makes the foam come faster: the catalyst is not used up, so it does not make more oxygen."
+      }
+    },
+    {
+      "id": "foam",
+      "title": "Watch the foam",
+      "instruction": "Watch the foam surge out of the cylinder. Feel how warm the cylinder is (the temperature readout).",
+      "requires": [
+        "catalyst"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "seen:foam:cyl"
+      },
+      "hints": [
+        "foam-1",
+        "foam-2",
+        "foam-3"
+      ]
+    },
+    {
+      "id": "relight",
+      "title": "Test the gas",
+      "instruction": "Hold the glowing splint at the mouth of the cylinder, just above the foam.",
+      "requires": [
+        "foam",
+        "blow-out"
+      ],
+      "action": "equipment.connect",
+      "from": "splint",
+      "to": "cyl",
+      "complete": {
+        "predicate": "seen:relight"
+      },
+      "hints": [
+        "test-1",
+        "test-2",
+        "test-3"
+      ],
+      "whatIf": {
+        "wrong_order": "A splint that is still burning just burns a bit brighter; only a glowing splint relighting is a clear test for oxygen."
+      }
+    }
+  ],
+  "hints": {
+    "safe-1": {
+      "rung": 1,
+      "text": "What protects your eyes?"
+    },
+    "safe-2": {
+      "rung": 2,
+      "text": "Pick up the goggles and put them on before you touch any bottle."
+    },
+    "safe-3": {
+      "rung": 3,
+      "text": "Watch the goggles go on."
+    },
+    "vol-1": {
+      "rung": 1,
+      "text": "Measure the peroxide into the cylinder."
+    },
+    "vol-2": {
+      "rung": 2,
+      "text": "Pick up the peroxide bottle and pour 20 mL into the cylinder."
+    },
+    "vol-3": {
+      "rung": 3,
+      "text": "Watch a careful 20 mL pour."
+    },
+    "soap-1": {
+      "rung": 1,
+      "text": "Something has to trap the gas in bubbles."
+    },
+    "soap-2": {
+      "rung": 2,
+      "text": "Add drops from the washing-up liquid bottle to the cylinder."
+    },
+    "soap-3": {
+      "rung": 3,
+      "text": "Watch five drops go in."
+    },
+    "burn-1": {
+      "rung": 1,
+      "text": "You need a flame to light the splint."
+    },
+    "burn-2": {
+      "rung": 2,
+      "text": "Light the Bunsen, then hold the splint in the flame."
+    },
+    "burn-3": {
+      "rung": 3,
+      "text": "Watch the burner light and the splint catch."
+    },
+    "glow-1": {
+      "rung": 1,
+      "text": "The oxygen test uses a splint that glows, not one that burns."
+    },
+    "glow-2": {
+      "rung": 2,
+      "text": "With the lit splint in your hand, choose Blow out."
+    },
+    "glow-3": {
+      "rung": 3,
+      "text": "Watch the flame go out and the tip glow."
+    },
+    "cat-1": {
+      "rung": 1,
+      "text": "Peroxide breaks down very slowly on its own. What speeds it up?"
+    },
+    "cat-2": {
+      "rung": 2,
+      "text": "Pour 5 mL of potassium iodide into the cylinder."
+    },
+    "cat-3": {
+      "rung": 3,
+      "text": "Watch the catalyst go in."
+    },
+    "foam-1": {
+      "rung": 1,
+      "text": "Give it a few seconds."
+    },
+    "foam-2": {
+      "rung": 2,
+      "text": "Watch the cylinder: the foam rises out of the top."
+    },
+    "foam-3": {
+      "rung": 3,
+      "text": "Watch the foam column."
+    },
+    "test-1": {
+      "rung": 1,
+      "text": "Which gas relights a glowing splint?"
+    },
+    "test-2": {
+      "rung": 2,
+      "text": "Pick up the glowing splint and choose To tube mouth, then the cylinder."
+    },
+    "test-3": {
+      "rung": 3,
+      "text": "Watch the splint relight."
+    }
+  },
+  "observations": {
+    "whatHappened": "As soon as the potassium iodide went in, a column of warm foam shot up out of the cylinder. A glowing splint held in the gas burst back into flame.",
+    "why": "Hydrogen peroxide slowly breaks down into water and oxygen. Iodide ions are a catalyst: they give the reaction an easier route (lower activation energy), so it happens thousands of times faster, and they are not used up. The washing-up liquid traps the oxygen in millions of bubbles, making foam. The reaction gives out heat, so the foam is warm. Oxygen relights a glowing splint because it helps things burn.",
+    "equationLatex": "\\mathrm{2H_2O_2(aq) \\xrightarrow{I^-} 2H_2O(l) + O_2(g)}",
+    "realWorld": [
+      "Catalase in your liver breaks down peroxide the same way",
+      "Catalytic converters in cars",
+      "Peroxide as a bleach and disinfectant"
+    ],
+    "prompts": [
+      {
+        "id": "q-gas",
+        "question": "The glowing splint relit. Which gas was made?",
+        "choices": [
+          "Hydrogen",
+          "Oxygen",
+          "Carbon dioxide",
+          "Chlorine"
+        ],
+        "answer": 1,
+        "explain": "Oxygen relights a glowing splint. Hydrogen gives a squeaky pop instead."
+      },
+      {
+        "id": "q-cat",
+        "question": "What did the potassium iodide do?",
+        "choices": [
+          "It reacted and was used up",
+          "It made the foam blue",
+          "It acted as a catalyst, speeding up the breakdown without being used up",
+          "It cooled the reaction"
+        ],
+        "answer": 2,
+        "explain": "A catalyst speeds up a reaction by lowering the activation energy and is left over at the end."
+      },
+      {
+        "id": "q-heat",
+        "question": "The cylinder got warm. The reaction is...",
+        "choices": [
+          "Endothermic",
+          "Exothermic",
+          "Neither",
+          "Only physical"
+        ],
+        "answer": 1,
+        "explain": "It releases energy to the surroundings, so it is exothermic."
+      }
+    ]
+  },
+  "safety": [],
+  "golden": {
+    "durationS": 38,
+    "captions": [
+      {
+        "t": 0,
+        "text": "Goggles on. Hydrogen peroxide (H₂O₂) is slowly falling apart into water and oxygen all the time."
+      },
+      {
+        "t": 5000,
+        "text": "A few drops of washing-up liquid will trap any gas as bubbles."
+      },
+      {
+        "t": 11000,
+        "text": "Get a glowing splint ready: it is the test for oxygen."
+      },
+      {
+        "t": 21000,
+        "text": "Now the catalyst: iodide ions give the breakdown a much easier route, so it speeds up enormously.",
+        "slow": true
+      },
+      {
+        "t": 25000,
+        "text": "Oxygen + soap = a column of foam. It's warm too: the reaction is exothermic."
+      },
+      {
+        "t": 28500,
+        "text": "The glowing splint relights: the gas is oxygen. The catalyst is not used up."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "goggles",
+          "x": 0,
+          "y": 0,
+          "socket": "worn"
+        }
+      },
+      {
+        "t": 4000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "h2o2",
+          "to": "cyl",
+          "volumeMl": 20,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 3.75,
+          "peakRateMlPerS": 5,
+          "durationMs": 5333
+        }
+      },
+      {
+        "t": 8000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "soap",
+          "to": "cyl",
+          "drops": 5,
+          "volumeMl": 0.25
+        }
+      },
+      {
+        "t": 12000,
+        "type": "heat.set",
+        "payload": {
+          "target": "bunsen",
+          "powerPct": 100
+        }
+      },
+      {
+        "t": 15000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "splint",
+          "to": "bunsen",
+          "port": "flame"
+        }
+      },
+      {
+        "t": 18000,
+        "type": "param.set",
+        "payload": {
+          "key": "glow:splint",
+          "value": true
+        }
+      },
+      {
+        "t": 21000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "ki",
+          "to": "cyl",
+          "volumeMl": 5,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 3.75,
+          "peakRateMlPerS": 5,
+          "durationMs": 1333
+        }
+      },
+      {
+        "t": 29000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "splint",
+          "to": "cyl",
+          "port": "mouth"
+        }
+      },
+      {
+        "t": 32000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-gas",
+          "value": 1
+        }
+      },
+      {
+        "t": 33000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-cat",
+          "value": 2
+        }
+      },
+      {
+        "t": 34000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-heat",
+          "value": 1
+        }
+      }
+    ]
+  }
+}

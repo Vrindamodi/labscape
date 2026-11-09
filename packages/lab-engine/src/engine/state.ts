@@ -56,10 +56,25 @@ export type Item = {
   glowing?: boolean;
   /** Corrosive splashes on this item, mL. */
   spilledMl?: number;
+  /* Part 5 (all optional, only set by the reactions that use them, so older runs hash the same). */
+  /** Gas is streaming out of the liquid right now (catalysis, electrolysis): drives the bubbles. */
+  bubbling?: boolean;
+  /** Foam standing on and above the liquid, mL (detergent traps the gas). */
+  foamMl?: number;
+  /** A pair of inert carbon electrodes dips into this vessel. */
+  electrodes?: boolean;
+  /** Power-pack voltage across the electrodes (0 = off). */
+  volts?: number;
+  /** The water bath (a vessel of hot water) this tube stands in. */
+  inBath?: string | null;
+  /** Which metal is coating the solid in this vessel after a displacement. */
+  depositOf?: "Cu" | "Zn" | "Fe" | "Mg";
+  /** Litmus paper colour state. */
+  litmus?: "blue" | "red" | "bleached";
 };
 
 export type BenchSetup = {
-  items: Array<Partial<Item> & { id: string; kind: EquipmentKind; fill?: { reagentId: string; volumeMl: number } }>;
+  items: Array<Partial<Item> & { id: string; kind: EquipmentKind; fill?: { reagentId: string; volumeMl: number; tempC?: number } }>;
 };
 
 export type LabState = {
@@ -99,7 +114,7 @@ export function initialState(setup: BenchSetup): LabState {
       x: s.x ?? 0,
       z: s.z ?? 0,
       socket: s.socket ?? null,
-      liquid: def.capacityMl > 0 ? (s.fill ? liquidOf(s.fill.reagentId, s.fill.volumeMl) : emptyLiquid()) : null,
+      liquid: def.capacityMl > 0 ? (s.fill ? liquidOf(s.fill.reagentId, s.fill.volumeMl, s.fill.tempC ?? ROOM_C) : emptyLiquid()) : null,
       metals: [],
       depositMol: 0,
       stoppered: false,
@@ -130,6 +145,13 @@ export function initialState(setup: BenchSetup): LabState {
       item.gasMl = {};
       item.gasTo = null;
     }
+    if (s.electrodes) {
+      item.electrodes = true;
+      item.volts = 0;
+      item.gasMl = item.gasMl ?? {};
+      item.gasTo = item.gasTo ?? null;
+    }
+    if (s.kind === "litmus_paper") item.litmus = "blue";
     items[s.id] = item;
   }
   return { t: 0, items, spills: [], roomC: ROOM_C, setup, seq: 0, seen: {} };

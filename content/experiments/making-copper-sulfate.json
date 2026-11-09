@@ -1,0 +1,748 @@
+{
+  "id": "chem-making-copper-sulfate",
+  "slug": "making-copper-sulfate",
+  "version": 1,
+  "subject": "chemistry",
+  "title": "Making copper sulfate crystals",
+  "fidelity": "approximate",
+  "reviewStatus": "draft",
+  "bench": {
+    "items": [
+      {
+        "id": "acid",
+        "kind": "reagent_bottle",
+        "label": "Dilute sulfuric acid 1 M",
+        "x": -340,
+        "z": -70,
+        "fill": {
+          "reagentId": "h2so4-1",
+          "volumeMl": 100
+        }
+      },
+      {
+        "id": "tripod",
+        "kind": "tripod",
+        "x": -120,
+        "z": 20
+      },
+      {
+        "id": "beaker",
+        "kind": "beaker_100",
+        "label": "Beaker",
+        "x": -120,
+        "z": 20,
+        "socket": "tripod:tripod"
+      },
+      {
+        "id": "bunsen",
+        "kind": "bunsen",
+        "x": -40,
+        "z": 110
+      },
+      {
+        "id": "cuo",
+        "kind": "watch_glass",
+        "label": "Copper(II) oxide powder",
+        "x": -260,
+        "z": 80,
+        "reagentId": "cuo"
+      },
+      {
+        "id": "rod",
+        "kind": "glass_rod",
+        "x": -200,
+        "z": 130
+      },
+      {
+        "id": "funnel",
+        "kind": "funnel",
+        "label": "Funnel and filter paper",
+        "x": 110,
+        "z": -40
+      },
+      {
+        "id": "basin",
+        "kind": "evaporating_basin",
+        "x": 120,
+        "z": 40
+      },
+      {
+        "id": "goggles",
+        "kind": "goggles",
+        "x": 320,
+        "z": 120
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "goggles",
+      "title": "Put on goggles",
+      "instruction": "Sulfuric acid and copper(II) oxide are harmful; hot acid spits. Goggles on.",
+      "action": "equipment.place",
+      "from": "goggles",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "safe-1",
+        "safe-2",
+        "safe-3"
+      ],
+      "whatIf": {
+        "no_ppe": "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+      }
+    },
+    {
+      "id": "acid-in",
+      "title": "15 mL acid into the beaker",
+      "instruction": "Pour 15 mL of dilute sulfuric acid into the beaker on the tripod.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "acid",
+      "to": "beaker",
+      "quantity": {
+        "target": 15,
+        "plusMinus": 2,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 6
+      },
+      "hints": [
+        "acid-1",
+        "acid-2",
+        "acid-3"
+      ]
+    },
+    {
+      "id": "light",
+      "title": "Light the Bunsen",
+      "instruction": "Light the Bunsen burner and open the air hole.",
+      "requires": [
+        "acid-in"
+      ],
+      "action": "heat.set",
+      "from": "bunsen",
+      "complete": {
+        "predicate": "burner-on:bunsen"
+      },
+      "hints": [
+        "burn-1",
+        "burn-2",
+        "burn-3"
+      ]
+    },
+    {
+      "id": "heat-acid",
+      "title": "Heat the acid",
+      "instruction": "Put the burner under the tripod to warm the acid.",
+      "requires": [
+        "light"
+      ],
+      "action": "equipment.connect",
+      "from": "bunsen",
+      "to": "beaker",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "heat-1",
+        "heat-2",
+        "heat-3"
+      ]
+    },
+    {
+      "id": "warm",
+      "title": "Warm it to about 50 °C",
+      "instruction": "Warm the acid to about 50 °C. Do not let it boil.",
+      "requires": [
+        "heat-acid"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "temp-above:beaker:50"
+      },
+      "hints": [
+        "warm-1",
+        "warm-2",
+        "warm-3"
+      ],
+      "whatIf": {
+        "too_fast": "Boiling acid spits droplets of hot acid out of the beaker."
+      }
+    },
+    {
+      "id": "off",
+      "title": "Turn the Bunsen off",
+      "instruction": "Turn the gas off: the warm acid stays hot long enough.",
+      "requires": [
+        "warm"
+      ],
+      "action": "heat.set",
+      "from": "bunsen",
+      "complete": {
+        "predicate": "burner-off:bunsen"
+      },
+      "hints": [
+        "off-1",
+        "off-2",
+        "off-3"
+      ]
+    },
+    {
+      "id": "add-cuo",
+      "title": "Add copper oxide until it is in excess",
+      "instruction": "Add copper(II) oxide one spatula at a time, stirring after each, until black powder stays at the bottom (excess).",
+      "requires": [
+        "off"
+      ],
+      "action": "solid.add",
+      "from": "cuo",
+      "to": "beaker",
+      "mixing": {
+        "kind": "stir_gentle",
+        "during": "each_addition",
+        "withinMs": 20000
+      },
+      "complete": {
+        "predicate": "seen:excess:CuO:beaker"
+      },
+      "hints": [
+        "cuo-1",
+        "cuo-2",
+        "cuo-3"
+      ],
+      "whatIf": {
+        "too_fast": "Tipping it all in at once means you can't see when the acid is used up, and you waste oxide.",
+        "wrong_amount": "Without excess oxide some acid is left, and it ends up in your crystals."
+      }
+    },
+    {
+      "id": "filter",
+      "title": "Filter off the excess",
+      "instruction": "Filter the mixture into the evaporating basin. The black excess stays on the paper.",
+      "requires": [
+        "add-cuo"
+      ],
+      "action": "equipment.connect",
+      "from": "beaker",
+      "to": "basin",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "filter-1",
+        "filter-2",
+        "filter-3"
+      ]
+    },
+    {
+      "id": "relight",
+      "title": "Relight the Bunsen",
+      "instruction": "Light the Bunsen again to evaporate some of the water.",
+      "requires": [
+        "filter"
+      ],
+      "action": "heat.set",
+      "from": "bunsen",
+      "complete": {
+        "predicate": "burner-on:bunsen"
+      },
+      "hints": [
+        "burn-1",
+        "burn-2",
+        "burn-3"
+      ]
+    },
+    {
+      "id": "heat-basin",
+      "title": "Heat the basin",
+      "instruction": "Put the burner under the evaporating basin.",
+      "requires": [
+        "relight"
+      ],
+      "action": "equipment.connect",
+      "from": "bunsen",
+      "to": "basin",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "heat-1",
+        "heat-2",
+        "heat-3"
+      ]
+    },
+    {
+      "id": "evaporate",
+      "title": "Evaporate to about half",
+      "instruction": "Boil off water until about 7 mL is left (about half). Never boil it dry.",
+      "requires": [
+        "heat-basin"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "volume-at-most:basin:7"
+      },
+      "hints": [
+        "evap-1",
+        "evap-2",
+        "evap-3"
+      ]
+    },
+    {
+      "id": "off-2",
+      "title": "Turn the Bunsen off",
+      "instruction": "Turn the gas off and let the basin cool.",
+      "requires": [
+        "evaporate"
+      ],
+      "action": "heat.set",
+      "from": "bunsen",
+      "complete": {
+        "predicate": "burner-off:bunsen"
+      },
+      "hints": [
+        "off-1",
+        "off-2",
+        "off-3"
+      ]
+    },
+    {
+      "id": "crystals",
+      "title": "Leave it to crystallise",
+      "instruction": "Leave it to cool (speed up time). Watch blue crystals grow.",
+      "requires": [
+        "off-2"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "seen:crystals:basin"
+      },
+      "hints": [
+        "cryst-1",
+        "cryst-2",
+        "cryst-3"
+      ]
+    }
+  ],
+  "hints": {
+    "safe-1": {
+      "rung": 1,
+      "text": "What protects your eyes?"
+    },
+    "safe-2": {
+      "rung": 2,
+      "text": "Pick up the goggles and put them on before you touch any bottle."
+    },
+    "safe-3": {
+      "rung": 3,
+      "text": "Watch the goggles go on."
+    },
+    "acid-1": {
+      "rung": 1,
+      "text": "Measure the acid into the beaker on the tripod."
+    },
+    "acid-2": {
+      "rung": 2,
+      "text": "Pick up the acid bottle and pour 15 mL into the beaker."
+    },
+    "acid-3": {
+      "rung": 3,
+      "text": "Watch a slow 15 mL pour."
+    },
+    "burn-1": {
+      "rung": 1,
+      "text": "The Bunsen needs lighting."
+    },
+    "burn-2": {
+      "rung": 2,
+      "text": "Select the Bunsen and press Light it."
+    },
+    "burn-3": {
+      "rung": 3,
+      "text": "Watch the burner light."
+    },
+    "heat-1": {
+      "rung": 1,
+      "text": "The flame has to be under the vessel."
+    },
+    "heat-2": {
+      "rung": 2,
+      "text": "With the lit Bunsen selected, choose Heat a vessel and pick the vessel."
+    },
+    "heat-3": {
+      "rung": 3,
+      "text": "Watch the burner go under."
+    },
+    "warm-1": {
+      "rung": 1,
+      "text": "Warm acid reacts faster with the oxide."
+    },
+    "warm-2": {
+      "rung": 2,
+      "text": "Watch the temperature readout climb to 50 °C."
+    },
+    "warm-3": {
+      "rung": 3,
+      "text": "Watch it warm."
+    },
+    "off-1": {
+      "rung": 1,
+      "text": "You don't want it to boil."
+    },
+    "off-2": {
+      "rung": 2,
+      "text": "Select the Bunsen and press Gas off."
+    },
+    "off-3": {
+      "rung": 3,
+      "text": "Watch the flame go out."
+    },
+    "cuo-1": {
+      "rung": 1,
+      "text": "Add the black powder a little at a time."
+    },
+    "cuo-2": {
+      "rung": 2,
+      "text": "Tip in a spatula of copper(II) oxide, stir with the rod, and repeat until black powder is left over."
+    },
+    "cuo-3": {
+      "rung": 3,
+      "text": "Watch the oxide dissolve, then stay."
+    },
+    "filter-1": {
+      "rung": 1,
+      "text": "The extra black oxide must be removed."
+    },
+    "filter-2": {
+      "rung": 2,
+      "text": "Pick up the beaker and choose Filter into, then the basin."
+    },
+    "filter-3": {
+      "rung": 3,
+      "text": "Watch the filtrate run through."
+    },
+    "evap-1": {
+      "rung": 1,
+      "text": "Boil away water to concentrate the solution."
+    },
+    "evap-2": {
+      "rung": 2,
+      "text": "Keep heating until the readout shows about 7 mL left."
+    },
+    "evap-3": {
+      "rung": 3,
+      "text": "Watch the volume fall."
+    },
+    "cryst-1": {
+      "rung": 1,
+      "text": "Copper sulfate is less soluble in cold water."
+    },
+    "cryst-2": {
+      "rung": 2,
+      "text": "Wait or speed up time while it cools."
+    },
+    "cryst-3": {
+      "rung": 3,
+      "text": "Watch the crystals grow."
+    }
+  },
+  "observations": {
+    "whatHappened": "The black copper(II) oxide disappeared into the warm acid and the liquid turned blue. Once the acid was used up, black powder stayed at the bottom. After filtering, the clear blue solution was boiled down and, on cooling, bright blue crystals grew.",
+    "why": "Copper(II) oxide is a base: it neutralises sulfuric acid to make the salt copper(II) sulfate and water. Adding the oxide in excess makes sure all the acid reacts, and the extra solid is easy to filter off. Boiling away some water makes the solution more concentrated. Copper sulfate is less soluble in cold water, so as the saturated solution cools it can't hold it all and crystals form. They are hydrated: CuSO₄·5H₂O.",
+    "equationLatex": "\\mathrm{CuO(s) + H_2SO_4(aq) \\longrightarrow CuSO_4(aq) + H_2O(l)}",
+    "realWorld": [
+      "Making fertilisers and other salts in industry",
+      "Copper sulfate as a fungicide",
+      "Growing crystals for jewellery and electronics"
+    ],
+    "prompts": [
+      {
+        "id": "q-excess",
+        "question": "Why add copper(II) oxide until some is left over?",
+        "choices": [
+          "To make the crystals bigger",
+          "To make sure all the acid has reacted",
+          "Because it is a catalyst",
+          "To keep it warm"
+        ],
+        "answer": 1,
+        "explain": "Excess base uses up every bit of acid; the leftover solid is then filtered off."
+      },
+      {
+        "id": "q-type",
+        "question": "What type of reaction is base + acid → salt + water?",
+        "choices": [
+          "Displacement",
+          "Neutralisation",
+          "Decomposition",
+          "Combustion"
+        ],
+        "answer": 1,
+        "explain": "A base neutralises an acid, making a salt and water."
+      },
+      {
+        "id": "q-cool",
+        "question": "Why do crystals form as the solution cools?",
+        "choices": [
+          "Copper sulfate is less soluble in cold water",
+          "The water freezes",
+          "The acid evaporates",
+          "Cooling makes new copper"
+        ],
+        "answer": 0,
+        "explain": "A hot saturated solution holds more solute; on cooling the extra comes out as crystals."
+      }
+    ]
+  },
+  "safety": [
+    {
+      "when": "seen:boil:beaker",
+      "code": "boiling-acid",
+      "title": "Boiling acid",
+      "message": "The acid is boiling and spitting hot drops. Only warm it to about 50 °C, then turn the burner off.",
+      "restartFrom": "light"
+    },
+    {
+      "when": "seen:boil-dry:basin",
+      "code": "boiled-dry",
+      "title": "Heated to dryness",
+      "message": "Heating to dryness makes hot copper sulfate spit out of the basin and breaks down the crystals. Stop at about half volume and let it cool.",
+      "restartFrom": "relight"
+    }
+  ],
+  "golden": {
+    "durationS": 262,
+    "captions": [
+      {
+        "t": 0,
+        "text": "Goggles on. Warm dilute sulfuric acid reacts faster with the copper oxide: particles move faster."
+      },
+      {
+        "t": 23000,
+        "text": "Burner off. Now copper(II) oxide, a base, a spatula at a time with stirring..."
+      },
+      {
+        "t": 27000,
+        "text": "It dissolves and the liquid turns blue: copper(II) sulfate is forming. Base + acid → salt + water.",
+        "slow": true
+      },
+      {
+        "t": 46000,
+        "text": "Black powder stays: the oxide is in excess, so all the acid has been used up."
+      },
+      {
+        "t": 55000,
+        "text": "Filter off the excess. Clear blue copper sulfate solution runs through."
+      },
+      {
+        "t": 62000,
+        "text": "Boil off about half the water to make the solution more concentrated. Never boil it dry."
+      },
+      {
+        "t": 170000,
+        "text": "Burner off. Hot water holds more copper sulfate than cold water..."
+      },
+      {
+        "t": 240000,
+        "text": "...so as it cools, the extra comes out as blue crystals: CuSO₄·5H₂O."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "goggles",
+          "x": 0,
+          "y": 0,
+          "socket": "worn"
+        }
+      },
+      {
+        "t": 4000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "acid",
+          "to": "beaker",
+          "volumeMl": 15,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 3,
+          "peakRateMlPerS": 4,
+          "durationMs": 5000
+        }
+      },
+      {
+        "t": 9000,
+        "type": "param.set",
+        "payload": {
+          "key": "airhole:bunsen",
+          "value": true
+        }
+      },
+      {
+        "t": 10000,
+        "type": "heat.set",
+        "payload": {
+          "target": "bunsen",
+          "powerPct": 100
+        }
+      },
+      {
+        "t": 12000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "bunsen",
+          "to": "beaker",
+          "port": "under"
+        }
+      },
+      {
+        "t": 23000,
+        "type": "heat.set",
+        "payload": {
+          "target": "bunsen",
+          "powerPct": 0
+        }
+      },
+      {
+        "t": 25000,
+        "type": "solid.add",
+        "payload": {
+          "from": "cuo",
+          "to": "beaker",
+          "massG": 0.4
+        }
+      },
+      {
+        "t": 26000,
+        "type": "mix.stir",
+        "payload": {
+          "target": "beaker",
+          "intensity": "gentle",
+          "durationMs": 2500
+        }
+      },
+      {
+        "t": 31000,
+        "type": "solid.add",
+        "payload": {
+          "from": "cuo",
+          "to": "beaker",
+          "massG": 0.4
+        }
+      },
+      {
+        "t": 32000,
+        "type": "mix.stir",
+        "payload": {
+          "target": "beaker",
+          "intensity": "gentle",
+          "durationMs": 2500
+        }
+      },
+      {
+        "t": 37000,
+        "type": "solid.add",
+        "payload": {
+          "from": "cuo",
+          "to": "beaker",
+          "massG": 0.4
+        }
+      },
+      {
+        "t": 38000,
+        "type": "mix.stir",
+        "payload": {
+          "target": "beaker",
+          "intensity": "gentle",
+          "durationMs": 2500
+        }
+      },
+      {
+        "t": 43000,
+        "type": "solid.add",
+        "payload": {
+          "from": "cuo",
+          "to": "beaker",
+          "massG": 0.4
+        }
+      },
+      {
+        "t": 44000,
+        "type": "mix.stir",
+        "payload": {
+          "target": "beaker",
+          "intensity": "gentle",
+          "durationMs": 2500
+        }
+      },
+      {
+        "t": 55000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "beaker",
+          "to": "basin",
+          "port": "filter"
+        }
+      },
+      {
+        "t": 59000,
+        "type": "heat.set",
+        "payload": {
+          "target": "bunsen",
+          "powerPct": 100
+        }
+      },
+      {
+        "t": 61000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "bunsen",
+          "to": "basin",
+          "port": "under"
+        }
+      },
+      {
+        "t": 169000,
+        "type": "heat.set",
+        "payload": {
+          "target": "bunsen",
+          "powerPct": 0
+        }
+      },
+      {
+        "t": 256000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-excess",
+          "value": 1
+        }
+      },
+      {
+        "t": 257000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-type",
+          "value": 1
+        }
+      },
+      {
+        "t": 258000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-cool",
+          "value": 0
+        }
+      }
+    ]
+  }
+}

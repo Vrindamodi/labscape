@@ -1,0 +1,172 @@
+{
+  "id": "quiz-specific-heat-capacity",
+  "version": 1,
+  "experimentSlug": "specific-heat-capacity",
+  "title": "Specific heat capacity quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "shc": "Specific heat capacity",
+    "electrical-energy": "Electrical energy and power",
+    "heat-loss": "Errors and heat loss"
+  },
+  "questions": [
+    {
+      "id": "energy",
+      "type": "numerical",
+      "prompt": "A heater runs at 12 V and 4.0 A for 5 minutes. How much energy does it transfer?",
+      "conceptIds": [
+        "electrical-energy"
+      ],
+      "unit": "J",
+      "answer": 14400,
+      "tolerance": {
+        "abs": 50
+      },
+      "acceptUnits": [
+        "J",
+        "joules"
+      ],
+      "explanation": "E = V × I × t = 12 × 4.0 × 300 = 14 400 J. Remember t in seconds.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "calc-c",
+      "type": "numerical",
+      "prompt": "27 000 J warms a 1.0 kg metal block from 20 °C to 50 °C. What is the specific heat capacity of the metal?",
+      "conceptIds": [
+        "shc"
+      ],
+      "unit": "J/kg°C",
+      "answer": 900,
+      "tolerance": {
+        "abs": 5
+      },
+      "acceptUnits": [
+        "J/kg°C",
+        "J/kgC",
+        "J/(kg°C)",
+        "J/kg/°C",
+        "J/kgK"
+      ],
+      "explanation": "c = E ÷ (m Δθ) = 27 000 ÷ (1.0 × 30) = 900 J/kg°C.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "too-high",
+      "type": "multiple_choice",
+      "prompt": "A student's value of c is higher than the true value. What is the most likely reason?",
+      "conceptIds": [
+        "heat-loss"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Energy was lost to the surroundings, so the temperature rise was too small"
+        },
+        {
+          "id": "b",
+          "text": "The block was heated for too short a time"
+        },
+        {
+          "id": "c",
+          "text": "The ammeter read too low"
+        },
+        {
+          "id": "d",
+          "text": "The block was too heavy"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        0
+      ],
+      "explanation": "Not all of E heated the block. A smaller Δθ in c = E/(mΔθ) gives a bigger c.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "oil",
+      "type": "true_false",
+      "prompt": "A drop of oil in the thermometer hole improves thermal contact, so the thermometer reads closer to the block's real temperature.",
+      "conceptIds": [
+        "heat-loss"
+      ],
+      "answer": true,
+      "explanation": "Air is a poor conductor; oil fills the gap.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "steps",
+      "type": "arrange_steps",
+      "prompt": "Put the method in order.",
+      "conceptIds": [
+        "shc",
+        "electrical-energy"
+      ],
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Put the heater and thermometer (with oil) in the block and wrap it in insulation"
+        },
+        {
+          "id": "s2",
+          "text": "Record the starting temperature"
+        },
+        {
+          "id": "s3",
+          "text": "Switch on, read the voltmeter and ammeter, and start the stopwatch"
+        },
+        {
+          "id": "s4",
+          "text": "Record the temperature every minute for 10 minutes, then switch off"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "explanation": "Set up first, then the start temperature before any heating, then time the heating and record regularly.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "water",
+      "type": "predict_outcome",
+      "prompt": "Water has a specific heat capacity of 4200 J/kg°C; aluminium about 900 J/kg°C. The same heater warms 1 kg of each. Which warms up faster?",
+      "conceptIds": [
+        "shc"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Aluminium"
+        },
+        {
+          "id": "b",
+          "text": "Water"
+        },
+        {
+          "id": "c",
+          "text": "Both the same"
+        },
+        {
+          "id": "d",
+          "text": "It cannot be predicted"
+        }
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Aluminium needs less energy per kilogram for each degree, so its temperature rises faster.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

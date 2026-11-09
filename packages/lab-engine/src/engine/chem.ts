@@ -19,11 +19,16 @@ export type Ion =
   | "CH3COOH_T" // acetic acid + acetate total
   | "NH3_T" // ammonia + ammonium total
   | "CO3_T" // carbonate system total
-  | "phph" | "litmus" | "univ" | "mo"; // indicators (tiny amounts)
+  | "phph" | "litmus" | "univ" | "mo" // indicators (tiny amounts)
+  | "S2O3^2-" // thiosulfate
+  | "H2O2" // hydrogen peroxide (neutral)
+  | "soap" // washing-up liquid (neutral surfactant)
+  | "EtOH" // ethanol (neutral)
+  | "EtOAc"; // ethyl ethanoate, the ester (neutral)
 
 export const CHARGE: Partial<Record<Ion, number>> = {
   "Na+": 1, "K+": 1, "Li+": 1, "Ca2+": 2, "Mg2+": 2, "Ba2+": 2, "Cu2+": 2, "Fe2+": 2, "Zn2+": 2, "Ag+": 1, "Pb2+": 2,
-  "Cl-": -1, "SO4^2-": -2, "NO3-": -1, "I-": -1, "Br-": -1,
+  "Cl-": -1, "SO4^2-": -2, "NO3-": -1, "I-": -1, "Br-": -1, "S2O3^2-": -2,
 };
 
 /**
@@ -40,9 +45,14 @@ const K2_CARBONIC = 4.69e-11;
 export type Amounts = Partial<Record<Ion, number>>;
 
 /** Insoluble products. Hydroxides couple to pH; salts do not. */
-export type Precipitate = "Cu(OH)2" | "Fe(OH)2" | "Mg(OH)2" | "Zn(OH)2" | "BaSO4" | "AgCl" | "PbI2" | "CaSO4";
+export type Precipitate = "Cu(OH)2" | "Fe(OH)2" | "Mg(OH)2" | "Zn(OH)2" | "BaSO4" | "AgCl" | "PbI2" | "CaSO4" | "S" | "CuO" | "CuSO4.5H2O";
 
-type PptDef = { cation: Ion; anion: Ion | "OH-"; nCat: number; nAn: number; ksp: number; colour: Oklab; name: string };
+/**
+ * `kinetic` solids are not Ksp equilibria: the reducer makes and removes them over time (colloidal
+ * sulfur, undissolved copper(II) oxide, copper sulfate crystals). `turbidityPerM` sets how cloudy
+ * one mol/L of suspended solid looks (default 60).
+ */
+type PptDef = { cation: Ion; anion: Ion | "OH-"; nCat: number; nAn: number; ksp: number; colour: Oklab; name: string; kinetic?: true; turbidityPerM?: number };
 
 export const PRECIPITATES: Record<Precipitate, PptDef> = {
   "Cu(OH)2": { cation: "Cu2+", anion: "OH-", nCat: 1, nAn: 2, ksp: 2.2e-20, colour: { L: 0.74, a: -0.06, b: -0.09 }, name: "copper(II) hydroxide" },
@@ -53,6 +63,9 @@ export const PRECIPITATES: Record<Precipitate, PptDef> = {
   AgCl: { cation: "Ag+", anion: "Cl-", nCat: 1, nAn: 1, ksp: 1.8e-10, colour: { L: 0.97, a: 0, b: 0.01 }, name: "silver chloride" },
   PbI2: { cation: "Pb2+", anion: "I-", nCat: 1, nAn: 2, ksp: 9.8e-9, colour: { L: 0.86, a: 0.01, b: 0.17 }, name: "lead(II) iodide" },
   CaSO4: { cation: "Ca2+", anion: "SO4^2-", nCat: 1, nAn: 1, ksp: 4.9e-5, colour: { L: 0.98, a: 0, b: 0 }, name: "calcium sulfate" },
+  S: { cation: "S2O3^2-", anion: "Cl-", nCat: 1, nAn: 0, ksp: 0, colour: { L: 0.93, a: -0.01, b: 0.09 }, name: "sulfur", kinetic: true, turbidityPerM: 210 },
+  CuO: { cation: "Cu2+", anion: "OH-", nCat: 1, nAn: 0, ksp: 0, colour: { L: 0.22, a: 0, b: 0 }, name: "copper(II) oxide", kinetic: true, turbidityPerM: 12 },
+  "CuSO4.5H2O": { cation: "Cu2+", anion: "SO4^2-", nCat: 1, nAn: 1, ksp: 0, colour: { L: 0.6, a: -0.07, b: -0.17 }, name: "hydrated copper(II) sulfate", kinetic: true, turbidityPerM: 8 },
 };
 
 /** Charge-balance residual at a given [H+] (mol/L). Increasing in h. */
@@ -110,6 +123,7 @@ export function equilibrate(dissolved: Amounts, solids: Partial<Record<Precipita
   const litres = volumeMl / 1000;
   const active = (Object.keys(PRECIPITATES) as Precipitate[]).filter((k) => {
     const d = PRECIPITATES[k];
+    if (d.kinetic) return false;
     return (solids[k] ?? 0) > 0 || ((dissolved[d.cation] ?? 0) > 0 && (d.anion === "OH-" || (dissolved[d.anion as Ion] ?? 0) > 0));
   });
   if (!active.length) return { ph: solvePh(dissolved, volumeMl) };
@@ -248,7 +262,7 @@ export function appearance(dissolved: Amounts, solids: Partial<Record<Precipitat
   for (const k of Object.keys(solids) as Precipitate[]) {
     const mol = solids[k] ?? 0;
     if (mol <= 0) continue;
-    turbidity = Math.min(1, turbidity + (mol / litres) * 60);
+    turbidity = Math.min(1, turbidity + (mol / litres) * (PRECIPITATES[k].turbidityPerM ?? 60));
     if (mol > sedMol) {
       sedMol = mol;
       sediment = PRECIPITATES[k].colour;

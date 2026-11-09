@@ -2,6 +2,7 @@ import type { LabEvent } from "@labscape/contracts";
 import { runSim, simGoldenEvents } from "@labscape/physics/protocol";
 import { describe, expect, it } from "vitest";
 import { applyOp, sameFunction } from "./maths";
+import { sameGraph } from "./transformations";
 import { MATHS_CONTENT, MATHS_MODELS } from "./index";
 
 const run = (slug: string, events: LabEvent[]) => runSim(MATHS_CONTENT[slug]!, MATHS_MODELS[slug]!, events);
@@ -44,6 +45,17 @@ describe("maths mistakes are caught", () => {
   });
   it("dice: the wrong most likely total", () => {
     expect(codes("dice-probability", swap("dice-probability", (e) => e.type === "param.set" && e.payload.key === "result:mode", { key: "result:mode", value: 12 }))).toContain("wrong-mode");
+  });
+  it("transformations: shifting the wrong way inside the bracket", () => {
+    const es = swap("graph-transformations", (e) => e.type === "param.set" && e.payload.key === "c" && e.payload.value === 2, { key: "c", value: -2 });
+    const r = run("graph-transformations", es).report;
+    expect(r.deviations.map((d) => d.code)).toContain("no-match");
+    expect(r.deviations[0]!.message).toMatch(/backwards/);
+    expect(r.completed).toBe(false);
+  });
+  it("transformations: equivalent parameters draw the same graph", () => {
+    expect(sameGraph({ f: "x^2", a: -0.25, b: 2, c: -1, d: 4 }, { f: "x^2", a: -1, b: 1, c: -1, d: 4 })).toBe(true);
+    expect(sameGraph({ f: "abs", a: 1, b: -1, c: 0, d: 0 }, { f: "abs", a: -1, b: 1, c: 0, d: 0 })).toBe(false);
   });
   it("balance operations", () => {
     expect(applyOp({ x: 3, k: 4 }, "-4")).toEqual({ x: 3, k: 0 });

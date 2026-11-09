@@ -2,6 +2,7 @@ import type { WorkspaceProps } from "@labscape/physics";
 import type { ComponentType } from "react";
 import { BalanceWorkspace, QuadraticWorkspace, UnitCircleWorkspace } from "./AlgebraWorkspaces";
 import { DiceWorkspace, RiemannWorkspace, TangentWorkspace } from "./CalculusWorkspaces";
+import { TransformWorkspace } from "./TransformWorkspace";
 
 export * from "./Plot";
 export * from "./MathInput";
@@ -14,4 +15,5 @@ export const MATHS_WORKSPACES: Record<string, ComponentType<WorkspaceProps>> = {
   "derivative-as-slope": TangentWorkspace,
   "riemann-sums": RiemannWorkspace,
   "dice-probability": DiceWorkspace,
+  "graph-transformations": TransformWorkspace,
 };

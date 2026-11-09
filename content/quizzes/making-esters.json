@@ -1,0 +1,197 @@
+{
+  "id": "quiz-making-esters",
+  "version": 1,
+  "experimentSlug": "making-esters",
+  "title": "Esters quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "esters": "Esters",
+    "functional-groups": "Alcohols and carboxylic acids",
+    "lab-safety": "Working safely"
+  },
+  "questions": [
+    {
+      "id": "reactants",
+      "type": "multiple_choice",
+      "prompt": "Which two substances react to make an ester?",
+      "conceptIds": [
+        "esters"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "An alcohol and a carboxylic acid"
+        },
+        {
+          "id": "b",
+          "text": "An alkane and water"
+        },
+        {
+          "id": "c",
+          "text": "An acid and a metal"
+        },
+        {
+          "id": "d",
+          "text": "Two alcohols"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        0
+      ],
+      "explanation": "Alcohol + carboxylic acid ⇌ ester + water.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "name",
+      "type": "fill_blank",
+      "prompt": "Ethanol + ethanoic acid → ethyl ___ + water",
+      "conceptIds": [
+        "esters"
+      ],
+      "blanks": 1,
+      "answer": [
+        [
+          "ethanoate"
+        ]
+      ],
+      "explanation": "The ester is ethyl ethanoate.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "groups",
+      "type": "match",
+      "prompt": "Match each substance to its family.",
+      "conceptIds": [
+        "functional-groups"
+      ],
+      "left": [
+        {
+          "id": "l1",
+          "text": "Ethanol"
+        },
+        {
+          "id": "l2",
+          "text": "Ethanoic acid"
+        },
+        {
+          "id": "l3",
+          "text": "Ethyl ethanoate"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Alcohol (-OH)"
+        },
+        {
+          "id": "r2",
+          "text": "Carboxylic acid (-COOH)"
+        },
+        {
+          "id": "r3",
+          "text": "Ester (-COO-)"
+        }
+      ],
+      "answer": [
+        [
+          "l1",
+          "r1"
+        ],
+        [
+          "l2",
+          "r2"
+        ],
+        [
+          "l3",
+          "r3"
+        ]
+      ],
+      "explanation": "Each family has its own functional group.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "catalyst",
+      "type": "multiple_choice",
+      "prompt": "What is the concentrated sulfuric acid for?",
+      "conceptIds": [
+        "esters"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It is a catalyst"
+        },
+        {
+          "id": "b",
+          "text": "It is the main reactant"
+        },
+        {
+          "id": "c",
+          "text": "It neutralises the ester"
+        },
+        {
+          "id": "d",
+          "text": "It adds colour"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        0
+      ],
+      "explanation": "It speeds up the slow reaction without being used up.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "bath",
+      "type": "multiple_choice",
+      "prompt": "Why is a hot water bath used instead of a Bunsen burner?",
+      "conceptIds": [
+        "lab-safety"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Ethanol is highly flammable"
+        },
+        {
+          "id": "b",
+          "text": "Water baths are hotter"
+        },
+        {
+          "id": "c",
+          "text": "Bunsens are slower"
+        },
+        {
+          "id": "d",
+          "text": "Esters freeze"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        0
+      ],
+      "explanation": "Ethanol vapour can catch fire from a naked flame.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "waft",
+      "type": "true_false",
+      "prompt": "You should smell the product by wafting the vapour towards your nose, not sniffing from the tube.",
+      "conceptIds": [
+        "lab-safety"
+      ],
+      "answer": true,
+      "explanation": "Wafting gives a small, safe sample of the vapour.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

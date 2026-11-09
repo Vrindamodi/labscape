@@ -100,3 +100,35 @@ describe("physics mistakes are caught", () => {
     expect(c).toContain("touching");
   });
 });
+
+describe("new physics benches catch mistakes", () => {
+  it("Newton's second law: no friction compensation, masses from the box, a wrong mass", () => {
+    const es = edit("newtons-second-law", (es) => {
+      const out = es.filter((e) => !(e.type === "param.set" && e.payload.key === "nudge"));
+      const i = out.findIndex((e) => e.type === "param.set" && e.payload.value === "to-hanger");
+      out[i] = { ...out[i]!, payload: { key: "move", value: "box-to-hanger" } } as LabEvent;
+      return out.map((e) => (e.type === "param.set" && e.payload.key === "result:m" ? ({ ...e, payload: { key: "result:m", value: 1.6 } } as LabEvent) : e));
+    });
+    const c = codes("newtons-second-law", es);
+    expect(c).toContain("friction");
+    expect(c).toContain("mass-changed");
+    expect(c).toContain("wrong-mass");
+  });
+  it("Specific heat: heating without insulation or a start temperature, and a wrong c", () => {
+    const isThermo = (e: LabEvent) => e.type === "measure.read" && e.payload.instrument === "thermometer";
+    const es = edit("specific-heat-capacity", (es) => {
+      const first = es.findIndex(isThermo);
+      return es
+        .filter((e, i) => i !== first && !(e.type === "param.set" && e.payload.key === "insulate"))
+        .map((e) => (e.type === "param.set" && e.payload.key === "result:c" ? ({ ...e, payload: { key: "result:c", value: 4200 } } as LabEvent) : e));
+    });
+    const c = codes("specific-heat-capacity", es);
+    expect(c).toContain("no-insulation");
+    expect(c).toContain("no-start-temp");
+    expect(c).toContain("wrong-c");
+  });
+  it("Specific heat: switching the heater on outside the block stops the run", () => {
+    const es = edit("specific-heat-capacity", (es) => es.filter((e) => !(e.type === "param.set" && e.payload.key === "heater-in")));
+    expect(run("specific-heat-capacity", es).report.stoppedForSafety).toBe(true);
+  });
+});

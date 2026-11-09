@@ -403,6 +403,12 @@ function Visual({ item, state, cues, quality, reducedMotion }: { item: Item; sta
             <meshStandardMaterial color="#d6a96b" roughness={0.8} />
           </mesh>
           {item.lit && <SmallFlame position={[0, 0.6, 0]} colour="#ffb347" reducedMotion={reducedMotion} />}
+          {item.glowing && (
+            <mesh position={[0, 0.56, 0]}>
+              <sphereGeometry args={[0.022, 10, 8]} />
+              <meshStandardMaterial color="#ff5a1f" emissive="#ff3d00" emissiveIntensity={1.5} />
+            </mesh>
+          )}
         </group>
       );
     case "wire_loop":
@@ -435,6 +441,13 @@ function Visual({ item, state, cues, quality, reducedMotion }: { item: Item; sta
       );
     case "watch_glass":
       return <WatchGlass item={item} />;
+    case "litmus_paper":
+      return (
+        <mesh position={[0, 0.01, 0]}>
+          <boxGeometry args={[0.08, 0.004, 0.28]} />
+          <meshStandardMaterial color={item.litmus === "red" ? "#d6336c" : item.litmus === "bleached" ? "#f1f3f5" : "#3b5bdb"} roughness={0.9} />
+        </mesh>
+      );
     case "glass_rod":
       return (
         <mesh rotation-z={Math.PI / 2} position={[0, 0.03, 0]}>
@@ -551,7 +564,7 @@ function Vessel({ item, glass, quality, reducedMotion }: { item: Item; glass: TH
   const isTube = item.kind === "test_tube" || item.kind === "boiling_tube";
   const isBottle = item.kind === "reagent_bottle" || item.kind === "dropper_bottle" || item.kind === "wash_bottle";
   const sediment = item.liquid ? Object.values(item.liquid.solids).reduce((a, b) => a + (b ?? 0), 0) : 0;
-  const gasActive = item.metals.some((m) => m.symbol === "Mg" && m.mol > 1e-6) || (item.liquid?.tempC ?? 0) > 99;
+  const gasActive = item.metals.some((m) => m.symbol === "Mg" && m.mol > 1e-6) || (item.liquid?.tempC ?? 0) > 99 || !!item.bubbling;
   const label = isBottle && item.reagentId ? reagent(item.reagentId) : null;
 
   return (
@@ -576,12 +589,14 @@ function Vessel({ item, glass, quality, reducedMotion }: { item: Item; glass: TH
       {liquid && gasActive && <Bubbles radius={liquid.rTop * 0.8} height={liquid.h} count={quality === "high" ? 70 : 24} reducedMotion={reducedMotion} />}
       {item.metals.map((m, i) =>
         m.mol > 1e-7 ? (
-          <mesh key={i} position={[0, 0.05, 0]} rotation-z={m.symbol === "Fe" ? 0.25 : 0}>
-            {m.symbol === "Fe" ? <cylinderGeometry args={[0.018, 0.018, Math.min(1.2, lipHeightMm(item.kind) * U * 0.9), 10]} /> : <boxGeometry args={[0.08 * Math.cbrt(m.mol / m.initialMol), 0.012, 0.04]} />}
-            <meshStandardMaterial color={m.symbol === "Fe" ? new THREE.Color("#8a8f99").lerp(new THREE.Color("#b5673d"), Math.min(1, item.depositMol / 2e-3)) : "#c9ccd2"} metalness={0.8} roughness={0.35} />
+          <mesh key={i} position={[0, 0.05, 0]} rotation-z={m.symbol === "Fe" && m.area < 0.5 ? 0.25 : 0}>
+            {m.symbol === "Fe" && m.area < 0.5 ? <cylinderGeometry args={[0.018, 0.018, Math.min(1.2, lipHeightMm(item.kind) * U * 0.9), 10]} /> : <boxGeometry args={[0.08 * Math.cbrt(m.mol / m.initialMol), 0.012, 0.04]} />}
+            <meshStandardMaterial color={metalColour(m.symbol, item)} metalness={0.8} roughness={0.35} />
           </mesh>
         ) : null,
       )}
+      {liquid && (item.foamMl ?? 0) > 1 && <Foam item={item} rTop={liquid.rTop} h={liquid.h} />}
+      {item.electrodes && <Electrodes item={item} />}
       <mesh geometry={glassGeom} material={glass} renderOrder={3} castShadow={quality === "high"} />
       {isBottle && (
         <>
@@ -593,6 +608,60 @@ function Vessel({ item, glass, quality, reducedMotion }: { item: Item; glass: TH
         </>
       )}
       {isTube && item.gasTo === null && (item.gasMl?.["H2"] ?? 0) > 0 && null}
+    </group>
+  );
+}
+
+/* Part 5 visuals: metal colours after displacement, foam, electrodes, litmus paper. */
+const METAL_HEX: Record<string, string> = { Mg: "#c9ccd2", Zn: "#a9b1bb", Fe: "#8a8f99", Cu: "#c27a4a" };
+const DEPOSIT_HEX: Record<string, string> = { Cu: "#b5673d", Zn: "#5f6670", Fe: "#2e3136", Mg: "#d9dce1" };
+
+function metalColour(symbol: string, item: Item) {
+  // An iron nail in copper(II) sulfate keeps its original look; other pairs coat with the displaced metal.
+  const to = item.depositOf ? DEPOSIT_HEX[item.depositOf]! : symbol === "Fe" ? DEPOSIT_HEX.Cu! : null;
+  const base = new THREE.Color(METAL_HEX[symbol] ?? "#c9ccd2");
+  return to ? base.lerp(new THREE.Color(to), Math.min(1, item.depositMol / 2e-3)) : base;
+}
+
+/** Foam standing on the liquid and spilling out of the top (elephant toothpaste). */
+function Foam({ item, rTop, h }: { item: Item; rTop: number; h: number }) {
+  const lip = lipHeightMm(item.kind) * U;
+  const area = Math.PI * Math.pow(rTop / U, 2); // mm²
+  const height = Math.min(lip * 2.6, ((item.foamMl ?? 0) * 1000) / Math.max(area, 1) * U);
+  return (
+    <group>
+      <mesh position={[0, h + height / 2, 0]} renderOrder={2}>
+        <cylinderGeometry args={[rTop * 1.02, rTop * 0.98, height, 20]} />
+        <meshStandardMaterial color="#fbf3dc" roughness={1} transparent opacity={0.95} />
+      </mesh>
+      {h + height > lip && (
+        <mesh position={[0, h + height, 0]} renderOrder={2}>
+          <sphereGeometry args={[rTop * 1.5, 16, 12]} />
+          <meshStandardMaterial color="#fdf6e3" roughness={1} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+/** Two carbon rods dipping into the cell: cathode (-) left, anode (+) right. */
+function Electrodes({ item }: { item: Item }) {
+  const lip = lipHeightMm(item.kind) * U;
+  const r = KINDS[item.kind].profile[0]![0] * U;
+  return (
+    <group>
+      {[-1, 1].map((side) => (
+        <group key={side} position={[side * r * 0.45, lip * 0.65, 0]}>
+          <mesh>
+            <cylinderGeometry args={[0.022, 0.022, lip * 1.1, 10]} />
+            <meshStandardMaterial color="#2a2a2e" roughness={0.6} />
+          </mesh>
+          <mesh position={[0, lip * 0.58, 0]}>
+            <sphereGeometry args={[0.03, 10, 8]} />
+            <meshStandardMaterial color={side < 0 ? "#1f2937" : "#dc2626"} emissive={(item.volts ?? 0) > 0 ? (side < 0 ? "#334155" : "#ef4444") : "#000"} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 }

@@ -1,0 +1,171 @@
+{
+  "id": "quiz-newtons-second-law",
+  "version": 1,
+  "experimentSlug": "newtons-second-law",
+  "title": "Newton's second law quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "f-ma": "Force, mass and acceleration",
+    "fair-test": "Fair testing and variables",
+    "light-gates": "Measuring acceleration"
+  },
+  "questions": [
+    {
+      "id": "calc-a",
+      "type": "numerical",
+      "prompt": "A resultant force of 1.2 N acts on a trolley of total mass 0.60 kg. What is its acceleration?",
+      "conceptIds": [
+        "f-ma"
+      ],
+      "unit": "m/s²",
+      "answer": 2,
+      "tolerance": {
+        "abs": 0.05
+      },
+      "acceptUnits": [
+        "m/s²",
+        "m/s^2",
+        "ms^-2",
+        "m s^-2"
+      ],
+      "explanation": "a = F ÷ m = 1.2 ÷ 0.60 = 2.0 m/s².",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "double-f",
+      "type": "predict_outcome",
+      "prompt": "The total mass stays the same and the pulling force is doubled. What happens to the acceleration?",
+      "conceptIds": [
+        "f-ma"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It halves"
+        },
+        {
+          "id": "b",
+          "text": "It stays the same"
+        },
+        {
+          "id": "c",
+          "text": "It doubles"
+        },
+        {
+          "id": "d",
+          "text": "It quadruples"
+        }
+      ],
+      "answer": [
+        2
+      ],
+      "explanation": "a = F/m: with m fixed, a is directly proportional to F.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "control",
+      "type": "multiple_choice",
+      "prompt": "To investigate how force affects acceleration, which variable must be kept the same?",
+      "conceptIds": [
+        "fair-test"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "The total mass being accelerated"
+        },
+        {
+          "id": "b",
+          "text": "The pulling force"
+        },
+        {
+          "id": "c",
+          "text": "The acceleration"
+        },
+        {
+          "id": "d",
+          "text": "The speed at gate 2"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        0
+      ],
+      "explanation": "That is why masses are moved from the trolley to the hanger instead of being added from a box.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "friction",
+      "type": "true_false",
+      "prompt": "Tilting the runway until a nudged trolley rolls at a steady speed cancels out the effect of friction.",
+      "conceptIds": [
+        "fair-test",
+        "f-ma"
+      ],
+      "answer": true,
+      "explanation": "A component of the trolley's weight down the slope balances friction, so the resultant force is just the weight of the hanger.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "gates",
+      "type": "numerical",
+      "prompt": "A 10 cm card takes 0.20 s to pass gate 1 and 0.10 s to pass gate 2. The gates are 0.50 m apart. What is the acceleration?",
+      "conceptIds": [
+        "light-gates"
+      ],
+      "unit": "m/s²",
+      "answer": 0.75,
+      "tolerance": {
+        "abs": 0.02
+      },
+      "acceptUnits": [
+        "m/s²",
+        "m/s^2",
+        "ms^-2",
+        "m s^-2"
+      ],
+      "explanation": "v₁ = 0.10 ÷ 0.20 = 0.50 m/s, v₂ = 0.10 ÷ 0.10 = 1.0 m/s. a = (1.0² − 0.50²) ÷ (2 × 0.50) = 0.75 m/s².",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "gradient",
+      "type": "multiple_choice",
+      "prompt": "On a graph of acceleration (y) against force (x), what does the gradient tell you?",
+      "conceptIds": [
+        "f-ma"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "The mass"
+        },
+        {
+          "id": "b",
+          "text": "1 ÷ mass"
+        },
+        {
+          "id": "c",
+          "text": "The weight"
+        },
+        {
+          "id": "d",
+          "text": "The friction force"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "a = (1/m) × F, so the gradient is 1/m. The mass is 1 ÷ gradient.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

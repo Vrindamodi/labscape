@@ -1,0 +1,178 @@
+{
+  "id": "quiz-metal-displacement",
+  "version": 1,
+  "experimentSlug": "metal-displacement",
+  "title": "Displacement reactions quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "displacement": "Displacement reactions",
+    "reactivity-series": "The reactivity series",
+    "ions": "Metal ions"
+  },
+  "questions": [
+    {
+      "id": "zn-cu",
+      "type": "predict_outcome",
+      "prompt": "Zinc is put into copper(II) sulfate solution. What happens?",
+      "conceptIds": [
+        "displacement"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Nothing"
+        },
+        {
+          "id": "b",
+          "text": "Copper coats the zinc and the blue fades"
+        },
+        {
+          "id": "c",
+          "text": "Zinc coats the copper"
+        },
+        {
+          "id": "d",
+          "text": "Hydrogen gas is made"
+        }
+      ],
+      "answer": [
+        1
+      ],
+      "explanation": "Zinc is more reactive than copper, so it displaces it: Zn + CuSO₄ → ZnSO₄ + Cu.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "cu-zn",
+      "type": "predict_outcome",
+      "prompt": "Copper is put into zinc sulfate solution. What happens?",
+      "conceptIds": [
+        "displacement"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Nothing"
+        },
+        {
+          "id": "b",
+          "text": "Zinc coats the copper"
+        },
+        {
+          "id": "c",
+          "text": "The solution turns blue at once"
+        },
+        {
+          "id": "d",
+          "text": "It fizzes"
+        }
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Copper is less reactive than zinc, so it cannot displace it.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "series",
+      "type": "arrange_steps",
+      "prompt": "Arrange these metals from most reactive to least reactive.",
+      "conceptIds": [
+        "reactivity-series"
+      ],
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Magnesium"
+        },
+        {
+          "id": "s2",
+          "text": "Zinc"
+        },
+        {
+          "id": "s3",
+          "text": "Iron"
+        },
+        {
+          "id": "s4",
+          "text": "Copper"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "explanation": "Each metal displaced the one below it but not the one above.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "word",
+      "type": "fill_blank",
+      "prompt": "Fill in the blank: iron + copper sulfate → iron sulfate + ___",
+      "conceptIds": [
+        "displacement"
+      ],
+      "blanks": 1,
+      "answer": [
+        [
+          "copper",
+          "Cu"
+        ]
+      ],
+      "explanation": "Iron takes copper's place in the compound, and copper comes out as the metal.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "electrons",
+      "type": "multiple_choice",
+      "prompt": "In Mg + Cu²⁺ → Mg²⁺ + Cu, what does the magnesium atom do?",
+      "conceptIds": [
+        "ions"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Gains electrons"
+        },
+        {
+          "id": "b",
+          "text": "Loses two electrons"
+        },
+        {
+          "id": "c",
+          "text": "Shares electrons"
+        },
+        {
+          "id": "d",
+          "text": "Nothing"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Mg → Mg²⁺ + 2e⁻. More reactive metals lose electrons more easily.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "heat",
+      "type": "true_false",
+      "prompt": "The bigger the gap between two metals in the reactivity series, the more energy is released when one displaces the other.",
+      "conceptIds": [
+        "reactivity-series"
+      ],
+      "answer": true,
+      "explanation": "Magnesium displacing copper is much hotter than iron displacing copper.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

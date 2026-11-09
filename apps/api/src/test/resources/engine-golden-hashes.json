@@ -27,6 +27,30 @@
     "hash": "1f185411be5b24",
     "score": 100
   },
+  "elephant-toothpaste": {
+    "hash": "0cf5c37bec1267",
+    "score": 100
+  },
+  "metal-displacement": {
+    "hash": "1b27469db407ec",
+    "score": 100
+  },
+  "disappearing-cross": {
+    "hash": "1c6c84d9d48960",
+    "score": 100
+  },
+  "making-copper-sulfate": {
+    "hash": "101cbb2a3e0bf3",
+    "score": 100
+  },
+  "making-esters": {
+    "hash": "04063b6af5ef98",
+    "score": 100
+  },
+  "electrolysis-of-brine": {
+    "hash": "0c0e2cbe001afa",
+    "score": 100
+  },
   "ohms-law": {
     "hash": "18d20c7696d74b",
     "score": 100
@@ -51,6 +75,14 @@
     "hash": "154e0a8eafe7bd",
     "score": 100
   },
+  "newtons-second-law": {
+    "hash": "1202b95c6dc641",
+    "score": 100
+  },
+  "specific-heat-capacity": {
+    "hash": "0a8083ced0368a",
+    "score": 100
+  },
   "quadratic-explorer": {
     "hash": "0de1ee28c3cd5c",
     "score": 100
@@ -73,6 +105,10 @@
   },
   "dice-probability": {
     "hash": "1f40d3dbaff5f0",
+    "score": 100
+  },
+  "graph-transformations": {
+    "hash": "03df5ee1b7db06",
     "score": 100
   }
 }

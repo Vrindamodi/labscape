@@ -1,0 +1,186 @@
+{
+  "id": "quiz-making-copper-sulfate",
+  "version": 1,
+  "experimentSlug": "making-copper-sulfate",
+  "title": "Making salts quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "making-salts": "Making soluble salts",
+    "neutralisation": "Neutralisation",
+    "crystallisation": "Crystallisation"
+  },
+  "questions": [
+    {
+      "id": "method",
+      "type": "arrange_steps",
+      "prompt": "Put the steps for making copper sulfate crystals in order.",
+      "conceptIds": [
+        "making-salts"
+      ],
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Warm the dilute sulfuric acid"
+        },
+        {
+          "id": "s2",
+          "text": "Add copper(II) oxide until some is left over"
+        },
+        {
+          "id": "s3",
+          "text": "Filter off the excess oxide"
+        },
+        {
+          "id": "s4",
+          "text": "Heat the filtrate to evaporate about half the water"
+        },
+        {
+          "id": "s5",
+          "text": "Leave it to cool and crystallise"
+        }
+      ],
+      "answer": [
+        "s1",
+        "s2",
+        "s3",
+        "s4",
+        "s5"
+      ],
+      "explanation": "React, remove the excess, concentrate, then crystallise.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "why-excess",
+      "type": "multiple_choice",
+      "prompt": "Why is the copper(II) oxide added in excess?",
+      "conceptIds": [
+        "making-salts"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "To make the crystals blue"
+        },
+        {
+          "id": "b",
+          "text": "To make sure all the acid is used up"
+        },
+        {
+          "id": "c",
+          "text": "Because it is a catalyst"
+        },
+        {
+          "id": "d",
+          "text": "To speed up filtering"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Any leftover acid would contaminate the crystals; leftover solid is easy to filter.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "salt",
+      "type": "fill_blank",
+      "prompt": "Fill in the blank: copper(II) oxide + sulfuric acid → copper(II) sulfate + ___",
+      "conceptIds": [
+        "neutralisation"
+      ],
+      "blanks": 1,
+      "answer": [
+        [
+          "water",
+          "H2O",
+          "H₂O"
+        ]
+      ],
+      "explanation": "Base + acid → salt + water.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "type",
+      "type": "multiple_choice",
+      "prompt": "Copper(II) oxide reacts with acid because it is a...",
+      "conceptIds": [
+        "neutralisation"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Metal"
+        },
+        {
+          "id": "b",
+          "text": "Base"
+        },
+        {
+          "id": "c",
+          "text": "Catalyst"
+        },
+        {
+          "id": "d",
+          "text": "Indicator"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Metal oxides are bases: they neutralise acids.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "dry",
+      "type": "true_false",
+      "prompt": "You should heat the solution until all the water has gone.",
+      "conceptIds": [
+        "crystallisation"
+      ],
+      "answer": false,
+      "explanation": "Heating to dryness makes it spit and breaks down the hydrated crystals. Stop at about half and let it cool.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "cool",
+      "type": "multiple_choice",
+      "prompt": "Why do crystals form when the hot concentrated solution cools?",
+      "conceptIds": [
+        "crystallisation"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Copper sulfate is less soluble in cold water"
+        },
+        {
+          "id": "b",
+          "text": "The water freezes"
+        },
+        {
+          "id": "c",
+          "text": "Cooling makes more copper sulfate"
+        },
+        {
+          "id": "d",
+          "text": "The acid reacts again"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        0
+      ],
+      "explanation": "A cold solution can hold less solute, so the extra comes out as crystals.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}
