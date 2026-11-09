@@ -29,17 +29,15 @@ class PlaygroundSessionsTest {
     @Autowired ObjectMapper mapper;
 
     @Test
-    void freePlanGetsFiveSessionsADayAndResumingTodayIsFree() throws Exception {
+    void freePlanSessionsAreUnlimitedAndResumingTodayWorks() throws Exception {
         Cookie c = guest();
         String first = null;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             JsonNode s = send(c, Map.of("mode", i % 2 == 0 ? "circuits" : "graphing"), status().isOk());
             if (first == null) first = s.path("id").asText();
             assertThat(s.path("usage").path("usedToday").asInt()).isEqualTo(i + 1);
-            assertThat(s.path("usage").path("limit").asInt()).isEqualTo(5);
+            assertThat(s.path("usage").path("limit").isNumber()).isFalse(); // no limit (null or omitted)
         }
-        JsonNode refused = send(c, Map.of("mode", "motion"), status().isPaymentRequired());
-        assertThat(refused.path("code").asText()).isEqualTo("PLAYGROUND_LIMIT_REACHED");
 
         // Save a build, then reopen it: today's session reopens without using the limit.
         Map<String, Object> build = Map.of("parts", List.of(Map.of("id", "B1", "kind", "battery", "value", 6)), "wires", List.of());
@@ -50,9 +48,9 @@ class PlaygroundSessionsTest {
         assertThat(resumed.path("snapshot").path("parts").get(0).path("kind").asText()).isEqualTo("battery");
 
         JsonNode history = json(mvc.perform(get("/v1/playground/sessions").cookie(c)).andExpect(status().isOk()));
-        assertThat(history.path("sessions").size()).isEqualTo(5);
+        assertThat(history.path("sessions").size()).isEqualTo(6);
         assertThat(history.path("sessions").get(0).path("title").asText()).isEqualTo("My first circuit");
-        assertThat(history.path("usage").path("usedToday").asInt()).isEqualTo(5);
+        assertThat(history.path("usage").path("usedToday").asInt()).isEqualTo(6);
 
         // Wrong mode and other people's sessions are refused.
         send(c, Map.of("mode", "graphing", "resume", first), status().isBadRequest());

@@ -10,7 +10,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 import { api, ApiError, post } from "../lib/api";
 
 export type Mode = "chemistry" | "circuits" | "motion" | "graphing";
-type Usage = { usedToday: number; limit: number | null };
+type Usage = { usedToday: number; limit?: number | null };
 type Item = { id: string; mode: Mode; title: string | null; startedAt: string; updatedAt: string; hasSnapshot: boolean };
 type Started = { id: string; mode: Mode; snapshot: unknown; usage: Usage };
 
@@ -56,7 +56,7 @@ const BRIDGES: { id: string; title: string; body: string; graph: GraphBuild; oth
 const fmtWhen = (s: string) => new Date(s).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
 function UsageMeter({ usage }: { usage: Usage }) {
-  if (usage.limit === null)
+  if (usage.limit == null)
     return (
       <span className="flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1 text-xs font-semibold text-amber-200">
         <InfinityIcon className="h-4 w-4" /> Unlimited sessions

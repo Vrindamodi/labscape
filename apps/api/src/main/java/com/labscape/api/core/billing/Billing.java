@@ -57,7 +57,7 @@ public class Billing {
     public static final List<Plan> PLANS = List.of(
             new Plan("free", "Free", 0, "forever", List.of(
                     "Selected experiments in every subject",
-                    "Playground: 5 sessions a day",
+                    "Unlimited playground sessions",
                     "AI assistant: 10 messages a day",
                     "Starter emergency scenarios",
                     "Basic progress tracking"), null, false),
