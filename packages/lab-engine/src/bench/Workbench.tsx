@@ -1,14 +1,14 @@
 import { useMotion } from "@labscape/motion";
 import { cx, Kbd } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
-import { Droplet, Droplets, Eye, Flame, Glasses, Hand, Minus, MoveDown, Plus, RotateCw, ThermometerSun, Vibrate, Wind, X, Zap } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { Droplet, Droplets, Eye, Flame, Glasses, Hand, Minus, MoveDown, Plus, RotateCw, Snowflake, ThermometerSun, Vibrate, Wind, X, Zap } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { buretteRateMlPerS, DROP_ML, KINDS, pourRateMlPerS, type EquipmentKind } from "../engine/equipment";
 import { reagent } from "../engine/reagents";
 import { look, type Item } from "../engine/state";
 import type { StepSpec } from "../protocol/types";
 import { DockButton, DockSeparator, Glass, GhostButton, Kicker, PrimaryButton, Readout, Segmented, SquareButton, TiltGauge } from "../studio/Glass";
-import { Bench3D, PourStream, type HandState, type MixKind, type PourAnim, type Quality } from "./Bench3D";
+import { beginHandDrag, Bench3D, PourStream, type BenchFrame, type HandState, type MixKind, type PourAnim, type Quality } from "./Bench3D";
 import { labSound, LoopSound } from "./labSound";
 import type { LabSession } from "./useLabSession";
 
@@ -23,6 +23,27 @@ export type WorkbenchProps = {
   /** Extra overlay content (captions). */
   overlay?: ReactNode;
   className?: string;
+  /**
+   * "studio": the playground look. Stir, swirl and shake toggle on and off (so you can stir while you
+   * pour), the dock gains Heat and Ice bath, and dockExtra (Undo, Reset step) sits at its end.
+   */
+  chrome?: "classic" | "studio";
+  /** Extra dock buttons (studio). */
+  dockExtra?: ReactNode;
+  /** Lets a shelf outside the bench pick things up, or start dragging them onto the bench. */
+  control?: MutableRefObject<WorkbenchControl | null>;
+  /** Called when the item in hand (or selected) changes. */
+  onHeldChange?: (id: string | null) => void;
+  /** Camera framing (close-up on the items in use). */
+  frame?: BenchFrame | null;
+};
+
+export type WorkbenchControl = {
+  /** Pick this item up (or select it) as if it was clicked on the bench. */
+  pickUp: (id: string) => void;
+  /** Pick it up and start carrying it with the pointer: releasing it over a glowing vessel uses it. */
+  dragFromShelf: (id: string) => void;
+  putDown: () => void;
 };
 
 const MASS_G: Record<string, number> = { "mg-ribbon": 0.05, "iron-nail": 3 };
@@ -101,7 +122,8 @@ function safeReagent(id: string | undefined) {
 
 const fmtMl = (v: number) => (v < 10 ? v.toFixed(2) : v.toFixed(1));
 
-export function Workbench({ session, step, onLiveWarning, readOnly, overlay, className }: WorkbenchProps) {
+export function Workbench({ session, step, onLiveWarning, readOnly, overlay, className, chrome = "classic", dockExtra, control, onHeldChange, frame }: WorkbenchProps) {
+  const studio = chrome === "studio";
   const { reduced } = useMotion();
   const { state, dispatch } = session;
   /** The item in hand (or inspected, for things you do not pick up such as a burner). */
@@ -159,6 +181,8 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
     setAmount(null);
     setPoured(0);
   }, []);
+
+  useEffect(() => onHeldChange?.(selected), [selected, onHeldChange]);
 
   /* ---------------------------------------------------------------- targets and guidance */
 
@@ -234,6 +258,27 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
     setPouring(false);
     labSound.clink(0.6);
   };
+
+  const pickUp = (id: string) => {
+    if (readOnly || !state.items[id]) return;
+    setSelected(id);
+    setVerb(null);
+    setPourTarget(null);
+    setPouring(false);
+    labSound.clink(0.6);
+  };
+  if (control) {
+    control.current = {
+      pickUp,
+      dragFromShelf: (id) => {
+        const it = state.items[id];
+        if (readOnly || !it || it.socket === "worn") return;
+        pickUp(id);
+        if (verbsFor(it).some((v) => v.target)) beginHandDrag(it.x, it.z);
+      },
+      putDown,
+    };
+  }
 
   const onDropOnto = (held: string, target: string) => {
     if (readOnly || held !== selected || !activeVerb?.target) return;
@@ -394,10 +439,25 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
 
   /* ---------------------------------------------------------------- mixing (hold) */
 
+  // The vessel the dock's Stir, Swirl, Shake and Ice bath act on: the pour target, else the vessel in
+  // hand; in the studio also the step's destination or the last vessel something went into.
+  const lastInto = useMemo(() => {
+    for (let i = session.events.length - 1; i >= 0; i--) {
+      const p = session.events[i]!.payload as { to?: string; into?: string };
+      const id = p.to ?? p.into;
+      if (id && state.items[id] && MIXABLE.includes(state.items[id]!.kind)) return id;
+    }
+    return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.events.length, state.items]);
   const mixTarget = (() => {
-    const id = pourTarget?.to ?? (sel && MIXABLE.includes(sel.kind) ? sel.id : null);
-    const it = id ? state.items[id] : null;
-    return it?.liquid && it.liquid.volumeMl > 0 ? it : null;
+    const has = (id: string | null | undefined) => {
+      const it = id ? state.items[id] : null;
+      return it?.liquid && it.liquid.volumeMl > 0 && MIXABLE.includes(it.kind) ? it : null;
+    };
+    const direct = pourTarget?.to ?? (sel && MIXABLE.includes(sel.kind) ? sel.id : null);
+    if (direct || !studio) return has(direct);
+    return has(step?.to) ?? has(lastInto);
   })();
   const canMix = (k: MixKind) => !!mixTarget && (k === "shake" ? mixTarget.kind === "test_tube" || mixTarget.kind === "boiling_tube" : k === "stir" ? (mixTarget.kind === "beaker_100" || mixTarget.kind === "beaker_250") && items.some((i) => i.kind === "glass_rod") : mixTarget.kind !== "test_tube" && mixTarget.kind !== "boiling_tube");
   const mixRef = useRef<{ kind: MixKind; start: number; target: string } | null>(null);
@@ -406,6 +466,38 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
     mixRef.current = { kind, start: performance.now(), target: mixTarget.id };
     setMix(kind);
   };
+  /* studio: mixing toggles on and off; while on, a short mix event goes in every 0.8 s so the
+     evaluator sees continuous stirring during a pour. */
+  const [mixOn, setMixOn] = useState<{ kind: MixKind; target: string } | null>(null);
+  const toggleMix = (kind: MixKind) => {
+    if (mixOn?.kind === kind) return setMixOn(null);
+    if (!canMix(kind) || !mixTarget) return;
+    setMixOn({ kind, target: mixTarget.id });
+    labSound.clink(0.3);
+  };
+  const mixOnLive = mixOn && state.items[mixOn.target]?.liquid?.volumeMl ? mixOn : null;
+  useEffect(() => {
+    if (!mixOnLive || readOnly) return;
+    const { kind, target } = mixOnLive;
+    const send = () => {
+      const ms = Math.round(800 * session.speed);
+      if (kind === "swirl") dispatch("mix.swirl", { target, durationMs: ms });
+      else if (kind === "stir") dispatch("mix.stir", { target, intensity: "gentle", durationMs: ms });
+      else dispatch("mix.shake", { target, durationMs: ms });
+    };
+    const first = window.setTimeout(send, 250);
+    const id = window.setInterval(send, 800);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mixOnLive?.kind, mixOnLive?.target, readOnly, session.speed]);
+  // An undo or reset that empties the vessel switches the mixer off.
+  useEffect(() => {
+    if (mixOn && !mixOnLive) setMixOn(null);
+  }, [mixOn, mixOnLive]);
+
   const endMix = () => {
     const m = mixRef.current;
     mixRef.current = null;
@@ -452,13 +544,20 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         setPouring(true);
       } else if ((e.key === "d" || e.key === "D") && pourTarget?.mode === "drop") dropOnce();
       else if (/^[0-5]$/.test(e.key) && sel?.kind === "burette_50") dispatch("param.set", { key: `stopcock:${sel.id}`, value: Number(e.key) / 5 });
-      else if ((e.key === "w" || e.key === "W") && !e.repeat) startMix("swirl");
-      else if ((e.key === "k" || e.key === "K") && !e.repeat) startMix("shake");
+      else if ((e.key === "w" || e.key === "W") && !e.repeat) {
+        if (studio) toggleMix("swirl");
+        else startMix("swirl");
+      }
+      else if ((e.key === "k" || e.key === "K") && !e.repeat) {
+        if (studio) toggleMix("shake");
+        else startMix("shake");
+      }
+      else if ((e.key === "s" || e.key === "S") && !e.repeat && studio) toggleMix("stir");
       else if ((e.key === "r" || e.key === "R") && sel && readable(sel)) setLens(`read:${sel.id}`);
     };
     const onUp = (e: KeyboardEvent) => {
       if (e.key === " ") setPouring(false);
-      if ("wWkK".includes(e.key)) endMix();
+      if ("wWkK".includes(e.key) && !studio) endMix();
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onUp);
@@ -567,7 +666,8 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         draggable={(id) => !readOnly && !holding && !!state.items[id] && POUR_VESSELS.includes(state.items[id]!.kind) && verbsFor(state.items[id]!).length === 0}
         hand={hand}
         onDropOnto={onDropOnto}
-        mixing={mix && mixTarget ? { id: mixTarget.id, kind: mix } : null}
+        mixing={mixOnLive ? { id: mixOnLive.target, kind: mixOnLive.kind } : mix && mixTarget ? { id: mixTarget.id, kind: mix } : null}
+        frame={frame ?? null}
         pour={pourAnim}
         quality={quality}
         onQuality={setQuality}
@@ -602,7 +702,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
 
       {/* anchored readouts for the vessel being worked on */}
       {focus && focusLook && (focus.liquid?.volumeMl ?? 0) > 0 && (
-        <div className="pointer-events-none absolute left-3 top-3 z-[6] flex gap-2">
+        <div className={cx("pointer-events-none absolute left-3 top-3 z-[6] flex gap-2", studio && sel && "max-md:hidden")}>
           <Readout label={`${focus.label} · volume`} value={fmtMl(focusLook.volumeMl)} unit="mL" />
           <Readout label="Temperature" value={focusLook.tempC.toFixed(1)} unit="°" delta={Math.abs(focusLook.tempC - 22) >= 0.3 ? `${focusLook.tempC > 22 ? "▲" : "▼"} ${Math.abs(focusLook.tempC - 22).toFixed(1)}` : null} tone={focusLook.tempC > 22 ? "up" : "down"} />
         </div>
@@ -611,7 +711,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
       {/* the card beside the thing in hand */}
       <AnimatePresence>
         {!readOnly && sel && (
-          <motion.div key={sel.id} initial={reduced ? false : { opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 14 }} transition={{ duration: 0.18 }} className="absolute right-3 top-3 z-10 w-[min(272px,calc(100%-24px))]">
+          <motion.div key={sel.id} initial={reduced ? false : { opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 14 }} transition={{ duration: 0.18 }} className={cx("absolute right-3 top-3 z-10 w-[min(272px,calc(100%-24px))] overflow-y-auto rounded-[18px] [scrollbar-width:thin]", studio ? "max-h-[calc(100%-140px)]" : "max-h-[calc(100%-96px)]")}>
             <Glass className="p-3" role="region" aria-label={`Tools for ${sel.label}`}>
               {pourTarget ? (
                 <PourCard
@@ -674,15 +774,15 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
 
       {/* first-time hint */}
       {!readOnly && !sel && (
-        <div className="pointer-events-none absolute left-1/2 top-3 z-[6] -translate-x-1/2">
+        <div className={cx("pointer-events-none absolute left-1/2 z-[6] w-max max-w-[calc(100%-24px)] -translate-x-1/2", studio ? "bottom-[84px]" : "top-3")}>
           <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-[#dbe7ff]">
             <Hand className="h-4 w-4 text-[#39d6ff]" />
-            {guide ? `Pick up the glowing ${state.items[guide]?.label.toLowerCase() ?? "item"}` : "Click a bottle or vessel to pick it up"}
+            {guide ? `${studio ? "Drag or click" : "Pick up"} the glowing ${state.items[guide]?.label.toLowerCase() ?? "item"}` : "Click a bottle or vessel to pick it up"}
           </Glass>
         </div>
       )}
       {!readOnly && choosing && (
-        <div className="pointer-events-none absolute left-1/2 top-3 z-[6] -translate-x-1/2">
+        <div className={cx("pointer-events-none absolute left-1/2 z-[6] w-max max-w-[calc(100%-24px)] -translate-x-1/2", studio ? "bottom-[84px]" : "top-3")}>
           <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-[#dbe7ff]">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#39d6ff]" />
             Drag it onto a glowing {activeVerb?.id === "draw" ? "bottle" : "vessel"}, or click one
@@ -690,7 +790,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         </div>
       )}
       {!readOnly && pourTarget?.mode === "pour" && !pouring && (
-        <div className="pointer-events-none absolute left-1/2 top-3 z-[6] -translate-x-1/2">
+        <div className={cx("pointer-events-none absolute left-1/2 z-[6] w-max max-w-[calc(100%-24px)] -translate-x-1/2", studio ? "bottom-[84px]" : "top-3")}>
           <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-[#dbe7ff]">
             <MoveDown className="h-4 w-4 text-[#39d6ff]" /> Press and hold on the bench to pour · drag down to tilt more
           </Glass>
@@ -698,14 +798,76 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
       )}
       <AnimatePresence>
         {status && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pointer-events-none absolute left-1/2 top-16 z-[7] -translate-x-1/2" role="status">
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={cx("pointer-events-none absolute left-1/2 z-[7] -translate-x-1/2", studio ? "bottom-[128px]" : "top-16")} role="status">
             <Glass radius="md" className="px-3 py-1.5 text-[13px] font-semibold text-[#3de8a8]">{status}</Glass>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* bottom tool dock */}
-      {!readOnly && (
+      {!readOnly && studio && (
+        <div className="absolute bottom-3 left-1/2 z-10 max-w-[calc(100%-16px)] -translate-x-1/2 overflow-x-auto rounded-[22px] [scrollbar-width:none]">
+          <Glass radius="xl" className="flex w-max items-center gap-1 p-1.5" role="toolbar" aria-label="Bench tools">
+            {(["stir", "swirl", "shake"] as const)
+              .filter((k) => k !== "shake" || mixOn?.kind === "shake" || mixTarget?.kind === "test_tube" || mixTarget?.kind === "boiling_tube")
+              .map((k) => {
+                const on = mixOn?.kind === k;
+                const name = k[0]!.toUpperCase() + k.slice(1);
+                const why = mixTarget ? (k === "stir" ? "Stir needs a beaker and a glass rod on the bench" : k === "swirl" ? "Swirl a flask or beaker" : "Shake a test tube") : "Put some liquid in a vessel first";
+                return (
+                  <DockButton
+                    key={k}
+                    icon={k === "shake" ? <Vibrate /> : k === "stir" ? <RotateCw /> : <Wind />}
+                    label={on ? "Stop" : name}
+                    kbd={k === "swirl" ? "W" : k === "shake" ? "K" : "S"}
+                    tone={on ? "on" : "default"}
+                    disabled={!on && !canMix(k)}
+                    aria-pressed={on}
+                    title={on ? `Stop ${k}ing` : canMix(k) && mixTarget ? `${name} the ${mixTarget.label.toLowerCase()} (click again to stop)` : why}
+                    onClick={() => toggleMix(k)}
+                  />
+                );
+              })}
+            <DockSeparator />
+            <DockButton
+              icon={<Flame />}
+              label={burner?.gasOn ? "Heat off" : "Heat"}
+              tone={burner?.gasOn ? "hot" : burner && guide === burner.id ? "on" : "default"}
+              disabled={!burner}
+              title={burner ? (burner.gasOn ? "Turn the Bunsen burner off" : "Light the Bunsen burner") : "No heating in this experiment"}
+              onClick={() => burner && dispatch("heat.set", { target: burner.id, powerPct: burner.gasOn ? 0 : 100 })}
+            />
+            {burner?.gasOn && <DockButton icon={<Wind />} label={burner.airHoleOpen ? "Air open" : "Air shut"} tone={burner.airHoleOpen ? "on" : "default"} onClick={() => dispatch("param.set", { key: `airhole:${burner.id}`, value: !burner.airHoleOpen })} />}
+            <DockButton
+              icon={<Snowflake />}
+              label="Ice bath"
+              tone={mixTarget?.inIceBath ? "on" : "default"}
+              disabled={!mixTarget}
+              aria-pressed={!!mixTarget?.inIceBath}
+              title={mixTarget ? (mixTarget.inIceBath ? `Take the ${mixTarget.label.toLowerCase()} out of the ice` : `Stand the ${mixTarget.label.toLowerCase()} in ice to cool it`) : "Put some liquid in a vessel first"}
+              onClick={() => mixTarget && dispatch("cool.set", { target: mixTarget.id, method: mixTarget.inIceBath ? "air" : "ice_bath" })}
+            />
+            {(goggles || items.some(readable)) && <DockSeparator />}
+            {goggles && (
+              <DockButton
+                icon={<Glasses />}
+                label="Goggles"
+                tone={guide === goggles.id ? "on" : "default"}
+                onClick={() => {
+                  dispatch("equipment.place", { equipmentId: goggles.id, x: 0, y: 0, socket: "worn" });
+                  labSound.clink(0.4);
+                }}
+              />
+            )}
+            {items.some(readable) && (
+              <DockButton icon={<Eye />} label="Read" kbd="R" disabled={!sel || !readable(sel)} title={sel && readable(sel) ? `Read the ${sel.label.toLowerCase()}` : "Pick up a thermometer, burette or cylinder to read it"} onClick={() => sel && setLens(`read:${sel.id}`)} />
+            )}
+            {dockExtra && <DockSeparator />}
+            {dockExtra}
+          </Glass>
+        </div>
+      )}
+      {!readOnly && !studio && (
         <div className="absolute bottom-3 left-1/2 z-10 max-w-[calc(100%-24px)] -translate-x-1/2 overflow-x-auto">
           <Glass radius="xl" className="flex items-center gap-1 p-2" role="toolbar" aria-label="Bench tools">
             {(["swirl", "stir", "shake"] as const).map((k) => (
@@ -763,7 +925,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         )}
       </AnimatePresence>
 
-      <div className="pointer-events-none absolute bottom-[86px] right-3 hidden text-[11px] text-white/35 sm:block">
+      <div className={cx("pointer-events-none absolute bottom-[86px] right-3 hidden text-[11px] text-white/35", !studio && "sm:block")}>
         {quality === "lite" ? "Lite graphics" : "High graphics"} · drag to look around · scroll to zoom
       </div>
     </div>
@@ -1082,3 +1244,4 @@ function ReadingLens({
     </motion.div>
   );
 }
+export type { BenchFrame } from "./Bench3D";

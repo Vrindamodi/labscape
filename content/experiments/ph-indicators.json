@@ -6,6 +6,10 @@
   "title": "Acid-base indicators",
   "fidelity": "exact",
   "reviewStatus": "draft",
+  "idea": {
+    "text": "Indicators are dyes that change colour depending on whether a solution is acidic, neutral or alkaline. Universal indicator shows a whole rainbow of colours across the pH scale from 1 to 14; litmus just turns red in acid and blue in alkali.",
+    "analogy": "Like a mood ring for liquids: the colour tells you how acidic or alkaline a solution is."
+  },
   "bench": {
     "items": [
       {
@@ -130,6 +134,17 @@
         "vol-1",
         "vol-2",
         "vol-3"
+      ],
+      "whatIf": {
+        "rate": "A fast pour into a narrow test tube splashes. 2 mL is a small amount: tilt gently.",
+        "overshoot": "More liquid dilutes the indicator, so the colour comes out paler and harder to judge.",
+        "quantity": "A very different volume in each tube makes the colours harder to compare fairly."
+      },
+      "explore": [
+        {
+          "if": "use 1 M acid instead of 0.1 M",
+          "then": "Still red: universal indicator shows pH, and both are very acidic (about pH 0 and pH 1). The difference is too small to see."
+        }
       ]
     },
     {
@@ -152,6 +167,17 @@
         "vol-1",
         "vol-2",
         "vol-3"
+      ],
+      "whatIf": {
+        "rate": "A fast pour into a narrow test tube splashes. 2 mL is a small amount: tilt gently.",
+        "overshoot": "More liquid dilutes the indicator, so the colour comes out paler and harder to judge.",
+        "quantity": "A very different volume in each tube makes the colours harder to compare fairly."
+      },
+      "explore": [
+        {
+          "if": "use tap water instead of distilled water",
+          "then": "Tap water has dissolved minerals and gases, so it might show yellow-green or blue-green instead of pure green."
+        }
       ]
     },
     {
@@ -174,6 +200,17 @@
         "vol-1",
         "vol-2",
         "vol-3"
+      ],
+      "whatIf": {
+        "rate": "A fast pour into a narrow test tube splashes. 2 mL is a small amount: tilt gently.",
+        "overshoot": "More liquid dilutes the indicator, so the colour comes out paler and harder to judge.",
+        "quantity": "A very different volume in each tube makes the colours harder to compare fairly."
+      },
+      "explore": [
+        {
+          "if": "use a weak alkali like baking soda solution",
+          "then": "Blue rather than purple: weak alkalis have a lower pH, around 8 to 9."
+        }
       ]
     },
     {
@@ -203,6 +240,18 @@
         "ind-1",
         "ind-2",
         "ind-3"
+      ],
+      "whatIf": {
+        "order": "Chemically it would still work, but put the liquid in first so you can watch the colour change as the drops land.",
+        "not-dropwise": "Pouring indicator floods the tube and makes the colour very dark. Two drops are enough to see it clearly.",
+        "overshoot": "Too many drops make the colour very dark, so it's harder to judge which shade it is.",
+        "quantity": "Too much indicator makes the colour very dark, so it's harder to judge which shade it is."
+      },
+      "explore": [
+        {
+          "if": "add the indicator before the acid",
+          "then": "You'd get the same colour in the end: it depends on the final mixture, not on the order."
+        }
       ]
     },
     {
@@ -227,7 +276,12 @@
         "ind-1",
         "ind-2",
         "ind-3"
-      ]
+      ],
+      "whatIf": {
+        "order": "Chemically it would still work, but put the water in first so you can watch the colour as the drops land.",
+        "overshoot": "Too many drops make the colour very dark, so it's harder to judge which shade it is.",
+        "quantity": "Too much indicator makes the colour very dark, so it's harder to judge which shade it is."
+      }
     },
     {
       "id": "ui-3",
@@ -251,7 +305,12 @@
         "ind-1",
         "ind-2",
         "ind-3"
-      ]
+      ],
+      "whatIf": {
+        "order": "Chemically it would still work, but put the alkali in first so you can watch the colour as the drops land.",
+        "overshoot": "Too many drops make the colour very dark, so it's harder to judge which shade it is.",
+        "quantity": "Too much indicator makes the colour very dark, so it's harder to judge which shade it is."
+      }
     },
     {
       "id": "acid-t4",
@@ -269,7 +328,11 @@
         "vol-1",
         "vol-2",
         "vol-3"
-      ]
+      ],
+      "whatIf": {
+        "overshoot": "More acid dilutes the litmus, so the red is paler.",
+        "quantity": "A very different volume makes the colours harder to compare fairly."
+      }
     },
     {
       "id": "litmus-acid",
@@ -288,6 +351,15 @@
         "ind-1",
         "ind-2",
         "ind-3"
+      ],
+      "whatIf": {
+        "order": "Chemically it would still work, but put the acid in first so you can see the litmus change."
+      },
+      "explore": [
+        {
+          "if": "add litmus to the water instead",
+          "then": "Purple: neutral litmus sits halfway between its red and blue forms."
+        }
       ]
     },
     {
@@ -306,7 +378,11 @@
         "vol-1",
         "vol-2",
         "vol-3"
-      ]
+      ],
+      "whatIf": {
+        "overshoot": "More alkali dilutes the litmus, so the blue is paler.",
+        "quantity": "A very different volume makes the colours harder to compare fairly."
+      }
     },
     {
       "id": "litmus-base",
@@ -325,6 +401,15 @@
         "ind-1",
         "ind-2",
         "ind-3"
+      ],
+      "whatIf": {
+        "order": "Chemically it would still work, but put the alkali in first so you can see the litmus change."
+      },
+      "explore": [
+        {
+          "if": "use litmus paper instead of litmus solution",
+          "then": "Same idea: red paper turns blue in alkali, blue paper turns red in acid. Paper is handy for a quick test."
+        }
       ]
     }
   ],
@@ -396,16 +481,19 @@
     "captions": [
       {
         "t": 0,
-        "text": "2 mL each of acid, water and alkali into three tubes."
+        "text": "2 mL each of acid, water and alkali into three tubes.",
+        "why": "Using the same small volume in each tube makes it a fair comparison.",
+        "safety": "These are dilute, but acid and alkali can still sting eyes and skin, so pour gently into the small tubes."
       },
       {
         "t": 10000,
         "text": "Two drops of universal indicator in each...",
-        "slow": true
+        "why": "Universal indicator is a mix of several dyes. Each changes colour at a different pH, so together they make a rainbow."
       },
       {
         "t": 20000,
-        "text": "Red, green, purple: a pH rainbow. Now litmus in acid and alkali."
+        "text": "Red, green, purple: a pH rainbow. Now litmus in acid and alkali.",
+        "why": "Red means acidic (0.1 M hydrochloric acid is about pH 1), green means neutral (pH 7), purple means strongly alkaline (about pH 13). Litmus has only two colours: red in acid, blue in alkali."
       }
     ],
     "events": [

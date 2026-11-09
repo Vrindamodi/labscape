@@ -54,7 +54,7 @@ export function SuitUp({ needs, title, onDone }: { needs: PpeNeed[]; title: stri
 
   const has = (id: PpeId) => worn.includes(id);
   return (
-    <div className="absolute inset-0 z-30 grid place-items-center bg-[radial-gradient(900px_500px_at_50%_30%,rgba(61,139,255,.18),transparent_60%),rgba(3,7,18,.86)] p-4 backdrop-blur-sm">
+    <div className="absolute inset-0 z-30 grid place-items-center overflow-y-auto bg-[radial-gradient(900px_500px_at_50%_30%,rgba(61,139,255,.18),transparent_60%),rgba(3,7,18,.86)] p-4 backdrop-blur-sm">
       <Glass radius="xl" className="w-[min(860px,100%)] p-5 sm:p-6" role="dialog" aria-label="Suit up before entering the lab">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>

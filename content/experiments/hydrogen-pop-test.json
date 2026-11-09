@@ -6,6 +6,10 @@
   "title": "Magnesium and acid: the squeaky pop",
   "fidelity": "approximate",
   "reviewStatus": "draft",
+  "idea": {
+    "text": "Magnesium is more reactive than hydrogen, so it pushes hydrogen out of hydrochloric acid. The hydrogen bubbles off as a gas, and you can prove it is hydrogen because it burns with a squeaky pop.",
+    "analogy": "Like musical chairs: magnesium takes hydrogen's seat in the acid, and hydrogen is left standing, so it bubbles away as a gas."
+  },
   "bench": {
     "items": [
       {
@@ -111,6 +115,22 @@
         "vol-1",
         "vol-2",
         "vol-3"
+      ],
+      "whatIf": {
+        "order": "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.",
+        "rate": "A fast pour into a narrow test tube splashes acid up the sides and out of the top.",
+        "overshoot": "More acid fills the tube higher, so the fizzing can froth over the top. 5 mL is plenty.",
+        "quantity": "The amount of acid changes how long the fizzing lasts. With too little, some magnesium may be left unreacted."
+      },
+      "explore": [
+        {
+          "if": "use 2 M acid instead of 1 M",
+          "then": "The fizzing is faster and the tube gets hotter, because acid particles hit the magnesium more often. More gas, sooner."
+        },
+        {
+          "if": "use 0.1 M acid",
+          "then": "Very slow fizzing: there are ten times fewer acid particles, so you might not collect enough hydrogen for a pop."
+        }
       ]
     },
     {
@@ -132,6 +152,21 @@
         "mg-1",
         "mg-2",
         "mg-3"
+      ],
+      "whatIf": {
+        "order": "Add the acid first so the magnesium has something to react with.",
+        "overshoot": "More magnesium makes more hydrogen and more heat, and the tube can froth over. A 2 cm strip is plenty.",
+        "quantity": "More magnesium makes more gas and heat; less makes less. A 2 cm strip is about right for one test tube."
+      },
+      "explore": [
+        {
+          "if": "use magnesium powder instead of ribbon",
+          "then": "Powder has a much bigger surface area, so the reaction is much faster and hotter. It can fizz violently."
+        },
+        {
+          "if": "use copper instead of magnesium",
+          "then": "Nothing happens. Copper is less reactive than hydrogen, so it can't push hydrogen out of the acid."
+        }
       ]
     },
     {
@@ -151,6 +186,19 @@
         "gas-1",
         "gas-2",
         "gas-3"
+      ],
+      "whatIf": {
+        "order": "Add the magnesium first. Until then there's no gas to collect."
+      },
+      "explore": [
+        {
+          "if": "hold the collection tube the right way up",
+          "then": "Hydrogen is much lighter than air, so it floats up and out of the tube. It must be upside down to trap the gas."
+        },
+        {
+          "if": "wait a minute before collecting",
+          "then": "Most of the hydrogen escapes into the room first, so you might not collect enough for a pop."
+        }
       ]
     },
     {
@@ -167,6 +215,12 @@
         "burn-1",
         "burn-2",
         "burn-3"
+      ],
+      "explore": [
+        {
+          "if": "use a match instead of the burner",
+          "then": "That works too. The burner is just a steady flame for lighting the splint."
+        }
       ]
     },
     {
@@ -186,7 +240,10 @@
         "burn-1",
         "burn-2",
         "burn-3"
-      ]
+      ],
+      "whatIf": {
+        "order": "Light the burner first: the splint needs a flame to catch."
+      }
     },
     {
       "id": "pop",
@@ -206,6 +263,19 @@
         "pop-1",
         "pop-2",
         "pop-3"
+      ],
+      "whatIf": {
+        "order": "You need both ready: hydrogen collected in the tube and a burning splint. Otherwise there's nothing to pop."
+      },
+      "explore": [
+        {
+          "if": "use a glowing splint instead of a burning one",
+          "then": "A glowing splint relights in oxygen, not hydrogen. Hydrogen needs a lit flame to make its pop."
+        },
+        {
+          "if": "collect pure hydrogen with no air in the tube",
+          "then": "The loudest pop comes from hydrogen mixed with some air. A tube of almost pure hydrogen may just burn quietly at the mouth."
+        }
       ]
     }
   ],
@@ -325,20 +395,26 @@
     "captions": [
       {
         "t": 0,
-        "text": "Goggles on, then 5 mL of 1 M hydrochloric acid."
+        "text": "Goggles on, then 5 mL of 1 M hydrochloric acid.",
+        "why": "Only a small volume is needed: the reaction makes plenty of gas.",
+        "safety": "1 M hydrochloric acid is corrosive and can damage eyes, so goggles go on first."
       },
       {
         "t": 6000,
         "text": "Drop in the magnesium and trap the gas straight away.",
-        "slow": true
+        "slow": true,
+        "why": "Magnesium + hydrochloric acid → magnesium chloride + hydrogen. The fizzing is hydrogen gas bubbling out.",
+        "safety": "Hydrogen is lighter than air, so the collection tube is held upside down over the reaction tube to catch it as it rises."
       },
       {
         "t": 20000,
-        "text": "Light a splint while the gas collects..."
+        "text": "Light a splint while the gas collects...",
+        "why": "The splint has to be burning when it meets the hydrogen. Feel the tube: it's warm, because the reaction is exothermic."
       },
       {
         "t": 50000,
-        "text": "Squeaky pop: hydrogen!"
+        "text": "Squeaky pop: hydrogen!",
+        "why": "Hydrogen mixed with air burns so fast it makes a tiny explosion: the pop. The only product is water."
       }
     ],
     "events": [
