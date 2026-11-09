@@ -8,6 +8,7 @@ import katex from "katex";
 import "katex/dist/katex.min.css";
 import { ArrowLeft, Atom, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "../lib/settings";
 import { JournalDrawer } from "./JournalDrawer";
@@ -1627,11 +1628,47 @@ function HeatButton({ plateC, glow, onHeat }: { plateC: number; glow: boolean; o
     if (draft !== null && draft !== plateC) onHeat(draft);
     setDraft(null);
   };
+  // The dock scrolls sideways on narrow screens, and a scrolling box clips anything that sticks out of it:
+  // drawn inside the dock, this panel opened but could never be seen. It is drawn on the page instead,
+  // pinned above the button.
+  const button = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const [at, setAt] = useState<{ left: number; bottom: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const r = button.current?.getBoundingClientRect();
+      if (!r) return;
+      const width = 224;
+      setAt({ left: Math.max(8, Math.min(window.innerWidth - width - 8, r.left + r.width / 2 - width / 2)), bottom: window.innerHeight - r.top + 10 });
+    };
+    place();
+    const away = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!panel.current?.contains(t) && !button.current?.contains(t)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setOpen(false);
+      button.current?.focus();
+    };
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("pointerdown", away, true);
+    window.addEventListener("keydown", esc, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("pointerdown", away, true);
+      window.removeEventListener("keydown", esc, true);
+    };
+  }, [open]);
   return (
     <div className="relative">
-      <DockButton icon={<Thermometer />} label={plateC > 22 ? `${plateC} °C` : "Heat"} tone={plateC > 22 ? "hot" : glow ? "on" : "default"} className={glow ? "animate-pulse" : ""} onClick={() => setOpen((o) => !o)} aria-expanded={open} />
-      {open && (
-        <Glass radius="md" className="absolute bottom-[64px] left-1/2 w-56 -translate-x-1/2 p-3">
+      <DockButton ref={button} icon={<Thermometer />} label={plateC > 22 ? `${plateC} °C` : "Heat"} kbd="H" title="Hot plate: pick a temperature (H turns it on or off)" tone={plateC > 22 ? "hot" : glow ? "on" : "default"} className={glow ? "animate-pulse" : ""} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="dialog" />
+      {open && at && createPortal(
+        <Glass ref={panel} radius="md" className="fixed z-[60] w-56 p-3 font-sans" style={{ left: at.left, bottom: at.bottom }} role="dialog" aria-label="Hot plate">
           <Kicker>Hot plate</Kicker>
           <div className="mt-1 font-heading text-[20px] font-bold tabular-nums">{shown} °C</div>
           <input type="range" min={22} max={90} step={1} value={Math.max(22, shown)} onChange={(e) => setDraft(Number(e.target.value))} onPointerUp={commit} onKeyUp={commit} onBlur={commit} className="mt-2 w-full accent-[#ff8a3d]" aria-label="Hot plate temperature" />
@@ -1642,7 +1679,8 @@ function HeatButton({ plateC, glow, onHeat }: { plateC: number; glow: boolean; o
               </button>
             ))}
           </div>
-        </Glass>
+        </Glass>,
+        document.body,
       )}
     </div>
   );
