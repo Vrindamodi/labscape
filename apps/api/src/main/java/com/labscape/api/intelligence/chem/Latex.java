@@ -95,6 +95,49 @@ public final class Latex {
         return latex;
     }
 
+    /**
+     * Parses a compact equation such as {@code "2 Fe^3+ + 2 I^- -> 2 Fe^2+ + I2(aq)"}. Terms are separated
+     * by " + "; a leading integer is the coefficient; "^" starts an ionic charge (ions default to aq);
+     * a trailing (s), (l), (g) or (aq) is the state.
+     */
+    public static String eq(String spec) {
+        return eq(spec, null);
+    }
+
+    public static String eq(String spec, String over) {
+        String[] sides = spec.split("->");
+        if (sides.length != 2) throw new IllegalArgumentException("Bad equation: " + spec);
+        return equation(parseSide(sides[0]), parseSide(sides[1]), over);
+    }
+
+    private static List<Term> parseSide(String side) {
+        List<Term> out = new ArrayList<>();
+        for (String raw : side.trim().split(" \\+ ")) {
+            String t = raw.trim();
+            int coef = 1;
+            int sp = t.indexOf(' ');
+            if (sp > 0 && t.substring(0, sp).chars().allMatch(Character::isDigit)) {
+                coef = Integer.parseInt(t.substring(0, sp));
+                t = t.substring(sp + 1).trim();
+            }
+            String state = null;
+            for (String s : new String[] {"(aq)", "(s)", "(l)", "(g)"}) {
+                if (t.endsWith(s)) {
+                    state = s.substring(1, s.length() - 1);
+                    t = t.substring(0, t.length() - s.length());
+                    break;
+                }
+            }
+            int caret = t.indexOf('^');
+            if (caret >= 0) {
+                out.add(new Term(coef, t.substring(0, caret), t.substring(caret + 1), state == null ? "aq" : state));
+            } else {
+                out.add(new Term(coef, t, null, state));
+            }
+        }
+        return out;
+    }
+
     private static String side(List<Term> terms) {
         List<String> parts = new ArrayList<>();
         for (Term t : terms) {

@@ -6,6 +6,10 @@
  * Rule: engines decide WHAT happens; animation layers decide HOW it looks.
  * Nothing (colour change, bubble, precipitate...) is drawn without a cue from an engine.
  *
+ * v0.5.0 (additive): `layers` cues carry optional `position` ("top" | "bottom") and `label`;
+ * deposit cues may use `form: "mirror"` (silver mirror on the glass, target "vessel");
+ * needs_conditions may set `focusRef` to the catalogue id that satisfies the condition (e.g. "h2so4-conc"),
+ * and `neededTool` may also be "alkali" or "spark" (strong heating with the flame tool).
  * v0.4.0: `crystals` cue; optional `form` on precipitate and deposit cues.
  * v0.3.0: ignition condition, smoke/flame/condense/skate cues, gas colour + smell,
  * compounds, facts and structured participants.
@@ -102,11 +106,19 @@ export type ObservationCue =
       kind: "deposit";
       colour: Oklab;
       durationMs: number;
-      /** v0.4: "crystals" for a sparkly growth (silver tree); default an even coating. */
-      form?: "coating" | "crystals";
+      /** v0.4: "crystals" for a sparkly growth (silver tree); default an even coating. v0.5: "mirror" = silver mirror on the glass. */
+      form?: "coating" | "crystals" | "mirror";
     })
   | (CueBase & { kind: "light"; colour: Oklab; intensity: number; durationMs: number })
-  | (CueBase & { kind: "layers"; colour: Oklab; volumeMl: number })
+  | (CueBase & {
+      kind: "layers";
+      colour: Oklab;
+      volumeMl: number;
+      /** v0.5: where the separate layer sits - "top" (less dense than the rest, e.g. oil, hexane) or "bottom". Default top. */
+      position?: "top" | "bottom";
+      /** v0.5: caption, e.g. "Hexane floats on top as a separate layer". */
+      label?: string;
+    })
   | (CueBase & {
       kind: "smoke";
       colour: Oklab;
@@ -151,9 +163,9 @@ export type SimulationPresentation = {
   message: string;
   observations: string[];
   reactions: ReactionSummary[];
-  /** needs_conditions: which control to highlight ("heater" | "catalyst" | "acid"). */
+  /** needs_conditions: which control to highlight ("heater" | "catalyst" | "acid" | "alkali" | "spark"). */
   neededTool?: string;
-  /** out_of_range: which input ref to highlight. */
+  /** out_of_range: which input ref to highlight. needs_conditions: the catalogue id that would satisfy the condition. */
   focusRef?: string;
   suggestions: string[];
   discoveryIds: string[];

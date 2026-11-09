@@ -31,11 +31,12 @@ public final class Lore {
             Map.entry("HI", new Gas("Hydrogen iodide", null, "Sharp and acidic")),
             Map.entry("HF", new Gas("Hydrogen fluoride", null, "Sharp and irritating")),
             Map.entry("NO2", new Gas("Nitrogen dioxide", "#b5521f", "Sharp and biting")),
+            Map.entry("NO", new Gas("Nitrogen monoxide", null, "Sharp - and it turns into brown, choking nitrogen dioxide in air")),
             Map.entry("H2O", new Gas("Steam", "#ffffff", "No smell - just warm, damp air")));
 
     /** Gases that need a real-lab warning: "toxic", "corrosive" or "flammable". */
     public static final Map<String, String> GAS_HAZARD = Map.ofEntries(
-            Map.entry("H2S", "toxic"), Map.entry("Cl2", "toxic"), Map.entry("SO2", "toxic"), Map.entry("NO2", "toxic"),
+            Map.entry("H2S", "toxic"), Map.entry("Cl2", "toxic"), Map.entry("SO2", "toxic"), Map.entry("NO2", "toxic"), Map.entry("NO", "toxic"),
             Map.entry("Br2", "toxic"), Map.entry("CO", "toxic"), Map.entry("HF", "toxic"), Map.entry("F2", "toxic"),
             Map.entry("HCl", "corrosive"), Map.entry("HBr", "corrosive"), Map.entry("HI", "corrosive"), Map.entry("NH3", "corrosive"),
             Map.entry("H2", "flammable"));
@@ -45,6 +46,7 @@ public final class Lore {
             Map.entry("Cl2", "Chlorine is a toxic gas that damages the lungs. Fume cupboard only."),
             Map.entry("SO2", "Sulfur dioxide is toxic and can trigger asthma. Fume cupboard only."),
             Map.entry("NO2", "Nitrogen dioxide is a toxic brown gas. Fume cupboard only."),
+            Map.entry("NO", "Nitrogen monoxide is toxic and turns into brown nitrogen dioxide in air. Fume cupboard only."),
             Map.entry("Br2", "Bromine vapour is toxic and burns skin and lungs. Fume cupboard only."),
             Map.entry("CO", "Carbon monoxide is toxic and has no smell at all. Never breathe it."),
             Map.entry("HF", "Hydrogen fluoride is extremely toxic and corrosive."),
@@ -133,7 +135,69 @@ public final class Lore {
             Map.entry("copper-iodide", "Copper(I) iodide is used in cloud seeding to help rain form."),
             Map.entry("iodine-decolourised", "Thiosulfate removing iodine colour is used to measure how much iodine a sample holds."),
             Map.entry("peroxide-iron", "Iron(II) turning to iron(III) is why fresh iron supplements can stain brown."),
+            Map.entry("esterification", "Esters give many fruits their smell: the flavour of a pear-drop sweet is mostly ethyl and isoamyl esters."),
+            Map.entry("banana-ester", "Isoamyl acetate is so like bananas that honeybees also use it as an alarm signal."),
+            Map.entry("wintergreen-ester", "Methyl salicylate is the smell of muscle-rub creams - and plants release it to warn neighbours of attack."),
+            Map.entry("bromine-water-test", "Bromine water tells you whether a hydrocarbon has C=C double bonds: alkenes decolourise it, alkanes don't."),
+            Map.entry("permanganate-alkene", "Adolf von Baeyer used cold permanganate to detect double bonds in the 1880s."),
+            Map.entry("chemical-chameleon", "The 'chemical chameleon' cycles through purple, green and brown as manganese changes oxidation state."),
+            Map.entry("iodoform-test", "Iodoform was once used as an antiseptic on wounds - its smell gave old hospitals their distinctive odour."),
+            Map.entry("alcohol-oxidation", "Early police breathalysers used orange dichromate that turned green with ethanol on a driver's breath."),
+            Map.entry("dichromate-green", "Orange chromium(VI) turning green chromium(III) is a sure sign that a redox reaction has happened."),
+            Map.entry("benedicts-test", "Benedict's solution was once used to test urine for sugar, to diagnose diabetes."),
+            Map.entry("fehlings-test", "Hermann von Fehling invented his test in 1849 - the two solutions are mixed only at the last moment."),
+            Map.entry("silver-mirror", "Mirrors were silvered with exactly this reaction before aluminium coatings took over."),
+            Map.entry("biuret-test", "The biuret test detects peptide bonds - the links that join amino acids into proteins."),
+            Map.entry("protein-denaturation", "Cooking an egg can't be undone: heat permanently unfolds the albumin proteins."),
+            Map.entry("curdling", "Cheese-making starts with curdling milk: acid or rennet makes the casein clump together."),
+            Map.entry("emulsion-test", "Milk and mayonnaise are emulsions - tiny droplets of fat spread through water."),
+            Map.entry("slime", "Borate links PVA chains like rungs on a ladder - that's why slime stretches but snaps when pulled fast."),
+            Map.entry("fermentation", "Bread rises because yeast makes carbon dioxide - the ethanol bakes away in the oven."),
+            Map.entry("starch-digestion", "Chew a cracker for a minute and it tastes sweeter: amylase in saliva turns starch into maltose."),
+            Map.entry("sucrose-hydrolysis", "Golden syrup is 'inverted' sugar: sucrose split into glucose and fructose."),
+            Map.entry("aspirin-hydrolysis", "Old aspirin tablets smell of vinegar because moisture slowly hydrolyses them."),
+            Map.entry("ester-hydrolysis", "Hydrolysing esters with alkali is the same reaction that turns fats into soap."),
+            Map.entry("saponification", "Soap-makers have used this reaction for thousands of years, with wood ash (potash) as the alkali."),
+            Map.entry("metal-alcohol", "Chemists destroy leftover sodium safely by dissolving it slowly in ethanol rather than water."),
+            Map.entry("dehydration", "Concentrated sulfuric acid is so hungry for water that it pulls it out of sugar, paper - and skin."),
+            Map.entry("combustion", "Burning a fuel completely gives only carbon dioxide and water; too little oxygen gives soot and carbon monoxide."),
+            Map.entry("conc-acid-halide", "Warming salt with concentrated sulfuric acid was the old way of making hydrogen chloride gas."),
+            Map.entry("limewater-test", "Breathe out through a straw into limewater and it turns milky - your breath contains carbon dioxide."),
+            Map.entry("carbonic-acid", "Rainwater is naturally slightly acidic (about pH 5.6) because it dissolves carbon dioxide from the air."),
+            Map.entry("slaking-lime", "Builders have slaked quicklime to make mortar since Roman times."),
+            Map.entry("plaster-sets", "Plaster casts for broken bones set by this same reaction."),
+            Map.entry("cobalt-water-test", "Cobalt chloride paper and blue silica-gel beads both change colour when they pick up water."),
+            Map.entry("acid-sulfite", "Sulfites preserve wine and dried fruit; acid releases sulfur dioxide from them."),
+            Map.entry("disproportionation", "In disproportionation one element is oxidised and reduced at the same time."),
+            Map.entry("chromate-equilibrium", "Chromate and dichromate are a classic reversible reaction: add acid or alkali and the colour flips."),
+            Map.entry("iron-thiocyanate", "The thiocyanate test can detect iron(III) at a few parts per million."),
+            Map.entry("phenol-test", "Aspirin that gives a violet colour with iron(III) chloride has started to break down."),
+            Map.entry("amphoteric-metal", "Strong alkaline detergents slowly dissolve aluminium pans for the same reason."),
+            Map.entry("vitamin-c-test", "Vitamin C is an antioxidant: it protects cells by being oxidised itself."),
+            Map.entry("photographic-fixer", "Thiosulfate 'hypo' fixed photographs for over 150 years by dissolving the unused silver salts."),
+            Map.entry("iodine-clock", "In an iodine clock nothing seems to happen until the reducing agent runs out - then the colour appears at once."),
+            Map.entry("metal-halogen", "Zinc and iodine react in water to make zinc iodide - used in some rechargeable batteries."),
+            Map.entry("nitric-acid-metal", "Nitric acid dissolves copper and silver but not gold - the origin of the phrase 'acid test'."),
+            Map.entry("thermal-decomposition", "Limestone is heated in kilns to make quicklime - the first step in making cement."),
+            Map.entry("flame-test", "Fireworks get their colours from metal ions: strontium red, sodium yellow, barium green, copper blue-green."),
+            Map.entry("catalase", "One catalase molecule can break down millions of hydrogen peroxide molecules every second."),
+            Map.entry("chromate-precipitates", "Lead(II) chromate is the pigment 'chrome yellow'."),
+            Map.entry("phosphate-precipitates", "Your bones and teeth are mostly calcium phosphate."),
+            Map.entry("calcium-oxalate", "Most kidney stones are calcium oxalate - spinach and rhubarb are rich in oxalate."),
+            Map.entry("chemical-garden", "Chemical gardens grow because a membrane of metal silicate forms, then bursts upwards as water rushes in."),
+            Map.entry("soap-scum", "Hard water wastes soap: the scum must form before any lather appears."),
+            Map.entry("weak-acid-crystals", "Many medicines are purified this way: dissolved as a salt, then crystallised by adding acid."),
+            Map.entry("coloured-hydroxide", "The colours of metal hydroxide precipitates are used to identify unknown metal ions."),
             Map.entry("permanganate-dissolving", "Diffusion spreads the purple colour without any stirring at all."));
+
+    /** Lower-cases a name for use mid-sentence, keeping Roman-numeral oxidation states: "copper(II) sulfate". */
+    public static String lower(String name) {
+        String s = name.toLowerCase(java.util.Locale.ROOT);
+        for (String r : new String[] {"vii", "vi", "iv", "iii", "ii", "i", "v"}) {
+            s = s.replace("(" + r + ")", "(" + r.toUpperCase(java.util.Locale.ROOT) + ")");
+        }
+        return s;
+    }
 
     public static String name(String formula) {
         return NAMES.getOrDefault(formula, formula);
@@ -156,7 +220,12 @@ public final class Lore {
             Map.entry("Cl", "chloride"), Map.entry("Br", "bromide"), Map.entry("I", "iodide"), Map.entry("F", "fluoride"),
             Map.entry("O", "oxide"), Map.entry("S", "sulfide"), Map.entry("N", "nitride"), Map.entry("H", "hydride"),
             Map.entry("SO4", "sulfate"), Map.entry("NO3", "nitrate"), Map.entry("CO3", "carbonate"),
-            Map.entry("CH3COO", "ethanoate"), Map.entry("OH", "hydroxide"), Map.entry("HCO3", "hydrogencarbonate"));
+            Map.entry("CH3COO", "ethanoate"), Map.entry("OH", "hydroxide"), Map.entry("HCO3", "hydrogencarbonate"),
+            Map.entry("PO4", "phosphate"), Map.entry("HCOO", "methanoate"), Map.entry("C2H5COO", "propanoate"),
+            Map.entry("C3H7COO", "butanoate"), Map.entry("C6H5COO", "benzoate"), Map.entry("C7H5O3", "salicylate"),
+            Map.entry("C3H5O3", "lactate"), Map.entry("C6H5O7", "citrate"), Map.entry("C2O4", "oxalate"),
+            Map.entry("C6H7O6", "ascorbate"), Map.entry("C4H4O6", "tartrate"), Map.entry("C9H7O4", "acetylsalicylate"),
+            Map.entry("SO3", "sulfite"), Map.entry("SCN", "thiocyanate"));
 
     /** "Iron", 3, "Cl", variable valence -> "Iron(III) chloride". */
     public static String saltName(String metalName, int charge, boolean variableValence, String anion) {

@@ -363,7 +363,11 @@ final class ElementRules {
         if (metals.size() >= 2 && nonmetals.isEmpty()) {
             m.reason("Metals don't react with each other. Melted together they would form an alloy - like copper and zinc making brass.");
         }
-        if (!nobles.isEmpty()) {
+        boolean xenonFluorine = nobles.stream().anyMatch(p -> "Xe".equals(p.sym())) && nonmetals.stream().anyMatch(p -> "F".equals(p.sym()));
+        if (xenonFluorine) {
+            m.reason("Xenon is one of the few noble gases that does form compounds - with fluorine it makes xenon fluorides, "
+                    + "but only when heated to about 400 °C or lit by ultraviolet light, far beyond this bench.");
+        } else if (!nobles.isEmpty()) {
             m.reason(nobles.get(0).s().name() + " is a noble gas: its full outer shell of electrons means it doesn't react.");
         }
     }
@@ -554,7 +558,13 @@ final class ElementRules {
     private static void nonmetalPair(MixtureOps m, Part a, Part b) {
         String k = key(a.sym(), b.sym());
         When when = nonmetalWhen(k);
-        if (when == null) return;
+        if (when == null) {
+            if (m.get(a.key()) > ChemistryEngine.EPS && m.get(b.key()) > ChemistryEngine.EPS) {
+                m.reason(a.s().name() + " and " + b.s().name().toLowerCase(Locale.ROOT) + " don't combine just by mixing at "
+                        + "these temperatures - nothing visible happens.");
+            }
+            return;
+        }
         Part first = a.sym().compareTo(b.sym()) <= 0 ? a : b;
         Part second = first == a ? b : a;
         if (m.get(first.key()) <= ChemistryEngine.EPS || m.get(second.key()) <= ChemistryEngine.EPS) return;

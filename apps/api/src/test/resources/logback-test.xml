@@ -1,0 +1,9 @@
+<configuration>
+  <!-- Tests resolve hundreds of thousands of mixtures; the per-request safety audit line is noise there. -->
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+  <logger name="com.labscape.api.intelligence.safety.SafetyAuditSink" level="WARN"/>
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+</configuration>

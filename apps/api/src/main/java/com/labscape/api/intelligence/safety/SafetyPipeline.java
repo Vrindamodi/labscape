@@ -227,7 +227,7 @@ public class SafetyPipeline {
             case NEEDS_CONDITIONS -> new SimulationResult(requestId, Outcome.NEEDS_CONDITIONS, r.reasonCode(), null, null, null,
                     List.of(), cues, measurements, Fidelity.APPROXIMATE, List.of(),
                     new Presentation(OutcomeCopy.NEEDS_CONDITIONS_TITLE, r.pending().get(0).message(), List.of(), List.of(),
-                            r.pending().get(0).tool(), null, List.of(), List.of(), List.of(), facts));
+                            r.pending().get(0).tool(), r.pending().get(0).ref(), List.of(), List.of(), List.of(), facts));
             case NO_REACTION -> {
                 List<String> obs = new ArrayList<>(r.observations());
                 obs.addAll(reasons);
