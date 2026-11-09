@@ -11,6 +11,7 @@ import com.labscape.api.intelligence.chem.Catalogue;
 import com.labscape.api.intelligence.chem.ChemistryEngine;
 import com.labscape.api.intelligence.chem.ChemistryEngine.Kind;
 import com.labscape.api.intelligence.chem.ChemistryEngine.Portion;
+import com.labscape.api.intelligence.chem.Discovery;
 import com.labscape.api.intelligence.chem.Substance;
 import java.time.Clock;
 import java.time.Duration;
@@ -347,6 +348,82 @@ class ChemistryCoverageTest {
         assertThat(mix(22, in("kno3", 1), in("glucose-powder", 1)).outcome()).isEqualTo(Outcome.PROHIBITED);
         assertThat(mix(22, in("agno3-acid", 5), in("ethanol", 5)).outcome()).isEqualTo(Outcome.PROHIBITED);
         assertThat(mix(22, in("kmno4", 5), in("toilet-cleaner", 5)).outcome()).isEqualTo(Outcome.PROHIBITED);
+    }
+
+    // ------------------------------------------------------------------ playground gaps closed
+
+    @Test
+    void bleachOxidisesBromideAndTurnsYellow() {
+        SimulationResult r = mix(22, in("bleach", 10), in("kbr", 10));
+        assertThat(r.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(text(r)).contains("yellow");
+        assertThat(mix(22, in("bleach", 10), in("kbr-crystals", 1)).outcome()).isEqualTo(Outcome.REACTION);
+        // chloride is already "reduced chlorine": nothing for bleach to take
+        assertThat(mix(22, in("bleach", 10), in("nacl", 10)).outcome()).isEqualTo(Outcome.NO_REACTION);
+    }
+
+    @Test
+    void anyMultivalentMetalIonMakesSoapScum() {
+        for (String salt : List.of("cacl2", "zncl2", "bacl2", "alcl3", "pbno3")) {
+            SimulationResult r = mix(22, in("soap-solution", 10), in(salt, 10));
+            assertThat(r.outcome()).as(salt).isEqualTo(Outcome.REACTION);
+            assertThat(r.presentation().discoveryIds()).as(salt).contains("soap-scum");
+        }
+        // sodium and potassium soaps are the soluble ones
+        assertThat(mix(22, in("soap-solution", 10), in("nacl", 10)).presentation().discoveryIds()).doesNotContain("soap-scum");
+    }
+
+    @Test
+    void candleWaxBurnsOnlyWithAFlame() {
+        assertThat(mix(22, false, in("candle-wax", 1)).outcome()).isEqualTo(Outcome.NO_REACTION);
+        SimulationResult r = mix(22, true, in("candle-wax", 1));
+        assertThat(r.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(cues(r, "flame")).isNotEmpty();
+        assertThat(r.presentation().discoveryIds()).contains("combustion");
+        assertThat(r.equationLatex()).contains("C_{25}H_{52}");
+        // floating on water it stays too cool to light
+        assertThat(mix(22, true, in("candle-wax", 1), in("water", 20)).outcome()).isEqualTo(Outcome.NO_REACTION);
+    }
+
+    @Test
+    void detergentEmulsifiesOilInsteadOfLeavingALayer() {
+        SimulationResult layers = mix(22, in("olive-oil", 10), in("water", 20));
+        assertThat(cues(layers, "layers")).hasSize(1);
+        assertThat(layers.presentation().title()).contains("Two layers");
+        SimulationResult r = mix(22, in("olive-oil", 10), in("water", 20), in("detergent", 5));
+        assertThat(r.outcome()).isEqualTo(Outcome.NO_REACTION);
+        assertThat(cues(r, "layers")).isEmpty();
+        assertThat(r.presentation().discoveryIds()).contains("emulsifier");
+        assertThat(r.presentation().title()).isEqualTo("Detergent emulsifies the oil");
+        assertThat(text(r)).contains("milky");
+        assertThat(Discovery.ALL).anyMatch(d -> d.id().equals("emulsifier"));
+    }
+
+    @Test
+    void noReactionTitlesSayWhatHappened() {
+        assertThat(mix(22, in("hcl", 10)).presentation().title()).isEqualTo("Hydrochloric acid on its own");
+        assertThat(mix(22, in("water", 20), in("nh4cl-solid", 3)).presentation().title()).isEqualTo("It dissolves and the beaker cools");
+        assertThat(mix(22, in("water", 20), in("naoh-pellets", 2)).presentation().title()).isEqualTo("It dissolves and the beaker warms");
+        assertThat(mix(22, in("nacl", 10), in("kbr", 10)).presentation().title()).isEqualTo("They mix - no reaction");
+        assertThat(mix(22, in("water", 20), in("sand", 2)).presentation().title()).isEqualTo("No observable reaction");
+    }
+
+    @Test
+    void solidWeakAcidOnlyDissolvesInBaseThatIsLeftOver() {
+        // equal acid and alkali leave nothing to carry the benzoic acid into solution
+        SimulationResult neutral = mix(22, in("hcl", 10), in("naoh", 10), in("benzoic-acid", 1));
+        assertThat(neutral.presentation().reactions()).noneMatch(x -> x.id().startsWith("acid-crystallises"));
+        assertThat(text(neutral)).contains("only some of the benzoic acid dissolves");
+        // plain water: a little dissolves and the rest just sits there - not a reaction, and not a free discovery
+        for (String acid : List.of("benzoic-acid", "salicylic-acid", "aspirin")) {
+            SimulationResult plain = mix(22, in("water", 20), in(acid, 1));
+            assertThat(plain.outcome()).as(acid).isEqualTo(Outcome.NO_REACTION);
+            assertThat(plain.presentation().discoveryIds()).as(acid).isEmpty();
+        }
+        // the real thing still works: acidifying sodium benzoate crashes benzoic acid out
+        assertThat(mix(22, in("na-benzoate", 10), in("hcl", 10)).presentation().discoveryIds()).contains("weak-acid-crystals");
+        // alkali alone still takes it all up as sodium benzoate
+        assertThat(text(mix(22, in("naoh", 10), in("benzoic-acid", 1)))).doesNotContain("only some");
     }
 
     // ------------------------------------------------------------------ the sweep

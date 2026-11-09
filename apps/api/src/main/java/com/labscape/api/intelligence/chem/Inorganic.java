@@ -678,6 +678,19 @@ final class Inorganic {
                     "iodide-oxidation", e);
             m.observe("The colourless mixture turns yellow-brown as the bleach oxidises iodide to iodine (starch-iodide paper uses this).");
         }
+        if (m.get("OCl-") > EPS && m.get("Br-") > EPS) {
+            // In alkaline bleach the bromine made is immediately turned into hypobromite, so the liquid only goes yellow.
+            double e = Math.min(m.get("OCl-"), m.get("Br-"));
+            m.take("OCl-", e);
+            m.take("Br-", e);
+            m.add("OBr-", e);
+            m.add("Cl-", e);
+            m.nextStart();
+            m.reaction("bleach-bromide", "Bleach oxidises bromide", "redox", Latex.eq("OCl^- + Br^- -> OBr^- + Cl^-"),
+                    "halogen-displacement", e);
+            m.observe("The mixture turns yellow: chlorine (as hypochlorite) is more reactive than bromine, so it takes the bromide's "
+                    + "electrons and leaves yellow hypobromite - the same trick is used to disinfect swimming pools.");
+        }
         if (m.get("OCl-") > EPS && m.get("Fe^2+") > EPS) {
             double e = Math.min(m.get("OCl-"), m.get("Fe^2+") / 2);
             m.take("OCl-", e);

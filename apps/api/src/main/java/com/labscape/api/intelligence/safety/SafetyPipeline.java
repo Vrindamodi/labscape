@@ -150,6 +150,206 @@ public class SafetyPipeline {
                 ? req.conditions().temperatureC() : DEFAULT_TEMP_C;
     }
 
+    // -------------------------------------------------------------------------------- what to try next
+
+    /**
+     * One thing worth doing to the mixture next: a shelf item to add ({@code kind} "add", with its catalogue
+     * {@code ref}) or a bench tool to use ("heat" or "spark"). {@code teaser} hints at what will happen without
+     * giving the answer away; {@code discoveryId} is the journal entry it would unlock, when there is one.
+     */
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    public record TryNext(String kind, String ref, String name, String teaser, String discoveryId, String type) {}
+
+    private record Scored(TryNext hint, double score) {}
+
+    private static final int HINT_LIMIT = 8;
+    private static final int HINT_CACHE = 256;
+    /** A few elements that are fun to add; the other 100-odd would drown the shelf chemicals. */
+    private static final java.util.Set<String> HINT_ELEMENTS = java.util.Set.of(
+            "el-Na", "el-K", "el-Li", "el-Ca", "el-Mg", "el-Al", "el-Zn", "el-Fe", "el-Cu", "el-S", "el-C", "el-I", "el-H", "el-O", "el-Cl");
+
+    private final Map<String, List<TryNext>> hintCache = java.util.Collections.synchronizedMap(
+            new LinkedHashMap<>(64, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, List<TryNext>> eldest) {
+                    return size() > HINT_CACHE;
+                }
+            });
+
+    /**
+     * Suggestions for the playground's "Try adding" chips: every catalogued substance is test-mixed into the
+     * current beaker with the same engine that resolves real mixes, and the ones that start a new reaction are
+     * returned, most familiar chemicals first and one per kind of reaction. Prohibited combinations are skipped
+     * silently (a missing hint says nothing about why), mixes that give off a toxic gas are never suggested,
+     * and nothing here is audited or counted against the probe guard because nothing is actually mixed.
+     */
+    public List<TryNext> tryNext(SimulationRequest req) {
+        if (!enabled || !"chemistry".equals(req.subject())) return List.of();
+        List<Portion> portions = new ArrayList<>();
+        for (SimulationRequest.Input in : req.inputs()) {
+            Substance s = catalogue.find(in.ref()).orElse(null);
+            if (s == null || !s.limits().unit().equals(in.unit())) return List.of();
+            portions.add(new Portion(s, in.amount()));
+        }
+        double temperature = Math.max(MIN_TEMP_C, Math.min(MAX_TEMP_C, temperature(req)));
+        boolean ignition = req.conditions() != null && Boolean.TRUE.equals(req.conditions().ignition());
+        StringBuilder key = new StringBuilder();
+        portions.stream().sorted(Comparator.comparing(p -> p.substance().id()))
+                .forEach(p -> key.append(p.substance().id()).append(':').append(Math.round(p.amount() * 10)).append('|'));
+        key.append(Math.round(temperature)).append(ignition ? "|i" : "");
+        List<TryNext> cached = hintCache.get(key.toString());
+        if (cached != null) return cached;
+        List<TryNext> out = computeTryNext(portions, temperature, ignition);
+        hintCache.put(key.toString(), out);
+        return out;
+    }
+
+    private List<TryNext> computeTryNext(List<Portion> portions, double temperature, boolean ignition) {
+        List<Substance> mixture = portions.stream().map(Portion::substance).toList();
+        if (rules.match(mixture).isPresent()) return List.of();
+        ChemistryEngine.Result base = engine.run(portions, temperature, ignition);
+        if (base.kind() == ChemistryEngine.Kind.UNSUPPORTED) return List.of();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        java.util.Set<String> baseDiscoveries = new java.util.HashSet<>();
+        for (ChemistryEngine.Reaction x : base.reactions()) {
+            seen.add(x.id());
+            if (x.discoveryId() != null) baseDiscoveries.add(x.discoveryId());
+        }
+        boolean baseToxic = toxic(base);
+        double liquid = 0;
+        for (Portion p : portions) {
+            Substance s = p.substance();
+            if (!s.isSolid() && !s.isGas()) liquid += "drops".equals(s.limits().unit()) ? p.amount() * 0.05 : p.amount();
+        }
+        double room = VESSEL_CAPACITY_ML - liquid;
+
+        // Best hint per kind of result, so three chips never all say "add another acid".
+        Map<String, Scored> best = new LinkedHashMap<>();
+        java.util.function.BiConsumer<String, Scored> offer =
+                (group, sc) -> best.merge(group, sc, (a, b) -> b.score() > a.score() ? b : a);
+
+        // Bench tools first: would warming it, or a flame, start something?
+        if (temperature < 60) {
+            fresh(engine.run(portions, 80, ignition), seen, baseToxic).ifPresent(x -> offer.accept("tool:heat",
+                    new Scored(new TryNext("heat", null, "Heat it", "Warm it on the hot plate and watch.", x.discoveryId(), x.type()), 6)));
+        }
+        if (!ignition) {
+            fresh(engine.run(portions, temperature, true), seen, baseToxic).ifPresent(x -> offer.accept("tool:spark",
+                    new Scored(new TryNext("spark", null, "Use the flame", "Bring a flame near it.", x.discoveryId(), x.type()), 6)));
+        }
+
+        if (portions.size() < 6) {
+            java.util.Set<String> present = new java.util.HashSet<>();
+            mixture.forEach(s -> present.add(s.id()));
+            int total = catalogue.all().size();
+            int index = -1;
+            for (Substance cand : catalogue.all()) {
+                index++;
+                if (present.contains(cand.id())) continue;
+                if (cand.isElement() && !HINT_ELEMENTS.contains(cand.id())) continue;
+                double amount = sampleAmount(cand, room);
+                if (amount <= 0) continue;
+                List<Portion> trial = new ArrayList<>(portions);
+                trial.add(new Portion(cand, amount));
+                List<Substance> trialMix = new ArrayList<>(mixture);
+                trialMix.add(cand);
+                if (rules.match(trialMix).isPresent()) continue;
+                ChemistryEngine.Reaction x = fresh(engine.run(trial, temperature, ignition), seen, baseToxic).orElse(null);
+                if (x == null) continue;
+                boolean indicator = "indicator".equals(x.type());
+                boolean newDiscovery = x.discoveryId() != null && !baseDiscoveries.contains(x.discoveryId());
+                double score = (newDiscovery ? 3 : 0) + (indicator ? -2 : 0) + 2.0 * (1 - index / (double) total)
+                        + ("household".equals(cand.category()) ? 0.5 : 0) + (cand.isElement() ? -1 : 0);
+                String group = x.discoveryId() != null ? "d:" + x.discoveryId() : "t:" + x.type();
+                offer.accept(group, new Scored(
+                        new TryNext("add", cand.id(), cand.displayName(), teaser(x), x.discoveryId(), x.type()), score));
+            }
+        }
+        return best.values().stream().sorted(Comparator.comparingDouble(Scored::score).reversed())
+                .limit(HINT_LIMIT).map(Scored::hint).toList();
+    }
+
+    /** The amount the playground picks up by default, cut down to what still fits in the beaker. */
+    private static double sampleAmount(Substance s, double roomMl) {
+        Substance.Limits l = s.limits();
+        boolean pours = !s.isSolid() && !s.isGas() && !"drops".equals(l.unit());
+        double want = s.isSolid() ? 1 : "drops".equals(l.unit()) ? 3 : s.isGas() ? 50 : 10;
+        if (pours) want = Math.min(want, roomMl);
+        want = Math.min(want, l.max());
+        return want < l.min() ? -1 : want;
+    }
+
+    /** The main reaction in {@code trial} that the beaker is not already doing, unless the trial is unsafe to suggest. */
+    private static Optional<ChemistryEngine.Reaction> fresh(ChemistryEngine.Result trial, java.util.Set<String> seen,
+            boolean baseToxic) {
+        if (trial.kind() != ChemistryEngine.Kind.REACTION) return Optional.empty();
+        if (!baseToxic && toxic(trial)) return Optional.empty();
+        return trial.chemical().stream().filter(x -> !seen.contains(x.id()))
+                .max(Comparator.comparingDouble((ChemistryEngine.Reaction x) -> "indicator".equals(x.type()) ? 0 : 1)
+                        .thenComparingDouble(ChemistryEngine.Reaction::extentMol));
+    }
+
+    private static boolean toxic(ChemistryEngine.Result r) {
+        return r.cues().stream().anyMatch(c -> "toxic".equals(c.get("hazard")));
+    }
+
+    /**
+     * A hint at the kind of thing to look for, never the answer. The journal's type for the discovery is used
+     * when there is one (it tells displacement from other redox, for instance), else the reaction's own type.
+     */
+    private static String teaser(ChemistryEngine.Reaction x) {
+        String type = x.type();
+        if (x.discoveryId() != null) {
+            for (com.labscape.api.intelligence.chem.Discovery d : com.labscape.api.intelligence.chem.Discovery.ALL) {
+                if (d.id().equals(x.discoveryId())) type = d.type();
+            }
+        }
+        return switch (type == null ? "" : type) {
+            case "precipitation" -> "A solid should appear out of nowhere.";
+            case "gas" -> "Expect some fizzing.";
+            case "neutralisation" -> "They should cancel each other out.";
+            case "displacement" -> "One metal should push another out.";
+            case "redox" -> "Watch for a colour change.";
+            case "indicator" -> "Its colour tells you acid or alkali.";
+            case "complex" -> "A new colour should appear.";
+            case "combustion" -> "It should catch light.";
+            case "synthesis" -> "Two elements could join into something new.";
+            case "hydration" -> "It reacts with the water itself.";
+            case "hydrolysis" -> "Water should split it apart.";
+            case "catalysis", "enzyme" -> "One of them speeds things up without being used up.";
+            case "esterification" -> "It could make a fruity smell.";
+            case "denaturation" -> "The protein should clump together.";
+            case "polymer" -> "It could turn stretchy.";
+            case "fermentation" -> "Slow bubbles should appear.";
+            case "equilibrium" -> "The colour can flip back and forth.";
+            case "dehydration" -> "Water gets pulled right out of it.";
+            case "decomposition" -> "Heat should break it apart.";
+            case "addition" -> "A colour should vanish.";
+            default -> "Something new should form.";
+        };
+    }
+
+    /** Says what the student actually saw when nothing chemical happened, instead of one fixed "no reaction" line. */
+    private static String noReactionTitle(ChemistryEngine.Result r, List<Portion> portions) {
+        if (portions.size() == 1) return portions.get(0).substance().name() + " on its own";
+        if (!r.reactions().isEmpty()) return r.reactions().get(0).name();
+        boolean layers = false, dissolves = false;
+        double deltaC = 0;
+        for (Map<String, Object> c : r.cues()) {
+            Object kind = c.get("kind");
+            if ("layers".equals(kind)) layers = true;
+            if ("dissolve".equals(kind) && ((Number) c.getOrDefault("fraction", 1)).doubleValue() > 0.05) dissolves = true;
+            if ("temperature".equals(kind)) deltaC = ((Number) c.getOrDefault("deltaC", 0)).doubleValue();
+        }
+        if (layers) return "Two layers - they don't mix";
+        if (dissolves) {
+            return deltaC <= -1 ? "It dissolves and the beaker cools"
+                    : deltaC >= 1 ? "It dissolves and the beaker warms" : "It dissolves - no reaction";
+        }
+        boolean allLiquid = portions.stream().allMatch(p -> !p.substance().isSolid() && !p.substance().isGas());
+        return allLiquid ? "They mix - no reaction" : OutcomeCopy.NO_REACTION_TITLE;
+    }
+
     // -------------------------------------------------------------------------------- results
 
     static SimulationResult prohibited(String requestId) {
@@ -233,7 +433,7 @@ public class SafetyPipeline {
                 obs.addAll(reasons);
                 yield new SimulationResult(requestId, Outcome.NO_REACTION, r.reasonCode(), null, null, null,
                         List.of(), cues, measurements, Fidelity.APPROXIMATE, List.of(),
-                        new Presentation(OutcomeCopy.NO_REACTION_TITLE, OutcomeCopy.NO_REACTION_MESSAGE, obs, summaries,
+                        new Presentation(noReactionTitle(r, portions), OutcomeCopy.NO_REACTION_MESSAGE, obs, summaries,
                                 null, null, List.of(), discoveries, compounds, facts));
             }
             case REACTION -> {

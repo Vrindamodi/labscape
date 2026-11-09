@@ -1,5 +1,5 @@
 import type { ProblemDetails, SimulationRequest, SimulationResult } from "@labscape/contracts";
-import type { CatalogueResponse, TrayItem } from "./types";
+import type { CatalogueResponse, TrayItem, TryNextHint } from "./types";
 
 export class ProblemError extends Error {
   constructor(
@@ -58,13 +58,8 @@ export function fetchCatalogue(): Promise<CatalogueResponse> {
   return call<CatalogueResponse>("/v1/playground/catalogue");
 }
 
-export function resolveMix(
-  tray: TrayItem[],
-  temperatureC: number,
-  stirring: boolean,
-  ignition = false,
-): Promise<SimulationResult> {
-  const req: SimulationRequest = {
+function mixRequest(tray: TrayItem[], temperatureC: number, stirring: boolean, ignition: boolean): SimulationRequest {
+  return {
     id: crypto.randomUUID(),
     subject: "chemistry",
     mode: "sandbox",
@@ -72,8 +67,39 @@ export function resolveMix(
     inputs: tray.map((t) => ({ ref: t.item.id, amount: t.amount, unit: t.item.limits.unit })),
     conditions: { temperatureC, stirring, ignition },
   };
+}
+
+export function resolveMix(
+  tray: TrayItem[],
+  temperatureC: number,
+  stirring: boolean,
+  ignition = false,
+): Promise<SimulationResult> {
   return call<SimulationResult>("/v1/safety/resolve", {
     method: "POST",
-    body: JSON.stringify(req),
+    body: JSON.stringify(mixRequest(tray, temperatureC, stirring, ignition)),
   });
+}
+
+/**
+ * What the safety engine says is worth trying next with this beaker: shelf items that would start a
+ * new reaction, or a bench tool (heat, flame) that would. Nothing is mixed by asking. Resolves to an
+ * empty list when the engine is unreachable, so hints never get in the way of the bench.
+ */
+export async function fetchTryNext(
+  tray: TrayItem[],
+  temperatureC: number,
+  stirring: boolean,
+  ignition = false,
+): Promise<TryNextHint[]> {
+  if (!tray.length) return [];
+  try {
+    const res = await call<{ suggestions: TryNextHint[] }>("/v1/playground/try-next", {
+      method: "POST",
+      body: JSON.stringify(mixRequest(tray, temperatureC, stirring, ignition)),
+    });
+    return res.suggestions ?? [];
+  } catch {
+    return [];
+  }
 }

@@ -134,6 +134,8 @@ public record Discovery(String id, String name, String type, String clue) {
                     "Milk meets a sour liquid."),
             new Discovery("emulsion-test", "Emulsion test", "physical",
                     "Fat in ethanol, then water - and it turns cloudy."),
+            new Discovery("emulsifier", "Oil meets its match", "physical",
+                    "Oil floats on water... until a squirt from the kitchen sink joins in."),
             new Discovery("slime", "Making slime", "polymer",
                     "Glue plus a mild alkali becomes stretchy."),
             new Discovery("fermentation", "Fermentation", "fermentation",

@@ -76,6 +76,22 @@ class SafetyControllerTest {
         }
 
         @Test
+        void tryNextSuggestsShelfItemsWithoutMixingAnything() throws Exception {
+            String acidOnly = HCL_NAOH.replace(",{\"ref\":\"naoh\",\"amount\":10,\"unit\":\"mL\"}", "");
+            mvc.perform(post("/v1/playground/try-next").contentType(MediaType.APPLICATION_JSON).content(acidOnly))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.suggestions.length()").value(org.hamcrest.Matchers.greaterThan(2)))
+                    .andExpect(jsonPath("$.suggestions[0].kind").value("add"))
+                    .andExpect(jsonPath("$.suggestions[0].ref").exists())
+                    .andExpect(jsonPath("$.suggestions[0].teaser").isNotEmpty())
+                    .andExpect(jsonPath("$.suggestions[?(@.ref == 'bleach')]").isEmpty());
+            // a beaker that is itself a blocked mix gets no hints at all
+            mvc.perform(post("/v1/playground/try-next").contentType(MediaType.APPLICATION_JSON).content(BLEACH_ACID))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.suggestions").isEmpty());
+        }
+
+        @Test
         void catalogueHidesSafetyMetadata() throws Exception {
             mvc.perform(get("/v1/playground/catalogue"))
                     .andExpect(status().isOk())

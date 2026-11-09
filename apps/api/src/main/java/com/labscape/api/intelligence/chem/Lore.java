@@ -151,6 +151,7 @@ public final class Lore {
             Map.entry("protein-denaturation", "Cooking an egg can't be undone: heat permanently unfolds the albumin proteins."),
             Map.entry("curdling", "Cheese-making starts with curdling milk: acid or rennet makes the casein clump together."),
             Map.entry("emulsion-test", "Milk and mayonnaise are emulsions - tiny droplets of fat spread through water."),
+            Map.entry("emulsifier", "Mayonnaise only stays mixed because egg yolk contains a natural emulsifier called lecithin."),
             Map.entry("slime", "Borate links PVA chains like rungs on a ladder - that's why slime stretches but snaps when pulled fast."),
             Map.entry("fermentation", "Bread rises because yeast makes carbon dioxide - the ethanol bakes away in the oven."),
             Map.entry("starch-digestion", "Chew a cracker for a minute and it tastes sweeter: amylase in saliva turns starch into maltose."),

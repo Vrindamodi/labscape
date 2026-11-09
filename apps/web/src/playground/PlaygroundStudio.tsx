@@ -1,14 +1,16 @@
 import type { SimulationResult } from "@labscape/contracts";
 import { DockButton, DockSeparator, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type HeldKind, type PlaygroundView, type SceneCaption, type SceneInsets } from "@labscape/lab-engine";
 import { useMotion } from "@labscape/motion";
-import { dispenseMode, fetchCatalogue, liquidMl, loadDiscoveries, ProblemError, resolveMix, saveDiscoveries, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem } from "@labscape/playground";
+import { dispenseMode, fetchCatalogue, fetchTryNext, liquidMl, loadDiscoveries, loadMuted, ProblemError, resolveMix, saveDiscoveries, saveMuted, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem, type TryNextHint } from "@labscape/playground";
 import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { ArrowLeft, Atom, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Wind, X, Zap } from "lucide-react";
+import { ArrowLeft, Atom, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSettings } from "../lib/settings";
+import { JournalDrawer } from "./JournalDrawer";
 import { MicroView } from "./MicroView";
 import { PeriodicDrawer } from "./PeriodicDrawer";
 import { capitalise, colourDistance, colourName } from "./colourName";
@@ -79,6 +81,13 @@ function matchesFilter(it: ShelfItem, f: Filter) {
   if (f === "household") return it.category === "household" || ["sugar", "ethanol", "vegetable-oil", "h2o2", "nacl", "nahco3"].includes(it.id);
   if (f === "other") return ["solvent", "other"].includes(it.category);
   return it.category === f;
+}
+
+/** The amount a chemical is picked up with, and what quick add puts in: 3 drops, a 1 g spatula, 10 mL (or 50 mL of gas). */
+function quickAmount(it: ShelfItem) {
+  const mode = dispenseMode(it);
+  const usual = mode === "dropper" ? 3 : mode === "spatula" ? 1 : 10;
+  return Math.max(it.limits.min, Math.min(usual, it.limits.max));
 }
 
 /** Height kept free under the beaker for captions, so they never sit on the glass. */
@@ -184,7 +193,17 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [smell, setSmell] = useState<{ text: string; colour: string } | null>(null);
   const [reactionPulse, setReactionPulse] = useState(0);
   const [sparkPulse, setSparkPulse] = useState(0);
-  const [drawer, setDrawer] = useState<"shelf" | "table">("shelf");
+  const [drawer, setDrawer] = useState<"shelf" | "table" | "journal">("shelf");
+  /** What the engine says is worth trying next with this beaker (shelf items and bench tools). */
+  const [hints, setHints] = useState<TryNextHint[]>([]);
+  const hintSeq = useRef(0);
+  /** The beaker as it was before the last Empty, so Undo can bring it back. */
+  const emptied = useRef<TrayItem[] | null>(null);
+  const [canRestore, setCanRestore] = useState(false);
+  // Sound: the app-wide mute (Settings) always wins; the studio's own toggle is remembered per browser.
+  const { settings } = useSettings();
+  const [muted, setMuted] = useState(() => loadMuted());
+  const silent = muted || settings.muted;
   const plateRef = useRef(22);
   useEffect(() => {
     if (Math.abs(targetC - liquidC) < 0.05) return;
@@ -231,8 +250,18 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       })
       .catch((e: unknown) => setLoadError(e instanceof ProblemError ? e.problem.detail ?? e.problem.title : "Can't reach LABscape."));
     const ts = timers.current;
-    return () => ts.forEach((t) => window.clearTimeout(t));
+    return () => {
+      ts.forEach((t) => window.clearTimeout(t));
+      // The stirrer and fizz are loops: without this they keep playing on the next page.
+      sound.stopAll();
+    };
   }, []);
+  useEffect(() => {
+    sound.muted = silent;
+    if (silent) sound.stopAll();
+    else if (stirring) sound.loop("stir", true, 0.5);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [silent]);
 
   const later = (ms: number, f: () => void) => timers.current.push(window.setTimeout(f, ms));
   /** Captions beside the beaker connect the words in the Live panel with what is on screen. */
@@ -473,6 +502,14 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     [baseColour, found, cat, onDiscoveries, addLog],
   );
 
+  /** Ask what would react with this beaker. Late answers for an older beaker are dropped. */
+  const loadHints = useCallback((t: TrayItem[], cond: { temp: number; stir: boolean; ign: boolean }) => {
+    const seq = ++hintSeq.current;
+    void fetchTryNext(t, cond.temp, cond.stir, cond.ign).then((h) => {
+      if (seq === hintSeq.current) setHints(h);
+    });
+  }, []);
+
   const resolve = useCallback(
     async (next: TrayItem[], cond: { temp: number; stir: boolean; ign: boolean }, revert: () => void, fresh = true) => {
       if (!next.length) return;
@@ -493,6 +530,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           return;
         }
         applyResult(r, next, fresh);
+        loadHints(next, cond);
         if (r.outcome === "needs_conditions" || r.outcome === "unsupported") flash(friendlyOutcome(r, shelfName)?.line ?? "Nothing happens yet.", "warn");
       } catch (e) {
         revert();
@@ -506,7 +544,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [applyResult, addLog],
+    [applyResult, addLog, loadHints],
   );
 
   const commit = (item: ShelfItem, amt: number, how: string) => {
@@ -516,6 +554,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     const add: TrayItem = { key: crypto.randomUUID(), item, amount: a };
     const prev = adds;
     const nextAdds = [...adds, add];
+    emptied.current = null;
+    setCanRestore(false);
     setAdds(nextAdds);
     addLog(`Added ${fmt(a, item.limits.unit)} ${unitLabel(item)} ${item.name}${item.concentrationM ? ` (${item.concentrationM} M)` : ""} · ${how}`);
     void resolve(mergeTray(nextAdds), { temp: plateC, stir: stirring, ign: ignition }, () => setAdds(prev));
@@ -534,11 +574,11 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setHeld(it);
     setFlowing(false);
     setTilt(0);
-    const mode = dispenseMode(it);
-    setAmount(mode === "dropper" ? 3 : mode === "spatula" ? Math.min(1, it.limits.max) : Math.min(10, it.limits.max));
+    setAmount(quickAmount(it));
     sound.play("clink");
   };
   const putDown = () => {
+    auto.current = null;
     stopFlow(false);
     setHeld(null);
     setTilt(0);
@@ -623,6 +663,36 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     stopFlow(true);
   };
 
+  /**
+   * Quick add (the + on a shelf card): pick it up, add the usual amount and put it back, in one go.
+   * `auto` holds the item id while the pour is still to start, then "poured:<id>" until it finishes.
+   */
+  const auto = useRef<string | null>(null);
+  const quickAdd = (it: ShelfItem) => {
+    if (flowing) return flash("Finish this pour first.");
+    if (online === false) return flash("The safety engine is offline, so nothing can be mixed.", "bad");
+    if (held?.id !== it.id) pick(it);
+    auto.current = it.id;
+    setAutoTick((n) => n + 1);
+  };
+  const [autoTick, setAutoTick] = useState(0);
+  useEffect(() => {
+    if (!held || auto.current !== held.id || flowing) return;
+    auto.current = maxAdd > 0 ? `poured:${held.id}` : null;
+    startFlow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [held, autoTick]);
+  const wasFlowing = useRef(false);
+  useEffect(() => {
+    const ended = wasFlowing.current && !flowing;
+    wasFlowing.current = flowing;
+    if (ended && held && auto.current === `poured:${held.id}`) {
+      auto.current = null;
+      putDown();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flowing]);
+
   /* ---------------------------------------------------------------- tools */
 
   const heatTo = (c: number) => {
@@ -635,8 +705,41 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     addLog(t > 22 ? `Hot plate set to ${t} °C` : t < 22 ? `Into an ice bath (${t} °C)` : "Hot plate off");
     reResolve({ temp: t, stir: stirring, ign: ignition });
   };
+  const toggleStir = () => {
+    if (!tray.length) return;
+    const s = !stirring;
+    setStirring(s);
+    addLog(s ? "Stirrer on" : "Stirrer off");
+    sound.loop("stir", s, 0.5);
+    reResolve({ temp: plateC, stir: s, ign: ignition });
+  };
+  const spark = () => {
+    if (!tray.length) return;
+    setIgnition(true);
+    setSparkPulse((n) => n + 1);
+    sound.play("spark");
+    addLog("Held a lit splint to the mouth");
+    reResolve({ temp: plateC, stir: stirring, ign: true });
+  };
+  const toggleIce = () => {
+    if (iceBath) return heatTo(22);
+    heatTo(5);
+    setIceBath(true);
+    caption("Frost forms on the cold glass as the liquid cools", { colour: "#eaf6ff" });
+  };
   const undo = () => {
-    if (!adds.length) return;
+    if (busy) return;
+    // Straight after Empty, Undo brings the whole beaker back.
+    if (!adds.length) {
+      const back = emptied.current;
+      if (!back) return;
+      emptied.current = null;
+      setCanRestore(false);
+      setAdds(back);
+      addLog("Brought the emptied beaker back");
+      void resolve(mergeTray(back), { temp: plateC, stir: false, ign: false }, () => {});
+      return;
+    }
     const next = adds.slice(0, -1);
     setAdds(next);
     addLog("Undid the last addition");
@@ -644,7 +747,11 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setVisual(EMPTY_VIEW);
     void resolve(mergeTray(next), { temp: plateC, stir: stirring, ign: ignition }, () => {});
   };
-  const empty = (silent = false) => {
+  const empty = (quiet = false) => {
+    if (!quiet && adds.length) {
+      emptied.current = adds;
+      setCanRestore(true);
+    }
     setAdds([]);
     setResult(null);
     setPh(null);
@@ -655,10 +762,84 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setHazard(null);
     setCaptions([]);
     setNeeds([]);
+    hintSeq.current++;
+    setHints([]);
+    // An empty beaker has nothing to stir: leaving the stirrer on would loop its sound with no way to stop it.
+    setStirring(false);
+    sound.loop("stir", false);
     sound.loop("fizz", false);
-    if (!silent) addLog("Emptied and rinsed the beaker");
+    if (!quiet) addLog("Emptied and rinsed the beaker");
     sound.play("pour");
   };
+
+  /** Act on a "Try next" chip: pick the chemical up (ready to pour) or use the bench tool it names. */
+  const followHint = (h: TryNextHint) => {
+    if (h.kind === "heat") return heatTo(Math.max(plateC, 80));
+    if (h.kind === "spark") return spark();
+    const it = cat?.substances.find((x) => x.id === h.ref);
+    if (!it) return;
+    setDrawer("shelf");
+    setInfoOpen(false);
+    if (held?.id !== it.id) pick(it);
+  };
+
+  /* ---------------------------------------------------------------- keyboard */
+
+  const keys = useRef<(e: KeyboardEvent) => void>(() => {});
+  keys.current = (e) => {
+    const t = e.target as HTMLElement | null;
+    const typing = !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+    if (e.key === "Escape") {
+      if (blocked) setBlocked(null);
+      else if (drawer !== "shelf") setDrawer("shelf");
+      else if (typing) t!.blur();
+      else if (held) putDown();
+      return;
+    }
+    if (typing || blocked || e.altKey) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      return undo();
+    }
+    if (e.ctrlKey || e.metaKey) return;
+    // Space on a focused button already presses it; only treat it as "pour" when nothing else would use it.
+    if (e.key === " " && held && !(t && (t.tagName === "BUTTON" || t.tagName === "A"))) {
+      e.preventDefault();
+      return flowing ? stopFlow(true) : startFlow();
+    }
+    switch (e.key.toLowerCase()) {
+      case "s":
+        return toggleStir();
+      case "h":
+        return heatTo(plateC > 22 ? 22 : friendlyOutcome(result, shelfName)?.heatC ?? 60);
+      case "f":
+        return spark();
+      case "i":
+        return toggleIce();
+      case "z":
+        return undo();
+      case "j":
+        return setDrawer((d) => (d === "journal" ? "shelf" : "journal"));
+      case "p":
+        return setDrawer((d) => (d === "table" ? "shelf" : "table"));
+      case "m":
+        return setMuted((m) => !m);
+      case "/":
+        e.preventDefault();
+        setDrawer("shelf");
+        if (!wide) setShelfOpen(true);
+        window.setTimeout(() => document.querySelector<HTMLInputElement>('input[aria-label="Search chemicals"]')?.focus(), 30);
+        return;
+      default:
+        return;
+    }
+  };
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => keys.current(e);
+    window.addEventListener("keydown", f);
+    return () => window.removeEventListener("keydown", f);
+  }, []);
+  useEffect(() => saveMuted(muted), [muted]);
 
   /* ---------------------------------------------------------------- render */
 
@@ -694,6 +875,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   /* ---------------------------------------------------------------- layout: keep the bench in the free space */
   const wide = useMedia("(min-width: 1024px)");
   const short = useMedia("(max-height: 760px)");
+  // On laptop-height screens the card in hand drops its gauge and tip so the shelf below keeps two rows of chemicals.
+  const snug = useMedia("(max-height: 980px)");
   const [shelfOpen, setShelfOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -772,7 +955,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         if (!flowing) startFlow();
       }}
       onPutDown={putDown}
-      compact={!wide || short}
+      compact={!wide || snug}
     />
   );
   const panelMotion = reduced ? {} : { initial: { opacity: 0, x: -16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -16 }, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const } };
@@ -809,16 +992,18 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           <div className="truncate text-[13px] text-[#8fa6d1]">Chemistry · {cat?.substances.length ?? "…"} substances</div>
         </div>
         {mission && !focus && (
-          <div className="ml-2 hidden min-w-0 max-w-[380px] flex-1 items-center gap-2.5 rounded-xl bg-white/[0.04] py-1 pl-1.5 pr-1 xl:flex">
-            <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(#ffc23d 0 ${(foundCount / Math.max(1, cat!.discoveries.length)) * 100}%, rgba(255,255,255,.1) 0)` }}>
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-[#0b1730] font-heading text-[11px] font-bold text-[#ffc23d]">{foundCount}</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#8fa6d1]">
-                Mission {missionIdx + 1}/{cat!.discoveries.length} {found[mission.id] && <span className="text-[#3de8a8]">· done</span>}
-              </div>
-              <div className="truncate text-[14px] font-semibold" title={mission.clue}>{found[mission.id] ? mission.name : mission.clue}</div>
-            </div>
+          <div className="ml-2 hidden min-w-0 max-w-[380px] flex-1 items-center gap-1 rounded-xl bg-white/[0.04] py-1 pl-1.5 pr-1 xl:flex">
+            <button type="button" onClick={() => setDrawer((d) => (d === "journal" ? "shelf" : "journal"))} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg text-left hover:bg-white/[0.05]" aria-label={`Open the discovery journal. ${foundCount} of ${cat!.discoveries.length} found.`} aria-expanded={drawer === "journal"} title="Open the discovery journal (J)">
+              <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(#ffc23d 0 ${(foundCount / Math.max(1, cat!.discoveries.length)) * 100}%, rgba(255,255,255,.1) 0)` }}>
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-[#0b1730] font-heading text-[11px] font-bold text-[#ffc23d]">{foundCount}</span>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[12px] font-bold uppercase tracking-[0.06em] text-[#8fa6d1]">
+                  Mission {missionIdx + 1}/{cat!.discoveries.length} {found[mission.id] && <span className="text-[#3de8a8]">· done</span>}
+                </span>
+                <span className="block truncate text-[14px] font-semibold" title={mission.clue}>{found[mission.id] ? mission.name : mission.clue}</span>
+              </span>
+            </button>
             <button aria-label="Previous mission" onClick={() => setMissionIdx((i) => (i - 1 + cat!.discoveries.length) % cat!.discoveries.length)} className="rounded p-1 text-[#8fa6d1] hover:text-white">
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -839,6 +1024,18 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           {online === false ? <ShieldAlert className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
           {online === false ? "Safety engine offline" : busy ? "Checking…" : "Safety engine on"}
         </span>
+        {cat && !focus && (
+          <button type="button" onClick={() => setDrawer((d) => (d === "journal" ? "shelf" : "journal"))} className={cx("flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-[14px] font-semibold xl:hidden", drawer === "journal" ? "bg-[rgba(255,194,61,.2)] text-[#ffd98a]" : "text-[#ffd98a] hover:bg-white/[0.06]")} aria-label={`Discovery journal. ${foundCount} of ${cat.discoveries.length} found.`} aria-expanded={drawer === "journal"}>
+            <Trophy className="h-4 w-4" />
+            <span className="tabular-nums">
+              {foundCount}
+              <span className="max-sm:hidden">/{cat.discoveries.length}</span>
+            </span>
+          </button>
+        )}
+        <button type="button" onClick={() => setMuted((m) => !m)} disabled={settings.muted} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[#dbe7ff] hover:bg-white/[0.06] disabled:opacity-40 max-sm:hidden" aria-pressed={silent} aria-label={silent ? "Turn sound on" : "Turn sound off"} title={settings.muted ? "Sound is muted in Settings" : silent ? "Turn sound on (M)" : "Turn sound off (M)"}>
+          {silent ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </button>
         {!wide && !focus && (
           <button onClick={() => setInfoOpen((o) => !o)} className={cx("flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-[14px] font-semibold", infoOpen ? "bg-[rgba(61,139,255,.28)] text-white" : "text-[#dbe7ff] hover:bg-white/[0.06]")} aria-pressed={infoOpen}>
             <Info className="h-4 w-4" /> <span className="max-sm:sr-only">What's happening</span>
@@ -874,6 +1071,10 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
                 if (!wide) setShelfOpen(false);
               }}
               glow={result?.presentation?.focusRef && (needs.includes("catalyst") || needs.includes("acid") || needs.includes("alkali")) ? result.presentation.focusRef : needs.includes("catalyst") ? "mno2-powder" : needs.includes("acid") ? "h2so4" : null}
+              onQuick={(it) => {
+                quickAdd(it);
+                if (!wide) setShelfOpen(false);
+              }}
               onTable={() => setDrawer("table")}
               onClose={wide ? null : () => setShelfOpen(false)}
               collapsible={wide && short && !!held && !needs.includes("catalyst") && !needs.includes("acid") && !needs.includes("alkali")}
@@ -890,6 +1091,22 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
               setShelfOpen(false);
               pick(it);
             }}
+          />
+        )}
+        {!focus && drawer === "journal" && cat && (
+          <JournalDrawer
+            discoveries={cat.discoveries}
+            found={found}
+            tracked={mission?.id ?? null}
+            onTrack={(id) => {
+              const i = cat.discoveries.findIndex((d) => d.id === id);
+              const d = cat.discoveries[i];
+              if (!d) return;
+              setMissionIdx(i);
+              setDrawer("shelf");
+              flash(found[d.id] ? `Tracking: ${d.name}` : `Mission: ${d.clue}`, "good");
+            }}
+            onClose={() => setDrawer("shelf")}
           />
         )}
       {/* phone and small tablet: the card in hand sits just above the dock */}
@@ -942,7 +1159,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
             className={cx("absolute z-10 flex", wide ? "bottom-[96px] right-4 top-[84px] w-[300px] xl:w-[344px]" : "inset-x-2 top-[76px] z-30 max-h-[calc(100%-168px)]")}
             {...(reduced ? {} : { initial: { opacity: 0, x: 16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 16 }, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } })}
           >
-            <SidePanel tab={tab} setTab={setTab} result={result} friendly={friendly} onHeat={heatTo} plateC={plateC} log={log} tray={tray} online={online} busy={busy} onClose={wide ? null : () => setInfoOpen(false)} />
+            <SidePanel tab={tab} setTab={setTab} result={result} friendly={friendly} onHeat={heatTo} plateC={plateC} log={log} tray={tray} online={online} busy={busy} onClose={wide ? null : () => setInfoOpen(false)} hints={hints} found={found} items={cat?.substances ?? []} heldId={held?.id ?? null} onHint={followHint} mission={mission} missionDone={!!mission && !!found[mission.id]} onJournal={() => setDrawer("journal")} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -969,49 +1186,14 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       {/* dock */}
       <div ref={dockRef} className="absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-16px)] -translate-x-1/2 overflow-x-auto [scrollbar-width:none]">
         <Glass radius="xl" className="flex items-center gap-0.5 p-1.5 sm:gap-1 sm:p-2" role="toolbar" aria-label="Bench tools">
-          <DockButton
-            icon={<RotateCw />}
-            label="Stir"
-            tone={stirring ? "on" : "default"}
-            disabled={!tray.length}
-            onClick={() => {
-              const s = !stirring;
-              setStirring(s);
-              addLog(s ? "Stirrer on" : "Stirrer off");
-              sound.loop("stir", s, 0.5);
-              reResolve({ temp: plateC, stir: s, ign: ignition });
-            }}
-          />
+          <DockButton icon={<RotateCw />} label="Stir" kbd="S" tone={stirring ? "on" : "default"} disabled={!tray.length} onClick={toggleStir} />
           <DockButton icon={<Wind />} label="Swirl" tone={swirling ? "on" : "default"} disabled={!tray.length} onPointerDown={() => setSwirling(true)} onPointerUp={() => setSwirling(false)} onPointerLeave={() => setSwirling(false)} title="Hold to swirl" />
           <DockSeparator />
           <HeatButton plateC={plateC} glow={needs.includes("heat")} onHeat={heatTo} />
-          <DockButton
-            icon={<Zap />}
-            label="Spark"
-            tone={ignition ? "hot" : needs.includes("spark") ? "on" : "default"}
-            className={needs.includes("spark") && !ignition ? "animate-pulse" : ""}
-            disabled={!tray.length}
-            onClick={() => {
-              setIgnition(true);
-              setSparkPulse((n) => n + 1);
-              sound.play("spark");
-              addLog("Held a lit splint to the mouth");
-              reResolve({ temp: plateC, stir: stirring, ign: true });
-            }}
-          />
-          <DockButton
-            icon={<Snowflake />}
-            label="Ice bath"
-            tone={iceBath ? "on" : "default"}
-            onClick={() => {
-              if (iceBath) return heatTo(22);
-              heatTo(5);
-              setIceBath(true);
-              caption("Frost forms on the cold glass as the liquid cools", { colour: "#eaf6ff" });
-            }}
-          />
+          <DockButton icon={<Zap />} label="Spark" kbd="F" title="Hold a flame to the beaker (F)" tone={ignition ? "hot" : needs.includes("spark") ? "on" : "default"} className={needs.includes("spark") && !ignition ? "animate-pulse" : ""} disabled={!tray.length} onClick={spark} />
+          <DockButton icon={<Snowflake />} label="Ice bath" kbd="I" tone={iceBath ? "on" : "default"} onClick={toggleIce} />
           <DockSeparator />
-          <DockButton icon={<Undo2 />} label="Undo" disabled={!adds.length || busy} onClick={undo} />
+          <DockButton icon={<Undo2 />} label={!adds.length && canRestore ? "Restore" : "Undo"} kbd="Z" title={!adds.length && canRestore ? "Bring the emptied beaker back (Z)" : "Undo the last addition (Z)"} disabled={(!adds.length && !canRestore) || busy} onClick={undo} />
           <DockButton icon={<Eraser />} label="Empty" tone="danger" disabled={!adds.length} onClick={() => empty()} />
         </Glass>
       </div>
@@ -1193,7 +1375,7 @@ function NoEntrySign() {
 
 /* ------------------------------------------------------------------ shelf */
 
-function Shelf({ cat, held, onPick, glow, onTable, onClose, collapsible = false }: { cat: CatalogueResponse | null; held: ShelfItem | null; onPick: (it: ShelfItem) => void; glow: string | null; onTable: () => void; onClose: (() => void) | null; collapsible?: boolean }) {
+function Shelf({ cat, held, onPick, onQuick, glow, onTable, onClose, collapsible = false }: { cat: CatalogueResponse | null; held: ShelfItem | null; onPick: (it: ShelfItem) => void; onQuick: (it: ShelfItem) => void; glow: string | null; onTable: () => void; onClose: (() => void) | null; collapsible?: boolean }) {
   // On short screens the card in hand needs the room: the shelf folds to its header until asked.
   const [unfolded, setUnfolded] = useState(false);
   useEffect(() => setUnfolded(false), [held?.id]);
@@ -1242,14 +1424,15 @@ function Shelf({ cat, held, onPick, glow, onTable, onClose, collapsible = false 
       <div className="ls-scroll mt-2 grid min-h-0 flex-1 auto-rows-max grid-cols-2 content-start gap-2 overflow-y-auto pr-1 pt-0.5">
         {list.map((it) => {
           const inHand = held?.id === it.id;
+          const usual = quickAmount(it);
           return (
+            <div key={it.id} className="group relative">
             <button
-              key={it.id}
               onClick={() => onPick(it)}
               aria-pressed={inHand}
               title={it.description}
               className={cx(
-                "flex flex-col overflow-hidden rounded-[14px] border text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px",
+                "flex h-full w-full flex-col overflow-hidden rounded-[14px] border text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px",
                 inHand ? "border-[#6aa8ff] shadow-[0_0_0_1px_#6aa8ff,0_0_26px_-8px_#3d8bff]" : glow === it.id ? "animate-pulse border-[#ffc23d] shadow-[0_0_0_1px_#ffc23d]" : "border-[rgba(140,180,255,.12)] hover:border-[rgba(140,180,255,.35)]",
               )}
               style={{ background: `radial-gradient(90% 70% at 50% 30%, ${it.colour}33, transparent 70%), rgba(4,10,28,.5)` }}
@@ -1282,6 +1465,17 @@ function Shelf({ cat, held, onPick, glow, onTable, onClose, collapsible = false 
                 </span>
               </div>
             </button>
+            {/* quick add: the usual amount straight into the beaker, no card to work */}
+            <button
+              type="button"
+              onClick={() => onQuick(it)}
+              className="absolute right-1.5 top-[58px] grid h-7 w-7 place-items-center rounded-full border border-[rgba(140,180,255,.35)] bg-[rgba(14,26,56,.92)] text-[#bfe3ff] shadow-[0_4px_12px_-4px_rgba(0,0,0,.8)] transition hover:border-[#6aa8ff] hover:bg-[#3d8bff] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#6aa8ff]"
+              aria-label={`Quick add ${fmt(usual, it.limits.unit)} ${unitLabel(it)} of ${it.name}${it.concentrationM ? ` (${it.concentrationM} M)` : ""}`}
+              title={`Quick add ${fmt(usual, it.limits.unit)} ${unitLabel(it)}`}
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+            </div>
           );
         })}
         {cat && !list.length && <p className="col-span-2 py-6 text-center text-[14px] text-[#8fa6d1]">Nothing matches.</p>}
@@ -1456,7 +1650,10 @@ function HeatButton({ plateC, glow, onHeat }: { plateC: number; glow: boolean; o
 
 /* ------------------------------------------------------------------ right panel */
 
-function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, online, busy, onClose }: { tab: Tab; setTab: (t: Tab) => void; result: SimulationResult | null; friendly: ReturnType<typeof friendlyOutcome>; onHeat: (c: number) => void; plateC: number; log: LogLine[]; tray: TrayItem[]; online: boolean | null; busy: boolean; onClose: (() => void) | null }) {
+function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, online, busy, onClose, hints, found, items, heldId, onHint, mission, missionDone, onJournal }: { tab: Tab; setTab: (t: Tab) => void; result: SimulationResult | null; friendly: ReturnType<typeof friendlyOutcome>; onHeat: (c: number) => void; plateC: number; log: LogLine[]; tray: TrayItem[]; online: boolean | null; busy: boolean; onClose: (() => void) | null; hints: TryNextHint[]; found: Record<string, FoundDiscovery>; items: ShelfItem[]; heldId: string | null; onHint: (h: TryNextHint) => void; mission: DiscoveryDef | null; missionDone: boolean; onJournal: () => void }) {
+  // Hints that would unlock something new in the journal come first; four is plenty to choose from.
+  const fresh = (h: TryNextHint) => !!h.discoveryId && !found[h.discoveryId];
+  const shown = [...hints].sort((a, b) => Number(fresh(b)) - Number(fresh(a))).slice(0, 4);
   const p = result?.presentation;
   const reacting = result?.outcome === "reaction";
   const waiting = !!friendly;
@@ -1495,7 +1692,17 @@ function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, o
                 {!tray.length ? (
                   <div className="rounded-[14px] border border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)] p-3">
                     <h3 className="font-heading text-[18px] font-bold text-white">An empty beaker</h3>
-                    <p className="mt-1 text-[15px] leading-relaxed text-[#c8d6f3]">Pick something from the shelf and pour it in. Then add a second chemical and see what happens.</p>
+                    <p className="mt-1 text-[15px] leading-relaxed text-[#c8d6f3]">Pick something from the shelf and pour it in, or tap the + on a card to add it straight away. Then add a second chemical and see what happens.</p>
+                    {mission && (
+                      <button type="button" onClick={onJournal} className="mt-3 flex w-full items-start gap-2.5 rounded-xl border border-[rgba(255,194,61,.35)] bg-[rgba(255,194,61,.06)] p-2.5 text-left hover:bg-[rgba(255,194,61,.12)]">
+                        <Trophy className="mt-0.5 h-4 w-4 shrink-0 text-[#ffc23d]" />
+                        <span className="min-w-0">
+                          <span className="block text-[12px] font-bold uppercase tracking-[0.06em] text-[#ffd98a]">{missionDone ? "Mission done" : "Your mission"}</span>
+                          <span className="block text-[15px] font-semibold leading-snug text-white">{missionDone ? mission.name : mission.clue}</span>
+                          <span className="mt-0.5 block text-[13px] text-[#9db2da]">Open the journal to pick another</span>
+                        </span>
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className={cx("rounded-[14px] border p-3 transition-colors duration-300", reacting ? "border-[rgba(61,232,168,.35)] bg-[linear-gradient(120deg,rgba(61,232,168,.16),rgba(61,139,255,.08))]" : waiting ? "border-[rgba(255,194,61,.4)] bg-[rgba(255,194,61,.07)]" : "border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)]")}>
@@ -1548,6 +1755,38 @@ function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, o
                           {s}
                         </li>
                       ))}
+                    </ul>
+                  </div>
+                )}
+                {tray.length > 0 && shown.length > 0 && !busy && (
+                  <div>
+                    <Kicker>Try next</Kicker>
+                    <ul className="mt-1.5 space-y-1.5">
+                      {shown.map((h) => {
+                        const it = h.kind === "add" ? items.find((x) => x.id === h.ref) : undefined;
+                        if (h.kind === "add" && !it) return null;
+                        const inHand = !!it && heldId === it.id;
+                        return (
+                          <li key={`${h.kind}:${h.ref ?? ""}`}>
+                            <button
+                              type="button"
+                              onClick={() => onHint(h)}
+                              className={cx("flex w-full items-center gap-2.5 rounded-xl border p-2 text-left transition-colors", inHand ? "border-[#6aa8ff] bg-[rgba(61,139,255,.18)]" : "border-[rgba(140,180,255,.16)] bg-[rgba(4,10,28,.5)] hover:border-[rgba(140,180,255,.45)] hover:bg-[rgba(61,139,255,.10)]")}
+                            >
+                              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] text-[#0b1730]" style={{ background: it ? it.colour : h.kind === "heat" ? "#ff8a3d" : "#ffd23f" }}>
+                                {h.kind === "heat" ? <Thermometer className="h-4 w-4" /> : h.kind === "spark" ? <Zap className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="flex items-center gap-1.5 text-[15px] font-semibold leading-tight text-white">
+                                  <span className="truncate">{inHand ? `Holding ${h.name}` : h.kind === "add" ? `Add ${h.name.charAt(0).toLowerCase()}${h.name.slice(1)}` : h.name}</span>
+                                  {fresh(h) && <Star className="h-3.5 w-3.5 shrink-0 fill-[#ffc23d] text-[#ffc23d]" aria-label="New discovery" />}
+                                </span>
+                                <span className="block truncate text-[13px] text-[#9db2da]">{inHand ? "Pour it in to find out." : h.teaser}</span>
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}

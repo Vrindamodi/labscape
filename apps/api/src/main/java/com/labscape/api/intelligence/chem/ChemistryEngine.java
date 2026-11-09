@@ -1433,6 +1433,18 @@ public class ChemistryEngine {
                 ppt("Mg^2+", "F-", "MgF2", "#f7f7f5", 62.3, null, "Magnesium fluoride", "white"),
                 ppt("Ca^2+", "St-", "Ca(C17H35COO)2", "#f4f2ea", 607.0, "soap-scum", "Calcium stearate (scum)", "greyish-white"),
                 ppt("Mg^2+", "St-", "Mg(C17H35COO)2", "#f4f2ea", 591.2, "soap-scum", "Magnesium stearate (scum)", "greyish-white"),
+                // Any metal ion with a charge of 2+ or 3+ does to soap what hard water does.
+                ppt("Ba^2+", "St-", "Ba(C17H35COO)2", "#f4f2ea", 704.3, "soap-scum", "Barium stearate (scum)", "greyish-white"),
+                ppt("Sr^2+", "St-", "Sr(C17H35COO)2", "#f4f2ea", 654.6, "soap-scum", "Strontium stearate (scum)", "greyish-white"),
+                ppt("Zn^2+", "St-", "Zn(C17H35COO)2", "#f4f2ea", 632.3, "soap-scum", "Zinc stearate (scum)", "greyish-white"),
+                ppt("Pb^2+", "St-", "Pb(C17H35COO)2", "#f1efe6", 774.1, "soap-scum", "Lead(II) stearate (scum)", "greyish-white"),
+                ppt("Al^3+", "St-", "Al(C17H35COO)3", "#f4f2ea", 877.4, "soap-scum", "Aluminium stearate (scum)", "greyish-white"),
+                ppt("Cu^2+", "St-", "Cu(C17H35COO)2", "#7fc4c0", 630.5, "soap-scum", "Copper(II) stearate (scum)", "blue-green"),
+                ppt("Fe^2+", "St-", "Fe(C17H35COO)2", "#c9c39a", 622.8, "soap-scum", "Iron(II) stearate (scum)", "dirty greenish"),
+                ppt("Fe^3+", "St-", "Fe(C17H35COO)3", "#c98a4a", 906.3, "soap-scum", "Iron(III) stearate (scum)", "orange-brown"),
+                ppt("Ni^2+", "St-", "Ni(C17H35COO)2", "#a9d6a0", 625.7, "soap-scum", "Nickel(II) stearate (scum)", "pale green"),
+                ppt("Co^2+", "St-", "Co(C17H35COO)2", "#c9a0c0", 625.9, "soap-scum", "Cobalt(II) stearate (scum)", "pinkish"),
+                ppt("Mn^2+", "St-", "Mn(C17H35COO)2", "#efe2dc", 621.9, "soap-scum", "Manganese(II) stearate (scum)", "off-white"),
                 // Sparingly soluble: only the excess over the solubility product comes out.
                 ppt("Ca^2+", "SO4^2-", "CaSO4", "#f6f6f4", 136.1, "calcium-sulfate", "Calcium sulfate", "faint white", 4.9e-5),
                 ppt("Pb^2+", "Cl-", "PbCl2", "#f6f6f4", 278.1, null, "Lead(II) chloride", "white", 1.7e-5),
@@ -1501,8 +1513,11 @@ public class ChemistryEngine {
                         : p.ksp() > 0 ? "A " + p.word() + " precipitate of " + p.name().toLowerCase(Locale.ROOT)
                                 + " slowly appears - it is only sparingly soluble."
                         : p.discovery() != null && p.discovery().equals("soap-scum")
-                                ? "A greyish-white scum forms instead of a lather: the calcium and magnesium ions in hard water "
-                                        + "turn soap into insoluble " + p.name().toLowerCase(Locale.ROOT) + "."
+                                ? ("Ca^2+".equals(p.cation()) || "Mg^2+".equals(p.cation())
+                                        ? "A greyish-white scum forms instead of a lather: the calcium and magnesium ions in hard water "
+                                                + "turn soap into insoluble " + p.name().toLowerCase(Locale.ROOT) + "."
+                                        : "A " + p.word() + " scum forms instead of a lather: just like the ions in hard water, these metal "
+                                                + "ions turn soap into insoluble " + p.name().toLowerCase(Locale.ROOT) + ".")
                         : p.discovery() != null && p.discovery().equals("chemical-garden")
                                 ? "A " + p.word() + " gelatinous " + p.name().toLowerCase(Locale.ROOT)
                                         + " forms - in a chemical garden it grows up in branching towers."
@@ -1955,6 +1970,7 @@ public class ChemistryEngine {
             addColour(cs, ws, "OCl-", "#eef5b8", 0.3);
             addColour(cs, ws, "Cl2", "#cfe35a", 30);
             addColour(cs, ws, "Br2", "#d0661a", 40);
+            addColour(cs, ws, "OBr-", "#f2d84a", 6);
             addColour(cs, ws, "Ni^2+", "#5fbf6a", 6);
             addColour(cs, ws, "Co^2+", "#e58fb0", 8);
             // Chromium(III) is violet as the sulfate, green once chloride ions join it.
