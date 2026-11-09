@@ -90,6 +90,59 @@ function splitIdentifier(word: string, at: number): Tok[] {
   return out;
 }
 
+/** Optimal string alignment distance (adjacent swaps cost 1), for "did you mean" suggestions. */
+function editDistance(a: string, b: string): number {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i]![j] = Math.min(d[i - 1]![j]! + 1, d[i]![j - 1]! + 1, d[i - 1]![j - 1]! + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i]![j] = Math.min(d[i]![j]!, d[i - 2]![j - 2]! + 1);
+    }
+  return d[a.length]![b.length]!;
+}
+
+export type TypoHint = {
+  /** The run of letters as typed, e.g. "chh". */
+  word: string;
+  at: number;
+  /** How the parser reads it: ["c", "h", "h"] means c × h × h. */
+  parts: string[];
+  /** Best guess at what was meant ("c", or a function name like "sqrt"), or null. */
+  suggestion: string | null;
+  /** The source with the word replaced by the suggestion. */
+  fixed: string | null;
+  /** The source with the multiplication written out ("c*h*h"), which silences the hint. */
+  explicit: string;
+};
+
+/**
+ * Letters typed together are read as separate variables multiplied ("chh" = c × h × h), which turns
+ * a typo into new sliders without a word. This finds such runs so the UI can ask "did you mean c?".
+ * Coefficient-times-x ("mx", "kx") is left alone: that is how people write it.
+ * `known` lists the letters already in use elsewhere, which makes the better suggestion.
+ */
+export function typoHints(src: string, known: string[] = []): TypoHint[] {
+  const out: TypoHint[] = [];
+  const re = /[a-zA-Zθ_][a-zA-Z0-9θ_]*/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(src))) {
+    const word = m[0];
+    const at = m.index;
+    if (/[0-9.]/.test(src[at - 1] ?? "") && /^e[0-9]/.test(word)) continue; // 1e5
+    const parts = splitIdentifier(word, at).map((t) => t.v);
+    const vars = parts.filter((v) => !(FUNCTIONS as readonly string[]).includes(v) && !(v in CONSTANTS) && v !== "theta");
+    if (parts.length < 2 || vars.length < 2) continue;
+    if (parts.length === 2 && parts.includes("x") && parts[0] !== parts[1]) continue; // mx, xk
+    const fn = [...FUNCTIONS].map((f) => ({ f, d: editDistance(word.toLowerCase(), f) })).filter((x) => x.d <= (word.length >= 4 ? 2 : 1)).sort((a, b) => a.d - b.d)[0]?.f;
+    const letter = parts.find((v) => known.includes(v)) ?? parts[0]!;
+    const suggestion = fn ?? letter;
+    const swap = (w: string) => src.slice(0, at) + w + src.slice(at + word.length);
+    out.push({ word, at, parts, suggestion, fixed: suggestion ? swap(suggestion) : null, explicit: swap(parts.join("*")) });
+  }
+  return out;
+}
+
 export function parse(src: string): Node {
   const toks = tokenize(src);
   if (!toks.length) throw new ParseError("Type an expression", 0);

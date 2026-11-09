@@ -3,5 +3,6 @@
 // workspaces, the Plot / MathInput components.
 export * from "./core";
 export * from "./labs";
+export * from "./labs/guides";
 export * from "./ui";
 export * from "./sandbox/GraphSandbox";

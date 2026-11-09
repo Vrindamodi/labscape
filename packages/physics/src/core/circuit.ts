@@ -51,6 +51,8 @@ export type CircuitResult = {
   ammeterAcross: string[];
   /** Voltmeters wired in series (they carry the circuit current). */
   voltmeterInSeries: string[];
+  /** Parts whose two ends are joined by wires, so the current goes round them and they carry none. */
+  bypassed: string[];
 };
 
 class DSU {
@@ -127,17 +129,22 @@ export function resistanceOf(c: Component): number | null {
 const isSource = (c: Component) => c.kind === "cell" || c.kind === "battery";
 
 /** Solves a circuit. Fuses that blow are re-solved open, so the result is the settled state. */
-export function solve(componentsIn: Component[], wires: Wire[]): CircuitResult {
+export function solve(componentsIn: Component[], wires: Wire[]): CircuitResult & { fuseTrip: Record<string, number> } {
   let components = componentsIn.map((c) => ({ ...c }));
   const blown = componentsIn.filter((c) => c.kind === "fuse" && c.blown).map((c) => c.id);
+  /** The current that melted each fuse blown in this solve, A. */
+  const fuseTrip: Record<string, number> = {};
   for (let pass = 0; pass < 4; pass++) {
     const r = solveOnce(components, wires);
     const newlyBlown = components.filter((c) => c.kind === "fuse" && !c.blown && Math.abs(r.components[c.id]?.current ?? 0) > (c.value ?? 3));
-    if (!newlyBlown.length) return { ...r, blownFuses: blown };
-    newlyBlown.forEach((c) => blown.push(c.id));
+    if (!newlyBlown.length) return { ...r, blownFuses: blown, fuseTrip };
+    newlyBlown.forEach((c) => {
+      blown.push(c.id);
+      fuseTrip[c.id] = Math.abs(r.components[c.id]!.current);
+    });
     components = components.map((c) => (newlyBlown.some((b) => b.id === c.id) ? { ...c, blown: true } : c));
   }
-  return { ...solveOnce(components, wires), blownFuses: blown };
+  return { ...solveOnce(components, wires), blownFuses: blown, fuseTrip };
 }
 
 function solveOnce(components: Component[], wires: Wire[]): CircuitResult {
@@ -302,7 +309,10 @@ function solveOnce(components: Component[], wires: Wire[]): CircuitResult {
     })
     .map((c) => c.id);
 
-  return { nodeOf, voltages, components: results, shorted, shortPath, blownFuses: [], open: loads && !anyCurrent && !shorted.length, floating, ammeterAcross, voltmeterInSeries };
+  // Bypassed: both terminals sit on one node (wires run round the part), so it can carry nothing.
+  const bypassed = components.filter((c) => !isSource(c) && c.kind !== "wire" && nodeOf[`${c.id}.a`] === nodeOf[`${c.id}.b`]).map((c) => c.id);
+
+  return { nodeOf, voltages, components: results, shorted, shortPath, blownFuses: [], open: loads && !anyCurrent && !shorted.length, floating, ammeterAcross, voltmeterInSeries, bypassed };
 }
 
 /* ------------------------------------------------------------------ resistor helpers */

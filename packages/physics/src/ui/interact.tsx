@@ -329,6 +329,12 @@ export function Num({ value, digits = 2, className = "", format, svg }: { value:
   const raf = useRef(0);
   const reduced = useReducedMotion();
   const fmt = useCallback((v: number) => (format ? format(v) : v.toFixed(digits)), [format, digits]);
+  // The running follower reads these refs, not its first render's closure: when the precision
+  // changes mid-ease (0 -> 0.491 A is "0" then "0.491"), a stale toFixed(0) would leave "0" on screen.
+  const fmtRef = useRef(fmt);
+  fmtRef.current = fmt;
+  const digitsRef = useRef(digits);
+  digitsRef.current = digits;
   useEffect(() => {
     const node = el.current;
     if (!node) return;
@@ -359,9 +365,9 @@ export function Num({ value, digits = 2, className = "", format, svg }: { value:
       const k = 1 - Math.exp(-(now - last) / 90);
       last = now;
       let v = cur + (t - cur) * k;
-      if (Math.abs(t - v) <= Math.abs(t) * 1e-4 + Math.pow(10, -digits - 1)) v = t;
+      if (Math.abs(t - v) <= Math.abs(t) * 1e-4 + Math.pow(10, -digitsRef.current - 1)) v = t;
       shown.current = v;
-      n.textContent = fmt(v);
+      n.textContent = fmtRef.current(v);
       if (v !== t) raf.current = requestAnimationFrame(tick);
       else running.current = false;
     };

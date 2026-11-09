@@ -81,7 +81,12 @@ export function ProjectileWorkspace({ session }: { session: SimSession<Projectil
   const [recoil, setRecoil] = useState(0);
   const seenLaunches = useRef(launches.length);
   useLayoutEffect(() => {
-    if (!flight || !last) return;
+    if (!flight || !last) {
+      // Undo can take the launches back to none: the next launch must still fly.
+      seenLaunches.current = launches.length;
+      setPhase("idle");
+      return;
+    }
     const fresh = launches.length > seenLaunches.current;
     seenLaunches.current = launches.length;
     const apex = flight.points.reduce((a, p) => (p.y > a.y ? p : a), flight.points[0]!);
