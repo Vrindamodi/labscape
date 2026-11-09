@@ -17,8 +17,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -48,9 +55,19 @@ public class AttemptsController {
     private final Rewards rewards;
     private final ObjectMapper mapper;
     private final byte[] packKey;
+    /** How long finish waits for the replay before answering "scoring" and finishing in the background. */
+    private final long scoreWaitMs;
+    /** Replays still running (or finished but not yet collected), by attempt. */
+    private final Map<UUID, CompletableFuture<FinishResult>> scoring = new ConcurrentHashMap<>();
+    private final ExecutorService scorer = Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "attempt-scorer");
+        t.setDaemon(true);
+        return t;
+    });
 
     public AttemptsController(JdbcClient db, LabEngineRuntime engine, LibraryCatalogue catalogue, Rewards rewards,
-            ObjectMapper mapper, AuthProperties auth) {
+            ObjectMapper mapper, AuthProperties auth, @Value("${labscape.scoring.wait-ms:6000}") long scoreWaitMs) {
+        this.scoreWaitMs = scoreWaitMs;
         this.db = db;
         this.engine = engine;
         this.catalogue = catalogue;
@@ -212,16 +229,50 @@ public class AttemptsController {
 
     /**
      * The server replays the whole log with the same engine, scores it, and only then awards XP.
-     * The client's own score is never trusted.
+     * The client's own score is never trusted. Long runs (hours of simulated waiting) can take a
+     * while to replay, so after a short wait this answers status "scoring" and the replay carries on
+     * in the background; GET /attempts/{id}/result then returns the verified result.
      */
     @PostMapping("/attempts/{id}/finish")
-    @Transactional
     public FinishResult finish(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody FinishRequest req) {
         UUID user = UUID.fromString(jwt.getSubject());
         String status = owned(user, id);
         String slug = db.sql("SELECT experiment_slug FROM experiment_attempts WHERE id = ?").param(id).query(String.class).single();
         ArrayNode events = events(id);
         long tail = Math.max(0, Math.min(req.tailMs() == null ? 1000 : req.tailMs(), 60_000));
+        CompletableFuture<FinishResult> job = CompletableFuture.supplyAsync(() -> score(user, id, status, slug, events, tail, req.clientHash()), scorer);
+        scoring.put(id, job);
+        try {
+            FinishResult r = job.get(scoreWaitMs, TimeUnit.MILLISECONDS);
+            scoring.remove(id, job);
+            return r;
+        } catch (TimeoutException e) {
+            return new FinishResult(null, null, null, "scoring", null);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw ApiProblem.conflict("SCORING_INTERRUPTED", "Scoring was interrupted. Try again.");
+        } catch (java.util.concurrent.ExecutionException e) {
+            scoring.remove(id, job);
+            throw e.getCause() instanceof RuntimeException re ? re : new IllegalStateException(e.getCause());
+        }
+    }
+
+    /** The verified result of a finish that was still replaying ("scoring"), once it is ready. */
+    @GetMapping("/attempts/{id}/result")
+    public FinishResult result(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
+        owned(UUID.fromString(jwt.getSubject()), id);
+        CompletableFuture<FinishResult> job = scoring.get(id);
+        if (job == null) throw ApiProblem.notFound("NO_SCORING", "There is no scoring in progress for this attempt.");
+        if (!job.isDone()) return new FinishResult(null, null, null, "scoring", null);
+        try {
+            return job.join();
+        } catch (java.util.concurrent.CompletionException e) {
+            scoring.remove(id, job);
+            throw e.getCause() instanceof RuntimeException re ? re : new IllegalStateException(e.getCause());
+        }
+    }
+
+    private FinishResult score(UUID user, UUID id, String status, String slug, ArrayNode events, long tail, String clientHash) {
         JsonNode result = engine.score(slug, events.toString(), tail);
         JsonNode report = result.get("report");
         String serverHash = result.path("hash").asText();
@@ -236,7 +287,7 @@ public class AttemptsController {
                        updated_at = now()
                  WHERE id = ?
                 """)
-                .params(next, score, stars, report.toString(), serverHash, req.clientHash(), completed, completed, id)
+                .params(next, score, stars, report.toString(), serverHash, clientHash, completed, completed, id)
                 .update();
         RewardResult reward = null;
         if (completed) {
@@ -244,7 +295,7 @@ public class AttemptsController {
             reward = rewards.awardVerified(user, new ProgressEvent("attempt:" + id, "experiment.completed", Instant.now(),
                     content.path("subject").asText("chemistry"), content.path("id").asText(slug), id.toString(), score));
         }
-        Boolean matches = req.clientHash() == null ? null : req.clientHash().equals(serverHash);
+        Boolean matches = clientHash == null ? null : clientHash.equals(serverHash);
         return new FinishResult(report, serverHash, matches, next, reward);
     }
 

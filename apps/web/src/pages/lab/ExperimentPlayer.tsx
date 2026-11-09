@@ -1,5 +1,5 @@
 import type { LabEvent, RewardResult } from "@labscape/contracts";
-import { stageFor, type ExperimentContent, type Report } from "@labscape/lab-engine";
+import { runSession, stageFor, type ExperimentContent, type Report } from "@labscape/lab-engine";
 import "./SimStages";
 import { ChemDemo } from "./chem/ChemDemo";
 import { ChemTry } from "./chem/ChemTry";
@@ -50,7 +50,8 @@ type ExperimentView = {
   bestScore: number | null;
 };
 type Attempt = { id: string; status: string; stage: string; events: LabEvent[] };
-type FinishResult = { report: Report; serverHash: string; hashMatches: boolean | null; status: string; reward: RewardResult | null };
+/** status "scoring": the server is still replaying a long run; `report` is then this device's own score until the verified one arrives. */
+type FinishResult = { report: Report; serverHash: string | null; hashMatches: boolean | null; status: string; reward: RewardResult | null };
 
 export default function ExperimentPlayer() {
   const { slug = "" } = useParams();
@@ -89,6 +90,28 @@ function Player({ view }: { view: ExperimentView }) {
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [result, setResult] = useState<FinishResult | null>(null);
   const [starting, setStarting] = useState(false);
+  // A long run is still being verified: check back (the quiz usually covers the wait).
+  const scoringId = result?.status === "scoring" ? attempt?.id : undefined;
+  useEffect(() => {
+    if (!scoringId) return;
+    let stop = false;
+    let timer = 0;
+    const check = async () => {
+      try {
+        const r = await api<FinishResult>(`/v1/attempts/${scoringId}/result`);
+        if (stop) return;
+        if (r.status !== "scoring" && r.report) return setResult(r);
+      } catch {
+        // keep this device's score; try again a little later
+      }
+      if (!stop) timer = window.setTimeout(check, 4000);
+    };
+    timer = window.setTimeout(check, 3000);
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+    };
+  }, [scoringId]);
 
   const begin = useCallback(
     async (fresh = false) => {
@@ -310,7 +333,11 @@ function Observe({ content, attemptId, onFinished }: { content: ExperimentConten
       const events = o.prompts.map((p, i) => ({ id: `ans-${p.id}`, attemptId, seq: last + i + 1, t: t + 1000 + i * 100, actor: "user", type: "param.set", payload: { key: `answer:${p.id}`, value: answers[p.id] ?? -1 } }));
       await post(`/v1/attempts/${attemptId}/events`, { events, stage: "observe" });
       const r = await post<FinishResult>(`/v1/attempts/${attemptId}/finish`, { tailMs: 1000 });
-      onFinished(r);
+      if (r.status === "scoring" || !r.report) {
+        // The server is still replaying a long run: show this device's score (same engine) now.
+        const local = runSession(content, [...attempt.events, ...(events as LabEvent[])], { tailMs: 1000 });
+        onFinished({ report: local.report, serverHash: null, hashMatches: null, status: "scoring", reward: null });
+      } else onFinished(r);
     } catch (e) {
       toast({ kind: "danger", title: "Couldn't score the run", body: e instanceof ApiError ? e.message : "Try again." });
     } finally {
@@ -390,14 +417,19 @@ function Results({ content, result, onAgain, attemptId }: { content: ExperimentC
   const { report } = result;
   const { reduced } = useMotion();
   const fired = useRef(false);
+  const rewarded = useRef(false);
   useEffect(() => {
-    if (fired.current) return;
-    fired.current = true;
-    if (report.completed) {
+    if (!fired.current && report.completed) {
+      fired.current = true;
       window.setTimeout(() => celebrate({ preset: "confetti", count: report.stars * 40 }), reduced ? 0 : 900);
-      if (result.reward && !result.reward.duplicate) emitReward({ result: result.reward, origin: { x: window.innerWidth / 2, y: window.innerHeight / 3 }, label: content.title });
+    }
+    // XP arrives with the verified result (which can come a little after this page opens).
+    if (!rewarded.current && report.completed && result.reward && !result.reward.duplicate) {
+      rewarded.current = true;
+      emitReward({ result: result.reward, origin: { x: window.innerWidth / 2, y: window.innerHeight / 3 }, label: content.title });
     }
   }, [report, result, reduced, content.title]);
+  const verifying = result.status === "scoring";
   const dims = Object.entries(report.byDimension).filter(([, v]) => v !== null) as [string, number][];
   // Steps the learner had done for them in Try ("Do this step for me"); the server counts them as hints.
   const assisted = useMemo(() => {
@@ -426,7 +458,13 @@ function Results({ content, result, onAgain, attemptId }: { content: ExperimentC
             ))}
           </div>
           <h1 className="mt-4 font-heading text-3xl font-bold">{report.completed ? (report.stars === 3 ? "Flawless technique" : "Experiment complete") : report.stoppedForSafety ? "Stopped for safety" : "Not finished yet"}</h1>
-          <p className="mt-1 text-white/55">{content.title} · scored by the server from your full event log{result.hashMatches === false ? " (re-simulated)" : ""}</p>
+          <p className="mt-1 text-white/55">
+            {verifying ? (
+              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 animate-pulse rounded-full bg-accent-cyan" />{content.title} · scored on this device; the server is double-checking it and will add your XP</span>
+            ) : (
+              <>{content.title} · scored by the server from your full event log{result.hashMatches === false ? " (re-simulated)" : ""}</>
+            )}
+          </p>
         </div>
 
         <div className="mt-8 space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5">

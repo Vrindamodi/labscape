@@ -5,6 +5,8 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 labscape:
+  scoring:
+    wait-ms: 600000 # tests expect the verified result straight from finish
   dev-db:
     dir: ""
     port: 0
