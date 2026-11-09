@@ -285,7 +285,7 @@ export function DragHandle({
 /** Two expanding rings: "the thing to touch next". */
 export function Pulse({ cx, cy, r, colour = V3.cyan }: { cx: number; cy: number; r: number; colour?: string }) {
   return (
-    <g pointerEvents="none" aria-hidden>
+    <g pointerEvents="none" aria-hidden data-guide="target">
       <circle className="ls-pulse" cx={cx} cy={cy} r={r} fill="none" stroke={colour} strokeWidth={2} />
       <circle className="ls-pulse d2" cx={cx} cy={cy} r={r} fill="none" stroke={colour} strokeWidth={2} />
     </g>
@@ -295,7 +295,7 @@ export function Pulse({ cx, cy, r, colour = V3.cyan }: { cx: number; cy: number;
 /** A pulsing outline around a rectangular target. */
 export function PulseRect({ x, y, w, h, rx = 10, colour = V3.cyan }: { x: number; y: number; w: number; h: number; rx?: number; colour?: string }) {
   return (
-    <g pointerEvents="none" aria-hidden>
+    <g pointerEvents="none" aria-hidden data-guide="target">
       <rect className="ls-breathe" x={x} y={y} width={w} height={h} rx={rx} fill={`${colour}14`} stroke={colour} strokeWidth={2} strokeDasharray="6 5" />
     </g>
   );

@@ -113,7 +113,7 @@ export function TrolleyWorkspace({ session }: { session: SimSession<NewtonState>
   const g2x = X0 + (setup.startToGate1M + setup.gateGapM) * K;
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_340px]">
       <LabStyles />
       <div className="flex min-h-0 flex-col gap-3">
         <Stage className="min-h-[300px]" label={s.compensated ? "Friction compensated" : "Tilt the runway until a nudge rolls steadily"}>
@@ -172,7 +172,7 @@ export function TrolleyWorkspace({ session }: { session: SimSession<NewtonState>
         </Stage>
         <div className="grid gap-3 md:grid-cols-2">
           <Panel title="Runway" glow={!ro && focus === "compensate"}>
-            <ParamSlider label="Tilt" value={s.tiltDeg} min={0} max={2} step={0.1} unit="°" disabled={ro} onCommit={(v) => dispatchParam("tilt", v)} format={(v) => v.toFixed(1)} />
+            <ParamSlider guideId="param:tilt" label="Tilt" value={s.tiltDeg} min={0} max={2} step={0.1} unit="°" disabled={ro} onCommit={(v) => dispatchParam("tilt", v)} format={(v) => v.toFixed(1)} />
             <div className="mt-2 flex items-center gap-2">
               <Btn onClick={() => dispatchParam("nudge", true)} disabled={ro}>
                 <Hand className="h-4 w-4" /> Nudge

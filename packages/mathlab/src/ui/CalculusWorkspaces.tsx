@@ -82,12 +82,14 @@ export function TangentWorkspace({ session }: { session: SimSession<TangentState
     ],
     [f, xs, slope, tangent],
   );
-  const pointPulse = !ro && !dragging && (focus === "slope-at-2" ? Math.abs(s.x - 2) > 1e-9 : focus === "flat");
-  const hPulse = !ro && !dragging && focus === "limit" && s.h > 0.05;
-  const tip = focus === "slope-at-2" && Math.abs(s.x - 2) > 1e-9 ? "Slide the point to x = 2" : focus === "flat" ? "Find where the tangent is flat" : focus === "limit" ? "Drag the orange point in, or press Limit" : null;
+  // The limit step starts at x = 2 (as its instruction says), so the point comes first, then h.
+  const off2 = Math.abs(s.x - 2) > 1e-9;
+  const pointPulse = !ro && !dragging && (focus === "slope-at-2" || focus === "limit" ? off2 : focus === "flat");
+  const hPulse = !ro && !dragging && focus === "limit" && !off2 && s.h > 0.05;
+  const tip = (focus === "slope-at-2" || focus === "limit") && off2 ? "Slide the point to x = 2" : focus === "flat" ? "Find where the tangent is flat" : focus === "limit" ? "Drag the orange point in, or press Limit" : null;
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_320px]">
       <LabStyles />
       <div className="flex min-h-0 flex-col gap-3">
         <Plot
@@ -251,7 +253,7 @@ export function RiemannWorkspace({ session }: { session: SimSession<RiemannState
   const nPulse = !ro && ((focus === "left-4" || focus === "right-4") && s.n !== 4);
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_320px]">
       <LabStyles />
       <div className="flex min-h-0 flex-col gap-3">
         <Plot
@@ -525,7 +527,7 @@ export function DiceWorkspace({ session }: { session: SimSession<ProbState> }) {
   const demoRoll = demo.next?.type === "sim.start";
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_300px]">
       <LabStyles />
       <div className="flex min-h-0 flex-col gap-3">
         <Stage className="min-h-[190px]">
@@ -542,6 +544,7 @@ export function DiceWorkspace({ session }: { session: SimSession<ProbState> }) {
             <motion.div
               key={toss?.id ?? "rest"}
               role="button"
+              data-guide={rollPulse ? "target" : undefined}
               tabIndex={ro ? -1 : 0}
               aria-label={`${KIND_LABEL[throwKind]}. Drag and flick it across the felt, or press Enter, to run ${s.trials.toLocaleString()} trials.`}
               className={`absolute left-6 top-[54px] flex touch-none gap-2 outline-none focus-visible:ring-2 focus-visible:ring-[#39d6ff] ${ro ? "" : "cursor-grab active:cursor-grabbing"}`}

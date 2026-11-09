@@ -65,7 +65,7 @@ export function TransformWorkspace({ session }: { session: SimSession<TransformS
   const pending = useRef<{ c: number; d: number } | null>(null);
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_330px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_330px]">
       <LabStyles />
       <div className="flex min-h-0 flex-col gap-3">
         <div className="relative">
@@ -118,7 +118,7 @@ export function TransformWorkspace({ session }: { session: SimSession<TransformS
         <Panel title="Base graph f(x)">
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Base function">
             {(Object.keys(BASE_FNS) as BaseFn[]).map((f) => (
-              <Btn key={f} pressed={s.f === f} tone={s.f === f ? "primary" : "secondary"} onClick={() => set("f", f)} disabled={ro}>
+              <Btn key={f} guideId={`param:f=${f}`} pressed={s.f === f} tone={s.f === f ? "primary" : "secondary"} onClick={() => set("f", f)} disabled={ro}>
                 y = {BASE_FNS[f].label}
               </Btn>
             ))}
@@ -129,16 +129,16 @@ export function TransformWorkspace({ session }: { session: SimSession<TransformS
       <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
         <Panel title="y = a · f(b(x − c)) + d" glow={!ro && !!focus}>
           <div className="space-y-3">
-            <ParamSlider label="a · vertical stretch (negative flips over the x-axis)" value={s.a} min={-4} max={4} step={0.25} onChange={(v) => setDrag((d) => ({ ...d, a: v }))} onCommit={(v) => commit("a", v)} disabled={ro} />
-            <ParamSlider label="b · horizontal squash by 1/b" value={s.b} min={-4} max={4} step={0.25} onChange={(v) => setDrag((d) => ({ ...d, b: v }))} onCommit={(v) => commit("b", v)} disabled={ro} />
-            <ParamSlider label="c · slide right by c" value={s.c} min={-6} max={6} step={0.5} onChange={(v) => setDrag((d) => ({ ...d, c: v }))} onCommit={(v) => commit("c", v)} disabled={ro} />
-            <ParamSlider label="d · slide up by d" value={s.d} min={-6} max={6} step={0.5} onChange={(v) => setDrag((d) => ({ ...d, d: v }))} onCommit={(v) => commit("d", v)} disabled={ro} />
+            <ParamSlider guideId="param:a" label="a · vertical stretch (negative flips over the x-axis)" value={s.a} min={-4} max={4} step={0.25} onChange={(v) => setDrag((d) => ({ ...d, a: v }))} onCommit={(v) => commit("a", v)} disabled={ro} />
+            <ParamSlider guideId="param:b" label="b · horizontal squash by 1/b" value={s.b} min={-4} max={4} step={0.25} onChange={(v) => setDrag((d) => ({ ...d, b: v }))} onCommit={(v) => commit("b", v)} disabled={ro} />
+            <ParamSlider guideId="param:c" label="c · slide right by c" value={s.c} min={-6} max={6} step={0.5} onChange={(v) => setDrag((d) => ({ ...d, c: v }))} onCommit={(v) => commit("c", v)} disabled={ro} />
+            <ParamSlider guideId="param:d" label="d · slide up by d" value={s.d} min={-6} max={6} step={0.5} onChange={(v) => setDrag((d) => ({ ...d, d: v }))} onCommit={(v) => commit("d", v)} disabled={ro} />
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <Btn tone="primary" onClick={() => set("check", true)} disabled={ro || !target}>
+            <Btn guideId="param:check" tone="primary" onClick={() => set("check", true)} disabled={ro || !target}>
               <Check className="h-4 w-4" /> Check match
             </Btn>
-            <Btn onClick={() => set("reset", true)} disabled={ro}>
+            <Btn guideId="param:reset" onClick={() => set("reset", true)} disabled={ro}>
               <RotateCcw className="h-4 w-4" /> Reset a, b, c, d
             </Btn>
           </div>

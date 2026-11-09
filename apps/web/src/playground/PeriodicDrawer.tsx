@@ -57,7 +57,7 @@ export function PeriodicDrawer({ elements, onHold, onClose }: { elements: ShelfI
   const bond = gap == null ? null : gap > 1.7 ? "ionic" : gap > 0.4 ? "polar covalent" : "covalent";
 
   return (
-    <Glass className="absolute bottom-[96px] left-4 right-4 top-[84px] z-30 flex flex-col p-4 xl:right-[388px]" role="dialog" aria-label="Periodic table">
+    <Glass className="absolute bottom-[92px] left-2 right-2 top-[76px] z-30 flex flex-col p-4 sm:left-4 sm:right-4 lg:bottom-[96px] lg:top-[84px] lg:right-[328px] xl:right-[372px]" role="dialog" aria-label="Periodic table">
       <div className="flex flex-wrap items-center gap-3">
         <b className="font-heading text-[22px]">Periodic table</b>
         <div className="min-w-[340px]">

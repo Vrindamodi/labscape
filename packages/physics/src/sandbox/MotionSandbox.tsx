@@ -137,7 +137,7 @@ function ProjectileLab({ p, set }: { p: ProjectileParams; set: (p: Partial<Proje
   const narration = ball && live ? flightNarration(ball, g, false, live) : landed ? flightNarration({ vx: 0, vy: 0, y: 0 }, g, true, landed) : `Ready. ${p.speed} m/s at ${p.angleDeg}° splits into ${sf(vx0, 2)} m/s sideways (blue arrow) and ${sf(vy0, 2)} m/s upwards (pink arrow). The dashed line is where it will go. Press Launch.`;
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0 space-y-2">
         <div className="overflow-hidden rounded-xl bg-gradient-to-b from-[#0b1734] to-[#0a1020] ring-1 ring-inset ring-white/[0.08]">
           <svg viewBox="0 0 960 420" className="block w-full" role="img" aria-label={`Projectile paths. Current settings land at ${sf(preview.range)} metres after ${sf(preview.time)} seconds.`}>
@@ -333,7 +333,7 @@ function PendulumLab({ p, set }: { p: PendulumParams; set: (p: Partial<PendulumP
   const big = Math.abs(exact - small) / exact > 0.02;
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0 space-y-2">
         <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="relative overflow-hidden rounded-xl bg-[#0a1020] ring-1 ring-inset ring-white/[0.08]">

@@ -126,7 +126,7 @@ export function GraphSandbox({ initial, onChange, renderTex }: { initial?: Graph
   );
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-2">
         <div className="overflow-hidden rounded-xl ring-1 ring-inset ring-white/[0.08]">
           <Plot curves={visible.map(({ f, fn }) => ({ f: fn, colour: f.colour, width: 2.5 }))} view={view} onView={setView} height={460} ariaLabel={`Graph of ${visible.map((v) => `y = ${v.f.src}`).join(", ") || "nothing yet"}`} overlay={overlay} />

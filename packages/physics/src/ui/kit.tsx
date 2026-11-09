@@ -9,6 +9,7 @@ import { Num, RANGE_CSS } from "./interact";
 export function Panel({ title, children, className = "", right, glow }: { title?: ReactNode; children: ReactNode; className?: string; right?: ReactNode; glow?: boolean }) {
   return (
     <section
+      data-guide={glow ? "panel" : undefined}
       className={`relative rounded-[16px] border p-3.5 transition-[border-color,box-shadow] duration-300 ${glow ? "border-[rgba(57,214,255,.55)] shadow-[inset_0_1px_0_rgba(200,220,255,.10),0_0_0_3px_rgba(57,214,255,.12),0_24px_60px_-24px_rgba(0,0,0,.8)]" : "border-[rgba(140,180,255,.16)] shadow-[inset_0_1px_0_rgba(200,220,255,.10),0_24px_60px_-24px_rgba(0,0,0,.8)]"} bg-[linear-gradient(180deg,rgba(14,26,56,.72),rgba(8,16,38,.78))] backdrop-blur-xl ${className}`}
     >
       {(title || right) && (
@@ -46,7 +47,7 @@ export function Readout({ label, value, unit, tone = "default" }: { label: strin
   );
 }
 
-export function Btn({ children, onClick, disabled, tone = "secondary", className = "", title, pressed }: { children: ReactNode; onClick?: () => void; disabled?: boolean; tone?: "primary" | "secondary" | "danger" | "ghost"; className?: string; title?: string; pressed?: boolean }) {
+export function Btn({ children, onClick, disabled, tone = "secondary", className = "", title, pressed, guideId }: { children: ReactNode; onClick?: () => void; disabled?: boolean; tone?: "primary" | "secondary" | "danger" | "ghost"; className?: string; title?: string; pressed?: boolean; /** What it sets, for Guide me (param:key or param:key=value). */ guideId?: string }) {
   const t =
     tone === "primary"
       ? "text-white border border-[#6aa8ff] bg-[linear-gradient(180deg,#3d8bff,#1d5fe0)] shadow-[0_8px_24px_-8px_rgba(61,139,255,.9),inset_0_1px_0_rgba(255,255,255,.35)] hover:brightness-110"
@@ -56,7 +57,7 @@ export function Btn({ children, onClick, disabled, tone = "secondary", className
           ? "text-[#a9bde4] hover:bg-white/[0.06] hover:text-white"
           : "text-[#dbe7ff] border border-[rgba(140,180,255,.16)] bg-[rgba(120,160,255,.10)] hover:bg-[rgba(120,160,255,.17)]";
   return (
-    <button type="button" title={title} aria-pressed={pressed} onClick={onClick} disabled={disabled} className={`inline-flex h-10 items-center justify-center gap-2 rounded-[12px] px-3.5 text-sm font-semibold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#39d6ff] ${t} ${className}`}>
+    <button type="button" data-guide-id={guideId} title={title} aria-pressed={pressed} onClick={onClick} disabled={disabled} className={`inline-flex h-10 items-center justify-center gap-2 rounded-[12px] px-3.5 text-sm font-semibold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#39d6ff] ${t} ${className}`}>
       {children}
     </button>
   );
@@ -69,7 +70,7 @@ export function Btn({ children, onClick, disabled, tone = "secondary", className
  * last move, or on release), so a drag is one LabEvent, not hundreds. Arrow keys step; Shift steps x10.
  * `sweep` adds a play button that swings the value back and forth (maths parameters).
  */
-export function ParamSlider({ label, value, min, max, step, unit, onChange, onCommit, disabled, sweep, format }: { label: string; value: number; min: number; max: number; step: number; unit?: string; onChange?: (v: number) => void; onCommit: (v: number) => void; disabled?: boolean; sweep?: boolean; format?: (v: number) => string }) {
+export function ParamSlider({ label, value, min, max, step, unit, onChange, onCommit, disabled, sweep, format, guideId }: { label: string; value: number; min: number; max: number; step: number; unit?: string; onChange?: (v: number) => void; onCommit: (v: number) => void; disabled?: boolean; sweep?: boolean; format?: (v: number) => string; /** The param key it sets, so Guide me can point at it (param:key). */ guideId?: string }) {
   const id = useId();
   const [local, setLocal] = useState(value);
   const [sweeping, setSweeping] = useState(false);
@@ -127,6 +128,7 @@ export function ParamSlider({ label, value, min, max, step, unit, onChange, onCo
       <input
         id={id}
         type="range"
+        data-guide-id={guideId}
         min={min}
         max={max}
         step={step}

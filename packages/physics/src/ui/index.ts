@@ -28,3 +28,4 @@ export const PHYSICS_WORKSPACES: Record<string, ComponentType<WorkspaceProps>> =
   "newtons-second-law": TrolleyWorkspace,
   "specific-heat-capacity": HeatCapacityWorkspace,
 };
+export * from "./guide";

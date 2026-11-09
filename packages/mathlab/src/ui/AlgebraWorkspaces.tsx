@@ -67,7 +67,7 @@ export function QuadraticWorkspace({ session }: { session: SimSession<QuadState>
   const tip = focus === "vertex" ? "Drag the vertex to (2, −3)" : focus === "touch" ? "Drag the vertex onto the x-axis" : focus === "complex" ? "Lift the vertex clear of the axis" : focus === "flip" ? (s.a > 0 ? "Drag a below zero to flip it" : "Drag the roots to −1 and 3") : null;
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_320px]">
       <LabStyles />
       <div className="flex min-h-0 flex-col gap-3">
         <div className="relative">
@@ -261,9 +261,9 @@ export function QuadraticWorkspace({ session }: { session: SimSession<QuadState>
       <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
         <Panel title="Coefficients">
           <div className="space-y-3">
-            <ParamSlider label="a" value={s.a} min={-10} max={10} step={0.1} onCommit={(v) => set("a", v)} disabled={ro} sweep />
-            <ParamSlider label="b" value={s.b} min={-10} max={10} step={0.1} onCommit={(v) => set("b", v)} disabled={ro} sweep />
-            <ParamSlider label="c" value={s.c} min={-10} max={10} step={0.1} onCommit={(v) => set("c", v)} disabled={ro} sweep />
+            <ParamSlider guideId="param:a" label="a" value={s.a} min={-10} max={10} step={0.1} onCommit={(v) => set("a", v)} disabled={ro} sweep />
+            <ParamSlider guideId="param:b" label="b" value={s.b} min={-10} max={10} step={0.1} onCommit={(v) => set("b", v)} disabled={ro} sweep />
+            <ParamSlider guideId="param:c" label="c" value={s.c} min={-10} max={10} step={0.1} onCommit={(v) => set("c", v)} disabled={ro} sweep />
           </div>
         </Panel>
         <Panel title="Read the roots" glow={!ro && focus === "roots"}>
@@ -451,7 +451,7 @@ export function BalanceWorkspace({ session }: { session: SimSession<BalanceState
   const tipText = g === "isolate-1" ? "Take the loose weights off: they come off both pans" : g === "collect-2" ? "Take an x-bag off both pans" : g === "solve-1" || g === "solve-2" ? "Drag a ÷ token onto the beam" : null;
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_320px]">
       <LabStyles />
       <Stage className={`flex min-h-[340px] flex-col ${bad ? "ls-shake" : ""}`} key={`stage-${bad}`}>
         <div className="ls-h pt-4 text-center text-[26px] font-bold text-white" aria-live="polite">
@@ -759,7 +759,7 @@ export function UnitCircleWorkspace({ session }: { session: SimSession<CircleSta
   const tip = focus === "thirty" ? "Drag the point to 30°" : focus === "quadrant" ? "Drag into the second quadrant (90°–180°)" : focus === "equal" ? "Find where the two bars match" : focus === "period" ? "Keep winding past 360°" : null;
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_300px]">
       <LabStyles />
       <Stage className="min-h-[340px]">
         <svg viewBox="0 0 700 340" className="h-full w-full select-none" role="group" aria-label={`Unit circle at ${angleLabel}`}>
@@ -850,7 +850,7 @@ export function UnitCircleWorkspace({ session }: { session: SimSession<CircleSta
             <div className="ls-kicker">θ</div>
             <div className="font-mono text-2xl font-bold text-[#ffc23d]">{s.units === "rad" ? `${radLabel(Math.round(shown))}` : <Num value={shown} digits={0} />}</div>
           </div>
-          <ParamSlider label="θ" value={s.angle} min={0} max={720} step={1} unit="°" onCommit={(v) => session.dispatch("param.set", { key: "angle", value: v })} disabled={ro} />
+          <ParamSlider guideId="param:angle" label="θ" value={s.angle} min={0} max={720} step={1} unit="°" onCommit={(v) => session.dispatch("param.set", { key: "angle", value: v })} disabled={ro} />
           <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Units">
             {(["deg", "rad"] as const).map((u) => (
               <button key={u} type="button" role="radio" aria-checked={s.units === u} className="ls-chip h-10 justify-center" onClick={() => session.dispatch("param.set", { key: "units", value: u })} disabled={ro}>

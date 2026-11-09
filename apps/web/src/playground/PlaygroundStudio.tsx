@@ -1,13 +1,13 @@
 import type { SimulationResult } from "@labscape/contracts";
-import { DockButton, DockSeparator, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type HeldKind, type PlaygroundView, type SceneCaption } from "@labscape/lab-engine";
+import { DockButton, DockSeparator, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type HeldKind, type PlaygroundView, type SceneCaption, type SceneInsets } from "@labscape/lab-engine";
 import { useMotion } from "@labscape/motion";
 import { dispenseMode, fetchCatalogue, liquidMl, loadDiscoveries, ProblemError, resolveMix, saveDiscoveries, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem } from "@labscape/playground";
 import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { ArrowLeft, Atom, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Wind, X, Zap } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { ArrowLeft, Atom, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Wind, X, Zap } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { MicroView } from "./MicroView";
 import { PeriodicDrawer } from "./PeriodicDrawer";
@@ -80,6 +80,74 @@ function matchesFilter(it: ShelfItem, f: Filter) {
   return it.category === f;
 }
 
+/** Height kept free under the beaker for captions, so they never sit on the glass. */
+const CAPTION_BAND = 64;
+
+function useMedia(query: string) {
+  const [on, setOn] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia(query);
+    const f = () => setOn(m.matches);
+    f();
+    m.addEventListener("change", f);
+    return () => m.removeEventListener("change", f);
+  }, [query]);
+  return on;
+}
+
+function Swatch({ colour }: { colour: string }) {
+  return <span className="h-4 w-4 shrink-0 rounded-[5px] shadow-[inset_0_0_0_1px_rgba(255,255,255,.35)]" style={{ background: colour }} />;
+}
+
+type Need = "heat" | "catalyst" | "acid" | "spark";
+
+/** What a mix still needs, from the engine's neededTool plus what its message mentions. */
+function needsOf(r: SimulationResult | null): Need[] {
+  if (!r || (r.outcome !== "needs_conditions" && r.outcome !== "unsupported")) return [];
+  const p = r.presentation;
+  const text = `${p?.message ?? ""} ${(p?.suggestions ?? []).join(" ")}`.toLowerCase();
+  const out = new Set<Need>();
+  const tool = p?.neededTool;
+  if (tool === "heater" || (r.outcome === "needs_conditions" && /\b(heat|warm)/.test(text))) out.add("heat");
+  if (tool === "acid" || (r.outcome === "needs_conditions" && /sulfuric acid|acid catalyst/.test(text))) out.add("acid");
+  if (tool === "catalyst") out.add("catalyst");
+  if (tool === "spark") out.add("spark");
+  return [...out];
+}
+
+/**
+ * Friendly, actionable copy for a mix that is waiting for something ("Needs heat - try Heat") or
+ * that the engine has no checked model for. Never shows the engine's internal wording.
+ */
+function friendlyOutcome(r: SimulationResult | null): { title: string; line: string; detail: string | null } | null {
+  if (!r) return null;
+  const needs = needsOf(r);
+  const msg = r.presentation?.message ?? "";
+  if (needs.length) {
+    const concentrated = /concentrated/i.test(msg);
+    const words: Record<Need, string> = { heat: "heat", catalyst: "a catalyst", acid: concentrated ? "a catalyst" : "an acid", spark: "a flame" };
+    const acts: Record<Need, string> = {
+      heat: "Heat (about 60 °C)",
+      catalyst: "add a pinch of manganese(IV) oxide",
+      acid: concentrated ? "add a few drops of concentrated sulfuric acid" : "add a few drops of dilute sulfuric acid",
+      spark: "Spark",
+    };
+    const title = `Needs ${[...new Set(needs.map((n) => words[n]))].join(" and ")}`;
+    // Tools first ("try Heat and add ..."), then what to add.
+    const order = [...needs].sort((a, b) => Number(b === "heat" || b === "spark") - Number(a === "heat" || a === "spark"));
+    const lead = order[0] === "heat" || order[0] === "spark" ? "try " : "";
+    const line = `${title} - ${lead}${order.map((n) => acts[n]).join(" and ")}`;
+    return { title, line, detail: msg || null };
+  }
+  if (r.outcome === "unsupported")
+    return {
+      title: "Nothing to show for this mix yet",
+      line: "LABscape has no checked model for this combination, so it won't guess what happens.",
+      detail: "Try one of the missions, or empty the beaker and start a new mix.",
+    };
+  return null;
+}
+
 /**
  * The open chemistry playground (v3 studio): shelf on the left, the real-time bench in the middle,
  * what's happening on the right, tools in the dock. Every mix goes through the server safety
@@ -122,7 +190,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [note, setNote] = useState<{ text: string; tone: "warn" | "bad" | "good" } | null>(null);
   const [blocked, setBlocked] = useState<{ title: string; message: string; suggestions: string[]; tried: string[] } | null>(null);
   const [hazard, setHazard] = useState<{ gas: string; name: string; level: "toxic" | "corrosive" | "flammable"; warning: string } | null>(null);
-  const [glowTool, setGlowTool] = useState<string | null>(null);
+  const [needs, setNeeds] = useState<Need[]>([]);
   const [found, setFound] = useState<Record<string, FoundDiscovery>>(() => loadDiscoveries());
   const [missionIdx, setMissionIdx] = useState(0);
   const [celebrate, setCelebrate] = useState<DiscoveryDef | null>(null);
@@ -217,7 +285,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         if (Math.abs(temp.value - plateRef.current) > 1) later(14000, () => setTargetC(plateRef.current));
       }
       if (r.outcome === "reaction") setReactionPulse((n) => n + 1);
-      setGlowTool(p?.neededTool ?? null);
+      setNeeds(needsOf(r));
       const base = baseColour(next);
       const solidItems = next.filter((x) => x.item.form === "solid");
       const liquid = next.reduce((a, x) => a + liquidMl(x), 0);
@@ -410,7 +478,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           return;
         }
         applyResult(r, next, fresh);
-        if (r.outcome === "needs_conditions" || r.outcome === "unsupported") flash(r.presentation?.message ?? "Nothing happens yet.", "warn");
+        if (r.outcome === "needs_conditions" || r.outcome === "unsupported") flash(friendlyOutcome(r)?.line ?? "Nothing happens yet.", "warn");
       } catch (e) {
         revert();
         if (e instanceof ProblemError && e.status === 429) flash(e.problem.detail ?? "Slow down: too many blocked mixes. Try again shortly.", "bad");
@@ -571,6 +639,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setSmell(null);
     setHazard(null);
     setCaptions([]);
+    setNeeds([]);
     sound.loop("fizz", false);
     if (!silent) addLog("Emptied and rinsed the beaker");
     sound.play("pour");
@@ -607,6 +676,53 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const mission = cat?.discoveries[missionIdx] ?? null;
   const foundCount = cat ? cat.discoveries.filter((d) => found[d.id]).length : 0;
 
+  /* ---------------------------------------------------------------- layout: keep the bench in the free space */
+  const wide = useMedia("(min-width: 1024px)");
+  const short = useMedia("(max-height: 760px)");
+  const [shelfOpen, setShelfOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const leftRef = useRef<HTMLDivElement>(null);
+  const rightRef = useRef<HTMLDivElement>(null);
+  const dockRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [insets, setInsets] = useState<SceneInsets>({ left: 16, right: 16, top: 76, bottom: 92 });
+  const measure = useCallback(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const R = root.getBoundingClientRect();
+    const box = (el: HTMLElement | null) => (el && el.offsetParent !== null ? el.getBoundingClientRect() : null);
+    // On narrow screens the shelf and info panel are overlays the student opens on purpose: they do not move the camera.
+    const l = wide ? box(leftRef.current) : null;
+    const r = wide ? box(rightRef.current) : null;
+    const d = box(dockRef.current);
+    const sh = wide ? null : box(sheetRef.current);
+    const floor = Math.min(d ? d.top : R.bottom - 84, sh ? sh.top : Infinity);
+    const next: SceneInsets = {
+      left: l ? Math.round(l.right - R.left) + 12 : 12,
+      right: r ? Math.round(R.right - r.left) + 12 : 12,
+      top: wide ? 80 : 128,
+      bottom: Math.round(R.bottom - floor) + 8,
+    };
+    setInsets((b) => (b.left === next.left && b.right === next.right && b.top === next.top && b.bottom === next.bottom ? b : next));
+  }, [wide]);
+  useLayoutEffect(measure);
+  useEffect(() => {
+    const ro = new ResizeObserver(() => measure());
+    [rootRef, leftRef, rightRef, dockRef, sheetRef].forEach((r) => r.current && ro.observe(r.current));
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [measure, held, focus, drawer, shelfOpen, infoOpen]);
+  useEffect(() => {
+    if (wide) {
+      setShelfOpen(false);
+      setInfoOpen(false);
+    }
+  }, [wide]);
+
   if (loadError)
     return (
       <div className="grid h-screen place-items-center bg-[#0b1530] p-6 text-white">
@@ -621,10 +737,35 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       </div>
     );
 
+  const friendly = friendlyOutcome(result);
+  const freeStyle = { left: insets.left, right: insets.right };
+  const holdCard = held && (
+    <HoldCard
+      item={held}
+      mode={heldMode!}
+      speed={speed}
+      setSpeed={setSpeed}
+      amount={amount}
+      setAmount={setAmount}
+      max={maxAdd}
+      tilt={tilt}
+      flowing={flowing}
+      inFlight={inFlight}
+      onGo={() => (flowing ? stopFlow(true) : startFlow())}
+      onDropwise={() => {
+        setSpeed("drop");
+        if (!flowing) startFlow();
+      }}
+      onPutDown={putDown}
+      compact={!wide || short}
+    />
+  );
+  const panelMotion = reduced ? {} : { initial: { opacity: 0, x: -16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -16 }, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const } };
+
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-[#0b1530] font-sans text-[#e8f0ff]">
+    <div ref={rootRef} className="relative h-screen w-full overflow-hidden bg-[#0b1530] font-sans text-[#e8f0ff]">
       <div className="absolute inset-0">
-        <PlaygroundScene view={view} reducedMotion={reduced} />
+        <PlaygroundScene view={view} reducedMotion={reduced} insets={{ ...insets, bottom: insets.bottom + CAPTION_BAND }} />
       </div>
       <AnimatePresence>
         {screenFlash > 0 && !reduced && (
@@ -644,24 +785,24 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       )}
 
       {/* top bar */}
-      <Glass className="absolute left-4 right-4 top-3 z-20 flex h-14 items-center gap-3 px-3">
-        <button onClick={() => navigate("/playground")} className="grid h-10 w-10 place-items-center rounded-xl text-[#a9bde4] hover:bg-white/[0.06] hover:text-white" aria-label="Back to the playground">
+      <Glass className="absolute left-2 right-2 top-3 z-20 flex h-14 items-center gap-2 px-2 sm:left-4 sm:right-4 sm:gap-3 sm:px-3">
+        <button onClick={() => navigate("/playground")} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[#a9bde4] hover:bg-white/[0.06] hover:text-white" aria-label="Back to the playground">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="min-w-0 shrink-0">
-          <div className="font-heading text-[16px] font-bold leading-tight">Open Playground</div>
-          <div className="text-[12px] text-[#8fa6d1]">Chemistry · {cat?.substances.length ?? "…"} substances</div>
+        <div className="min-w-0 shrink">
+          <div className="truncate font-heading text-[16px] font-bold leading-tight sm:text-[18px]">Open Playground</div>
+          <div className="truncate text-[13px] text-[#8fa6d1]">Chemistry · {cat?.substances.length ?? "…"} substances</div>
         </div>
         {mission && !focus && (
-          <div className="ml-2 hidden min-w-0 max-w-[340px] flex-1 items-center gap-2.5 rounded-xl bg-white/[0.04] py-1 pl-1.5 pr-1 lg:flex">
+          <div className="ml-2 hidden min-w-0 max-w-[380px] flex-1 items-center gap-2.5 rounded-xl bg-white/[0.04] py-1 pl-1.5 pr-1 xl:flex">
             <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(#ffc23d 0 ${(foundCount / Math.max(1, cat!.discoveries.length)) * 100}%, rgba(255,255,255,.1) 0)` }}>
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-[#0b1730] font-heading text-[10px] font-bold text-[#ffc23d]">{foundCount}</span>
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-[#0b1730] font-heading text-[11px] font-bold text-[#ffc23d]">{foundCount}</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#8fa6d1]">
+              <div className="text-[12px] font-bold uppercase tracking-[0.06em] text-[#8fa6d1]">
                 Mission {missionIdx + 1}/{cat!.discoveries.length} {found[mission.id] && <span className="text-[#3de8a8]">· done</span>}
               </div>
-              <div className="truncate text-[12.5px] font-semibold" title={mission.clue}>{found[mission.id] ? mission.name : mission.clue}</div>
+              <div className="truncate text-[14px] font-semibold" title={mission.clue}>{found[mission.id] ? mission.name : mission.clue}</div>
             </div>
             <button aria-label="Previous mission" onClick={() => setMissionIdx((i) => (i - 1 + cat!.discoveries.length) % cat!.discoveries.length)} className="rounded p-1 text-[#8fa6d1] hover:text-white">
               <ChevronLeft className="h-4 w-4" />
@@ -679,111 +820,139 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
             <TopStat label="Vol" value={`${fmt(levelMl + inFlight, "mL")} mL`} tone="plain" />
           </div>
         )}
-        <span className={cx("hidden items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-semibold sm:flex", online === false ? "bg-[rgba(255,91,107,.14)] text-[#ff9b9b]" : "bg-[rgba(61,232,168,.12)] text-[#3de8a8]")} role="status">
+        <span className={cx("hidden items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-semibold 2xl:flex", online === false ? "bg-[rgba(255,91,107,.14)] text-[#ff9b9b]" : "bg-[rgba(61,232,168,.12)] text-[#3de8a8]")} role="status">
           {online === false ? <ShieldAlert className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
           {online === false ? "Safety engine offline" : busy ? "Checking…" : "Safety engine on"}
         </span>
-        <button onClick={() => setFocus((f) => !f)} className="flex h-10 items-center gap-2 rounded-xl px-3 text-[13px] font-semibold text-[#dbe7ff] hover:bg-white/[0.06]" aria-pressed={focus}>
-          {focus ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />} {focus ? "Exit focus" : "Focus"}
+        {!wide && !focus && (
+          <button onClick={() => setInfoOpen((o) => !o)} className={cx("flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-[14px] font-semibold", infoOpen ? "bg-[rgba(61,139,255,.28)] text-white" : "text-[#dbe7ff] hover:bg-white/[0.06]")} aria-pressed={infoOpen}>
+            <Info className="h-4 w-4" /> <span className="max-sm:sr-only">What's happening</span>
+            {result?.outcome === "reaction" && !infoOpen && <span className="h-2 w-2 rounded-full bg-[#3de8a8]" aria-hidden />}
+          </button>
+        )}
+        <button onClick={() => setFocus((f) => !f)} className="flex h-10 shrink-0 items-center gap-2 rounded-xl px-2.5 text-[14px] font-semibold text-[#dbe7ff] hover:bg-white/[0.06]" aria-pressed={focus}>
+          {focus ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />} <span className="max-sm:sr-only">{focus ? "Exit focus" : "Focus"}</span>
         </button>
       </Glass>
 
-      {!focus && drawer === "shelf" && <Shelf cat={cat} held={held} onPick={pick} glow={glowTool === "catalyst" ? "mno2-powder" : glowTool === "acid" ? "h2so4" : null} onTable={() => setDrawer("table")} />}
-      {!focus && drawer === "table" && cat && (
-        <PeriodicDrawer
-          elements={cat.substances.filter((x) => x.element)}
-          onClose={() => setDrawer("shelf")}
-          onHold={(it) => {
-            setDrawer("shelf");
-            pick(it);
-          }}
-        />
+      {/* left column: what is in hand on top, the shelf (or periodic table) below. Never over the bench. */}
+      {!wide && !focus && drawer === "shelf" && !shelfOpen && (
+        <button onClick={() => setShelfOpen(true)} className="absolute left-2 top-[80px] z-20 flex h-11 items-center gap-2 rounded-2xl border border-[rgba(140,180,255,.16)] px-3 text-[14px] font-semibold sm:left-4" style={{ background: "rgba(14,26,56,.88)" }}>
+          <FlaskConical className="h-4 w-4" /> Chemicals
+        </button>
       )}
-
-      {/* hazards and smells, stacked at the right of the bench (never over the beaker) */}
-      <div className={cx("pointer-events-none absolute right-4 top-[84px] z-20 flex w-[min(300px,calc(100%-32px))] flex-col gap-2", !focus && "xl:right-[388px]")}>
-        <AnimatePresence>
-          {hazard && (
-            <motion.div key={hazard.gas} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} role="alert">
-              <div className={cx("rounded-2xl border-2 p-3 shadow-[0_10px_40px_-10px_rgba(0,0,0,.7)] backdrop-blur-md", hazard.level === "toxic" ? "border-[#ff4d5e] bg-[rgba(70,8,18,.88)]" : hazard.level === "flammable" ? "border-[#ff9a2e] bg-[rgba(70,30,6,.88)]" : "border-[#ffc23d] bg-[rgba(60,44,6,.88)]")}>
-                <div className="flex items-center gap-2.5">
-                  <HazardDiamond level={hazard.level} />
-                  <div className="min-w-0">
-                    <div className={cx("text-[11px] font-extrabold uppercase tracking-[0.12em]", hazard.level === "toxic" ? "text-[#ff8a96]" : "text-[#ffc46b]")}>
-                      {hazard.level === "toxic" ? "Toxic gas" : hazard.level === "flammable" ? "Flammable gas" : "Corrosive fumes"}
-                    </div>
-                    <div className="font-heading text-[15px] font-bold leading-tight">{hazard.name} given off</div>
-                  </div>
-                </div>
-                <p className="mt-2 text-[12.5px] leading-snug text-[#ffe1e4]">{hazard.warning}</p>
-              </div>
-            </motion.div>
-          )}
-          {smell && (
-            <motion.div key="smell" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} role="status">
-              <Glass radius="md" className="px-3.5 py-2.5">
-                <Kicker>Smell</Kicker>
-                <div className="text-[13.5px] font-semibold">{smell.text}</div>
-                <div className="mt-0.5 text-[11.5px] text-[#ffd59a]">Waft it towards you with your hand. Never sniff a beaker directly.</div>
-              </Glass>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* the card beside what is in hand */}
-      <AnimatePresence>
-        {held && (
-          <motion.div
-            key={held.id}
-            initial={reduced ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className={cx("absolute z-20 w-[256px] overflow-y-auto rounded-[22px] [scrollbar-width:thin]", focus ? "right-4 top-[84px]" : "left-4 top-[136px] lg:left-[332px] lg:top-[84px]")}
-            style={{ maxHeight: "calc(100% - 190px)" }}
-          >
-            <HoldCard
-              item={held}
-              mode={heldMode!}
-              speed={speed}
-              setSpeed={setSpeed}
-              amount={amount}
-              setAmount={setAmount}
-              max={maxAdd}
-              tilt={tilt}
-              flowing={flowing}
-              inFlight={inFlight}
-              onGo={() => (flowing ? stopFlow(true) : startFlow())}
-              onDropwise={() => {
-                setSpeed("drop");
-                if (!flowing) startFlow();
+      {(wide || shelfOpen) && (
+        <div ref={leftRef} className={cx("absolute z-20 flex flex-col gap-2", wide ? "bottom-[96px] left-4 top-[84px] w-[272px] xl:w-[304px]" : "inset-x-2 bottom-[92px] top-[76px]")}>
+          <AnimatePresence initial={false}>
+            {wide && holdCard && (
+              <motion.div key="hold" className="shrink-0 overflow-hidden" initial={reduced ? false : { opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={reduced ? { opacity: 0 } : { opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
+                {holdCard}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {!focus && drawer === "shelf" && (
+            <Shelf
+              cat={cat}
+              held={held}
+              onPick={(it) => {
+                pick(it);
+                if (!wide) setShelfOpen(false);
               }}
-              onPutDown={putDown}
+              glow={needs.includes("catalyst") ? "mno2-powder" : needs.includes("acid") ? "h2so4" : null}
+              onTable={() => setDrawer("table")}
+              onClose={wide ? null : () => setShelfOpen(false)}
+              collapsible={wide && short && !!held && !needs.includes("catalyst") && !needs.includes("acid")}
             />
+          )}
+        </div>
+      )}
+        {!focus && drawer === "table" && cat && (
+          <PeriodicDrawer
+            elements={cat.substances.filter((x) => x.element)}
+            onClose={() => setDrawer("shelf")}
+            onHold={(it) => {
+              setDrawer("shelf");
+              setShelfOpen(false);
+              pick(it);
+            }}
+          />
+        )}
+      {/* phone and small tablet: the card in hand sits just above the dock */}
+      <AnimatePresence>
+        {!wide && holdCard && !shelfOpen && (
+          <motion.div ref={sheetRef} key="hold-sheet" className="absolute inset-x-2 bottom-[88px] z-20 mx-auto max-w-[460px]" initial={reduced ? false : { opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 24 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
+            {holdCard}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {!focus && <SidePanel tab={tab} setTab={setTab} result={result} log={log} tray={tray} online={online} busy={busy} />}
+      {/* hazards and smells: top right of the free bench area (never over the side panels) */}
+      <div className="pointer-events-none absolute top-[84px] z-20 flex justify-end" style={{ left: insets.left, right: insets.right }}>
+        <div className="flex w-[min(300px,100%)] flex-col gap-2">
+          <AnimatePresence>
+            {hazard && (
+              <motion.div key={hazard.gas} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} role="alert">
+                <div className={cx("rounded-2xl border-2 p-3 shadow-[0_10px_40px_-10px_rgba(0,0,0,.7)] backdrop-blur-md", hazard.level === "toxic" ? "border-[#ff4d5e] bg-[rgba(70,8,18,.9)]" : hazard.level === "flammable" ? "border-[#ff9a2e] bg-[rgba(70,30,6,.9)]" : "border-[#ffc23d] bg-[rgba(60,44,6,.9)]")}>
+                  <div className="flex items-center gap-2.5">
+                    <HazardDiamond level={hazard.level} />
+                    <div className="min-w-0">
+                      <div className={cx("text-[13px] font-extrabold uppercase tracking-[0.08em]", hazard.level === "toxic" ? "text-[#ff8a96]" : "text-[#ffc46b]")}>
+                        {hazard.level === "toxic" ? "Toxic gas" : hazard.level === "flammable" ? "Flammable gas" : "Corrosive fumes"}
+                      </div>
+                      <div className="font-heading text-[16px] font-bold leading-tight">{hazard.name} given off</div>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-[14px] leading-snug text-[#ffe1e4]">{hazard.warning}</p>
+                </div>
+              </motion.div>
+            )}
+            {smell && (
+              <motion.div key="smell" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} role="status">
+                <Glass radius="md" className="px-3.5 py-2.5">
+                  <Kicker>Smell</Kicker>
+                  <div className="text-[15px] font-semibold">{smell.text}</div>
+                  <div className="mt-0.5 text-[13px] text-[#ffd59a]">Waft it towards you with your hand. Never sniff a beaker directly.</div>
+                </Glass>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
-      {focus && result?.presentation && result.outcome === "reaction" && (
-        <Glass className="absolute left-4 top-[84px] z-10 w-[min(420px,calc(100%-32px))] p-4">
-          <Kicker>Reaction · {result.presentation.reactions[0]?.type ?? "change"}</Kicker>
-          <h2 className="mt-1 font-heading text-[26px] font-bold leading-tight tracking-tight">{result.presentation.title}</h2>
-          <p className="mt-2 text-[13.5px] leading-relaxed text-[#c8d6f3]">{result.presentation.message}</p>
-          {result.equationLatex && <div className="mt-3 overflow-x-auto rounded-xl bg-[rgba(4,10,28,.5)] p-2.5 text-[15px]" dangerouslySetInnerHTML={{ __html: katex.renderToString(result.equationLatex, { throwOnError: false }) }} />}
-          {result.presentation.facts[0] && <p className="mt-3 rounded-xl border border-[rgba(167,123,255,.35)] bg-[linear-gradient(135deg,rgba(167,123,255,.22),rgba(57,214,255,.10))] p-3 text-[13px]">💡 {result.presentation.facts[0]}</p>}
-        </Glass>
-      )}
+      <AnimatePresence>
+        {!focus && (wide || infoOpen) && (
+          <motion.div
+            key="side"
+            ref={rightRef}
+            className={cx("absolute z-10 flex", wide ? "bottom-[96px] right-4 top-[84px] w-[300px] xl:w-[344px]" : "inset-x-2 top-[76px] z-30 max-h-[calc(100%-168px)]")}
+            {...(reduced ? {} : { initial: { opacity: 0, x: 16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 16 }, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } })}
+          >
+            <SidePanel tab={tab} setTab={setTab} result={result} friendly={friendly} log={log} tray={tray} online={online} busy={busy} onClose={wide ? null : () => setInfoOpen(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {focus && result?.presentation && result.outcome === "reaction" && (
+          <motion.div key="focus-card" className="absolute left-4 top-[84px] z-10 w-[min(420px,calc(100%-32px))]" {...panelMotion}>
+            <Glass className="p-4">
+              <Kicker>Reaction · {result.presentation.reactions[0]?.type ?? "change"}</Kicker>
+              <h2 className="mt-1 font-heading text-[22px] font-bold leading-tight tracking-tight">{result.presentation.title}</h2>
+              <p className="mt-2 text-[15px] leading-relaxed text-[#c8d6f3]">{result.presentation.message}</p>
+              {result.equationLatex && <div className="mt-3 overflow-x-auto rounded-xl bg-[rgba(4,10,28,.5)] p-2.5 text-[15px]" dangerouslySetInnerHTML={{ __html: katex.renderToString(result.equationLatex, { throwOnError: false }) }} />}
+            </Glass>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {focus && result?.presentation?.reactions[0]?.participants && (
-        <div className="pointer-events-none absolute right-8 top-[110px] z-10 hidden md:block">
-          <MicroView reactants={result.presentation.reactions[0].participants.reactants} products={result.presentation.reactions[0].participants.products} size={320} />
+        <div className="pointer-events-none absolute right-8 top-[110px] z-10 hidden lg:block">
+          <MicroView reactants={result.presentation.reactions[0].participants.reactants} products={result.presentation.reactions[0].participants.products} size={300} />
         </div>
       )}
 
       {/* dock */}
-      <div className="absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-24px)] -translate-x-1/2 max-sm:overflow-x-auto">
+      <div ref={dockRef} className="absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-16px)] -translate-x-1/2 overflow-x-auto [scrollbar-width:none]">
         <Glass radius="xl" className="flex items-center gap-1 p-2" role="toolbar" aria-label="Bench tools">
           <DockButton
             icon={<RotateCw />}
@@ -800,11 +969,12 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           />
           <DockButton icon={<Wind />} label="Swirl" tone={swirling ? "on" : "default"} disabled={!tray.length} onPointerDown={() => setSwirling(true)} onPointerUp={() => setSwirling(false)} onPointerLeave={() => setSwirling(false)} title="Hold to swirl" />
           <DockSeparator />
-          <HeatButton plateC={plateC} glow={glowTool === "heater"} onHeat={heatTo} />
+          <HeatButton plateC={plateC} glow={needs.includes("heat")} onHeat={heatTo} />
           <DockButton
             icon={<Zap />}
             label="Spark"
-            tone={ignition ? "hot" : "default"}
+            tone={ignition ? "hot" : needs.includes("spark") ? "on" : "default"}
+            className={needs.includes("spark") && !ignition ? "animate-pulse" : ""}
             disabled={!tray.length}
             onClick={() => {
               setIgnition(true);
@@ -831,41 +1001,68 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         </Glass>
       </div>
 
-      {/* hints */}
-      {!held && !tray.length && !focus && (
-        <div className="pointer-events-none absolute left-1/2 top-[84px] z-10 max-w-[calc(100%-32px)] -translate-x-1/2 max-lg:top-[136px] xl:left-[calc(50%-28px)]">
-          <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold">
-            <Hand className="h-4 w-4 shrink-0 text-[#39d6ff]" /> Pick a chemical from the shelf to hold it over the beaker
-          </Glass>
-        </div>
-      )}
-      <AnimatePresence>
-        {note && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute bottom-[100px] left-1/2 z-30 max-w-[calc(100%-32px)] -translate-x-1/2 xl:left-[calc(50%-28px)]" role="status">
-            <Glass radius="md" className={cx("max-w-md px-3.5 py-2 text-[13px] font-semibold", note.tone === "bad" ? "text-[#ff9b9b]" : note.tone === "good" ? "text-[#3de8a8]" : "text-[#ffd59a]")}>
-              {note.text}
-            </Glass>
-          </motion.div>
-        )}
-        {celebrate && (
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="absolute left-1/2 top-[84px] z-30 -translate-x-1/2" role="status">
-            <Glass radius="xl" className="flex items-center gap-3.5 py-3 pl-3 pr-5">
-              <span className="grid h-12 w-12 place-items-center rounded-[14px] bg-[linear-gradient(135deg,#ffd56b,#ff9a3d)] text-[#3a2200] shadow-[0_0_30px_-4px_#ffb03d]">
-                <Trophy className="h-6 w-6" />
-              </span>
-              <div>
-                <Kicker>Discovery</Kicker>
-                <b className="font-heading text-[18px]">{celebrate.name}</b>
-              </div>
-              <span className="flex gap-0.5 text-[#ffc23d]">
-                {[0, 1, 2].map((i) => (
-                  <Star key={i} className="h-4 w-4 fill-current" />
-                ))}
-              </span>
-            </Glass>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* captions: what you are looking at, in words, in the free strip under the beaker */}
+      <div className="pointer-events-none absolute z-10 flex flex-col-reverse items-center gap-1.5 px-2" style={{ ...freeStyle, bottom: insets.bottom + 4 }} role="status" aria-live="polite">
+        <AnimatePresence initial={false}>
+          {captions.slice(wide ? -3 : -2).reverse().map((c) => (
+            <motion.div
+              key={c.id}
+              layout={!reduced}
+              initial={reduced ? false : { opacity: 0, y: 10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.35 } }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+              className={cx(
+                "flex max-w-[min(440px,100%)] items-center gap-2 rounded-xl border px-3 py-1.5 text-[14px] font-semibold leading-snug shadow-[0_6px_20px_-8px_rgba(0,0,0,.7)] backdrop-blur-md",
+                c.tone === "bad" ? "border-[#ff4d5e] bg-[rgba(70,8,18,.9)]" : c.tone === "warn" ? "border-[#ffc23d] bg-[rgba(60,40,6,.9)]" : "border-[rgba(140,180,255,.3)] bg-[rgba(10,20,46,.86)]",
+              )}
+            >
+              {c.from && <Swatch colour={c.from} />}
+              {c.from && <span className="text-[#8fa6d1]">→</span>}
+              {c.colour && <Swatch colour={c.colour} />}
+              <span className="min-w-0">{c.text}</span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* hints, notes and discoveries: centred over the free bench area */}
+      <div className="pointer-events-none absolute top-[84px] z-30 flex flex-col items-center gap-2 px-2 max-lg:top-[132px]" style={freeStyle}>
+        <AnimatePresence>
+          {!held && !tray.length && !focus && !shelfOpen && (
+            <motion.div key="hint" initial={reduced ? false : { opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[14px] font-semibold">
+                <Hand className="h-4 w-4 shrink-0 text-[#39d6ff]" /> Pick a chemical from the shelf to hold it over the beaker
+              </Glass>
+            </motion.div>
+          )}
+          {note && (
+            <motion.div key={`note-${note.text}`} initial={reduced ? false : { opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} role="status">
+              <Glass radius="md" className={cx("max-w-md px-3.5 py-2 text-[14px] font-semibold leading-snug", note.tone === "bad" ? "text-[#ff9b9b]" : note.tone === "good" ? "text-[#3de8a8]" : "text-[#ffd59a]")}>
+                {note.text}
+              </Glass>
+            </motion.div>
+          )}
+          {celebrate && (
+            <motion.div key="celebrate" initial={reduced ? false : { opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ type: "spring", stiffness: 320, damping: 22 }} role="status">
+              <Glass radius="xl" className="flex items-center gap-3.5 py-3 pl-3 pr-5">
+                <span className="grid h-12 w-12 place-items-center rounded-[14px] bg-[linear-gradient(135deg,#ffd56b,#ff9a3d)] text-[#3a2200] shadow-[0_0_30px_-4px_#ffb03d]">
+                  <Trophy className="h-6 w-6" />
+                </span>
+                <div>
+                  <Kicker>Discovery</Kicker>
+                  <b className="font-heading text-[18px]">{celebrate.name}</b>
+                </div>
+                <span className="flex gap-0.5 text-[#ffc23d]">
+                  {[0, 1, 2].map((i) => (
+                    <Star key={i} className="h-4 w-4 fill-current" />
+                  ))}
+                </span>
+              </Glass>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {online === false && (
         <div className="absolute inset-x-0 top-[76px] z-30 mx-auto w-fit" role="alert">
@@ -981,84 +1178,103 @@ function NoEntrySign() {
 
 /* ------------------------------------------------------------------ shelf */
 
-function Shelf({ cat, held, onPick, glow, onTable }: { cat: CatalogueResponse | null; held: ShelfItem | null; onPick: (it: ShelfItem) => void; glow: string | null; onTable: () => void }) {
+function Shelf({ cat, held, onPick, glow, onTable, onClose, collapsible = false }: { cat: CatalogueResponse | null; held: ShelfItem | null; onPick: (it: ShelfItem) => void; glow: string | null; onTable: () => void; onClose: (() => void) | null; collapsible?: boolean }) {
+  // On short screens the card in hand needs the room: the shelf folds to its header until asked.
+  const [unfolded, setUnfolded] = useState(false);
+  useEffect(() => setUnfolded(false), [held?.id]);
+  const folded = collapsible && !unfolded;
   const [q, setQ] = useState("");
   const [f, setF] = useState<Filter>("all");
-  const [open, setOpen] = useState(false);
   const list = useMemo(() => {
     const s = q.trim().toLowerCase();
     return (cat?.substances ?? []).filter((it) => matchesFilter(it, f) && (!s || it.name.toLowerCase().includes(s) || it.formula.toLowerCase().includes(s) || it.element?.symbol.toLowerCase() === s || (s.length >= 4 && it.description.toLowerCase().includes(s))));
   }, [cat, q, f]);
   return (
-    <>
-      <button onClick={() => setOpen(true)} className="absolute left-4 top-[84px] z-20 flex h-11 items-center gap-2 rounded-2xl px-3 text-[13px] font-semibold lg:hidden" style={{ background: "rgba(14,26,56,.85)" }}>
-        <FlaskConical className="h-4 w-4" /> Chemicals
-      </button>
-      <Glass className={cx("absolute bottom-[96px] left-4 top-[84px] z-20 w-[300px] flex-col p-3.5 lg:flex", open ? "flex" : "hidden")} aria-label="Chemicals shelf">
-        <div className="flex items-center justify-between gap-2">
-          <b className="font-heading text-[16px]">Chemicals</b>
-          <span className="flex-1" />
-          <button onClick={onTable} className="flex h-8 items-center gap-1.5 rounded-[10px] border border-[rgba(140,180,255,.16)] bg-[rgba(120,160,255,.10)] px-2.5 text-[12px] font-semibold text-[#dbe7ff] hover:bg-[rgba(120,160,255,.18)]">
-            <Atom className="h-4 w-4" /> Periodic table
+    <Glass className={cx("flex flex-col p-3", folded ? "shrink-0" : "min-h-[180px] flex-1")} aria-label="Chemicals shelf">
+      <div className="flex items-center gap-2">
+        <b className="font-heading text-[18px]">Chemicals</b>
+        <span className="flex-1" />
+        <button onClick={onTable} className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-[10px] border border-[rgba(140,180,255,.16)] bg-[rgba(120,160,255,.10)] px-2.5 text-[13px] font-semibold text-[#dbe7ff] hover:bg-[rgba(120,160,255,.18)]" aria-label="Periodic table">
+          <Atom className="h-4 w-4" /> <span className={folded ? "sr-only" : ""}>Periodic table</span>
+        </button>
+        {collapsible && (
+          <button onClick={() => setUnfolded((u) => !u)} className="h-9 rounded-[10px] px-2.5 text-[13px] font-semibold text-[#9fd8ff] hover:bg-white/[0.06]" aria-expanded={!folded}>
+            {folded ? "Show" : "Hide"}
           </button>
-          <button onClick={() => setOpen(false)} className="rounded p-1 text-[#8fa6d1] hover:text-white lg:hidden" aria-label="Close shelf">
-            <X className="h-4 w-4" />
+        )}
+        {onClose && (
+          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-[10px] text-[#8fa6d1] hover:bg-white/[0.06] hover:text-white" aria-label="Close shelf">
+            <X className="h-5 w-5" />
           </button>
-        </div>
-        <label className="mt-3 flex h-[38px] items-center gap-2 rounded-[11px] border border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.55)] px-3 text-[13px] text-[#8fa6d1]">
-          <Search className="h-4 w-4" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${cat?.substances.length ?? ""} chemicals & elements`} className="min-w-0 flex-1 bg-transparent text-white placeholder:text-[#8fa6d1] focus:outline-none" aria-label="Search chemicals" />
-        </label>
-        <div className="mt-2.5 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Filter">
+        )}
+      </div>
+      {!folded && (
+      <>
+      <label className="mt-2.5 flex h-10 shrink-0 items-center gap-2 rounded-[11px] border border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.55)] px-3 text-[14px] text-[#8fa6d1]">
+        <Search className="h-4 w-4 shrink-0" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${cat?.substances.length ?? ""} chemicals`} className="min-w-0 flex-1 bg-transparent text-white placeholder:text-[#8fa6d1] focus:outline-none" aria-label="Search chemicals" />
+      </label>
+      {/* one scrolling row of filters, so the cards below always start on a full row */}
+      <div className="relative mt-2 shrink-0">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]" role="radiogroup" aria-label="Filter">
           {FILTERS.map((x) => (
-            <button key={x.id} role="radio" aria-checked={f === x.id} onClick={() => setF(x.id)} className={cx("h-7 rounded-[9px] border px-2.5 text-[12px] font-semibold", f === x.id ? "border-[rgba(110,170,255,.5)] bg-[rgba(61,139,255,.25)] text-white" : "border-[rgba(140,180,255,.12)] bg-[rgba(120,160,255,.08)] text-[#a9bde4] hover:text-white")}>
+            <button key={x.id} role="radio" aria-checked={f === x.id} onClick={() => setF(x.id)} className={cx("h-8 shrink-0 rounded-[9px] border px-2.5 text-[13px] font-semibold transition-colors", f === x.id ? "border-[rgba(110,170,255,.5)] bg-[rgba(61,139,255,.25)] text-white" : "border-[rgba(140,180,255,.12)] bg-[rgba(120,160,255,.08)] text-[#a9bde4] hover:text-white")}>
               {x.label}
             </button>
           ))}
         </div>
-        <div className="ls-scroll mt-3 grid min-h-0 flex-1 grid-cols-2 content-start gap-2.5 overflow-y-auto pr-1">
-          {list.map((it) => (
+      </div>
+      <div className="ls-scroll mt-2 grid min-h-0 flex-1 auto-rows-max grid-cols-2 content-start gap-2 overflow-y-auto pr-1 pt-0.5">
+        {list.map((it) => {
+          const inHand = held?.id === it.id;
+          return (
             <button
               key={it.id}
               onClick={() => onPick(it)}
-              aria-pressed={held?.id === it.id}
+              aria-pressed={inHand}
+              title={it.description}
               className={cx(
-                "relative h-[150px] overflow-hidden rounded-[14px] border text-left transition",
-                held?.id === it.id ? "border-[#6aa8ff] shadow-[0_0_0_1px_#6aa8ff,0_0_26px_-8px_#3d8bff]" : glow === it.id ? "animate-pulse border-[#ffc23d]" : "border-[rgba(140,180,255,.12)] hover:border-[rgba(140,180,255,.35)]",
+                "flex flex-col overflow-hidden rounded-[14px] border text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px",
+                inHand ? "border-[#6aa8ff] shadow-[0_0_0_1px_#6aa8ff,0_0_26px_-8px_#3d8bff]" : glow === it.id ? "animate-pulse border-[#ffc23d] shadow-[0_0_0_1px_#ffc23d]" : "border-[rgba(140,180,255,.12)] hover:border-[rgba(140,180,255,.35)]",
               )}
-              style={{ background: `radial-gradient(90% 70% at 50% 38%, ${it.colour}33, transparent 70%), rgba(4,10,28,.5)` }}
+              style={{ background: `radial-gradient(90% 70% at 50% 30%, ${it.colour}33, transparent 70%), rgba(4,10,28,.5)` }}
             >
-              {held?.id === it.id ? (
-                <span className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-[#3d8bff] px-1.5 py-0.5 text-[11px] font-bold text-white">
-                  <Hand className="h-3 w-3" /> In hand
-                </span>
-              ) : (
-                <span className="absolute left-2 top-2 rounded-md bg-[rgba(61,139,255,.18)] px-1.5 py-0.5 font-mono text-[10.5px] font-semibold uppercase text-[#9fd8ff]">{it.element ? it.element.symbol : it.category.slice(0, 5)}</span>
-              )}
-              {it.hazards.length > 0 && (
-                <span className="absolute right-2 top-2 flex gap-1" title={it.hazards.join(", ")}>
-                  {it.hazards.slice(0, 2).map((h) => (
-                    <i key={h} className="h-3.5 w-3.5 rotate-45 rounded-[2px] border-[1.6px] border-[#ff5b6b] bg-white" />
-                  ))}
-                </span>
-              )}
-              <div className="absolute left-1/2 top-7 -translate-x-1/2 drop-shadow-[0_10px_12px_rgba(0,0,0,.55)]">
-                <ShelfArt item={it} />
+              {/* fixed picture area: tag and hazards on top, the drawing centred below them */}
+              <div className="relative h-[86px] shrink-0">
+                {inHand ? (
+                  <span className="absolute left-1.5 top-1.5 z-[1] flex items-center gap-1 rounded-md bg-[#3d8bff] px-1.5 py-0.5 text-[12px] font-bold text-white">
+                    <Hand className="h-3 w-3" /> In hand
+                  </span>
+                ) : (
+                  <span className="absolute left-1.5 top-1.5 z-[1] rounded-md bg-[rgba(61,139,255,.2)] px-1.5 py-0.5 text-[12px] font-semibold capitalize text-[#bfe3ff]">{it.element ? it.element.symbol : it.category === "alkali" ? "base" : it.category}</span>
+                )}
+                {it.hazards.length > 0 && !inHand && (
+                  <span className="absolute right-1.5 top-2 z-[1] flex gap-1" title={it.hazards.join(", ")}>
+                    {it.hazards.slice(0, 2).map((h) => (
+                      <i key={h} className="h-3.5 w-3.5 rotate-45 rounded-[2px] border-[1.6px] border-[#ff5b6b] bg-white" />
+                    ))}
+                  </span>
+                )}
+                <div className="absolute inset-x-0 bottom-0 top-6 flex items-end justify-center pb-0.5 drop-shadow-[0_8px_10px_rgba(0,0,0,.55)]">
+                  <ShelfArt item={it} />
+                </div>
               </div>
-              <div className="absolute inset-x-2.5 bottom-2">
-                <b className="block truncate text-[13px] font-semibold text-white">{it.name}</b>
-                <span className="font-mono text-[11.5px] text-[#8fa6d1]">
+              <div className="min-w-0 border-t border-[rgba(140,180,255,.08)] px-2 pb-2 pt-1.5">
+                <b className="line-clamp-2 block text-[14px] font-semibold leading-tight text-white">{it.name}</b>
+                <span className="mt-0.5 block truncate text-[13px] text-[#9db2da]">
                   {it.formula}
                   {it.concentrationM ? ` · ${it.concentrationM} M` : it.solidForm ? ` · ${it.solidForm}` : ""}
                 </span>
               </div>
             </button>
-          ))}
-          {cat && !list.length && <p className="col-span-2 py-6 text-center text-[13px] text-[#8fa6d1]">Nothing matches.</p>}
-          {!cat && Array.from({ length: 6 }, (_, i) => <div key={i} className="h-[150px] animate-pulse rounded-[14px] bg-white/[0.04]" />)}
-        </div>
-      </Glass>
-    </>
+          );
+        })}
+        {cat && !list.length && <p className="col-span-2 py-6 text-center text-[14px] text-[#8fa6d1]">Nothing matches.</p>}
+        {!cat && Array.from({ length: 6 }, (_, i) => <div key={i} className="h-[146px] animate-pulse rounded-[14px] bg-white/[0.04]" />)}
+      </div>
+      </>
+      )}
+    </Glass>
   );
 }
 
@@ -1066,14 +1282,14 @@ function ShelfArt({ item }: { item: ShelfItem }) {
   const mode = dispenseMode(item);
   if (mode === "gas")
     return (
-      <svg viewBox="0 0 60 80" className="h-[72px] w-[54px]" aria-hidden>
+      <svg viewBox="0 0 60 80" className="h-[58px] w-[44px]" aria-hidden>
         <rect x="18" y="16" width="24" height="60" rx="10" fill={item.colour} stroke="#cbd5e1" strokeWidth="2" />
         <rect x="25" y="6" width="10" height="12" rx="2" fill="#94a3b8" />
       </svg>
     );
   if (mode === "spatula")
     return (
-      <svg viewBox="0 0 80 70" className="h-[64px] w-[74px]" aria-hidden>
+      <svg viewBox="0 0 80 70" className="h-[50px] w-[58px]" aria-hidden>
         {item.element && ["transition", "post-transition", "alkali", "alkaline-earth"].includes(item.element.category) ? (
           <path d="M14 56 L28 22 L54 18 L68 50 L44 62 Z" fill={item.colour} stroke="#e2e8f0" strokeWidth="1.5" />
         ) : (
@@ -1083,7 +1299,7 @@ function ShelfArt({ item }: { item: ShelfItem }) {
       </svg>
     );
   return (
-    <svg viewBox="0 0 60 84" className="h-[76px] w-[56px]" aria-hidden>
+    <svg viewBox="0 0 60 84" className="h-[60px] w-[44px]" aria-hidden>
       <path d="M12 30 Q12 22 22 18 V8 H38 V18 Q48 22 48 30 V74 Q48 80 42 80 H18 Q12 80 12 74 Z" fill="#dbe8ff" fillOpacity=".18" stroke="#cfe0ff" strokeOpacity=".7" strokeWidth="2" />
       <path d="M14 40 H46 V74 Q46 78 42 78 H18 Q14 78 14 74 Z" fill={item.colour} fillOpacity={0.45 + item.opacity * 0.5} />
       <rect x="20" y="2" width="20" height="9" rx="2" fill={CAP_COLOUR[item.category] ?? "#3d8bff"} />
@@ -1097,7 +1313,7 @@ function ShelfArt({ item }: { item: ShelfItem }) {
 
 /* ------------------------------------------------------------------ in-hand card */
 
-function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; speed: Speed; setSpeed: (s: Speed) => void; amount: number; setAmount: (n: number) => void; max: number; tilt: number; flowing: boolean; inFlight: number; onGo: () => void; onDropwise: () => void; onPutDown: () => void }) {
+function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; speed: Speed; setSpeed: (s: Speed) => void; amount: number; setAmount: (n: number) => void; max: number; tilt: number; flowing: boolean; inFlight: number; onGo: () => void; onDropwise: () => void; onPutDown: () => void; compact?: boolean }) {
   const it = p.item;
   const unit = unitLabel(it);
   const step = it.limits.unit === "drops" ? 1 : it.limits.unit === "g" ? (it.limits.max <= 2 ? 0.1 : 0.5) : 1;
@@ -1105,45 +1321,47 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
   const verb = p.mode === "pour" ? "Pouring" : p.mode === "dropper" ? "Dropping" : p.mode === "spatula" ? "Adding" : "Bubbling";
   const rate = p.mode === "pour" && p.flowing ? (p.tilt > 0 ? RATE[p.speed] : 0) : 0;
   return (
-    <Glass className="space-y-2.5 p-3">
+    <Glass className="space-y-2 p-3">
       <div className="flex items-center gap-2">
-        <span className="h-[14px] w-[14px] shrink-0 rounded-[4px]" style={{ background: it.colour }} />
-        <b className="min-w-0 flex-1 truncate font-heading text-[14px]">
-          {p.flowing ? verb : "Holding"} {it.formula}
-        </b>
-        <button onClick={p.onPutDown} className="rounded p-0.5 text-[#8fa6d1] hover:text-white" aria-label="Put down">
-          <X className="h-4 w-4" />
+        <span className="h-4 w-4 shrink-0 rounded-[5px]" style={{ background: it.colour }} />
+        <div className="min-w-0 flex-1">
+          <b className="line-clamp-2 block font-heading text-[16px] leading-tight">
+            {p.flowing ? verb : "Holding"} {it.name}
+          </b>
+          <div className="truncate text-[13px] text-[#9db2da]">
+            {it.formula}
+            {it.hazards.length > 0 && <span className="ml-1 text-[#ff9b9b]">· {it.hazards.join(", ")}</span>}
+          </div>
+        </div>
+        <button onClick={p.onPutDown} className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] text-[#8fa6d1] hover:bg-white/[0.06] hover:text-white" aria-label="Put down">
+          <X className="h-5 w-5" />
         </button>
       </div>
-      <div className="text-[12px] text-[#8fa6d1]">
-        {it.name}
-        {it.hazards.length > 0 && <span className="ml-1 text-[#ff9b9b]">· {it.hazards.join(", ")}</span>}
-      </div>
-      {p.mode === "pour" && (
-        <>
-          <div className="flex items-center gap-3">
-            <TiltGauge deg={p.tilt} max={135} />
-            <div>
-              <Kicker>Flow</Kicker>
-              <div className="font-heading text-[20px] font-bold tabular-nums">
-                {rate.toFixed(1)} <span className="text-[13px] text-[#8fa6d1]">mL/s</span>
-              </div>
-              <div className="text-[12px] font-semibold text-[#3de8a8]">{p.flowing ? `${p.inFlight.toFixed(1)} mL so far` : "Ready"}</div>
+      {p.mode === "pour" && !p.compact && (
+        <div className="flex items-center gap-3">
+          <TiltGauge deg={p.tilt} max={135} size={56} />
+          <div>
+            <Kicker>Flow</Kicker>
+            <div className="font-heading text-[18px] font-bold tabular-nums">
+              {rate.toFixed(1)} <span className="text-[13px] text-[#8fa6d1]">mL/s</span>
             </div>
+            <div className="text-[13px] font-semibold text-[#3de8a8]">{p.flowing ? `${p.inFlight.toFixed(1)} mL so far` : "Ready"}</div>
           </div>
-          <Segmented<Speed>
-            value={p.speed}
-            label="Pour speed"
-            size="sm"
-            onChange={p.setSpeed}
-            options={[
-              { id: "drop", label: "Drop" },
-              { id: "slow", label: "Slow" },
-              { id: "steady", label: "Steady" },
-              { id: "fast", label: "Fast" },
-            ]}
-          />
-        </>
+        </div>
+      )}
+      {p.mode === "pour" && (
+        <Segmented<Speed>
+          value={p.speed}
+          label="Pour speed"
+          size="sm"
+          onChange={p.setSpeed}
+          options={[
+            { id: "drop", label: "Drop" },
+            { id: "slow", label: "Slow" },
+            { id: "steady", label: "Steady" },
+            { id: "fast", label: "Fast" },
+          ]}
+        />
       )}
       <div className="flex items-center gap-1.5">
         <SquareButton aria-label="Less" onClick={() => p.setAmount(Math.max(it.limits.min, +(p.amount - step).toFixed(2)))}>
@@ -1151,7 +1369,7 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
         </SquareButton>
         <div className="flex h-[38px] min-w-0 flex-1 items-center justify-between rounded-[11px] border border-[rgba(140,180,255,.2)] bg-[rgba(2,8,24,.65)] px-3">
           <b className="font-heading text-[17px] tabular-nums">{fmt(p.amount, it.limits.unit)}</b>
-          <small className="text-[11.5px] text-[#8fa6d1]">
+          <small className="text-[13px] text-[#8fa6d1]">
             / {fmt(Math.min(p.max, it.limits.max), it.limits.unit)} {unit}
           </small>
         </div>
@@ -1161,7 +1379,7 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
       </div>
       <div className="flex gap-1">
         {chips.filter((v) => v >= it.limits.min && v <= it.limits.max).map((v) => (
-          <button key={v} onClick={() => p.setAmount(Math.min(v, Math.max(it.limits.min, p.max)))} className={cx("h-[26px] flex-1 rounded-lg font-mono text-[12px] font-semibold", p.amount === v ? "bg-[rgba(61,139,255,.3)] text-white" : "bg-[rgba(120,160,255,.08)] text-[#a9bde4] hover:text-white")}>
+          <button key={v} onClick={() => p.setAmount(Math.min(v, Math.max(it.limits.min, p.max)))} className={cx("h-8 flex-1 rounded-lg text-[13px] font-semibold tabular-nums transition-colors", p.amount === v ? "bg-[rgba(61,139,255,.3)] text-white" : "bg-[rgba(120,160,255,.08)] text-[#a9bde4] hover:text-white")}>
             {v}
           </button>
         ))}
@@ -1183,14 +1401,11 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
           </GhostButton>
         )}
       </div>
-      {p.mode === "pour" && (
-        <p className="flex items-start gap-1.5 text-[11.5px] leading-snug text-[#8fa6d1]">
-          <MoveDown className="mt-px h-3.5 w-3.5 shrink-0 text-[#39d6ff]" /> Or press and hold on the bench to pour by hand · drag down to tilt more
+      {p.mode === "pour" && !p.compact && (
+        <p className="flex items-start gap-1.5 text-[13px] leading-snug text-[#9db2da]">
+          <MoveDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#39d6ff]" /> Or press and hold on the bench to pour by hand; drag down to tilt more.
         </p>
       )}
-      <GhostButton className="w-full" onClick={p.onPutDown}>
-        <Hand className="h-4 w-4" /> Put down
-      </GhostButton>
     </Glass>
   );
 }
@@ -1226,150 +1441,175 @@ function HeatButton({ plateC, glow, onHeat }: { plateC: number; glow: boolean; o
 
 /* ------------------------------------------------------------------ right panel */
 
-function SidePanel({ tab, setTab, result, log, tray, online, busy }: { tab: Tab; setTab: (t: Tab) => void; result: SimulationResult | null; log: LogLine[]; tray: TrayItem[]; online: boolean | null; busy: boolean }) {
+function SidePanel({ tab, setTab, result, friendly, log, tray, online, busy, onClose }: { tab: Tab; setTab: (t: Tab) => void; result: SimulationResult | null; friendly: ReturnType<typeof friendlyOutcome>; log: LogLine[]; tray: TrayItem[]; online: boolean | null; busy: boolean; onClose: (() => void) | null }) {
   const p = result?.presentation;
   const reacting = result?.outcome === "reaction";
+  const waiting = !!friendly;
+  // Title, then one line of what you see, then the details.
+  const title = busy ? "Working it out…" : friendly?.title ?? p?.title ?? (online === false ? "Engine offline" : "Mixed");
+  const seeLine = friendly?.line ?? p?.observations[0] ?? (p?.message ? p.message.split(/(?<=\.)\s/)[0] : null);
+  const detail = friendly ? friendly.detail : p?.message && p.message !== seeLine ? p.message : null;
+  const moreObs = friendly ? [] : (p?.observations ?? []).slice(seeLine === p?.observations[0] ? 1 : 0);
   return (
-    <Glass className="absolute bottom-[96px] right-4 top-[84px] z-10 hidden w-[356px] flex-col p-3.5 xl:flex" aria-label="What's happening">
-      <Segmented<Tab>
-        value={tab}
-        label="Panel"
-        onChange={setTab}
-        options={[
-          { id: "live", label: "Live" },
-          { id: "molecules", label: "Molecules" },
-          { id: "notebook", label: "Notebook" },
-          { id: "facts", label: "Facts" },
-        ]}
-      />
+    <Glass className="flex min-h-0 w-full flex-col p-3" aria-label="What's happening">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <Segmented<Tab>
+            value={tab}
+            label="Panel"
+            onChange={setTab}
+            options={[
+              { id: "live", label: "Live" },
+              { id: "molecules", label: "Molecules" },
+              { id: "notebook", label: "Notes" },
+              { id: "facts", label: "Facts" },
+            ]}
+          />
+        </div>
+        {onClose && (
+          <button onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] text-[#8fa6d1] hover:bg-white/[0.06] hover:text-white" aria-label="Close panel">
+            <X className="h-5 w-5" />
+          </button>
+        )}
+      </div>
       <div className="ls-scroll mt-3 min-h-0 flex-1 overflow-y-auto pr-1" aria-live="polite">
-        {tab === "live" && (
-          <div className="space-y-3">
-            {!tray.length ? (
-              <div className="rounded-[14px] border border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)] p-3 text-[13px] text-[#c8d6f3]">
-                <b className="font-heading text-[15px] text-white">An empty beaker</b>
-                <p className="mt-1">Pick something from the shelf and pour it in. Then add a second chemical and watch what the safety engine says happens.</p>
-              </div>
-            ) : (
-              <div className={cx("rounded-[14px] border p-3", reacting ? "border-[rgba(61,232,168,.35)] bg-[linear-gradient(120deg,rgba(61,232,168,.16),rgba(61,139,255,.08))]" : "border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)]")}>
-                <div className="flex items-center gap-2 font-heading text-[16px] font-bold">
-                  {reacting && <span className="grid h-[22px] w-[22px] place-items-center rounded-[7px] bg-[#3de8a8] text-[#053]">✓</span>}
-                  {busy ? "Working it out…" : p?.title ?? (online === false ? "Engine offline" : "Mixed")}
-                </div>
-                {p?.message && <p className="mt-1.5 text-[13px] leading-relaxed text-[#c8d6f3]">{p.message}</p>}
-                {p?.observations && p.observations.length > 0 && (
-                  <ul className="mt-2 space-y-1 text-[12.5px] text-[#dbe7ff]">
-                    {p.observations.map((o) => (
-                      <li key={o}>• {o}</li>
-                    ))}
-                  </ul>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+            {tab === "live" && (
+              <div className="space-y-3">
+                {!tray.length ? (
+                  <div className="rounded-[14px] border border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)] p-3">
+                    <h3 className="font-heading text-[18px] font-bold text-white">An empty beaker</h3>
+                    <p className="mt-1 text-[15px] leading-relaxed text-[#c8d6f3]">Pick something from the shelf and pour it in. Then add a second chemical and see what happens.</p>
+                  </div>
+                ) : (
+                  <div className={cx("rounded-[14px] border p-3 transition-colors duration-300", reacting ? "border-[rgba(61,232,168,.35)] bg-[linear-gradient(120deg,rgba(61,232,168,.16),rgba(61,139,255,.08))]" : waiting ? "border-[rgba(255,194,61,.4)] bg-[rgba(255,194,61,.07)]" : "border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)]")}>
+                    <h3 className="flex items-start gap-2 font-heading text-[19px] font-bold leading-snug">
+                      {reacting && <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-[7px] bg-[#3de8a8] text-[14px] text-[#053]">✓</span>}
+                      {title}
+                    </h3>
+                    {seeLine && !busy && <p className={cx("mt-1.5 text-[16px] font-semibold leading-snug", waiting ? "text-[#ffd59a]" : "text-white")}>{seeLine}</p>}
+                    {detail && !busy && <p className="mt-2 text-[15px] leading-relaxed text-[#c8d6f3]">{detail}</p>}
+                    {moreObs.length > 0 && (
+                      <ul className="mt-2 space-y-1 text-[15px] leading-snug text-[#dbe7ff]">
+                        {moreObs.map((o) => (
+                          <li key={o} className="flex gap-2">
+                            <span className="text-[#39d6ff]">•</span>
+                            {o}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 )}
+                {p && p.compounds.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {p.compounds.slice(0, 4).map((c) => (
+                      <div key={c.formula} className="flex items-center gap-2 rounded-xl border border-[rgba(140,180,255,.12)] bg-[rgba(4,10,28,.5)] p-2">
+                        <span className="h-[26px] w-[26px] shrink-0 rounded-full" style={{ background: c.colour ?? "radial-gradient(circle at 35% 35%, #fff, #9fb4de)" }} />
+                        <span className="min-w-0">
+                          <b className="block truncate text-[14px]">{c.name ?? c.formula}</b>
+                          <small className="block truncate text-[13px] text-[#9db2da]">
+                            {c.formula} · {c.state === "aq" ? "dissolved" : c.state === "s" ? "solid" : c.state === "g" ? "gas" : "liquid"}
+                          </small>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {result?.equationLatex && <div className="overflow-x-auto rounded-xl border border-[rgba(140,180,255,.12)] bg-[rgba(4,10,28,.5)] px-3 py-2.5 text-[15px]" dangerouslySetInnerHTML={{ __html: katex.renderToString(result.equationLatex, { throwOnError: false }) }} />}
+                {p && p.suggestions.length > 0 && result?.outcome !== "unsupported" && (
+                  <div>
+                    <Kicker>Try next</Kicker>
+                    <ul className="mt-1.5 space-y-1.5">
+                      {p.suggestions.slice(0, 3).map((s, i) => (
+                        <li key={s} className="flex gap-2.5 rounded-xl border border-[rgba(255,194,61,.35)] bg-[rgba(255,194,61,.06)] p-2.5 text-[15px] leading-snug text-[#dbe7ff]">
+                          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[#ffc23d] font-heading text-[13px] font-bold text-[#2a1d00]">{i + 1}</span>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div>
+                  <Kicker>In the beaker</Kicker>
+                  <ul className="mt-1.5 space-y-1 text-[15px]">
+                    {tray.map((t) => (
+                      <li key={t.item.id} className="flex items-center gap-2">
+                        <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: t.item.colour }} />
+                        <span className="min-w-0 flex-1 truncate">{t.item.name}</span>
+                        <span className="text-[14px] tabular-nums text-[#9db2da]">
+                          {fmt(t.amount, t.item.limits.unit)} {unitLabel(t.item)}
+                        </span>
+                      </li>
+                    ))}
+                    {!tray.length && <li className="text-[#8fa6d1]">Nothing yet.</li>}
+                  </ul>
+                </div>
               </div>
             )}
-            {p && p.compounds.length > 0 && (
-              <div className="grid grid-cols-2 gap-2">
-                {p.compounds.slice(0, 4).map((c) => (
-                  <div key={c.formula} className="flex items-center gap-2 rounded-xl border border-[rgba(140,180,255,.12)] bg-[rgba(4,10,28,.5)] p-2">
-                    <span className="h-[26px] w-[26px] shrink-0 rounded-full" style={{ background: c.colour ?? "radial-gradient(circle at 35% 35%, #fff, #9fb4de)" }} />
-                    <span className="min-w-0">
-                      <b className="block truncate font-mono text-[13px]">{c.formula}</b>
-                      <small className="text-[11.5px] text-[#8fa6d1]">{c.state === "aq" ? "dissolved" : c.state === "s" ? "solid" : c.state === "g" ? "gas" : "liquid"}</small>
-                    </span>
+            {tab === "molecules" && (
+              <div className="space-y-3">
+                {(p?.reactions ?? []).length === 0 && <p className="text-[15px] text-[#9db2da]">When something reacts, the particles involved appear here.</p>}
+                {(p?.reactions ?? []).map((r) => (
+                  <div key={r.id} className="rounded-[14px] border border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)] p-3">
+                    <Kicker>{r.type}</Kicker>
+                    <b className="font-heading text-[17px]">{r.name}</b>
+                    {r.participants && (
+                      <div className="mt-2 flex justify-center">
+                        <MicroView reactants={r.participants.reactants} products={r.participants.products} size={250} label={false} />
+                      </div>
+                    )}
+                    {r.participants && (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[14px]">
+                        {r.participants.reactants.map((x, i) => (
+                          <span key={`r${i}`} className="rounded-lg bg-[rgba(255,122,182,.15)] px-2 py-1">
+                            {x.coef > 1 ? x.coef : ""}
+                            {x.formula}
+                            {x.charge && <sup>{x.charge}</sup>}
+                          </span>
+                        ))}
+                        <span className="text-[#39d6ff]">→</span>
+                        {r.participants.products.map((x, i) => (
+                          <span key={`p${i}`} className="rounded-lg bg-[rgba(57,214,255,.15)] px-2 py-1">
+                            {x.coef > 1 ? x.coef : ""}
+                            {x.formula}
+                            {x.charge && <sup>{x.charge}</sup>}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-2 overflow-x-auto text-[15px]" dangerouslySetInnerHTML={{ __html: katex.renderToString(r.equationLatex, { throwOnError: false }) }} />
                   </div>
                 ))}
               </div>
             )}
-            {result?.equationLatex && <div className="overflow-x-auto rounded-xl border border-[rgba(140,180,255,.12)] bg-[rgba(4,10,28,.5)] px-3 py-2.5 text-[14px]" dangerouslySetInnerHTML={{ __html: katex.renderToString(result.equationLatex, { throwOnError: false }) }} />}
-            {p && p.suggestions.length > 0 && (
+            {tab === "notebook" && (
               <div>
-                <Kicker>Try next</Kicker>
-                <ul className="mt-1.5 space-y-1.5">
-                  {p.suggestions.slice(0, 3).map((s, i) => (
-                    <li key={s} className="flex gap-2.5 rounded-xl border border-[rgba(255,194,61,.35)] bg-[rgba(255,194,61,.06)] p-2.5 text-[13px] text-[#dbe7ff]">
-                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[#ffc23d] font-heading text-[12px] font-bold text-[#2a1d00]">{i + 1}</span>
-                      {s}
+                <Kicker>Notebook · written as you go</Kicker>
+                <ul className="mt-1.5">
+                  {log.map((l, i) => (
+                    <li key={i} className="grid grid-cols-[52px_1fr] gap-2 border-b border-dashed border-[rgba(140,180,255,.12)] py-1.5 text-[14px] leading-snug">
+                      <span className="text-[13px] tabular-nums text-[#39d6ff]">{clock(l.t)}</span>
+                      <span className={l.tone === "bad" ? "text-[#ff9b9b]" : l.tone === "good" ? "text-[#3de8a8]" : ""}>{l.text}</span>
                     </li>
                   ))}
+                  {!log.length && <li className="text-[15px] text-[#9db2da]">Everything you do is written down here as you go.</li>}
                 </ul>
               </div>
             )}
-            <div>
-              <Kicker>In the beaker</Kicker>
-              <ul className="mt-1.5 space-y-1 text-[13px]">
-                {tray.map((t) => (
-                  <li key={t.item.id} className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: t.item.colour }} />
-                    <span className="flex-1 truncate">{t.item.name}</span>
-                    <span className="font-mono text-[12px] text-[#8fa6d1]">
-                      {fmt(t.amount, t.item.limits.unit)} {unitLabel(t.item)}
-                    </span>
-                  </li>
+            {tab === "facts" && (
+              <div className="space-y-2">
+                {(p?.facts ?? []).map((f) => (
+                  <p key={f} className="rounded-[14px] border border-[rgba(167,123,255,.35)] bg-[linear-gradient(135deg,rgba(167,123,255,.22),rgba(57,214,255,.10))] p-3 text-[15px] leading-relaxed">
+                    💡 {f}
+                  </p>
                 ))}
-                {!tray.length && <li className="text-[#8fa6d1]">Nothing yet.</li>}
-              </ul>
-            </div>
-          </div>
-        )}
-        {tab === "molecules" && (
-          <div className="space-y-3">
-            {(p?.reactions ?? []).length === 0 && <p className="text-[13px] text-[#8fa6d1]">When something reacts, the particles involved appear here.</p>}
-            {(p?.reactions ?? []).map((r) => (
-              <div key={r.id} className="rounded-[14px] border border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)] p-3">
-                <Kicker>{r.type}</Kicker>
-                <b className="font-heading text-[15px]">{r.name}</b>
-                {r.participants && (
-                  <div className="mt-2 flex justify-center">
-                    <MicroView reactants={r.participants.reactants} products={r.participants.products} size={250} label={false} />
-                  </div>
-                )}
-                {r.participants && (
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-[13px]">
-                    {r.participants.reactants.map((x, i) => (
-                      <span key={`r${i}`} className="rounded-lg bg-[rgba(255,122,182,.15)] px-2 py-1">
-                        {x.coef > 1 ? x.coef : ""}
-                        {x.formula}
-                        {x.charge && <sup>{x.charge}</sup>}
-                      </span>
-                    ))}
-                    <span className="text-[#39d6ff]">→</span>
-                    {r.participants.products.map((x, i) => (
-                      <span key={`p${i}`} className="rounded-lg bg-[rgba(57,214,255,.15)] px-2 py-1">
-                        {x.coef > 1 ? x.coef : ""}
-                        {x.formula}
-                        {x.charge && <sup>{x.charge}</sup>}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="mt-2 overflow-x-auto text-[14px]" dangerouslySetInnerHTML={{ __html: katex.renderToString(r.equationLatex, { throwOnError: false }) }} />
+                {!(p?.facts ?? []).length && <p className="text-[15px] text-[#9db2da]">Facts about what you mix show up here.</p>}
               </div>
-            ))}
-          </div>
-        )}
-        {tab === "notebook" && (
-          <div>
-            <Kicker>Notebook · auto-logged</Kicker>
-            <ul className="mt-1.5">
-              {log.map((l, i) => (
-                <li key={i} className="grid grid-cols-[48px_1fr] gap-2 border-b border-dashed border-[rgba(140,180,255,.12)] py-1.5 text-[13px]">
-                  <span className="font-mono text-[12px] text-[#39d6ff]">{clock(l.t)}</span>
-                  <span className={l.tone === "bad" ? "text-[#ff9b9b]" : l.tone === "good" ? "text-[#3de8a8]" : ""}>{l.text}</span>
-                </li>
-              ))}
-              {!log.length && <li className="text-[13px] text-[#8fa6d1]">Everything you do is written down here as you go.</li>}
-            </ul>
-          </div>
-        )}
-        {tab === "facts" && (
-          <div className="space-y-2">
-            {(p?.facts ?? []).map((f) => (
-              <p key={f} className="rounded-[14px] border border-[rgba(167,123,255,.35)] bg-[linear-gradient(135deg,rgba(167,123,255,.22),rgba(57,214,255,.10))] p-3 text-[13px] leading-relaxed">
-                💡 {f}
-              </p>
-            ))}
-            {!(p?.facts ?? []).length && <p className="text-[13px] text-[#8fa6d1]">Facts about what you mix show up here.</p>}
-          </div>
-        )}
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </Glass>
   );

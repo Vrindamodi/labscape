@@ -173,7 +173,7 @@ export function CircuitWorkspace({ session }: { session: SimSession<CircuitState
   }
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_330px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_330px]">
       <LabStyles />
       <Stage className="min-h-[340px]">
         <svg
@@ -316,6 +316,7 @@ function Terminal({ t, p, part, vertical, ro, selected, target, snapped, bad, pu
       role="button"
       aria-label={`${NAMES[part.kind]} ${part.id} ${sign ? (sign === "+" ? "positive" : "negative") : t.endsWith(".a") ? "end 1" : "end 2"} terminal${selected ? ", selected" : ""}`}
       aria-pressed={selected}
+      data-guide-id={t}
       onPointerDown={down}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -623,7 +624,7 @@ function OhmsPanel({ session, r, rheo, focus }: { session: SimSession<CircuitSta
         </div>
         <div className="mt-3 space-y-3">
           <SwitchButton session={session} />
-          <ParamSlider label="Rheostat" value={rheo} min={0} max={1} step={0.01} format={(v) => `${Math.round(v * (rheoPart.value ?? 50))} Ω`} onCommit={(v) => session.dispatch("param.set", { key: "rheostat", value: v })} disabled={ro} />
+          <ParamSlider guideId="param:rheostat" label="Rheostat" value={rheo} min={0} max={1} step={0.01} format={(v) => `${Math.round(v * (rheoPart.value ?? 50))} Ω`} onCommit={(v) => session.dispatch("param.set", { key: "rheostat", value: v })} disabled={ro} />
         </div>
       </Panel>
       <Panel title="Record your readings" glow={!ro && focus === "readings"}>

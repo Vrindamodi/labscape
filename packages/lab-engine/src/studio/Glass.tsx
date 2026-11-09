@@ -14,7 +14,7 @@ export const Glass = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement> &
 });
 
 export function Kicker({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx("text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8fa6d1]", className)}>{children}</div>;
+  return <div className={cx("text-[13px] font-semibold uppercase tracking-[0.06em] text-[#8fa6d1]", className)}>{children}</div>;
 }
 
 /** Segmented control (speed, tabs). */
@@ -29,7 +29,7 @@ export function Segmented<T extends string>({ value, options, onChange, label, s
           onClick={() => onChange(o.id)}
           className={cx(
             "flex-1 rounded-[9px] font-semibold transition-colors",
-            size === "sm" ? "h-7 px-2 text-[12px]" : "h-8 px-2.5 text-[13px]",
+            size === "sm" ? "h-8 px-2 text-[13px]" : "h-9 px-2.5 text-[14px]",
             value === o.id ? "bg-[rgba(61,139,255,.3)] text-white shadow-[inset_0_0_0_1px_#6aa8ff]" : "text-[#a9bde4] hover:text-white",
           )}
         >
@@ -50,7 +50,7 @@ export const DockButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
       ref={ref}
       type="button"
       className={cx(
-        "relative flex h-[54px] w-[70px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-[14px] text-[12px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-35",
+        "relative flex h-[54px] w-[70px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-[14px] text-[13px] font-semibold transition-[color,background-color,box-shadow] duration-200 disabled:cursor-not-allowed disabled:opacity-35",
         tone === "on" && "bg-[rgba(61,139,255,.28)] text-white shadow-[inset_0_0_0_1px_rgba(110,170,255,.55)]",
         tone === "hot" && "bg-[rgba(255,138,61,.18)] text-[#ffd59a] shadow-[inset_0_0_0_1px_rgba(255,160,90,.5)]",
         tone === "danger" && "text-[#ff9b9b] hover:bg-[rgba(255,91,107,.12)]",

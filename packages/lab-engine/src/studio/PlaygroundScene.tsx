@@ -64,7 +64,7 @@ export type PlaygroundView = {
   bubble?: "fine" | "medium" | "coarse";
   /** A thermometer standing in the beaker; targetC is where the liquid is heading. */
   thermometer?: { targetC: number } | null;
-  /** Short captions shown beside the beaker so words and effects line up. */
+  /** Captions the page draws over the free bench area (kept here so callers can pass one view object). */
   captions?: SceneCaption[];
 };
 
@@ -80,7 +80,10 @@ const LIQ_R = BEAKER_R * 0.93;
 /** Small volumes are drawn a little taller (a 10 mL puddle would otherwise be a sliver). */
 const fillH = (v: PlaygroundView) => Math.pow(Math.min(1, Math.max(0, v.levelMl / v.capacityMl)), 0.62) * (BEAKER_H - 0.06);
 
-export function PlaygroundScene({ view, reducedMotion, onBeaker }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void }) {
+/** Pixels covered by panels on each side of the canvas: the camera frames the beaker in what is left. */
+export type SceneInsets = { left: number; right: number; top: number; bottom: number };
+
+export function PlaygroundScene({ view, reducedMotion, onBeaker, insets }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets }) {
   const [quality, setQuality] = useState<Quality>(() => (((navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8) < 4 ? "lite" : "high"));
   return (
     <Canvas
@@ -92,7 +95,7 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker }: { view: Playg
     >
       <PerformanceMonitor onDecline={() => setQuality("lite")} flipflops={2} />
       <Env />
-      <CameraRig focus={view.focus} pulse={view.reactionPulse} blast={view.blast?.pulse ?? 0} reducedMotion={reducedMotion} />
+      <CameraRig focus={view.focus} pulse={view.reactionPulse} blast={view.blast?.pulse ?? 0} reducedMotion={reducedMotion} insets={insets} />
       <hemisphereLight args={["#bcd4ff", "#0b1020", 0.4]} />
       <directionalLight position={[3, 7, 4]} intensity={1.3} castShadow={quality === "high"} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} />
       <pointLight position={[-4, 3.6, -2.5]} intensity={10} color="#3a8cff" distance={12} decay={1.6} />
@@ -106,7 +109,6 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker }: { view: Playg
         <BeakerWithContents view={view} quality={quality} reducedMotion={reducedMotion} />
       </group>
       <TestTubeRack />
-      {view.captions && view.captions.length > 0 && <Captions captions={view.captions} reducedMotion={reducedMotion} />}
       {view.held && <Held held={view.held} view={view} quality={quality} reducedMotion={reducedMotion} />}
       {quality === "high" && (
         <EffectComposer multisampling={4}>
@@ -136,12 +138,50 @@ function Env() {
 }
 
 /** Focus pushes the camera in; each reaction gives it a small kick. */
-function CameraRig({ focus, pulse, blast, reducedMotion }: { focus: boolean; pulse: number; blast: number; reducedMotion: boolean }) {
-  const { camera } = useThree();
+const TARGET = new THREE.Vector3(0, 0.98, 0);
+const VIEW_DIR = new THREE.Vector3(0, 1.52, 4.6).normalize();
+const FOCUS_DIR = new THREE.Vector3(0, 0.67, 2.6).normalize();
+/** World-space box the camera keeps in view: the beaker on its plate with a bottle held above it. */
+const FRAME_W = 2.0;
+const FRAME_H = 2.45;
+
+function CameraRig({ focus, pulse, blast, reducedMotion, insets }: { focus: boolean; pulse: number; blast: number; reducedMotion: boolean; insets?: SceneInsets | undefined }) {
+  const { camera, size } = useThree();
   const controls = useRef<{ update: () => void } | null>(null);
   const want = useMemo(() => new THREE.Vector3(), []);
   const moving = useRef(true);
   const kick = useRef(0);
+  const dist = useRef(4.9);
+  const { left = 0, right = 0, top = 0, bottom = 0 } = insets ?? {};
+  const offWant = useRef({ x: 0, y: 0 });
+  const offNow = useRef({ x: 0, y: 0 });
+  const sized = useRef({ w: 0, h: 0 });
+  const applyOffset = () => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const { x, y } = offNow.current;
+    if (Math.abs(x) < 0.5 && Math.abs(y) < 0.5) cam.clearViewOffset();
+    else cam.setViewOffset(size.width, size.height, -x, -y, size.width, size.height);
+    cam.updateProjectionMatrix();
+  };
+  // Centre the beaker in the free space between panels (a view offset shifts the image without
+  // changing the perspective) and pull back until the frame fits that space.
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const W = size.width;
+    const H = size.height;
+    const fw = Math.max(160, W - left - right);
+    const fh = Math.max(160, H - top - bottom);
+    const ppu = Math.min(fw / FRAME_W, fh / FRAME_H);
+    const tan = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
+    dist.current = THREE.MathUtils.clamp(H / (ppu * 2 * tan), 3.2, 10);
+    offWant.current = { x: left + fw / 2 - W / 2, y: top + fh / 2 - H / 2 };
+    // A resize applies at once; a panel opening glides (see useFrame).
+    if (sized.current.w !== W || sized.current.h !== H) offNow.current = { ...offWant.current };
+    sized.current = { w: W, h: H };
+    applyOffset();
+    moving.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camera, size.width, size.height, left, right, top, bottom]);
   useEffect(() => {
     moving.current = true;
   }, [focus]);
@@ -153,8 +193,16 @@ function CameraRig({ focus, pulse, blast, reducedMotion }: { focus: boolean; pul
     if (blast && !reducedMotion) kick.current = 3;
   }, [blast, reducedMotion]);
   useFrame(({ clock }, dt) => {
+    const o = offNow.current;
+    const w = offWant.current;
+    if (Math.abs(o.x - w.x) > 0.5 || Math.abs(o.y - w.y) > 0.5) {
+      const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 6);
+      o.x += (w.x - o.x) * k;
+      o.y += (w.y - o.y) * k;
+      applyOffset();
+    }
     if (moving.current) {
-      want.set(0, focus ? 1.45 : 2.3, focus ? 2.6 : 4.6);
+      want.copy(TARGET).addScaledVector(focus ? FOCUS_DIR : VIEW_DIR, focus ? dist.current * 0.58 : dist.current);
       camera.position.lerp(want, reducedMotion ? 1 : 1 - Math.exp(-dt * 3));
       moving.current = camera.position.distanceTo(want) > 0.01;
       controls.current?.update();
@@ -165,7 +213,7 @@ function CameraRig({ focus, pulse, blast, reducedMotion }: { focus: boolean; pul
       camera.position.y += Math.cos(clock.elapsedTime * 47) * 0.004 * kick.current;
     }
   });
-  return <OrbitControls ref={controls as never} makeDefault target={[0, 0.65, 0]} enablePan={false} minDistance={1.6} maxDistance={8} minPolarAngle={0.3} maxPolarAngle={1.35} enableDamping={!reducedMotion} />;
+  return <OrbitControls ref={controls as never} makeDefault target={[TARGET.x, TARGET.y, TARGET.z]} enablePan={false} minDistance={1.6} maxDistance={10} minPolarAngle={0.3} maxPolarAngle={1.35} enableDamping={!reducedMotion} />;
 }
 
 /* ------------------------------------------------------------------ ambience */
@@ -1402,44 +1450,6 @@ function Thermometer({ c, target, reducedMotion }: { c: number; target: number; 
   );
 }
 
-/** Captions beside the beaker: what you are looking at, in words, while it happens. */
-function Captions({ captions, reducedMotion }: { captions: SceneCaption[]; reducedMotion: boolean }) {
-  return (
-    <Html position={[BEAKER_R + 0.12, PLATE_H + 0.05, 0.25]} zIndexRange={[9, 0]} style={{ pointerEvents: "none" }}>
-      <style>{"@keyframes lsCapIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}"}</style>
-      <div style={{ position: "absolute", bottom: 0, left: 0, display: "flex", flexDirection: "column", gap: 6, width: 210 }} role="status" aria-live="polite">
-        {captions.slice(-3).map((c) => (
-          <div
-            key={c.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 7,
-              padding: "6px 9px",
-              borderRadius: 11,
-              background: c.tone === "bad" ? "rgba(70,8,18,.9)" : c.tone === "warn" ? "rgba(60,40,6,.9)" : "rgba(10,20,46,.88)",
-              border: `1px solid ${c.tone === "bad" ? "#ff4d5e" : c.tone === "warn" ? "#ffc23d" : "rgba(140,180,255,.35)"}`,
-              boxShadow: "0 6px 20px -8px rgba(0,0,0,.7)",
-              color: "#eef4ff",
-              font: "600 12.5px/1.3 Inter, system-ui, sans-serif",
-              animation: reducedMotion ? undefined : "lsCapIn .35s ease-out",
-            }}
-          >
-            {c.from && <Swatch colour={c.from} />}
-            {c.from && <span style={{ color: "#8fa6d1" }}>→</span>}
-            {c.colour && <Swatch colour={c.colour} />}
-            <span>{c.text}</span>
-          </div>
-        ))}
-      </div>
-    </Html>
-  );
-}
-
-function Swatch({ colour }: { colour: string }) {
-  return <span style={{ flex: "none", width: 14, height: 14, borderRadius: 4, background: colour, boxShadow: "inset 0 0 0 1px rgba(255,255,255,.35)" }} />;
-}
-
 /* ------------------------------------------------------------------ what is in hand */
 
 const REAGENT = KINDS.reagent_bottle;
@@ -1458,9 +1468,11 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
   useFrame(({ clock }, dt) => {
     const g = pivot.current;
     if (!g) return;
-    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 9);
-    tilt.current += ((held.tiltDeg * Math.PI) / 180 - tilt.current) * k;
-    appear.current += (1 - appear.current) * k;
+    // Tilting and bringing the bottle in ease over ~0.5 s, so a pour starts and ends gently.
+    const kt = reducedMotion ? 1 : 1 - Math.exp(-dt * 4.5);
+    const ka = reducedMotion ? 1 : 1 - Math.exp(-dt * 5.5);
+    tilt.current += ((held.tiltDeg * Math.PI) / 180 - tilt.current) * kt;
+    appear.current += (1 - appear.current) * ka;
     g.rotation.z = tilt.current + (reducedMotion || held.flowing ? 0 : Math.sin(clock.elapsedTime * 1.4) * 0.02);
     g.position.set(mouth.x + (1 - appear.current) * 0.8, mouth.y + (1 - appear.current) * 0.3 + (held.flowing || reducedMotion ? 0 : Math.sin(clock.elapsedTime * 1.1) * 0.012), mouth.z);
   });
