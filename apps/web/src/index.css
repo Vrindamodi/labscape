@@ -53,9 +53,13 @@ body {
   position: relative;
   z-index: 1;
 }
+/* The sidebar and mobile tab bar float above the page column. Without the z-index here the
+   rule above (z-index: 1 on every child) wins over their z-40 utility and the page column,
+   which comes later in the DOM, covers them and swallows every click. */
 .ls-app-bg > aside,
 .ls-app-bg > nav {
   position: fixed;
+  z-index: 40;
 }
 
 .ls-scroll {
