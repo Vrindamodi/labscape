@@ -1,0 +1,1431 @@
+{
+  "version": "2026.11.09-1",
+  "note": "Catalogue shelf, loaded via substances.json include. Solution species are molarities; solid species are mol per mol of formula unit; weak acids are counted in moles of acidic protons. Interim content - needs chemistry + safety reviewer sign-off.",
+  "substances": [
+    {
+      "id": "nabr",
+      "name": "Sodium bromide",
+      "formula": "NaBr",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.5,
+        "Br-": 0.5
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Bromide ions: a cream precipitate with silver nitrate."
+    },
+    {
+      "id": "nai",
+      "name": "Sodium iodide",
+      "formula": "NaI",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.5,
+        "I-": 0.5
+      },
+      "tags": [
+        "salt",
+        "iodide"
+      ],
+      "description": "Iodide ions: a yellow precipitate with silver nitrate."
+    },
+    {
+      "id": "kcl",
+      "name": "Potassium chloride",
+      "formula": "KCl",
+      "concentrationM": 1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 1,
+        "Cl-": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Gives a lilac flame. Used as a salt substitute."
+    },
+    {
+      "id": "k2so4",
+      "name": "Potassium sulfate",
+      "formula": "K2SO4",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 1,
+        "SO4^2-": 0.5
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "A colourless sulfate, used as a fertiliser."
+    },
+    {
+      "id": "kno3-solution",
+      "name": "Potassium nitrate solution",
+      "formula": "KNO3",
+      "concentrationM": 1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 1,
+        "NO3-": 1
+      },
+      "tags": [
+        "salt",
+        "nitrate"
+      ],
+      "description": "Nitrate ions in solution. Nitrates are all soluble."
+    },
+    {
+      "id": "nano3",
+      "name": "Sodium nitrate",
+      "formula": "NaNO3",
+      "concentrationM": 1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 1,
+        "NO3-": 1
+      },
+      "tags": [
+        "salt",
+        "nitrate"
+      ],
+      "description": "Chile saltpetre. Every nitrate is soluble in water."
+    },
+    {
+      "id": "na-ethanoate",
+      "name": "Sodium ethanoate",
+      "formula": "CH3COONa",
+      "concentrationM": 1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 1,
+        "CH3COO-": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "The salt of ethanoic acid: slightly alkaline, and a buffer with ethanoic acid."
+    },
+    {
+      "id": "na2so3",
+      "name": "Sodium sulfite",
+      "formula": "Na2SO3",
+      "concentrationM": 0.2,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.4,
+        "SO3^2-": 0.2
+      },
+      "tags": [
+        "salt",
+        "sulfite"
+      ],
+      "description": "A reducing agent and preservative. With acids it gives choking sulfur dioxide."
+    },
+    {
+      "id": "na2c2o4",
+      "name": "Sodium oxalate",
+      "formula": "Na2C2O4",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.2,
+        "C2O4^2-": 0.1
+      },
+      "tags": [
+        "salt",
+        "oxalate"
+      ],
+      "description": "Oxalate ions: a white precipitate with calcium ions - the test for calcium."
+    },
+    {
+      "id": "nh4cl",
+      "name": "Ammonium chloride",
+      "formula": "NH4Cl",
+      "concentrationM": 1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "NH4+": 1,
+        "Cl-": 1
+      },
+      "tags": [
+        "salt",
+        "ammonium"
+      ],
+      "description": "An ammonium salt. Warm it with alkali and ammonia gas is given off."
+    },
+    {
+      "id": "nh42so4",
+      "name": "Ammonium sulfate",
+      "formula": "(NH4)2SO4",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "NH4+": 1,
+        "SO4^2-": 0.5
+      },
+      "tags": [
+        "salt",
+        "ammonium"
+      ],
+      "description": "A common nitrogen fertiliser."
+    },
+    {
+      "id": "licl",
+      "name": "Lithium chloride",
+      "formula": "LiCl",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Li+": 0.5,
+        "Cl-": 0.5
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Lithium ions give a crimson-red flame."
+    },
+    {
+      "id": "srcl2",
+      "name": "Strontium chloride",
+      "formula": "SrCl2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Sr^2+": 0.5,
+        "Cl-": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Strontium salts give fireworks their brilliant red."
+    },
+    {
+      "id": "cano32",
+      "name": "Calcium nitrate",
+      "formula": "Ca(NO3)2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ca^2+": 0.5,
+        "NO3-": 1
+      },
+      "tags": [
+        "salt",
+        "nitrate"
+      ],
+      "description": "A soluble calcium salt."
+    },
+    {
+      "id": "mgcl2",
+      "name": "Magnesium chloride",
+      "formula": "MgCl2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Mg^2+": 0.5,
+        "Cl-": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Magnesium ions: a white precipitate with sodium hydroxide."
+    },
+    {
+      "id": "mgno32",
+      "name": "Magnesium nitrate",
+      "formula": "Mg(NO3)2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Mg^2+": 0.5,
+        "NO3-": 1
+      },
+      "tags": [
+        "salt",
+        "nitrate"
+      ],
+      "description": "A soluble magnesium salt."
+    },
+    {
+      "id": "bano32",
+      "name": "Barium nitrate",
+      "formula": "Ba(NO3)2",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ba^2+": 0.1,
+        "NO3-": 0.2
+      },
+      "tags": [
+        "salt",
+        "nitrate"
+      ],
+      "description": "Toxic barium ions: a white precipitate with sulfate. Apple-green flame."
+    },
+    {
+      "id": "al2so43",
+      "name": "Aluminium sulfate",
+      "formula": "Al2(SO4)3",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Al^3+": 0.2,
+        "SO4^2-": 0.3
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Used to clean drinking water: its hydroxide traps dirt. Slightly acidic."
+    },
+    {
+      "id": "alcl3",
+      "name": "Aluminium chloride",
+      "formula": "AlCl3",
+      "concentrationM": 0.2,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Al^3+": 0.2,
+        "Cl-": 0.6
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Aluminium ions: a white precipitate that redissolves in excess sodium hydroxide."
+    },
+    {
+      "id": "alum",
+      "name": "Potassium alum solution",
+      "formula": "KAl(SO4)2",
+      "concentrationM": 0.2,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.2,
+        "Al^3+": 0.2,
+        "SO4^2-": 0.4
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Alum grows large, clear octahedral crystals."
+    },
+    {
+      "id": "zncl2",
+      "name": "Zinc chloride",
+      "formula": "ZnCl2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Zn^2+": 0.5,
+        "Cl-": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Zinc ions: a white precipitate that is amphoteric."
+    },
+    {
+      "id": "znno32",
+      "name": "Zinc nitrate",
+      "formula": "Zn(NO3)2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Zn^2+": 0.5,
+        "NO3-": 1
+      },
+      "tags": [
+        "salt",
+        "nitrate"
+      ],
+      "description": "A soluble zinc salt."
+    },
+    {
+      "id": "fecl2",
+      "name": "Iron(II) chloride",
+      "formula": "FeCl2",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#b8dcae",
+      "opacity": 0.18,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Fe^2+": 0.1,
+        "Cl-": 0.2
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Pale green iron(II) ions; slowly oxidised by air."
+    },
+    {
+      "id": "mohrs-salt",
+      "name": "Ammonium iron(II) sulfate",
+      "formula": "(NH4)2Fe(SO4)2",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#c4e2ba",
+      "opacity": 0.14,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "NH4+": 0.2,
+        "Fe^2+": 0.1,
+        "SO4^2-": 0.2
+      },
+      "tags": [
+        "salt",
+        "ammonium"
+      ],
+      "description": "Mohr's salt: a stable source of iron(II) for titrations."
+    },
+    {
+      "id": "feno33",
+      "name": "Iron(III) nitrate",
+      "formula": "Fe(NO3)3",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#d8b45a",
+      "opacity": 0.35,
+      "hazards": [
+        "irritant",
+        "oxidising"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Fe^3+": 0.1,
+        "NO3-": 0.3
+      },
+      "tags": [
+        "salt",
+        "nitrate"
+      ],
+      "description": "Iron(III) ions: blood red with thiocyanate."
+    },
+    {
+      "id": "fe2so43",
+      "name": "Iron(III) sulfate",
+      "formula": "Fe2(SO4)3",
+      "concentrationM": 0.05,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#d6a84a",
+      "opacity": 0.38,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Fe^3+": 0.1,
+        "SO4^2-": 0.15
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Yellow-brown iron(III) ions."
+    },
+    {
+      "id": "cucl2",
+      "name": "Copper(II) chloride",
+      "formula": "CuCl2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#3fa38a",
+      "opacity": 0.55,
+      "hazards": [
+        "toxic",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Cu^2+": 0.5,
+        "Cl-": 1
+      },
+      "tags": [
+        "salt",
+        "copper_salt"
+      ],
+      "description": "Blue-green because chloride ions join the copper ions."
+    },
+    {
+      "id": "cuno32",
+      "name": "Copper(II) nitrate",
+      "formula": "Cu(NO3)2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#2f8fe0",
+      "opacity": 0.55,
+      "hazards": [
+        "irritant",
+        "oxidising"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Cu^2+": 0.5,
+        "NO3-": 1
+      },
+      "tags": [
+        "salt",
+        "copper_salt",
+        "nitrate"
+      ],
+      "description": "Blue copper(II) ions."
+    },
+    {
+      "id": "cu-ethanoate",
+      "name": "Copper(II) ethanoate",
+      "formula": "Cu(CH3COO)2",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#3b86c9",
+      "opacity": 0.4,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Cu^2+": 0.1,
+        "CH3COO-": 0.2
+      },
+      "tags": [
+        "salt",
+        "copper_salt"
+      ],
+      "description": "Blue-green copper(II) ethanoate (verdigris)."
+    },
+    {
+      "id": "pb-ethanoate",
+      "name": "Lead(II) ethanoate",
+      "formula": "Pb(CH3COO)2",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "toxic",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Pb^2+": 0.1,
+        "CH3COO-": 0.2
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Toxic lead ions. Once called 'sugar of lead' because it tastes sweet."
+    },
+    {
+      "id": "mnso4",
+      "name": "Manganese(II) sulfate",
+      "formula": "MnSO4",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f4d7e2",
+      "opacity": 0.12,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Mn^2+": 0.5,
+        "SO4^2-": 0.5
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Very pale pink manganese(II) ions."
+    },
+    {
+      "id": "mncl2",
+      "name": "Manganese(II) chloride",
+      "formula": "MnCl2",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f4d7e2",
+      "opacity": 0.12,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Mn^2+": 0.5,
+        "Cl-": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Very pale pink manganese(II) ions."
+    },
+    {
+      "id": "cocl2",
+      "name": "Cobalt(II) chloride",
+      "formula": "CoCl2",
+      "concentrationM": 0.2,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#e58fb0",
+      "opacity": 0.45,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Co^2+": 0.2,
+        "Cl-": 0.4
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Pink hydrated cobalt(II) ions. Cobalt compounds are toxic."
+    },
+    {
+      "id": "coso4",
+      "name": "Cobalt(II) sulfate",
+      "formula": "CoSO4",
+      "concentrationM": 0.2,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#e58fb0",
+      "opacity": 0.45,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Co^2+": 0.2,
+        "SO4^2-": 0.2
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Pink cobalt(II) ions."
+    },
+    {
+      "id": "niso4",
+      "name": "Nickel(II) sulfate",
+      "formula": "NiSO4",
+      "concentrationM": 0.2,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#5fbf6a",
+      "opacity": 0.45,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ni^2+": 0.2,
+        "SO4^2-": 0.2
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Green nickel(II) ions. Nickel salts can cause allergies."
+    },
+    {
+      "id": "nicl2",
+      "name": "Nickel(II) chloride",
+      "formula": "NiCl2",
+      "concentrationM": 0.2,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#5fbf6a",
+      "opacity": 0.45,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ni^2+": 0.2,
+        "Cl-": 0.4
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Green nickel(II) ions."
+    },
+    {
+      "id": "crcl3",
+      "name": "Chromium(III) chloride",
+      "formula": "CrCl3",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#4f8a5a",
+      "opacity": 0.5,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Cr^3+": 0.1,
+        "Cl-": 0.3
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Dark green chromium(III) ions."
+    },
+    {
+      "id": "chrome-alum",
+      "name": "Chrome alum",
+      "formula": "KCr(SO4)2",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#6a4f8f",
+      "opacity": 0.55,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.1,
+        "Cr^3+": 0.1,
+        "SO4^2-": 0.2
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Deep violet chromium(III) ions."
+    },
+    {
+      "id": "kscn",
+      "name": "Potassium thiocyanate",
+      "formula": "KSCN",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.1,
+        "SCN-": 0.1
+      },
+      "tags": [
+        "salt",
+        "thiocyanate"
+      ],
+      "description": "The test for iron(III): a blood-red colour."
+    },
+    {
+      "id": "k2cro4",
+      "name": "Potassium chromate(VI)",
+      "formula": "K2CrO4",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f2d21a",
+      "opacity": 0.55,
+      "hazards": [
+        "toxic",
+        "oxidising",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.2,
+        "CrO4^2-": 0.1
+      },
+      "tags": [
+        "salt",
+        "chromate"
+      ],
+      "description": "Yellow chromate ions; turns orange in acid. Toxic and carcinogenic - gloves on."
+    },
+    {
+      "id": "k2cr2o7",
+      "name": "Potassium dichromate(VI)",
+      "formula": "K2Cr2O7",
+      "concentrationM": 0.05,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f08a1c",
+      "opacity": 0.6,
+      "hazards": [
+        "toxic",
+        "oxidising",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.1,
+        "Cr2O7^2-": 0.05
+      },
+      "tags": [
+        "salt",
+        "dichromate"
+      ],
+      "description": "Orange dichromate ions; turns yellow in alkali. Needs acid to act as an oxidising agent. Toxic."
+    },
+    {
+      "id": "naf",
+      "name": "Sodium fluoride",
+      "formula": "NaF",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.1,
+        "F-": 0.1
+      },
+      "tags": [
+        "salt",
+        "fluoride"
+      ],
+      "description": "Fluoride ions (as in toothpaste, but far more concentrated). Toxic."
+    },
+    {
+      "id": "nh42co3",
+      "name": "Ammonium carbonate",
+      "formula": "(NH4)2CO3",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "NH4+": 1,
+        "CO3^2-": 0.5
+      },
+      "tags": [
+        "salt",
+        "ammonium",
+        "carbonate"
+      ],
+      "description": "Smelling salts: it slowly gives off ammonia."
+    },
+    {
+      "id": "nh4-oxalate",
+      "name": "Ammonium oxalate",
+      "formula": "(NH4)2C2O4",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "NH4+": 0.2,
+        "C2O4^2-": 0.1
+      },
+      "tags": [
+        "salt",
+        "ammonium",
+        "oxalate"
+      ],
+      "description": "The classic reagent for calcium ions: white calcium oxalate."
+    },
+    {
+      "id": "nh4scn",
+      "name": "Ammonium thiocyanate",
+      "formula": "NH4SCN",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "NH4+": 0.1,
+        "SCN-": 0.1
+      },
+      "tags": [
+        "salt",
+        "ammonium",
+        "thiocyanate"
+      ],
+      "description": "Thiocyanate ions: blood red with iron(III)."
+    },
+    {
+      "id": "kio3",
+      "name": "Potassium iodate",
+      "formula": "KIO3",
+      "concentrationM": 0.05,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "oxidising",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.05,
+        "IO3-": 0.05
+      },
+      "tags": [
+        "salt",
+        "iodate"
+      ],
+      "description": "An oxidising agent: with iodide and acid it makes iodine. Used in iodine clock reactions."
+    },
+    {
+      "id": "nahso4",
+      "name": "Sodium hydrogensulfate",
+      "formula": "NaHSO4",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.5,
+        "H+": 0.5,
+        "SO4^2-": 0.5
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "SO4",
+        "anionCharge": 2,
+        "poly": true,
+        "strong": true
+      },
+      "tags": [
+        "salt",
+        "acid"
+      ],
+      "description": "An acidic salt - it behaves like dilute sulfuric acid."
+    },
+    {
+      "id": "na-silicate",
+      "name": "Sodium silicate (water glass)",
+      "formula": "Na2SiO3",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 1,
+        "SiO3^2-": 0.5,
+        "OH-": 0.02
+      },
+      "tags": [
+        "salt",
+        "silicate"
+      ],
+      "description": "Water glass. Crystals of metal salts dropped in grow coloured 'chemical garden' towers."
+    },
+    {
+      "id": "na-citrate",
+      "name": "Sodium citrate",
+      "formula": "Na3C6H5O7",
+      "concentrationM": 0.2,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.6,
+        "Cit^3-": 0.2
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "The salt of citric acid; a mild alkali and buffer."
+    },
+    {
+      "id": "na-benzoate",
+      "name": "Sodium benzoate",
+      "formula": "C6H5COONa",
+      "concentrationM": 0.5,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.5,
+        "C6H5COO-": 0.5
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "A preservative (E211). Acid turns it back into benzoic acid, which crystallises out."
+    }
+  ]
+}

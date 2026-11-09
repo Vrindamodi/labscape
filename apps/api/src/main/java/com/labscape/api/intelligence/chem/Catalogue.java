@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -17,20 +18,31 @@ import org.springframework.stereotype.Component;
 /**
  * The curated substance allowlist. There is no free-text chemical entry anywhere in LABscape:
  * every request references an id from here.
+ *
+ * <p>{@code catalogue/substances.json} is the root file; its {@code include} list names further
+ * shelves (acids and bases, salts, solids, organic, reagents, household...) loaded after it, then
+ * the 118 elements. Ids must be unique across every file.
  */
 @Component
 public class Catalogue {
 
-    private static final String RESOURCE = "/catalogue/substances.json";
+    private static final String ROOT = "/catalogue/";
+    private static final String RESOURCE = ROOT + "substances.json";
 
     private final String version;
     private final Map<String, Substance> byId;
     private final Set<String> gaps;
 
     public Catalogue(ObjectMapper mapper) {
-        File file = read(mapper);
+        File file = read(mapper, RESOURCE);
         Map<String, Substance> map = new LinkedHashMap<>();
-        List<Substance> all = new java.util.ArrayList<>(file.substances());
+        List<Substance> all = new ArrayList<>(file.substances());
+        List<List<String>> gapList = new ArrayList<>(file.gaps() == null ? List.of() : file.gaps());
+        for (String include : file.include() == null ? List.<String>of() : file.include()) {
+            File part = read(mapper, ROOT + include);
+            all.addAll(part.substances());
+            if (part.gaps() != null) gapList.addAll(part.gaps());
+        }
         all.addAll(Elements.load(mapper));
         for (Substance s : all) {
             if (map.put(s.id(), s) != null) {
@@ -38,7 +50,7 @@ public class Catalogue {
             }
         }
         Set<String> gapKeys = new HashSet<>();
-        for (List<String> pair : file.gaps()) {
+        for (List<String> pair : gapList) {
             if (pair.size() != 2 || !map.containsKey(pair.get(0)) || !map.containsKey(pair.get(1))) {
                 throw new IllegalStateException("Bad gap entry: " + pair);
             }
@@ -65,7 +77,7 @@ public class Catalogue {
         return version;
     }
 
-    /** A known real reaction that the engine does not model: answered as unsupported. */
+    /** A known real reaction that the engine does not model. The list is empty: every pair is modelled. */
     public boolean isGap(String a, String b) {
         return gaps.contains(pairKey(a, b));
     }
@@ -74,10 +86,10 @@ public class Catalogue {
         return a.compareTo(b) <= 0 ? a + "|" + b : b + "|" + a;
     }
 
-    private static File read(ObjectMapper mapper) {
-        try (InputStream in = Catalogue.class.getResourceAsStream(RESOURCE)) {
+    private static File read(ObjectMapper mapper, String resource) {
+        try (InputStream in = Catalogue.class.getResourceAsStream(resource)) {
             if (in == null) {
-                throw new IllegalStateException("Missing " + RESOURCE);
+                throw new IllegalStateException("Missing " + resource);
             }
             return mapper.readValue(in, File.class);
         } catch (IOException e) {
@@ -86,5 +98,5 @@ public class Catalogue {
     }
 
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-    record File(String version, List<Substance> substances, List<List<String>> gaps) {}
+    record File(String version, List<String> include, List<Substance> substances, List<List<String>> gaps) {}
 }

@@ -1,6 +1,14 @@
 {
-  "version": "2026.11.06-1",
+  "version": "2026.11.09-1",
   "note": "Curated school-lab allowlist. Solution 'species' values are molarities (mol/L); solid 'species' values are mol per mol of formula unit. Interim content - needs chemistry + safety reviewer sign-off (seven-stage review) before release.",
+  "include": [
+    "acids-bases.json",
+    "salts.json",
+    "solids.json",
+    "organic.json",
+    "reagents.json",
+    "household.json"
+  ],
   "substances": [
     {
       "id": "water",
@@ -436,7 +444,8 @@
       },
       "tags": [
         "salt",
-        "silver_salt"
+        "silver_salt",
+        "nitrate"
       ],
       "description": "Used to test for halide ions: they form coloured silver halide precipitates."
     },
@@ -888,13 +897,11 @@
         "max": 20,
         "unit": "mL"
       },
-      "model": "limited",
-      "inertWith": [
-        "water"
-      ],
+      "model": "full",
       "species": {
-        "Na+": 0.5,
-        "OCl-": 0.5
+        "Na+": 0.55,
+        "OCl-": 0.5,
+        "OH-": 0.05
       },
       "tags": [
         "hypochlorite"
@@ -918,19 +925,19 @@
         "max": 50,
         "unit": "mL"
       },
-      "model": "limited",
-      "inertWith": [
-        "water",
-        "glycerol",
-        "vegetable-oil",
-        "cuso4-anhydrous",
-        "category:indicator"
-      ],
-      "species": {},
+      "model": "full",
+      "species": {
+        "org:ethanol": 17.1
+      },
       "tags": [
-        "fuel"
+        "fuel",
+        "alcohol"
       ],
-      "description": "A flammable organic solvent. Mixes completely with water."
+      "description": "A primary alcohol and flammable solvent. Mixes completely with water. With ethanoic acid and a sulfuric acid catalyst it makes fruity ethyl ethanoate.",
+      "density": 0.79,
+      "miscibility": "miscible",
+      "flashPointC": 13,
+      "molarMass": 46.07
     },
     {
       "id": "glycerol",
@@ -947,19 +954,19 @@
         "max": 50,
         "unit": "mL"
       },
-      "model": "limited",
-      "inertWith": [
-        "water",
-        "ethanol",
-        "vegetable-oil",
-        "category:indicator",
-        "category:salt"
-      ],
-      "species": {},
+      "model": "full",
+      "species": {
+        "org:glycerol": 13.7
+      },
       "tags": [
-        "fuel"
+        "fuel",
+        "alcohol"
       ],
-      "description": "A thick, sweet, water-soluble liquid."
+      "description": "A thick, sweet, water-soluble liquid.",
+      "density": 1.26,
+      "miscibility": "polar",
+      "flashPointC": 160,
+      "molarMass": 92.09
     },
     {
       "id": "vegetable-oil",
@@ -976,19 +983,20 @@
         "max": 50,
         "unit": "mL"
       },
-      "model": "limited",
-      "inertWith": [
-        "water",
-        "ethanol",
-        "glycerol",
-        "category:salt"
-      ],
-      "species": {},
+      "model": "full",
+      "species": {
+        "org:oil": 1.04
+      },
       "tags": [
         "fuel",
-        "immiscible"
+        "immiscible",
+        "lipid"
       ],
-      "description": "Non-polar, so it does not mix with water and floats on top."
+      "description": "An unsaturated fat. Non-polar, so it does not mix with water and floats on top.",
+      "density": 0.92,
+      "miscibility": "immiscible",
+      "flashPointC": 315,
+      "molarMass": 885
     },
     {
       "id": "phenolphthalein",
@@ -1408,7 +1416,8 @@
         "NO3-": 0.2
       },
       "tags": [
-        "salt"
+        "salt",
+        "nitrate"
       ],
       "description": "A source of lead(II) ions. With iodide it makes the famous golden rain."
     },
@@ -1436,7 +1445,8 @@
         "KNO3(s)": 1
       },
       "tags": [
-        "nitrate_oxidiser"
+        "nitrate_oxidiser",
+        "nitrate"
       ],
       "description": "Saltpetre. Dissolves in water and cools it slightly. A strong oxidiser when dry."
     },
@@ -1464,7 +1474,9 @@
         "NH4NO3(s)": 1
       },
       "tags": [
-        "nitrate_oxidiser"
+        "nitrate_oxidiser",
+        "nitrate",
+        "ammonium"
       ],
       "description": "Dissolving it in water takes in so much heat that it is used in instant cold packs."
     },
@@ -1510,30 +1522,16 @@
         "max": 10,
         "unit": "g"
       },
-      "model": "limited",
-      "inertWith": [
-        "water",
-        "category:acid",
-        "category:alkali",
-        "category:indicator",
-        "nacl",
-        "kbr",
-        "ki",
-        "na2so4",
-        "mgso4",
-        "cacl2",
-        "znso4",
-        "cuso4",
-        "starch"
-      ],
+      "model": "full",
       "molarMass": 342.3,
       "species": {
-        "C12H22O11(s)": 1
+        "org:sucrose": 1
       },
       "tags": [
-        "fuel"
+        "fuel",
+        "sugar"
       ],
-      "description": "Table sugar. Dissolves in water without reacting."
+      "description": "Table sugar (sucrose). Dissolves in water without reacting; a non-reducing sugar."
     },
     {
       "id": "fes",
@@ -1715,247 +1713,5 @@
       ],
       "description": "Magnesium sulfate crystals, used in bath salts. Dissolves in water."
     }
-  ],
-  "gaps": [
-    [
-      "na2s2o3",
-      "fecl3"
-    ],
-    [
-      "na2s2o3",
-      "cuso4"
-    ],
-    [
-      "na2s2o3",
-      "agno3"
-    ],
-    [
-      "na2s2o3",
-      "kmno4"
-    ],
-    [
-      "na2s2o3",
-      "h2o2"
-    ],
-    [
-      "na2s2o3",
-      "kmno4-crystals"
-    ],
-    [
-      "na2s2o3",
-      "cuso4-crystals"
-    ],
-    [
-      "iodine-solution",
-      "mg-ribbon"
-    ],
-    [
-      "iodine-solution",
-      "zn-granules"
-    ],
-    [
-      "iodine-solution",
-      "fe-filings"
-    ],
-    [
-      "iodine-solution",
-      "na2co3"
-    ],
-    [
-      "iodine-solution",
-      "nahco3"
-    ],
-    [
-      "h2o2",
-      "cuso4"
-    ],
-    [
-      "h2o2",
-      "cuso4-crystals"
-    ],
-    [
-      "h2o2",
-      "agno3"
-    ],
-    [
-      "h2o2",
-      "fe-filings"
-    ],
-    [
-      "h2o2",
-      "cu-turnings"
-    ],
-    [
-      "agno3",
-      "feso4"
-    ],
-    [
-      "kmno4",
-      "mg-ribbon"
-    ],
-    [
-      "kmno4",
-      "zn-granules"
-    ],
-    [
-      "kmno4",
-      "fe-filings"
-    ],
-    [
-      "kmno4",
-      "cu-turnings"
-    ],
-    [
-      "kmno4",
-      "starch"
-    ],
-    [
-      "kmno4",
-      "ammonia"
-    ],
-    [
-      "kmno4",
-      "hcl"
-    ],
-    [
-      "kmno4",
-      "hcl-dilute"
-    ],
-    [
-      "nahco3",
-      "cuso4"
-    ],
-    [
-      "nahco3",
-      "cuso4-crystals"
-    ],
-    [
-      "nahco3",
-      "feso4"
-    ],
-    [
-      "nahco3",
-      "fecl3"
-    ],
-    [
-      "nahco3",
-      "agno3"
-    ],
-    [
-      "nahco3",
-      "znso4"
-    ],
-    [
-      "na2co3",
-      "fecl3"
-    ],
-    [
-      "fecl3",
-      "ammonia"
-    ],
-    [
-      "mno2-powder",
-      "hcl"
-    ],
-    [
-      "mno2-powder",
-      "kmno4"
-    ],
-    [
-      "cuo-powder",
-      "ammonia"
-    ],
-    [
-      "pbno3",
-      "na2s2o3"
-    ],
-    [
-      "pbno3",
-      "h2o2"
-    ],
-    [
-      "pbno3",
-      "kmno4"
-    ],
-    [
-      "fe2o3-powder",
-      "ammonia"
-    ],
-    [
-      "fe2o3-powder",
-      "h2o2"
-    ],
-    [
-      "iodine-solution",
-      "washing-soda"
-    ],
-    [
-      "iodine-solution",
-      "baking-soda"
-    ],
-    [
-      "baking-soda",
-      "cuso4"
-    ],
-    [
-      "baking-soda",
-      "cuso4-crystals"
-    ],
-    [
-      "baking-soda",
-      "feso4"
-    ],
-    [
-      "baking-soda",
-      "fecl3"
-    ],
-    [
-      "baking-soda",
-      "agno3"
-    ],
-    [
-      "baking-soda",
-      "znso4"
-    ],
-    [
-      "washing-soda",
-      "fecl3"
-    ],
-    [
-      "fes",
-      "kmno4"
-    ],
-    [
-      "fes",
-      "kmno4-crystals"
-    ],
-    [
-      "fes",
-      "h2o2"
-    ],
-    [
-      "fes",
-      "bleach"
-    ],
-    [
-      "fes",
-      "agno3"
-    ],
-    [
-      "fes",
-      "iodine-solution"
-    ],
-    [
-      "fes",
-      "kno3"
-    ],
-    [
-      "fes",
-      "nh4no3"
-    ],
-    [
-      "fes",
-      "fecl3"
-    ]
   ]
 }

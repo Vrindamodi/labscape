@@ -1,0 +1,824 @@
+{
+  "version": "2026.11.09-1",
+  "note": "Catalogue shelf, loaded via substances.json include. Solution species are molarities; solid species are mol per mol of formula unit; weak acids are counted in moles of acidic protons. Interim content - needs chemistry + safety reviewer sign-off.",
+  "substances": [
+    {
+      "id": "lemon-juice",
+      "name": "Lemon juice",
+      "formula": "C6H8O7",
+      "concentrationM": 0.3,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f6ef9a",
+      "opacity": 0.25,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H3Cit": 0.9,
+        "HAsc": 0.003
+      },
+      "acid": {
+        "protons": 3,
+        "anion": "C6H5O7",
+        "anionCharge": 3,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid",
+        "citrate"
+      ],
+      "description": "Mostly citric acid, with a little vitamin C."
+    },
+    {
+      "id": "vitamin-c",
+      "name": "Vitamin C solution",
+      "formula": "C6H8O6",
+      "concentrationM": 0.1,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "HAsc": 0.1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "C6H7O6",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid"
+      ],
+      "description": "Ascorbic acid - a weak acid and a good reducing agent. Decolourises iodine and DCPIP."
+    },
+    {
+      "id": "toilet-cleaner",
+      "name": "Toilet cleaner",
+      "formula": "HCl",
+      "concentrationM": 2,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#cfe8ff",
+      "opacity": 0.12,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H+": 2,
+        "Cl-": 2
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "Cl",
+        "anionCharge": 1,
+        "poly": false,
+        "strong": true
+      },
+      "tags": [
+        "acid",
+        "hcl_strong"
+      ],
+      "description": "Contains hydrochloric acid (about 2 M). NEVER mix with bleach - it releases chlorine gas."
+    },
+    {
+      "id": "drain-cleaner",
+      "name": "Drain cleaner",
+      "formula": "NaOH",
+      "concentrationM": 2,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 2,
+        "OH-": 2
+      },
+      "base": {
+        "cation": "Na",
+        "cationCharge": 1,
+        "hydroxides": 1,
+        "ammonia": false
+      },
+      "tags": [
+        "alkali"
+      ],
+      "description": "Concentrated sodium hydroxide solution (about 2 M). Dissolves grease and hair by saponifying fats."
+    },
+    {
+      "id": "rubbing-alcohol",
+      "name": "Rubbing alcohol (70% propan-2-ol)",
+      "formula": "(CH3)2CHOH",
+      "concentrationM": 9.2,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:propan-2-ol": 9.2
+      },
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "70% propan-2-ol in water. A disinfectant - and flammable.",
+      "flashPointC": 21
+    },
+    {
+      "id": "nail-polish-remover",
+      "name": "Nail polish remover",
+      "formula": "CH3COCH3",
+      "category": "household",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:propanone": 13.6
+      },
+      "molarMass": 58.08,
+      "tags": [
+        "fuel",
+        "ketone"
+      ],
+      "description": "Mostly propanone (acetone).",
+      "density": 0.79,
+      "miscibility": "miscible",
+      "flashPointC": -20
+    },
+    {
+      "id": "olive-oil",
+      "name": "Olive oil",
+      "formula": "C57H104O6",
+      "category": "household",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#c9c24a",
+      "opacity": 0.55,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:oil": 1.04
+      },
+      "molarMass": 885,
+      "tags": [
+        "fuel",
+        "lipid"
+      ],
+      "description": "A mainly unsaturated oil: it slowly decolourises bromine water.",
+      "density": 0.91,
+      "miscibility": "immiscible",
+      "flashPointC": 300
+    },
+    {
+      "id": "milk",
+      "name": "Milk",
+      "formula": "emulsion",
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#fbfaf3",
+      "opacity": 0.92,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:casein": 0.0011,
+        "org:lactose": 0.14,
+        "org:milkfat": 0.04,
+        "Ca^2+": 0.03
+      },
+      "tags": [
+        "fuel",
+        "protein"
+      ],
+      "description": "An emulsion of fat droplets in water, with the protein casein and milk sugar (lactose). Curdles in acid."
+    },
+    {
+      "id": "soap-solution",
+      "name": "Soap solution",
+      "formula": "C17H35COONa",
+      "concentrationM": 0.05,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f3f5f1",
+      "opacity": 0.18,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.05,
+        "St-": 0.05
+      },
+      "tags": [
+        "soap"
+      ],
+      "description": "Sodium stearate. Lathers in soft water but makes scum with hard water (calcium and magnesium ions)."
+    },
+    {
+      "id": "detergent",
+      "name": "Washing-up liquid",
+      "formula": "C12H25OSO3Na",
+      "concentrationM": 0.05,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#cfeec2",
+      "opacity": 0.25,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.05,
+        "org:detergent": 0.05
+      },
+      "tags": [
+        "detergent"
+      ],
+      "description": "A soapless detergent: it lathers even in hard water and makes no scum."
+    },
+    {
+      "id": "pva-glue",
+      "name": "PVA glue",
+      "formula": "(C2H4O)n",
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#fbfbf8",
+      "opacity": 0.9,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:pva": 1
+      },
+      "tags": [
+        "fuel",
+        "polymer"
+      ],
+      "description": "Polyvinyl alcohol glue: long polymer chains that borax cross-links into slime."
+    },
+    {
+      "id": "sparkling-water",
+      "name": "Sparkling water",
+      "formula": "H2CO3",
+      "concentrationM": 0.1,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H2CO3": 0.1
+      },
+      "tags": [
+        "weak_acid"
+      ],
+      "description": "Carbon dioxide dissolved under pressure: weak carbonic acid."
+    },
+    {
+      "id": "red-cabbage",
+      "name": "Red cabbage indicator",
+      "formula": "anthocyanin",
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#6a3fa0",
+      "opacity": 0.55,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "ind:rc": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "A natural indicator: red in acid, purple when neutral, blue-green to yellow in alkali."
+    },
+    {
+      "id": "yeast",
+      "name": "Yeast suspension",
+      "formula": "yeast",
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#e8d6a8",
+      "opacity": 0.55,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:yeast": 1
+      },
+      "tags": [
+        "fuel",
+        "enzyme"
+      ],
+      "description": "Live yeast in warm water. It ferments sugars and contains catalase, which breaks down hydrogen peroxide."
+    },
+    {
+      "id": "chalk",
+      "name": "Chalk (blackboard)",
+      "formula": "CaCO3",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "sticks",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CaCO3(s)": 1
+      },
+      "carbonate": {
+        "cation": "Ca",
+        "cationCharge": 2,
+        "cationCount": 1,
+        "unitProtons": 2
+      },
+      "molarMass": 100.09,
+      "tags": [
+        "carbonate"
+      ],
+      "description": "Calcium carbonate. Fizzes in vinegar."
+    },
+    {
+      "id": "eggshell",
+      "name": "Eggshell",
+      "formula": "CaCO3",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "pieces",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CaCO3(s)": 1
+      },
+      "carbonate": {
+        "cation": "Ca",
+        "cationCharge": 2,
+        "cationCount": 1,
+        "unitProtons": 2
+      },
+      "molarMass": 100.09,
+      "tags": [
+        "carbonate"
+      ],
+      "description": "About 95% calcium carbonate."
+    },
+    {
+      "id": "antacid",
+      "name": "Antacid tablet",
+      "formula": "CaCO3 + Mg(OH)2",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "tablet",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CaCO3(s)": 0.6,
+        "Mg(OH)2(s)": 0.4
+      },
+      "carbonate": {
+        "cation": "Ca",
+        "cationCharge": 2,
+        "cationCount": 1,
+        "unitProtons": 2
+      },
+      "molarMass": 83.4,
+      "tags": [
+        "carbonate",
+        "basic_solid"
+      ],
+      "description": "Calcium carbonate and magnesium hydroxide: neutralises excess stomach acid."
+    },
+    {
+      "id": "baking-powder",
+      "name": "Baking powder",
+      "formula": "NaHCO3 + KHC4H4O6",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "NaHCO3(s)": 1,
+        "KHTart(s)": 1
+      },
+      "molarMass": 272.2,
+      "tags": [
+        "carbonate"
+      ],
+      "description": "Baking soda plus a dry acid (cream of tartar): add water and it fizzes by itself."
+    },
+    {
+      "id": "cream-of-tartar",
+      "name": "Cream of tartar",
+      "formula": "KHC4H4O6",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "KHTart(s)": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "C4H4O6",
+        "anionCharge": 2,
+        "poly": true,
+        "strong": false
+      },
+      "molarMass": 188.18,
+      "tags": [
+        "acid",
+        "weak_acid"
+      ],
+      "description": "Potassium hydrogen tartrate: a dry, weak acid."
+    },
+    {
+      "id": "salt-substitute",
+      "name": "Low-sodium salt",
+      "formula": "KCl",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "KCl(s)": 1
+      },
+      "molarMass": 74.55,
+      "tags": [],
+      "description": "Potassium chloride. Gives a lilac flame instead of salt's orange."
+    },
+    {
+      "id": "tap-water",
+      "name": "Hard tap water",
+      "formula": "H2O + Ca2+",
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 100,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ca^2+": 0.002,
+        "Mg^2+": 0.0006,
+        "HCO3-": 0.004,
+        "Cl-": 0.0012
+      },
+      "tags": [
+        "water"
+      ],
+      "description": "Hard water: dissolved calcium and magnesium hydrogencarbonates. Soap makes scum in it."
+    },
+    {
+      "id": "seawater",
+      "name": "Seawater",
+      "formula": "NaCl",
+      "concentrationM": 0.47,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#d2ecf2",
+      "opacity": 0.08,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 100,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.47,
+        "Cl-": 0.55,
+        "Mg^2+": 0.053,
+        "SO4^2-": 0.028,
+        "Ca^2+": 0.01,
+        "K+": 0.01
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "About 3.5% salt: mostly sodium chloride, with magnesium, sulfate and calcium ions."
+    },
+    {
+      "id": "window-cleaner",
+      "name": "Window cleaner (ammonia)",
+      "formula": "NH3",
+      "concentrationM": 0.5,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#cfe6ff",
+      "opacity": 0.12,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 30,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "NH3": 0.5
+      },
+      "base": {
+        "cation": "NH4",
+        "cationCharge": 1,
+        "hydroxides": 1,
+        "ammonia": true
+      },
+      "tags": [
+        "alkali",
+        "ammonia_source"
+      ],
+      "description": "Dilute ammonia solution. NEVER mix with bleach - it makes toxic chloramine gas."
+    },
+    {
+      "id": "cola",
+      "name": "Cola",
+      "formula": "H3PO4 + sugar",
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#3a1a0a",
+      "opacity": 0.85,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H3PO4": 0.018,
+        "org:fructose": 0.3,
+        "org:glucose": 0.06
+      },
+      "acid": {
+        "protons": 3,
+        "anion": "PO4",
+        "anionCharge": 3,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid",
+        "fuel"
+      ],
+      "description": "Fizzy, very sweet and acidic (pH about 2.5) thanks to phosphoric acid."
+    },
+    {
+      "id": "honey",
+      "name": "Honey solution",
+      "formula": "C6H12O6",
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#e2a52a",
+      "opacity": 0.6,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:fructose": 0.6,
+        "org:glucose": 0.5
+      },
+      "tags": [
+        "fuel",
+        "sugar"
+      ],
+      "description": "Honey diluted with water: mostly fructose and glucose - reducing sugars."
+    },
+    {
+      "id": "turmeric",
+      "name": "Turmeric solution",
+      "formula": "curcumin",
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f2b81a",
+      "opacity": 0.55,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "ind:tur": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "A spice that works as an indicator: yellow in acid and neutral, red-brown in alkali."
+    },
+    {
+      "id": "plaster-of-paris",
+      "name": "Plaster of Paris",
+      "formula": "CaSO4·½H2O",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CaSO4·½H2O(s)": 1
+      },
+      "molarMass": 145.15,
+      "tags": [],
+      "description": "Mix with water and it warms up and sets hard as it turns back into gypsum."
+    },
+    {
+      "id": "fizzy-tablet",
+      "name": "Fizzy vitamin tablet",
+      "formula": "NaHCO3 + C6H8O7",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "tablet",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "NaHCO3(s)": 1,
+        "H3Cit(s)": 0.4
+      },
+      "molarMass": 160.9,
+      "tags": [
+        "carbonate"
+      ],
+      "description": "Sodium hydrogencarbonate and citric acid: in water they react and fizz."
+    }
+  ]
+}

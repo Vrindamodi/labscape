@@ -1,0 +1,1772 @@
+{
+  "version": "2026.11.09-1",
+  "note": "Catalogue shelf, loaded via substances.json include. Solution species are molarities; solid species are mol per mol of formula unit; weak acids are counted in moles of acidic protons. Interim content - needs chemistry + safety reviewer sign-off.",
+  "substances": [
+    {
+      "id": "methanol",
+      "name": "Methanol",
+      "formula": "CH3OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:methanol": 24.7
+      },
+      "molarMass": 32.04,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "The simplest alcohol. Highly toxic - even small amounts can cause blindness. Burns with an almost invisible flame.",
+      "density": 0.79,
+      "miscibility": "polar",
+      "flashPointC": 11
+    },
+    {
+      "id": "propan-1-ol",
+      "name": "Propan-1-ol",
+      "formula": "CH3CH2CH2OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:propan-1-ol": 13.4
+      },
+      "molarMass": 60.1,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "A primary alcohol that mixes completely with water.",
+      "density": 0.8,
+      "miscibility": "miscible",
+      "flashPointC": 15
+    },
+    {
+      "id": "propan-2-ol",
+      "name": "Propan-2-ol",
+      "formula": "(CH3)2CHOH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:propan-2-ol": 13.1
+      },
+      "molarMass": 60.1,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "Isopropyl alcohol, a secondary alcohol. Oxidised to propanone (acetone).",
+      "density": 0.79,
+      "miscibility": "miscible",
+      "flashPointC": 12
+    },
+    {
+      "id": "butan-1-ol",
+      "name": "Butan-1-ol",
+      "formula": "CH3(CH2)3OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:butan-1-ol": 10.9
+      },
+      "molarMass": 74.12,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "A primary alcohol that only partly dissolves in water.",
+      "density": 0.81,
+      "miscibility": "partial",
+      "solubility": 7.7,
+      "flashPointC": 35
+    },
+    {
+      "id": "butan-2-ol",
+      "name": "Butan-2-ol",
+      "formula": "CH3CH(OH)CH2CH3",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:butan-2-ol": 10.9
+      },
+      "molarMass": 74.12,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "A secondary alcohol: oxidised to butanone, and positive in the iodoform test.",
+      "density": 0.81,
+      "miscibility": "partial",
+      "solubility": 12.5,
+      "flashPointC": 24
+    },
+    {
+      "id": "tert-butanol",
+      "name": "2-Methylpropan-2-ol",
+      "formula": "(CH3)3COH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:2-methylpropan-2-ol": 10.5
+      },
+      "molarMass": 74.12,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "A tertiary alcohol: it resists oxidation, so acidified dichromate stays orange.",
+      "density": 0.78,
+      "miscibility": "miscible",
+      "flashPointC": 11
+    },
+    {
+      "id": "isoamyl-alcohol",
+      "name": "Isoamyl alcohol (3-methylbutan-1-ol)",
+      "formula": "(CH3)2CHCH2CH2OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:3-methylbutan-1-ol": 9.2
+      },
+      "molarMass": 88.15,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "A primary alcohol with a musty smell. Only slightly soluble in water. With ethanoic acid it makes banana-smelling isoamyl acetate.",
+      "density": 0.81,
+      "miscibility": "partial",
+      "solubility": 2.7,
+      "flashPointC": 43
+    },
+    {
+      "id": "pentan-1-ol",
+      "name": "Pentan-1-ol",
+      "formula": "CH3(CH2)4OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:pentan-1-ol": 9.2
+      },
+      "molarMass": 88.15,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "A primary alcohol, slightly soluble in water.",
+      "density": 0.81,
+      "miscibility": "partial",
+      "solubility": 2.2,
+      "flashPointC": 49
+    },
+    {
+      "id": "octan-1-ol",
+      "name": "Octan-1-ol",
+      "formula": "CH3(CH2)7OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:octan-1-ol": 6.3
+      },
+      "molarMass": 130.23,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "A long-chain alcohol that barely dissolves in water. Its ethanoate smells of oranges.",
+      "density": 0.83,
+      "miscibility": "immiscible",
+      "flashPointC": 81
+    },
+    {
+      "id": "cyclohexanol",
+      "name": "Cyclohexanol",
+      "formula": "C6H11OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:cyclohexanol": 9.5
+      },
+      "molarMass": 100.16,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "A secondary alcohol with a camphor-like smell.",
+      "density": 0.96,
+      "miscibility": "partial",
+      "solubility": 3.6,
+      "flashPointC": 68
+    },
+    {
+      "id": "benzyl-alcohol",
+      "name": "Benzyl alcohol",
+      "formula": "C6H5CH2OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:benzyl-alcohol": 9.6
+      },
+      "molarMass": 108.14,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "A primary alcohol with a mild, sweet smell. Its ethanoate smells of jasmine.",
+      "density": 1.04,
+      "miscibility": "partial",
+      "solubility": 4,
+      "flashPointC": 93
+    },
+    {
+      "id": "ethane-diol",
+      "name": "Ethane-1,2-diol",
+      "formula": "HOCH2CH2OH",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:ethane-1,2-diol": 17.9
+      },
+      "molarMass": 62.07,
+      "tags": [
+        "fuel",
+        "alcohol"
+      ],
+      "description": "Antifreeze. Sweet-tasting but poisonous.",
+      "density": 1.11,
+      "miscibility": "polar",
+      "flashPointC": 111
+    },
+    {
+      "id": "propanone",
+      "name": "Propanone (acetone)",
+      "formula": "CH3COCH3",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:propanone": 13.6
+      },
+      "molarMass": 58.08,
+      "tags": [
+        "fuel",
+        "ketone"
+      ],
+      "description": "A ketone and a common solvent. Ketones resist oxidation. Positive in the iodoform test.",
+      "density": 0.79,
+      "miscibility": "miscible",
+      "flashPointC": -20
+    },
+    {
+      "id": "butanone",
+      "name": "Butanone",
+      "formula": "CH3COCH2CH3",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:butanone": 11.2
+      },
+      "molarMass": 72.11,
+      "tags": [
+        "fuel",
+        "ketone"
+      ],
+      "description": "A methyl ketone solvent (MEK).",
+      "density": 0.81,
+      "miscibility": "partial",
+      "solubility": 27.5,
+      "flashPointC": -9
+    },
+    {
+      "id": "benzaldehyde",
+      "name": "Benzaldehyde",
+      "formula": "C6H5CHO",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:benzaldehyde": 9.8
+      },
+      "molarMass": 106.12,
+      "tags": [
+        "fuel",
+        "aldehyde"
+      ],
+      "description": "Smells of almonds and marzipan. An aldehyde that gives a silver mirror with Tollens' but not Fehling's.",
+      "density": 1.04,
+      "miscibility": "partial",
+      "solubility": 0.6,
+      "flashPointC": 63
+    },
+    {
+      "id": "ethanal",
+      "name": "Ethanal solution",
+      "formula": "CH3CHO",
+      "concentrationM": 1,
+      "category": "solvent",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:ethanal": 1
+      },
+      "tags": [
+        "fuel",
+        "aldehyde"
+      ],
+      "description": "Acetaldehyde, a reducing aldehyde (1 M in water). Smells of green apples.",
+      "flashPointC": 40
+    },
+    {
+      "id": "formalin",
+      "name": "Methanal solution (formalin)",
+      "formula": "HCHO",
+      "concentrationM": 1,
+      "category": "solvent",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "toxic",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:methanal": 1
+      },
+      "tags": [
+        "fuel",
+        "aldehyde"
+      ],
+      "description": "Dilute formaldehyde. Toxic and a carcinogen - fume cupboard and gloves only. A strong reducing agent."
+    },
+    {
+      "id": "ethyl-ethanoate",
+      "name": "Ethyl ethanoate",
+      "formula": "CH3COOC2H5",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:ethyl-ethanoate": 10.2
+      },
+      "molarMass": 88.11,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Ethyl acetate: the pear-drop smell of some nail-varnish removers.",
+      "density": 0.9,
+      "miscibility": "partial",
+      "solubility": 8.3,
+      "flashPointC": -4
+    },
+    {
+      "id": "isoamyl-acetate",
+      "name": "Isoamyl acetate (3-methylbutyl ethanoate)",
+      "formula": "CH3COOCH2CH2CH(CH3)2",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:3-methylbutyl-ethanoate": 6.7
+      },
+      "molarMass": 130.19,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Banana oil: the smell of bananas and pear drops.",
+      "density": 0.87,
+      "miscibility": "immiscible",
+      "flashPointC": 25
+    },
+    {
+      "id": "methyl-salicylate",
+      "name": "Methyl salicylate",
+      "formula": "HOC6H4COOCH3",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:methyl-salicylate": 7.7
+      },
+      "molarMass": 152.15,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Oil of wintergreen - the smell of muscle-rub creams. Toxic if swallowed.",
+      "density": 1.17,
+      "miscibility": "immiscible",
+      "flashPointC": 96
+    },
+    {
+      "id": "ethyl-butanoate",
+      "name": "Ethyl butanoate",
+      "formula": "C3H7COOC2H5",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:ethyl-butanoate": 7.6
+      },
+      "molarMass": 116.16,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Smells of pineapple. Used as a flavouring.",
+      "density": 0.88,
+      "miscibility": "immiscible",
+      "flashPointC": 26
+    },
+    {
+      "id": "hexane",
+      "name": "Hexane",
+      "formula": "C6H14",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:hexane": 7.6
+      },
+      "molarMass": 86.18,
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "A non-polar alkane solvent. Less dense than water, it floats as a separate layer.",
+      "density": 0.66,
+      "miscibility": "immiscible",
+      "flashPointC": -22
+    },
+    {
+      "id": "cyclohexane",
+      "name": "Cyclohexane",
+      "formula": "C6H12",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:cyclohexane": 9.3
+      },
+      "molarMass": 84.16,
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "A saturated cyclic alkane: no reaction with bromine water in the dark.",
+      "density": 0.78,
+      "miscibility": "immiscible",
+      "flashPointC": -20
+    },
+    {
+      "id": "cyclohexene",
+      "name": "Cyclohexene",
+      "formula": "C6H10",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:cyclohexene": 9.9
+      },
+      "molarMass": 82.14,
+      "tags": [
+        "fuel",
+        "alkene"
+      ],
+      "description": "An alkene with one C=C double bond. It decolourises bromine water instantly.",
+      "density": 0.81,
+      "miscibility": "immiscible",
+      "flashPointC": -12
+    },
+    {
+      "id": "heptane",
+      "name": "Heptane",
+      "formula": "C7H16",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:heptane": 6.8
+      },
+      "molarMass": 100.2,
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "An alkane found in petrol.",
+      "density": 0.68,
+      "miscibility": "immiscible",
+      "flashPointC": -4
+    },
+    {
+      "id": "toluene",
+      "name": "Methylbenzene (toluene)",
+      "formula": "C6H5CH3",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:toluene": 9.4
+      },
+      "molarMass": 92.14,
+      "tags": [
+        "fuel",
+        "arene"
+      ],
+      "description": "An aromatic solvent. Harmful vapour - fume cupboard only. Burns with a very smoky flame.",
+      "density": 0.87,
+      "miscibility": "immiscible",
+      "flashPointC": 4
+    },
+    {
+      "id": "limonene",
+      "name": "Limonene (orange oil)",
+      "formula": "C10H16",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:limonene": 6.2
+      },
+      "molarMass": 136.24,
+      "tags": [
+        "fuel",
+        "alkene"
+      ],
+      "description": "Extracted from orange peel. Two C=C double bonds, so it decolourises bromine water.",
+      "density": 0.84,
+      "miscibility": "immiscible",
+      "flashPointC": 48
+    },
+    {
+      "id": "liquid-paraffin",
+      "name": "Liquid paraffin",
+      "formula": "C18H38",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:paraffin": 3.4
+      },
+      "molarMass": 254.5,
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "A mixture of heavy alkanes. Very unreactive.",
+      "density": 0.86,
+      "miscibility": "immiscible",
+      "flashPointC": 200
+    },
+    {
+      "id": "lard",
+      "name": "Lard (saturated fat)",
+      "formula": "C51H98O6",
+      "category": "household",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:lard": 1.1
+      },
+      "molarMass": 807.3,
+      "tags": [
+        "fuel",
+        "lipid"
+      ],
+      "description": "A mostly saturated fat (melted). Little reaction with bromine water; saponified by hot alkali.",
+      "density": 0.92,
+      "miscibility": "immiscible",
+      "flashPointC": 280
+    },
+    {
+      "id": "glycine",
+      "name": "Glycine solution",
+      "formula": "NH2CH2COOH",
+      "concentrationM": 0.5,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:glycine": 0.5
+      },
+      "tags": [
+        "fuel",
+        "amino_acid"
+      ],
+      "description": "The simplest amino acid. Without peptide bonds it does not give a purple biuret test."
+    },
+    {
+      "id": "glucose",
+      "name": "Glucose solution",
+      "formula": "C6H12O6",
+      "concentrationM": 0.5,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:glucose": 0.5
+      },
+      "tags": [
+        "fuel",
+        "sugar"
+      ],
+      "description": "A reducing sugar (about 9%). Benedict's turns brick red with it on heating."
+    },
+    {
+      "id": "fructose",
+      "name": "Fructose solution",
+      "formula": "C6H12O6",
+      "concentrationM": 0.5,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:fructose": 0.5
+      },
+      "tags": [
+        "fuel",
+        "sugar"
+      ],
+      "description": "Fruit sugar. Also a reducing sugar."
+    },
+    {
+      "id": "sucrose",
+      "name": "Sucrose solution",
+      "formula": "C12H22O11",
+      "concentrationM": 0.25,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:sucrose": 0.25
+      },
+      "tags": [
+        "fuel",
+        "sugar"
+      ],
+      "description": "Table sugar dissolved in water. A NON-reducing sugar: negative with Benedict's until it is hydrolysed."
+    },
+    {
+      "id": "lactose",
+      "name": "Lactose solution",
+      "formula": "C12H22O11",
+      "concentrationM": 0.25,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:lactose": 0.25
+      },
+      "tags": [
+        "fuel",
+        "sugar"
+      ],
+      "description": "Milk sugar, a reducing sugar."
+    },
+    {
+      "id": "maltose",
+      "name": "Maltose solution",
+      "formula": "C12H22O11",
+      "concentrationM": 0.25,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:maltose": 0.25
+      },
+      "tags": [
+        "fuel",
+        "sugar"
+      ],
+      "description": "Malt sugar, made when amylase digests starch. A reducing sugar."
+    },
+    {
+      "id": "egg-albumen",
+      "name": "Egg white (albumen)",
+      "formula": "protein",
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f3f0d8",
+      "opacity": 0.25,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:albumin": 0.0015
+      },
+      "tags": [
+        "fuel",
+        "protein"
+      ],
+      "description": "Egg white diluted with water: a protein solution. Purple with biuret; turns white and solid when heated."
+    },
+    {
+      "id": "methane",
+      "name": "Methane (natural gas)",
+      "formula": "CH4",
+      "category": "other",
+      "form": "gas",
+      "aqueous": false,
+      "colour": "#eef4ff",
+      "opacity": 0.04,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 10,
+        "max": 250,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:methane": 1
+      },
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "The main gas in a Bunsen burner. Burns with a clean blue flame.",
+      "flashPointC": -188
+    },
+    {
+      "id": "ethene",
+      "name": "Ethene",
+      "formula": "C2H4",
+      "category": "other",
+      "form": "gas",
+      "aqueous": false,
+      "colour": "#eef4ff",
+      "opacity": 0.04,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 10,
+        "max": 250,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:ethene": 1
+      },
+      "tags": [
+        "fuel",
+        "alkene"
+      ],
+      "description": "The simplest alkene. Decolourises bromine water.",
+      "flashPointC": -136
+    },
+    {
+      "id": "butane",
+      "name": "Butane (lighter gas)",
+      "formula": "C4H10",
+      "category": "other",
+      "form": "gas",
+      "aqueous": false,
+      "colour": "#eef4ff",
+      "opacity": 0.04,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 10,
+        "max": 250,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:butane": 1
+      },
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "Camping-stove and lighter gas, an alkane.",
+      "flashPointC": -60
+    },
+    {
+      "id": "co2-gas",
+      "name": "Carbon dioxide gas",
+      "formula": "CO2",
+      "category": "other",
+      "form": "gas",
+      "aqueous": false,
+      "colour": "#eef4ff",
+      "opacity": 0.04,
+      "hazards": [],
+      "limits": {
+        "min": 10,
+        "max": 250,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "CO2(g)": 1
+      },
+      "tags": [
+        "co2"
+      ],
+      "description": "Turns limewater milky. Dissolves a little in water to make weak carbonic acid."
+    },
+    {
+      "id": "methyl-ethanoate",
+      "name": "Methyl ethanoate",
+      "formula": "CH3COOCH3",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:methyl-ethanoate": 12.6
+      },
+      "molarMass": 74.08,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "A volatile ester with a glue-like, fruity smell.",
+      "density": 0.93,
+      "miscibility": "partial",
+      "solubility": 25,
+      "flashPointC": -10
+    },
+    {
+      "id": "propyl-ethanoate",
+      "name": "Propyl ethanoate",
+      "formula": "CH3COOC3H7",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:propyl-ethanoate": 8.7
+      },
+      "molarMass": 102.13,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Smells of pears.",
+      "density": 0.89,
+      "miscibility": "partial",
+      "solubility": 1.9,
+      "flashPointC": 13
+    },
+    {
+      "id": "butyl-ethanoate",
+      "name": "Butyl ethanoate",
+      "formula": "CH3COOC4H9",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:butyl-ethanoate": 7.6
+      },
+      "molarMass": 116.16,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Smells of apples - with a hint of banana.",
+      "density": 0.88,
+      "miscibility": "partial",
+      "solubility": 0.7,
+      "flashPointC": 22
+    },
+    {
+      "id": "pentyl-ethanoate",
+      "name": "Pentyl ethanoate",
+      "formula": "CH3COOC5H11",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:pentyl-ethanoate": 6.7
+      },
+      "molarMass": 130.19,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Smells strongly of bananas.",
+      "density": 0.88,
+      "miscibility": "immiscible",
+      "flashPointC": 41
+    },
+    {
+      "id": "octyl-ethanoate",
+      "name": "Octyl ethanoate",
+      "formula": "CH3COOC8H17",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:octyl-ethanoate": 4.6
+      },
+      "molarMass": 172.27,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Smells of oranges.",
+      "density": 0.87,
+      "miscibility": "immiscible",
+      "flashPointC": 86
+    },
+    {
+      "id": "benzyl-ethanoate",
+      "name": "Benzyl ethanoate",
+      "formula": "CH3COOCH2C6H5",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:benzyl-ethanoate": 7
+      },
+      "molarMass": 150.17,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Smells of jasmine flowers.",
+      "density": 1.05,
+      "miscibility": "immiscible",
+      "flashPointC": 90
+    },
+    {
+      "id": "methyl-butanoate",
+      "name": "Methyl butanoate",
+      "formula": "C3H7COOCH3",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:methyl-butanoate": 8.7
+      },
+      "molarMass": 102.13,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Smells of apples and pineapple.",
+      "density": 0.9,
+      "miscibility": "partial",
+      "solubility": 1.5,
+      "flashPointC": 14
+    },
+    {
+      "id": "ethyl-methanoate",
+      "name": "Ethyl methanoate",
+      "formula": "HCOOC2H5",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:ethyl-methanoate": 12.4
+      },
+      "molarMass": 74.08,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "Smells of rum and raspberries.",
+      "density": 0.92,
+      "miscibility": "partial",
+      "solubility": 10.5,
+      "flashPointC": -20
+    },
+    {
+      "id": "methyl-benzoate",
+      "name": "Methyl benzoate",
+      "formula": "C6H5COOCH3",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:methyl-benzoate": 8
+      },
+      "molarMass": 136.15,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "A fruity ester, denser than water.",
+      "density": 1.09,
+      "miscibility": "immiscible",
+      "flashPointC": 83
+    },
+    {
+      "id": "ethyl-propanoate",
+      "name": "Ethyl propanoate",
+      "formula": "C2H5COOC2H5",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:ethyl-propanoate": 8.7
+      },
+      "molarMass": 102.13,
+      "tags": [
+        "fuel",
+        "ester"
+      ],
+      "description": "A fruity, pineapple-like ester.",
+      "density": 0.89,
+      "miscibility": "partial",
+      "solubility": 1.9,
+      "flashPointC": 12
+    },
+    {
+      "id": "pentane",
+      "name": "Pentane",
+      "formula": "C5H12",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:pentane": 8.7
+      },
+      "molarMass": 72.15,
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "A very volatile alkane (boils at 36 °C).",
+      "density": 0.63,
+      "miscibility": "immiscible",
+      "flashPointC": -49
+    },
+    {
+      "id": "octane",
+      "name": "Octane",
+      "formula": "C8H18",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:octane": 6.2
+      },
+      "molarMass": 114.23,
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "The alkane petrol is rated against.",
+      "density": 0.7,
+      "miscibility": "immiscible",
+      "flashPointC": 13
+    },
+    {
+      "id": "hex-1-ene",
+      "name": "Hex-1-ene",
+      "formula": "C6H12",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:hex-1-ene": 8
+      },
+      "molarMass": 84.16,
+      "tags": [
+        "fuel",
+        "alkene"
+      ],
+      "description": "A straight-chain alkene: decolourises bromine water.",
+      "density": 0.67,
+      "miscibility": "immiscible",
+      "flashPointC": -26
+    },
+    {
+      "id": "kerosene",
+      "name": "Paraffin lamp oil (kerosene)",
+      "formula": "C12H26",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "flammable",
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:kerosene": 4.7
+      },
+      "molarMass": 170.3,
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "A mixture of alkanes burned in lamps and jet engines.",
+      "density": 0.8,
+      "miscibility": "immiscible",
+      "flashPointC": 45
+    },
+    {
+      "id": "cinnamaldehyde",
+      "name": "Cinnamaldehyde",
+      "formula": "C6H5CH=CHCHO",
+      "category": "solvent",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:cinnamaldehyde": 7.9
+      },
+      "molarMass": 132.16,
+      "tags": [
+        "fuel",
+        "aldehyde",
+        "alkene"
+      ],
+      "description": "Oil of cinnamon: an aldehyde with a C=C double bond.",
+      "density": 1.05,
+      "miscibility": "immiscible",
+      "flashPointC": 71
+    },
+    {
+      "id": "gelatin",
+      "name": "Gelatin solution",
+      "formula": "protein",
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f3ead0",
+      "opacity": 0.2,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:gelatin": 0.0005
+      },
+      "tags": [
+        "fuel",
+        "protein"
+      ],
+      "description": "A protein from collagen: purple with biuret, and it sets to a jelly when cool."
+    },
+    {
+      "id": "amylase",
+      "name": "Amylase solution",
+      "formula": "enzyme",
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f2efe2",
+      "opacity": 0.12,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:amylase": 1
+      },
+      "tags": [
+        "fuel",
+        "enzyme"
+      ],
+      "description": "The enzyme in saliva that digests starch into maltose. Works best at about 37 °C."
+    },
+    {
+      "id": "potato-extract",
+      "name": "Potato extract (catalase)",
+      "formula": "enzyme",
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#efe6c8",
+      "opacity": 0.3,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "org:catalase": 1
+      },
+      "tags": [
+        "fuel",
+        "enzyme"
+      ],
+      "description": "Blended potato contains catalase, which breaks down hydrogen peroxide."
+    }
+  ]
+}

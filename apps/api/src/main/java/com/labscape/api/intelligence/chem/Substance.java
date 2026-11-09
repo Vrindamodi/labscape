@@ -33,7 +33,11 @@ public record Substance(
         Double molarMass,
         List<String> tags,
         String description,
-        ElementInfo element) {
+        ElementInfo element,
+        Double density,
+        String miscibility,
+        Double solubility,
+        Double flashPointC) {
 
     public record Limits(double min, double max, String unit) {}
 
@@ -72,6 +76,32 @@ public record Substance(
         public int commonNegative() {
             return oxidationStates.stream().filter(o -> o < 0).findFirst().orElse(0);
         }
+    }
+
+    /** Catalogue entry without physical data (used for the 118 elements). */
+    static Substance basic(
+            String id, String name, String formula, Double concentrationM, String category, String form, String solidForm,
+            boolean aqueous, String colour, double opacity, List<String> hazards, Limits limits, String model,
+            List<String> inertWith, Map<String, Double> species, AcidInfo acid, BaseInfo base, CarbonateInfo carbonate,
+            MetalInfo metal, Double molarMass, List<String> tags, String description, ElementInfo element) {
+        return new Substance(id, name, formula, concentrationM, category, form, solidForm, aqueous, colour, opacity, hazards,
+                limits, model, inertWith, species, acid, base, carbonate, metal, molarMass, tags, description, element,
+                null, null, null, null);
+    }
+
+    /**
+     * How a liquid behaves with water: "aqueous" (it is a water solution), "miscible" (mixes with water and
+     * with oils), "polar" (mixes with water but not with oils), "partial" (a little dissolves, the rest forms a
+     * layer) or "immiscible". Solids and gases answer "n/a".
+     */
+    public String waterMiscibility() {
+        if (isSolid() || isGas()) return "n/a";
+        if (aqueous) return "aqueous";
+        return miscibility != null ? miscibility : "immiscible";
+    }
+
+    public double densityOr(double fallback) {
+        return density == null ? fallback : density;
     }
 
     public boolean isSolid() {

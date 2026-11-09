@@ -1,5 +1,5 @@
 {
-  "version": "2026.11.06-1",
+  "version": "2026.11.09-1",
   "note": "SERVER ONLY. Never sent to clients and never named in any response. Each rule blocks a hazardous class of combination outright. Interim rules - require safety reviewer sign-off; Part 1 safety admin will edit these through safety_rules.",
   "rules": [
     {
@@ -121,6 +121,143 @@
         "nitrate_oxidiser"
       ],
       "description": "Radioactive material with explosive precursor"
+    },
+    {
+      "id": "SR-016",
+      "allOf": [
+        "conc_acid",
+        "nitrate"
+      ],
+      "description": "Concentrated sulfuric acid with nitrates or nitric acid (nitrating mixture)"
+    },
+    {
+      "id": "SR-017",
+      "allOf": [
+        "peroxide",
+        "ketone"
+      ],
+      "description": "Hydrogen peroxide with a ketone (organic peroxide explosive precursor)"
+    },
+    {
+      "id": "SR-018",
+      "allOf": [
+        "peroxide",
+        "conc_acid"
+      ],
+      "description": "Hydrogen peroxide with concentrated acid (piranha / peroxy acids)"
+    },
+    {
+      "id": "SR-019",
+      "allOf": [
+        "conc_acid",
+        "permanganate"
+      ],
+      "description": "Concentrated acid with permanganate (manganese heptoxide)"
+    },
+    {
+      "id": "SR-020",
+      "allOf": [
+        "conc_acid",
+        "dichromate"
+      ],
+      "description": "Concentrated acid with dichromate (chromic acid / chromyl compounds)"
+    },
+    {
+      "id": "SR-021",
+      "allOf": [
+        "hypochlorite",
+        "ammonium"
+      ],
+      "description": "Hypochlorite with ammonium salts (chloramines)"
+    },
+    {
+      "id": "SR-022",
+      "allOf": [
+        "chlorine_source",
+        "ammonia_source"
+      ],
+      "description": "Chlorine with ammonia (chloramines, nitrogen trichloride)"
+    },
+    {
+      "id": "SR-023",
+      "allOf": [
+        "chlorine_source",
+        "ammonium"
+      ],
+      "description": "Chlorine with ammonium salts (nitrogen trichloride)"
+    },
+    {
+      "id": "SR-024",
+      "allOf": [
+        "conc_acid",
+        "formate"
+      ],
+      "description": "Concentrated sulfuric acid with methanoic acid (carbon monoxide)"
+    },
+    {
+      "id": "SR-025",
+      "allOf": [
+        "conc_acid",
+        "oxalate"
+      ],
+      "description": "Concentrated sulfuric acid with oxalates (carbon monoxide)"
+    },
+    {
+      "id": "SR-026",
+      "allOf": [
+        "nitrate_oxidiser",
+        "sulfide"
+      ],
+      "description": "Nitrate oxidiser with a metal sulfide (pyrotechnic)"
+    },
+    {
+      "id": "SR-027",
+      "allOf": [
+        "fluorine",
+        "fuel"
+      ],
+      "description": "Fluorine with organic substances"
+    },
+    {
+      "id": "SR-028",
+      "allOf": [
+        "fluoride",
+        "acid"
+      ],
+      "description": "Fluoride with acid (hydrogen fluoride)"
+    },
+    {
+      "id": "SR-029",
+      "allOf": [
+        "permanganate",
+        "hcl_strong"
+      ],
+      "description": "Permanganate with concentrated hydrochloric acid (chlorine generation)"
+    },
+    {
+      "id": "SR-030",
+      "allOf": [
+        "dichromate",
+        "hcl_strong"
+      ],
+      "description": "Dichromate with concentrated hydrochloric acid (chlorine generation)"
+    },
+    {
+      "id": "SR-031",
+      "allOf": [
+        "silver_salt",
+        "nitric_acid",
+        "alcohol"
+      ],
+      "description": "Silver salts with nitric acid and an alcohol (fulminate precursor)"
+    },
+    {
+      "id": "SR-032",
+      "allOf": [
+        "mercury",
+        "nitric_acid"
+      ],
+      "description": "Mercury with nitric acid (toxic, fulminate precursor)"
     }
   ]
 }

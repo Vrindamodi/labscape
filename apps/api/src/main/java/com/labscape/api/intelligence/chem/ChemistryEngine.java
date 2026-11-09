@@ -37,7 +37,12 @@ public class ChemistryEngine {
 
     public record Portion(Substance substance, double amount) {}
 
-    public record Pending(String code, String tool, String message) {}
+    /** @param ref catalogue id of the substance that would satisfy the condition (e.g. the catalyst), or null */
+    public record Pending(String code, String tool, String message, String ref) {
+        public Pending(String code, String tool, String message) {
+            this(code, tool, message, null);
+        }
+    }
 
     public record Mismatch(String code, String message) {}
 
@@ -170,6 +175,24 @@ public class ChemistryEngine {
         @Override public void observe(String text) { observations.add(text); }
         @Override public void reason(String text) { reasons.add(text); }
         @Override public void pending(String code, String tool, String message) { pending.add(new Pending(code, tool, message)); }
+        @Override public void pending(String code, String tool, String message, String ref) {
+            pending.add(new Pending(code, tool, message, ref));
+        }
+        @Override public double organicMl() { return organicMl; }
+        @Override public java.util.Set<String> keys() {
+            java.util.Set<String> out = new java.util.LinkedHashSet<>();
+            mol.forEach((k, v) -> { if (v > EPS) out.add(k); });
+            return out;
+        }
+        @Override public Map<String, Double> precipitates() { return precipitates; }
+        @Override public double solidInitial(String key) { return solidInitial.getOrDefault(key, 0.0); }
+        @Override public List<String> reasons() { return reasons; }
+        @Override public boolean presentTag(String tag) {
+            return portions.stream().anyMatch(p -> p.substance().hasTag(tag));
+        }
+        @Override public boolean hadAcid() { return hadAcid; }
+        @Override public void bleach() { bleached = true; }
+        @Override public Catalogue catalogue() { return catalogue; }
 
         @Override public double get(String k) { return mol.getOrDefault(k, 0.0); }
         @Override public boolean has(String k) { return get(k) > EPS; }
@@ -180,10 +203,10 @@ public class ChemistryEngine {
             mol.put(k, cur - t);
             return t;
         }
-        double molar(String k) { return aqMl <= 0 ? 0 : get(k) / (aqMl / 1000.0); }
+        @Override public double molar(String k) { return aqMl <= 0 ? 0 : get(k) / (aqMl / 1000.0); }
         double litres() { return Math.max(aqMl, 1e-6) / 1000.0; }
 
-        boolean present(String substanceId) {
+        @Override public boolean present(String substanceId) {
             return portions.stream().anyMatch(p -> p.substance().id().equals(substanceId));
         }
 
@@ -263,15 +286,27 @@ public class ChemistryEngine {
             c.put("fraction", round(fraction, 3));
         }
 
-        /** Takes protons from strong acid first, then ethanoic acid. Returns {strong, weak}. */
-        double[] consumeAcid(double protons) {
+        /** Takes protons from strong acid first, then the weak acids (strongest first). Returns {strong, weak}. */
+        @Override public double[] consumeAcid(double protons) {
             double strong = take("H+", protons);
-            double weak = take("CH3COOH", protons - strong);
-            if (weak > 0) add("CH3COO-", weak);
+            double weak = 0;
+            for (Acids.Weak w : Acids.WEAK) {
+                if (!w.reactive() || protons - strong - weak <= EPS) continue;
+                double t = take(w.key(), protons - strong - weak);
+                if (t > 0) add(w.conj(), t / w.perAnion());
+                weak += t;
+            }
             return new double[] {strong, weak};
         }
 
-        double acidAvailable() { return get("H+") + get("CH3COOH"); }
+        @Override public double acidAvailable() { return get("H+") + weakAcid(); }
+
+        /** Moles of acidic protons held by reactive weak acids. */
+        double weakAcid() {
+            double n = 0;
+            for (Acids.Weak w : Acids.WEAK) if (w.reactive()) n += get(w.key());
+            return n;
+        }
 
         Portion mainPortion(java.util.function.Predicate<Substance> filter) {
             return portions.stream()
@@ -296,14 +331,21 @@ public class ChemistryEngine {
             Colour startColour = startColour();
 
             physical();
+            Phases.dissolve(this);
             ElementRules.apply(this);
             hydration();
+            Inorganic.early(this);
             neutralise();
             carbonates();
+            Inorganic.afterAcidBase(this);
+            Phases.acidCrystals(this);
             metalsWithAcid();
+            Inorganic.amphotericMetals(this);
             sulfideWithAcid();
             oxideWithAcid();
             thiosulfateWithAcid();
+            Organic.beforeOxidants(this);
+            Inorganic.redox(this);
             permanganate();
             peroxide();
             iron3();
@@ -312,9 +354,13 @@ public class ChemistryEngine {
             iodine();
             displacement();
             precipitation();
+            Organic.tests(this);
             magnesiumWater();
             starchIodine();
+            Inorganic.heat(this);
+            Organic.combustion(this);
             heating();
+            Phases.describe(this);
 
             // Ammonium + hydroxide re-form ammonia (keeps ammonia mixtures at a realistic pH ~ 9-11).
             double nh = Math.min(get("NH4+"), get("OH-"));
@@ -329,6 +375,10 @@ public class ChemistryEngine {
             return finish(startColour, ph);
         }
 
+        /**
+         * Every catalogued combination is modelled by a rule family or described physically. The only
+         * honest exception: superheavy elements, of which only a few atoms have ever existed.
+         */
         String coverage() {
             for (Portion p : portions) {
                 Substance s = p.substance();
@@ -338,20 +388,7 @@ public class ChemistryEngine {
                 for (int j = i + 1; j < portions.size(); j++) {
                     Substance a = portions.get(i).substance();
                     Substance b = portions.get(j).substance();
-                    if (a.isElement() || b.isElement()) {
-                        String msg = ElementRules.coverage(a, b);
-                        if (msg != null) return msg;
-                        Substance other = a.isElement() ? b : a;
-                        Substance el = other == a ? b : a;
-                        if (!other.isElement() && other.isLimited() && !other.coversPair(el)) {
-                            return "LABscape has no validated model for " + a.displayName() + " with " + b.displayName() + ".";
-                        }
-                        continue;
-                    }
-                    boolean gap = catalogue.isGap(a.id(), b.id())
-                            || a.isLimited() && !a.coversPair(b)
-                            || b.isLimited() && !b.coversPair(a);
-                    if (gap) {
+                    if (catalogue.isGap(a.id(), b.id())) {
                         return "LABscape has no validated model for " + a.displayName() + " with " + b.displayName() + ".";
                     }
                 }
@@ -364,7 +401,9 @@ public class ChemistryEngine {
             List<Double> ws = new ArrayList<>();
             for (Portion p : portions) {
                 Substance s = p.substance();
-                if (s.isSolid() || s.isGas() || s.isElement() || "vegetable-oil".equals(s.id())) continue;
+                if (s.isSolid() || s.isGas() || s.isElement()) continue;
+                String mix = s.waterMiscibility();
+                if (aqMl > 0 && ("immiscible".equals(mix) || "partial".equals(mix))) continue;
                 double ml = volumeMl(p);
                 cs.add(Colour.hex(s.colour(), s.opacity()));
                 ws.add(ml * (0.15 + s.opacity()));
@@ -415,19 +454,6 @@ public class ChemistryEngine {
                         "permanganate-dissolving", n);
                 observations.add("Purple streaks spread out from the crystals as they dissolve - diffusion in action.");
             }
-            if (present("vegetable-oil") && (aqMl > 0 || organicMl > 0)) {
-                double oilMl = portions.stream().filter(p -> p.substance().id().equals("vegetable-oil"))
-                        .mapToDouble(this::volumeMlOf).sum();
-                if (aqMl > 0 || organicMl - oilMl > 0) {
-                    Map<String, Object> c = cue("layers", "vessel", 0);
-                    c.put("colour", Colour.hex("#e9c84b", 0.6).toJson());
-                    c.put("volumeMl", round(oilMl, 1));
-                    reasons.add("Oil is non-polar, so it doesn't mix with water - it floats as a separate layer.");
-                }
-            }
-            if (present("ethanol") && aqMl > 0) {
-                reasons.add("Ethanol mixes completely with water, but no chemical reaction happens.");
-            }
             if (aqMl > 0 && has("KNO3(s)")) {
                 double n = take("KNO3(s)", get("KNO3(s)"));
                 add("K+", n);
@@ -447,11 +473,6 @@ public class ChemistryEngine {
                                 List.of(Term.ion(1, "NH4", "+"), Term.ion(1, "NO3", "-")), null),
                         "cold-pack", n);
                 observations.add("As the ammonium nitrate dissolves, the beaker gets noticeably cold - this takes in heat.");
-            }
-            if (aqMl > 0 && has("C12H22O11(s)")) {
-                take("C12H22O11(s)", get("C12H22O11(s)"));
-                dissolveSolid("C12H22O11(s)", 0, 3000);
-                reasons.add("Sugar dissolves in water, but its molecules stay the same - a physical change, not a reaction.");
             }
             boolean anyLiquid = aqMl > 0 || organicMl > 0;
             boolean anyGas = gasMl > 0;
@@ -497,11 +518,16 @@ public class ChemistryEngine {
             heatJ += 57_100 * e1;
             total += e1;
 
-            double e2 = Math.min(get("CH3COOH"), get("OH-"));
-            take("CH3COOH", e2);
-            take("OH-", e2);
-            add("CH3COO-", e2);
-            heatJ += 56_000 * e2;
+            double e2 = 0;
+            for (Acids.Weak w : Acids.WEAK) {
+                double x = Math.min(get(w.key()), get("OH-"));
+                if (x <= EPS) continue;
+                take(w.key(), x);
+                take("OH-", x);
+                add(w.conj(), x / w.perAnion());
+                heatJ += (w.reactive() ? 56_000 : 30_000) * x;
+                e2 += x;
+            }
             total += e2;
 
             double e3 = Math.min(get("NH3"), get("H+"));
@@ -511,12 +537,18 @@ public class ChemistryEngine {
             heatJ += 52_000 * e3;
             total += e3;
 
-            double e4 = Math.min(get("NH3"), get("CH3COOH"));
-            take("NH3", e4);
-            take("CH3COOH", e4);
-            add("NH4+", e4);
-            add("CH3COO-", e4);
-            heatJ += 50_000 * e4;
+            double e4 = 0;
+            for (Acids.Weak w : Acids.WEAK) {
+                if (!w.reactive()) continue;
+                double x = Math.min(get("NH3"), get(w.key()));
+                if (x <= EPS) continue;
+                take("NH3", x);
+                take(w.key(), x);
+                add("NH4+", x);
+                add(w.conj(), x / w.perAnion());
+                heatJ += 50_000 * x;
+                e4 += x;
+            }
             total += e4;
 
             if (total > EPS) {
@@ -558,16 +590,29 @@ public class ChemistryEngine {
             }
 
             double e6 = Math.min(get("NH4+"), get("OH-"));
-            if (e6 > EPS && present("nh4no3")) {
+            boolean ammoniumSalt = portions.stream().anyMatch(p -> p.substance().hasTag("ammonium"));
+            if (e6 > EPS && ammoniumSalt) {
+                boolean warm = tempC >= 40 || present("nh4no3");
                 take("NH4+", e6);
                 take("OH-", e6);
                 add("NH3", e6 * 0.5);
-                gas("NH3", e6 * 0.5, "vessel", 0.5 * tf, "fine", nextStart());
-                reaction("ammonia-release", "Ammonium salt + alkali", "gas",
-                        Latex.equation(List.of(Term.ion(1, "NH4", "+"), Term.ion(1, "OH", "-")),
-                                List.of(Term.of(1, "NH3", "g"), Term.of(1, "H2O", "l")), null),
-                        "ammonia-release", e6);
-                observations.add("A sharp, eye-watering smell of ammonia rises from the beaker - the test for ammonium ions.");
+                if (warm) {
+                    gas("NH3", e6 * 0.5, "vessel", 0.5 * tf, "fine", nextStart());
+                    reaction("ammonia-release", "Ammonium salt + alkali", "gas",
+                            Latex.equation(List.of(Term.ion(1, "NH4", "+"), Term.ion(1, "OH", "-")),
+                                    List.of(Term.of(1, "NH3", "g"), Term.of(1, "H2O", "l")), null),
+                            "ammonia-release", e6);
+                    observations.add("A sharp, eye-watering smell of ammonia rises from the beaker - the test for ammonium ions. "
+                            + "Damp red litmus held above it would turn blue.");
+                } else {
+                    nextStart();
+                    Map<String, Object> c = cue("odour", "vessel", 400);
+                    c.put("description", "a faint whiff of ammonia");
+                    reaction("ammonium-alkali", "Ammonium ions meet hydroxide", "neutralisation",
+                            Latex.eq("NH4^+ + OH^- -> NH3(aq) + H2O(l)"), null, e6);
+                    observations.add("The alkali turns ammonium ions into dissolved ammonia - only a faint smell for now. "
+                            + "Warm it to about 50 °C to drive off ammonia gas (the test for ammonium ions).");
+                }
             }
         }
 
@@ -616,7 +661,7 @@ public class ChemistryEngine {
             Substance acid = mainAcid();
             // Aqueous carbonate: first acid only converts CO3 to HCO3 (no fizz yet).
             double strongStart = get("H+");
-            double weakStart = get("CH3COOH");
+            double weakStart = weakAcid();
             double a1 = Math.min(get("CO3^2-"), acidAvailable());
             if (a1 > EPS) {
                 take("CO3^2-", a1);
@@ -633,7 +678,7 @@ public class ChemistryEngine {
                 product("H2O", b1, "l");
             }
             if (a1 + b1 > EPS) {
-                Portion carbP = mainPortion(s -> s.carbonate() != null && !"caco3-chips".equals(s.id()));
+                Portion carbP = mainPortion(s -> s.carbonate() != null && !s.species().containsKey("CaCO3(s)"));
                 Substance carb = carbP == null ? null : carbP.substance();
                 boolean hydrogen = carb != null && carb.carbonate().unitProtons() == 1;
                 String eq = acid != null && carb != null ? carbonateEquation(acid, carb)
@@ -666,15 +711,21 @@ public class ChemistryEngine {
                 heatJ += 15_000 * e;
                 product("H2O", e, "l");
                 long start = nextStart();
-                double k = (t[0] >= t[1] ? 1.6 : 0.5) * (sulfuric ? 0.35 : 1);
-                gas("CO2", e, solidTarget.get("CaCO3(s)"), k, "coarse", start);
-                dissolveSolid("CaCO3(s)", start, (long) clamp(8000 / tf, 3000, 14000));
+                boolean powder = present("caco3-powder") || present("antacid");
+                Portion chipsP = mainPortion(s -> s.species().containsKey("CaCO3(s)"));
+                String what = chipsP == null || "caco3-chips".equals(chipsP.substance().id()) ? "marble chips"
+                        : chipsP.substance().name().toLowerCase(Locale.ROOT);
+                double k = (t[0] >= t[1] ? 1.6 : 0.5) * (sulfuric ? 0.35 : 1) * (powder ? 3 : 1);
+                gas("CO2", e, solidTarget.get("CaCO3(s)"), k, powder ? "medium" : "coarse", start);
+                dissolveSolid("CaCO3(s)", start, (long) clamp(8000 / tf / (powder ? 3 : 1), 1500, 14000));
                 Substance chipsS = catalogue.find("caco3-chips").orElseThrow();
-                reaction("acid-carbonate-chips", "Acid and marble chips", "gas",
-                        acid != null ? carbonateEquation(acid, chipsS) : "", "acid-carbonate", e);
+                String eq = acid != null ? carbonateEquation(acid, chipsS)
+                        : Latex.eq("CaCO3(s) + 2 H^+ -> Ca^2+ + H2O(l) + CO2(g)");
+                reaction("acid-carbonate-chips", "Acid and " + what, "gas", eq, "acid-carbonate", e);
                 observations.add(sulfuric
-                        ? "The chips fizz at first, then almost stop: insoluble calcium sulfate coats them and blocks the acid."
-                        : "The marble chips fizz steadily, releasing carbon dioxide, and slowly get smaller.");
+                        ? "The " + what + " fizz at first, then almost stop: insoluble calcium sulfate coats them and blocks the acid."
+                        : powder ? "The powder fizzes rapidly - its large surface area makes the reaction much faster than with lumps."
+                        : "The " + what + " fizz steadily, releasing carbon dioxide, and slowly get smaller.");
             }
             if (strongStart + weakStart <= EPS && has("CaCO3(s)") && aqMl > 0) {
                 reasons.add("Calcium carbonate is insoluble in water - it needs an acid to react.");
@@ -692,14 +743,18 @@ public class ChemistryEngine {
                 Substance.MetalInfo m = s.metal();
                 String key = m.symbol() + "(s)";
                 if (m.acidRate() <= 0) {
-                    if (hadAcid) {
-                        reasons.add(s.name() + " sits below hydrogen in the reactivity series, so it doesn't react with dilute acids.");
+                    boolean nitric = presentTag("nitric_acid") && m.e0() < 0.96;
+                    if (hadAcid && !nitric) {
+                        reasons.add(s.name() + " sits below hydrogen in the reactivity series, so it doesn't react with dilute acids"
+                                + ("Au".equals(m.symbol()) || "Pt".equals(m.symbol()) ? " - not even nitric acid." : "."));
                     }
                     continue;
                 }
                 if (!has(key) || acidAvailable() <= EPS) continue;
                 int c = m.charge();
                 double n = get(key);
+                boolean leadCoated = "Pb".equals(m.symbol()) && (has("Cl-") || has("SO4^2-"));
+                if (leadCoated) n = Math.min(n, acidAvailable() * 0.02 / c);
                 double[] t = consumeAcid(c * n);
                 double e = (t[0] + t[1]) / c;
                 if (e <= EPS) continue;
@@ -744,8 +799,17 @@ public class ChemistryEngine {
                 reaction("acid-metal-" + m.symbol().toLowerCase(Locale.ROOT), s.name() + " in acid", "gas", eq, "acid-metal", e);
                 String speed = k > 2 ? "fizzes vigorously" : k > 0.6 ? "fizzes steadily" : "slowly gives off a few bubbles";
                 observations.add(s.name() + " " + speed + " as hydrogen is released (a lit splint would go 'pop').");
-                if (has(key)) observations.add("The acid runs out before all the " + s.name().toLowerCase(Locale.ROOT) + " is used up.");
+                if (leadCoated) {
+                    observations.add("It almost stops at once: insoluble lead(II) " + (has("Cl-") ? "chloride" : "sulfate")
+                            + " coats the lead and protects it.");
+                } else if (has(key)) {
+                    observations.add("The acid runs out before all the " + s.name().toLowerCase(Locale.ROOT) + " is used up.");
+                }
+                if ("Al".equals(m.symbol())) observations.add("Aluminium starts slowly: its protective oxide layer has to be eaten through first.");
                 if ("Fe".equals(m.symbol())) observations.add("The solution turns pale green: iron(II) ions.");
+                if (presentTag("nitric_acid") && !"Mg".equals(m.symbol())) {
+                    observations.add("With nitric acid some of the gas is nitrogen monoxide instead of hydrogen - it turns brown in air.");
+                }
             }
         }
 
@@ -837,6 +901,14 @@ public class ChemistryEngine {
                 product("H2O", e * protonsPerOxide / 2.0, "l");
                 long start = nextStart();
                 dissolveSolid(ox.key(), start, (long) clamp(9000 / tf, 2500, 9000));
+                if (acid == null) {
+                    reaction("acid-oxide", ox.name() + " in warm acid", "neutralisation",
+                            Latex.eq(("Fe".equals(ox.metal()) ? "Fe2O3(s) + 6 H^+ -> 2 Fe^3+ + 3 H2O(l)"
+                                    : ox.formula() + "(s) + 2 H^+ -> " + ox.metal() + "^2+ + H2O(l)")),
+                            "acid-oxide", e);
+                    observations.add("The powder dissolves in the warm acid and the solution turns " + ox.colourWord() + ".");
+                    continue;
+                }
                 Substance.AcidInfo a = acid.acid();
                 Latex.Salt salt = Latex.salt(ox.metal(), ox.charge(), false, a.anion(), a.anionCharge(), a.poly());
                 int oxCoef = 1;
@@ -855,7 +927,7 @@ public class ChemistryEngine {
         void thiosulfateWithAcid() {
             if (!has("S2O3^2-") || acidAvailable() <= EPS) return;
             double thio = molar("S2O3^2-");
-            double acidM = molar("H+") + 0.2 * molar("CH3COOH");
+            double acidM = molar("H+") + 0.2 * weakAcid() / litres();
             double e = Math.min(get("S2O3^2-"), acidAvailable() / 2);
             take("S2O3^2-", e);
             consumeAcid(2 * e);
@@ -898,7 +970,7 @@ public class ChemistryEngine {
                             : "The purple colour disappears instantly as iron(II) is oxidised to iron(III).");
                 } else {
                     pending.add(new Pending("NEEDS_ACID", "acid",
-                            "Permanganate needs acid to react cleanly. Add some dilute sulfuric acid."));
+                            "Permanganate needs acid to react cleanly. Add some dilute sulfuric acid.", "h2so4"));
                 }
             }
             if (has("MnO4-") && has("I-")) {
@@ -917,7 +989,7 @@ public class ChemistryEngine {
                     observations.add("The purple colour vanishes and the solution turns brown as iodine forms.");
                 } else {
                     pending.add(new Pending("NEEDS_ACID", "acid",
-                            "Permanganate needs acid to oxidise iodide cleanly. Add some dilute sulfuric acid."));
+                            "Permanganate needs acid to oxidise iodide cleanly. Add some dilute sulfuric acid.", "h2so4"));
                 }
             }
         }
@@ -987,22 +1059,42 @@ public class ChemistryEngine {
                 reacted = true;
             }
             if (!has("H2O2")) return;
-            String catalyst = has("MnO2(s)") || has("MnO2(ppt)") ? "MnO2"
-                    : has("I-") ? "KI"
-                    : has("Fe^3+") ? "Fe^{3+}"
+            boolean enzyme = has("org:yeast") || has("org:catalase");
+            if (enzyme && tempC >= 60) {
+                reasons.add("The catalase enzyme has been denatured by the heat (above about 60 °C), so it no longer speeds up the breakdown of peroxide.");
+                enzyme = false;
+            }
+            // {label for the arrow, rate constant, target key or null}
+            String[] catalyst = has("MnO2(s)") || has("MnO2(ppt)") ? new String[] {"MnO2", "4.0", "MnO2(s)"}
+                    : enzyme ? new String[] {"catalase", "6.0", null}
+                    : has("I-") ? new String[] {"KI", "2.4", null}
+                    : has("Fe^3+") ? new String[] {"Fe(III)", "2.4", null}
+                    : has("CuO(s)") ? new String[] {"CuO", "1.4", "CuO(s)"}
+                    : has("Fe2O3(s)") ? new String[] {"Fe2O3", "0.9", "Fe2O3(s)"}
+                    : has("Co^2+") ? new String[] {"Co(II)", "0.9", null}
+                    : has("Cu^2+") ? new String[] {"Cu(II)", "0.35", null}
+                    : has("Fe(s)") ? new String[] {"Fe", "0.3", "Fe(s)"}
+                    : has("FeS(s)") ? new String[] {"FeS", "0.4", "FeS(s)"}
+                    : has("Ag+") ? new String[] {"Ag(I)", "0.4", null}
                     : null;
             if (catalyst != null) {
-                double e = get("H2O2");
+                double k = Double.parseDouble(catalyst[1]);
+                double e = get("H2O2") * (k >= 1 ? 1 : 0.4);
                 take("H2O2", e);
                 heatJ += 98_000 * e;
-                double k = "MnO2".equals(catalyst) ? 4.0 : 2.4;
-                gas("O2", e / 2, catalyst.equals("MnO2") && has("MnO2(s)") ? solidTarget.get("MnO2(s)") : "vessel", k, "fine", nextStart());
+                String target = catalyst[2] != null && has(catalyst[2]) ? solidTarget.get(catalyst[2]) : "vessel";
+                gas("O2", e / 2, target == null ? "vessel" : target, k, "fine", nextStart());
                 product("H2O", e, "l");
                 reaction("peroxide-catalysed", "Catalytic decomposition of peroxide", "catalysis",
                         Latex.equation(List.of(Term.of(2, "H2O2", "aq")), List.of(Term.of(2, "H2O", "l"), Term.of(1, "O2", "g")),
-                                catalyst.startsWith("Fe") ? "Fe(III)" : catalyst),
-                        "peroxide-catalysed", e);
-                observations.add("Vigorous fizzing - the oxygen would relight a glowing splint. The catalyst isn't used up.");
+                                catalyst[0]),
+                        "catalase".equals(catalyst[0]) ? "catalase" : "peroxide-catalysed", e);
+                observations.add(k >= 4 ? "Vigorous fizzing - the oxygen would relight a glowing splint. The catalyst isn't used up."
+                        : k >= 1 ? "Steady fizzing as oxygen is released - a glowing splint would relight. The catalyst isn't used up."
+                        : "Slow, steady bubbles of oxygen: this is only a weak catalyst for peroxide.");
+                if ("catalase".equals(catalyst[0])) {
+                    observations.add("A froth of oxygen bubbles foams up: catalase is one of the fastest enzymes known.");
+                }
                 return;
             }
             if (!reacted) {
@@ -1016,7 +1108,7 @@ public class ChemistryEngine {
                     observations.add("A few small bubbles of oxygen appear: heat slowly decomposes hydrogen peroxide.");
                 } else {
                     pending.add(new Pending("NEEDS_CATALYST", "catalyst",
-                            "Hydrogen peroxide decomposes only very slowly on its own. Add a catalyst such as manganese(IV) oxide."));
+                            "Hydrogen peroxide decomposes only very slowly on its own. Add a catalyst such as manganese(IV) oxide.", "mno2-powder"));
                 }
             }
         }
@@ -1110,8 +1202,13 @@ public class ChemistryEngine {
                 new Ion("Ag+", "Ag", 1, 0.80, "#d9dde3", "displacement-silver"),
                 new Ion("Cu^2+", "Cu", 2, 0.34, "#b5653a", "displacement-copper"),
                 new Ion("Pb^2+", "Pb", 2, -0.13, "#5a5f66", "displacement-other"),
+                new Ion("Ni^2+", "Ni", 2, -0.25, "#4a4c50", "displacement-other"),
+                new Ion("Co^2+", "Co", 2, -0.28, "#4a4c50", "displacement-other"),
                 new Ion("Fe^2+", "Fe", 2, -0.44, "#3d3d3f", "displacement-other"),
+                new Ion("Cr^3+", "Cr", 3, -0.74, "#7a8088", "displacement-other"),
                 new Ion("Zn^2+", "Zn", 2, -0.76, "#9aa0a6", "displacement-other"),
+                new Ion("Mn^2+", "Mn", 2, -1.18, "#8a8a86", "displacement-other"),
+                new Ion("Al^3+", "Al", 3, -1.66, "#c4cad2", "displacement-other"),
                 new Ion("Mg^2+", "Mg", 2, -2.37, "#c9cdd3", "displacement-other"));
 
         void displacement() {
@@ -1128,6 +1225,14 @@ public class ChemistryEngine {
                         continue;
                     }
                     if (!has(key)) continue;
+                    // Aluminium's oxide film blocks it unless chloride ions are there to break the film.
+                    if ("Al".equals(m.symbol()) && !has("Cl-")) {
+                        reasons.add("Aluminium is more reactive, but its tough oxide layer stops it reacting here. "
+                                + "Add some salt (chloride ions) and it would break through the layer and react.");
+                        continue;
+                    }
+                    // Alkali and alkaline-earth metals react with the water first (handled with water).
+                    if (m.e0() < -2.5 && aqMl > 0) continue;
                     int lcm = Latex.lcm(m.charge(), ion.charge());
                     int metalCoef = lcm / m.charge();
                     int ionCoef = lcm / ion.charge();
@@ -1231,26 +1336,110 @@ public class ChemistryEngine {
 
         // ---------------------------------------------------------------- precipitation
 
+        /** @param ksp 0 = treat as completely insoluble; otherwise only the excess over Ksp precipitates */
         record Ppt(String cation, int cCharge, String anion, int aCharge, boolean anionPoly, String solid, String hex,
-                double molarMass, String discovery, String name) {}
+                double molarMass, String discovery, String name, String word, double ksp) {
+            Ppt(String cation, int cCharge, String anion, int aCharge, boolean anionPoly, String solid, String hex,
+                    double molarMass, String discovery, String name) {
+                this(cation, cCharge, anion, aCharge, anionPoly, solid, hex, molarMass, discovery, name, colourWord(hex), 0);
+            }
+        }
 
+        static Ppt ppt(String cation, String anion, String solid, String hex, double mm, String discovery, String name, String word) {
+            return ppt(cation, anion, solid, hex, mm, discovery, name, word, 0);
+        }
+
+        static Ppt ppt(String cation, String anion, String solid, String hex, double mm, String discovery, String name, String word,
+                double ksp) {
+            int cc = chargeOf(cation);
+            int ac = chargeOf(anion);
+            boolean poly = anion.length() > 3 || anion.startsWith("SCN") || anion.startsWith("OH");
+            return new Ppt(cation, cc, anion, ac, poly, solid, hex, mm, discovery, name, word, ksp);
+        }
+
+        static int chargeOf(String key) {
+            int caret = key.indexOf('^');
+            if (caret < 0) return 1;
+            return Integer.parseInt(key.substring(caret + 1, key.length() - 1));
+        }
+
+        /** Solubility rules: every common insoluble cation/anion pair, in the order they come out of solution. */
         static final List<Ppt> INSOLUBLE = List.of(
                 new Ppt("Ag+", 1, "I-", 1, false, "AgI", "#f2e27a", 234.8, "silver-halide", "Silver iodide"),
                 new Ppt("Ag+", 1, "Br-", 1, false, "AgBr", "#eee3bf", 187.8, "silver-halide", "Silver bromide"),
                 new Ppt("Ag+", 1, "Cl-", 1, false, "AgCl", "#f5f5f3", 143.3, "silver-halide", "Silver chloride"),
+                ppt("Ag+", "SCN-", "AgSCN", "#f5f5f3", 165.95, null, "Silver thiocyanate", "white"),
                 new Ppt("Ba^2+", 2, "SO4^2-", 2, true, "BaSO4", "#fbfbfb", 233.4, "barium-sulfate", "Barium sulfate"),
+                ppt("Sr^2+", "SO4^2-", "SrSO4", "#fbfbfb", 183.7, "barium-sulfate", "Strontium sulfate", "white"),
+                new Ppt("Pb^2+", 2, "I-", 1, false, "PbI2", "#f7c21a", 461.0, "golden-rain", "Lead(II) iodide"),
+                new Ppt("Pb^2+", 2, "SO4^2-", 2, true, "PbSO4", "#fbfbfb", 303.3, "barium-sulfate", "Lead(II) sulfate"),
+                ppt("Pb^2+", "CrO4^2-", "PbCrO4", "#f5c400", 323.2, "chromate-precipitates", "Lead(II) chromate", "bright yellow"),
+                ppt("Ba^2+", "CrO4^2-", "BaCrO4", "#f2d93a", 253.3, "chromate-precipitates", "Barium chromate", "pale yellow"),
+                ppt("Ag+", "CrO4^2-", "Ag2CrO4", "#a8321e", 331.7, "chromate-precipitates", "Silver chromate", "brick-red"),
+                ppt("Ag+", "PO4^3-", "Ag3PO4", "#f0d23c", 418.6, "phosphate-precipitates", "Silver phosphate", "yellow"),
+                ppt("Ca^2+", "C2O4^2-", "CaC2O4", "#f7f7f5", 128.1, "calcium-oxalate", "Calcium oxalate", "white"),
+                ppt("Ba^2+", "C2O4^2-", "BaC2O4", "#f7f7f5", 225.3, "calcium-oxalate", "Barium oxalate", "white"),
+                ppt("Sr^2+", "C2O4^2-", "SrC2O4", "#f7f7f5", 175.6, "calcium-oxalate", "Strontium oxalate", "white"),
+                ppt("Pb^2+", "C2O4^2-", "PbC2O4", "#f7f7f5", 295.2, null, "Lead(II) oxalate", "white"),
+                ppt("Ag+", "C2O4^2-", "Ag2C2O4", "#f7f7f5", 303.8, null, "Silver oxalate", "white"),
+                ppt("Zn^2+", "C2O4^2-", "ZnC2O4", "#f7f7f5", 153.4, null, "Zinc oxalate", "white"),
+                ppt("Cu^2+", "C2O4^2-", "CuC2O4", "#bfe0ef", 151.6, null, "Copper(II) oxalate", "pale blue-white"),
+                ppt("Fe^2+", "C2O4^2-", "FeC2O4", "#f2d64a", 143.9, null, "Iron(II) oxalate", "yellow"),
+                ppt("Co^2+", "C2O4^2-", "CoC2O4", "#eab2c6", 147.0, null, "Cobalt(II) oxalate", "pale pink"),
+                ppt("Ni^2+", "C2O4^2-", "NiC2O4", "#b9e0b0", 146.7, null, "Nickel(II) oxalate", "pale green"),
+                ppt("Mn^2+", "C2O4^2-", "MnC2O4", "#f4e2e8", 142.96, null, "Manganese(II) oxalate", "very pale pink"),
                 new Ppt("Ba^2+", 2, "CO3^2-", 2, true, "BaCO3", "#f7f7f5", 197.3, "insoluble-carbonate", "Barium carbonate"),
+                ppt("Sr^2+", "CO3^2-", "SrCO3", "#f7f7f5", 147.6, "insoluble-carbonate", "Strontium carbonate", "white"),
                 new Ppt("Ca^2+", 2, "CO3^2-", 2, true, "CaCO3", "#f7f7f5", 100.1, "insoluble-carbonate", "Calcium carbonate"),
                 new Ppt("Mg^2+", 2, "CO3^2-", 2, true, "MgCO3", "#f5f5f5", 84.3, "insoluble-carbonate", "Magnesium carbonate"),
                 new Ppt("Zn^2+", 2, "CO3^2-", 2, true, "ZnCO3", "#f5f5f5", 125.4, "insoluble-carbonate", "Zinc carbonate"),
                 new Ppt("Cu^2+", 2, "CO3^2-", 2, true, "CuCO3", "#58a894", 123.6, "insoluble-carbonate", "Copper(II) carbonate"),
                 new Ppt("Fe^2+", 2, "CO3^2-", 2, true, "FeCO3", "#a0a88a", 115.9, "insoluble-carbonate", "Iron(II) carbonate"),
                 new Ppt("Ag+", 1, "CO3^2-", 2, true, "Ag2CO3", "#efe6b0", 275.7, "insoluble-carbonate", "Silver carbonate"),
-                new Ppt("Pb^2+", 2, "I-", 1, false, "PbI2", "#f7c21a", 461.0, "golden-rain", "Lead(II) iodide"),
-                new Ppt("Pb^2+", 2, "SO4^2-", 2, true, "PbSO4", "#fbfbfb", 303.3, "barium-sulfate", "Lead(II) sulfate"),
-                new Ppt("Pb^2+", 2, "Cl-", 1, false, "PbCl2", "#f6f6f4", 278.1, null, "Lead(II) chloride"),
-                new Ppt("Pb^2+", 2, "Br-", 1, false, "PbBr2", "#f6f6f4", 367.0, null, "Lead(II) bromide"),
-                new Ppt("Pb^2+", 2, "CO3^2-", 2, true, "PbCO3", "#f6f6f4", 267.2, "insoluble-carbonate", "Lead(II) carbonate"));
+                new Ppt("Pb^2+", 2, "CO3^2-", 2, true, "PbCO3", "#f6f6f4", 267.2, "insoluble-carbonate", "Lead(II) carbonate"),
+                ppt("Mn^2+", "CO3^2-", "MnCO3", "#f2d4dc", 114.9, "insoluble-carbonate", "Manganese(II) carbonate", "pale pink"),
+                ppt("Co^2+", "CO3^2-", "CoCO3", "#c4709a", 118.9, "insoluble-carbonate", "Cobalt(II) carbonate", "pink-mauve"),
+                ppt("Ni^2+", "CO3^2-", "NiCO3", "#9fd39a", 118.7, "insoluble-carbonate", "Nickel(II) carbonate", "pale green"),
+                ppt("Ca^2+", "PO4^3-", "Ca3(PO4)2", "#f7f7f5", 310.2, "phosphate-precipitates", "Calcium phosphate", "white"),
+                ppt("Ba^2+", "PO4^3-", "Ba3(PO4)2", "#f7f7f5", 602.0, "phosphate-precipitates", "Barium phosphate", "white"),
+                ppt("Mg^2+", "PO4^3-", "Mg3(PO4)2", "#f7f7f5", 262.9, "phosphate-precipitates", "Magnesium phosphate", "white"),
+                ppt("Zn^2+", "PO4^3-", "Zn3(PO4)2", "#f7f7f5", 386.1, "phosphate-precipitates", "Zinc phosphate", "white"),
+                ppt("Cu^2+", "PO4^3-", "Cu3(PO4)2", "#6fb5d6", 380.6, "phosphate-precipitates", "Copper(II) phosphate", "pale blue"),
+                ppt("Fe^2+", "PO4^3-", "Fe3(PO4)2", "#d8dfe6", 357.5, "phosphate-precipitates", "Iron(II) phosphate", "off-white"),
+                ppt("Fe^3+", "PO4^3-", "FePO4", "#f2e6a8", 150.8, "phosphate-precipitates", "Iron(III) phosphate", "pale yellow"),
+                ppt("Al^3+", "PO4^3-", "AlPO4", "#f7f7f5", 122.0, "phosphate-precipitates", "Aluminium phosphate", "white"),
+                ppt("Cr^3+", "PO4^3-", "CrPO4", "#7a9a6a", 147.0, "phosphate-precipitates", "Chromium(III) phosphate", "grey-green"),
+                ppt("Pb^2+", "PO4^3-", "Pb3(PO4)2", "#f7f7f5", 811.5, "phosphate-precipitates", "Lead(II) phosphate", "white"),
+                ppt("Mn^2+", "PO4^3-", "Mn3(PO4)2", "#f2dfe4", 354.8, "phosphate-precipitates", "Manganese(II) phosphate", "pinkish-white"),
+                ppt("Co^2+", "PO4^3-", "Co3(PO4)2", "#8a5aa8", 366.7, "phosphate-precipitates", "Cobalt(II) phosphate", "violet"),
+                ppt("Ni^2+", "PO4^3-", "Ni3(PO4)2", "#a8d8a0", 366.0, "phosphate-precipitates", "Nickel(II) phosphate", "pale green"),
+                ppt("Ba^2+", "SO3^2-", "BaSO3", "#f7f7f5", 217.4, null, "Barium sulfite", "white"),
+                ppt("Ca^2+", "SO3^2-", "CaSO3", "#f7f7f5", 120.1, null, "Calcium sulfite", "white"),
+                ppt("Ag+", "SO3^2-", "Ag2SO3", "#f7f7f5", 295.8, null, "Silver sulfite", "white"),
+                ppt("Pb^2+", "SO3^2-", "PbSO3", "#f7f7f5", 287.3, null, "Lead(II) sulfite", "white"),
+                ppt("Pb^2+", "S2O3^2-", "PbS2O3", "#f7f7f5", 319.3, null, "Lead(II) thiosulfate", "white"),
+                ppt("Cu^2+", "SiO3^2-", "CuSiO3", "#3f86c8", 139.6, "chemical-garden", "Copper(II) silicate", "blue"),
+                ppt("Fe^3+", "SiO3^2-", "Fe2(SiO3)3", "#a0522d", 339.9, "chemical-garden", "Iron(III) silicate", "rust-brown"),
+                ppt("Fe^2+", "SiO3^2-", "FeSiO3", "#6d8f58", 131.9, "chemical-garden", "Iron(II) silicate", "green"),
+                ppt("Co^2+", "SiO3^2-", "CoSiO3", "#5a5fc8", 135.0, "chemical-garden", "Cobalt(II) silicate", "dark blue"),
+                ppt("Ni^2+", "SiO3^2-", "NiSiO3", "#5fbf6a", 134.8, "chemical-garden", "Nickel(II) silicate", "green"),
+                ppt("Mn^2+", "SiO3^2-", "MnSiO3", "#f0d8e0", 131.0, "chemical-garden", "Manganese(II) silicate", "pale pink"),
+                ppt("Ca^2+", "SiO3^2-", "CaSiO3", "#f7f7f5", 116.2, "chemical-garden", "Calcium silicate", "white"),
+                ppt("Mg^2+", "SiO3^2-", "MgSiO3", "#f7f7f5", 100.4, "chemical-garden", "Magnesium silicate", "white"),
+                ppt("Zn^2+", "SiO3^2-", "ZnSiO3", "#f7f7f5", 141.5, "chemical-garden", "Zinc silicate", "white"),
+                ppt("Al^3+", "SiO3^2-", "Al2(SiO3)3", "#f7f7f5", 282.2, "chemical-garden", "Aluminium silicate", "white"),
+                ppt("Cr^3+", "SiO3^2-", "Cr2(SiO3)3", "#4f8a5a", 332.2, "chemical-garden", "Chromium(III) silicate", "green"),
+                ppt("Ca^2+", "F-", "CaF2", "#f7f7f5", 78.1, null, "Calcium fluoride", "white"),
+                ppt("Mg^2+", "F-", "MgF2", "#f7f7f5", 62.3, null, "Magnesium fluoride", "white"),
+                ppt("Ca^2+", "St-", "Ca(C17H35COO)2", "#f4f2ea", 607.0, "soap-scum", "Calcium stearate (scum)", "greyish-white"),
+                ppt("Mg^2+", "St-", "Mg(C17H35COO)2", "#f4f2ea", 591.2, "soap-scum", "Magnesium stearate (scum)", "greyish-white"),
+                // Sparingly soluble: only the excess over the solubility product comes out.
+                ppt("Ca^2+", "SO4^2-", "CaSO4", "#f6f6f4", 136.1, "calcium-sulfate", "Calcium sulfate", "faint white", 4.9e-5),
+                ppt("Pb^2+", "Cl-", "PbCl2", "#f6f6f4", 278.1, null, "Lead(II) chloride", "white", 1.7e-5),
+                ppt("Pb^2+", "Br-", "PbBr2", "#f6f6f4", 367.0, null, "Lead(II) bromide", "white", 6.6e-6),
+                ppt("Ag+", "SO4^2-", "Ag2SO4", "#f6f6f4", 311.8, null, "Silver sulfate", "white", 1.2e-5),
+                ppt("Ag+", "CH3COO-", "CH3COOAg", "#f6f6f4", 166.9, null, "Silver ethanoate", "white", 1.9e-3),
+                ppt("Ca^2+", "OH-", "Ca(OH)2", "#f4f4f2", 74.1, null, "Calcium hydroxide", "white", 3.5e-5));
 
         record Hydroxide(String cation, String symbol, int charge, String solid, String hex, double molarMass,
                 String discovery, String colourWord) {}
@@ -1263,12 +1452,17 @@ public class ChemistryEngine {
                 new Hydroxide("Mg^2+", "Mg", 2, "Mg(OH)2", "#f2f2f2", 58.3, "white-hydroxide", "white"),
                 new Hydroxide("Al^3+", "Al", 3, "Al(OH)3", "#f4f4f2", 78.0, "white-hydroxide", "white"),
                 new Hydroxide("Pb^2+", "Pb", 2, "Pb(OH)2", "#f4f4f2", 241.2, "white-hydroxide", "white"),
-                new Hydroxide("Ni^2+", "Ni", 2, "Ni(OH)2", "#7fc47a", 92.7, null, "pale green"),
-                new Hydroxide("Co^2+", "Co", 2, "Co(OH)2", "#5a78c8", 92.9, null, "blue"),
-                new Hydroxide("Mn^2+", "Mn", 2, "Mn(OH)2", "#efe4d8", 88.9, null, "off-white"),
-                new Hydroxide("Cr^3+", "Cr", 3, "Cr(OH)3", "#5f8a62", 103.0, null, "grey-green"),
+                new Hydroxide("Ni^2+", "Ni", 2, "Ni(OH)2", "#7fc47a", 92.7, "coloured-hydroxide", "pale green"),
+                new Hydroxide("Co^2+", "Co", 2, "Co(OH)2", "#5a78c8", 92.9, "coloured-hydroxide", "blue"),
+                new Hydroxide("Mn^2+", "Mn", 2, "Mn(OH)2", "#efe4d8", 88.9, "coloured-hydroxide", "off-white"),
+                new Hydroxide("Cr^3+", "Cr", 3, "Cr(OH)3", "#5f8a62", 103.0, "coloured-hydroxide", "grey-green"),
                 new Hydroxide("Cd^2+", "Cd", 2, "Cd(OH)2", "#f4f4f2", 146.4, "white-hydroxide", "white"),
                 new Hydroxide("Sn^2+", "Sn", 2, "Sn(OH)2", "#f4f4f2", 152.7, "white-hydroxide", "white"));
+
+        /** Concentration product for a salt MxAy at the current volume. */
+        double ionProduct(Ppt p, int x, int y) {
+            return Math.pow(molar(p.cation()), x) * Math.pow(molar(p.anion()), y);
+        }
 
         void precipitation() {
             if (aqMl <= 0) return;
@@ -1278,50 +1472,85 @@ public class ChemistryEngine {
                 int x = salt.cations();
                 int y = salt.anions();
                 double e = Math.min(get(p.cation()) / x, get(p.anion()) / y);
+                if (p.ksp() > 0) {
+                    if (ionProduct(p, x, y) <= p.ksp()) continue;
+                    // Bisect for the amount that brings the ion product back down to Ksp.
+                    double lo = 0, hi = e;
+                    double c0 = get(p.cation()), a0 = get(p.anion()), l = litres();
+                    for (int it = 0; it < 50; it++) {
+                        double mid = (lo + hi) / 2;
+                        double q = Math.pow((c0 - x * mid) / l, x) * Math.pow((a0 - y * mid) / l, y);
+                        if (q > p.ksp()) lo = mid; else hi = mid;
+                    }
+                    e = lo;
+                }
                 if (e <= EPS) continue;
                 take(p.cation(), x * e);
                 take(p.anion(), y * e);
                 long start = nextStart();
-                precipitate(p.solid(), e, p.hex(), start, 6500);
+                Lore.register(p.solid(), p.name(), p.hex());
+                MOLAR_MASS.putIfAbsent(p.solid(), p.molarMass());
+                precipitate(p.solid(), e, p.hex(), start, p.ksp() > 0 ? 9000 : 6500);
                 reaction("precipitate-" + p.solid().toLowerCase(Locale.ROOT), p.name() + " precipitates", "precipitation",
                         Latex.equation(List.of(Latex.ionTerm(x, p.cation()), Latex.ionTerm(y, p.anion())),
                                 List.of(Term.of(1, p.solid(), "s")), null),
                         p.discovery(), e);
                 observations.add("PbI2".equals(p.solid())
                         ? "A brilliant golden-yellow precipitate of lead(II) iodide appears - the 'golden rain'."
-                        : "A " + colourWord(p.hex()) + " precipitate of " + p.name().toLowerCase(Locale.ROOT) + " forms instantly.");
+                        : "CaSO4".equals(p.solid()) ? "A faint white haze forms: calcium sulfate is only sparingly soluble."
+                        : p.ksp() > 0 ? "A " + p.word() + " precipitate of " + p.name().toLowerCase(Locale.ROOT)
+                                + " slowly appears - it is only sparingly soluble."
+                        : p.discovery() != null && p.discovery().equals("soap-scum")
+                                ? "A greyish-white scum forms instead of a lather: the calcium and magnesium ions in hard water "
+                                        + "turn soap into insoluble " + p.name().toLowerCase(Locale.ROOT) + "."
+                        : p.discovery() != null && p.discovery().equals("chemical-garden")
+                                ? "A " + p.word() + " gelatinous " + p.name().toLowerCase(Locale.ROOT)
+                                        + " forms - in a chemical garden it grows up in branching towers."
+                        : "A " + p.word() + " precipitate of " + p.name().toLowerCase(Locale.ROOT) + " forms instantly.");
             }
-            // Iron(III) + carbonate: hydrolyses to iron(III) hydroxide with fizzing.
-            if (has("Fe^3+") && has("CO3^2-")) {
-                double e = Math.min(get("Fe^3+") / 2, get("CO3^2-") / 3);
-                take("Fe^3+", 2 * e);
-                take("CO3^2-", 3 * e);
-                long start = nextStart();
-                precipitate("Fe(OH)3", 2 * e, "#9b4a1c", start, 7000);
-                gas("CO2", 3 * e, "vessel", 1.2, "medium", start);
-                reaction("iron3-carbonate", "Iron(III) and carbonate", "precipitation",
-                        Latex.equation(List.of(Term.ion(2, "Fe", "3+"), Term.ion(3, "CO3", "2-"), Term.of(3, "H2O", "l")),
-                                List.of(Term.of(2, "Fe(OH)3", "s"), Term.of(3, "CO2", "g")), null),
-                        "iron3-hydroxide", e);
-                observations.add("A rust-brown precipitate forms and carbon dioxide fizzes off.");
-            }
-            // Calcium sulfate is only sparingly soluble (Ksp ~ 4.9e-5).
-            if (has("Ca^2+") && has("SO4^2-")) {
-                double q = molar("Ca^2+") * molar("SO4^2-");
-                if (q > 4.9e-5) {
-                    double e = Math.min(get("Ca^2+"), get("SO4^2-")) - Math.sqrt(4.9e-5) * litres();
-                    if (e > EPS) {
-                        take("Ca^2+", e);
-                        take("SO4^2-", e);
-                        long start = nextStart();
-                        precipitate("CaSO4", e, "#f6f6f4", start, 9000);
-                        reaction("precipitate-caso4", "Calcium sulfate precipitates", "precipitation",
-                                Latex.equation(List.of(Term.ion(1, "Ca", "2+"), Term.ion(1, "SO4", "2-")),
-                                        List.of(Term.of(1, "CaSO4", "s")), null),
-                                "calcium-sulfate", e);
-                        observations.add("A faint white haze forms: calcium sulfate is only sparingly soluble.");
-                    }
+            // Iron(III), aluminium and chromium(III) carbonates don't exist: the hydroxide forms and CO2 fizzes off.
+            for (String[] t : new String[][] {{"Fe^3+", "Fe(OH)3", "#9b4a1c", "rust-brown", "iron3-hydroxide"},
+                    {"Al^3+", "Al(OH)3", "#f4f4f2", "white", "white-hydroxide"},
+                    {"Cr^3+", "Cr(OH)3", "#5f8a62", "grey-green", null}}) {
+                for (String carb : new String[] {"CO3^2-", "HCO3-"}) {
+                    if (!has(t[0]) || !has(carb)) continue;
+                    boolean hydrogen = "HCO3-".equals(carb);
+                    double e = hydrogen ? Math.min(get(t[0]), get(carb) / 3) : Math.min(get(t[0]) / 2, get(carb) / 3);
+                    double metal = hydrogen ? e : 2 * e;
+                    take(t[0], metal);
+                    take(carb, 3 * e);
+                    long start = nextStart();
+                    precipitate(t[1], metal, t[2], start, 7000);
+                    gas("CO2", 3 * e, "vessel", 1.2, "medium", start);
+                    String ion = t[0].substring(0, t[0].indexOf('^'));
+                    reaction(ion.toLowerCase(Locale.ROOT) + "-carbonate", elementName(ion) + " ions and " + (hydrogen ? "hydrogencarbonate" : "carbonate"),
+                            "precipitation",
+                            hydrogen ? Latex.eq(ion + "^3+ + 3 HCO3^- -> " + t[1] + "(s) + 3 CO2(g)")
+                                    : Latex.eq("2 " + ion + "^3+ + 3 CO3^2- + 3 H2O(l) -> 2 " + t[1] + "(s) + 3 CO2(g)"),
+                            t[4], e);
+                    observations.add("A " + t[3] + " precipitate of " + t[1] + " forms and carbon dioxide fizzes off - "
+                            + "this metal has no stable carbonate.");
                 }
+            }
+            // Hydrogencarbonate with other metal ions: the insoluble carbonate forms and CO2 is released.
+            for (Ppt p : INSOLUBLE) {
+                if (!"CO3^2-".equals(p.anion()) || !has(p.cation()) || !has("HCO3-")) continue;
+                if (aqMl > 0 && molar(p.cation()) < 0.005) continue; // hard water stays clear until boiled
+                Latex.Salt salt = Latex.salt("M", p.cCharge(), false, "X", 2, true);
+                int x = salt.cations();
+                double e = Math.min(get(p.cation()) / x, get("HCO3-") / 2);
+                if (e <= EPS) continue;
+                take(p.cation(), x * e);
+                take("HCO3-", 2 * e);
+                long start = nextStart();
+                precipitate(p.solid(), e, p.hex(), start, 7000);
+                gas("CO2", e, "vessel", 0.8, "medium", start);
+                reaction("hydrogencarbonate-" + p.solid().toLowerCase(Locale.ROOT), p.name() + " from hydrogencarbonate", "precipitation",
+                        Latex.equation(List.of(Latex.ionTerm(x, p.cation()), Term.ion(2, "HCO3", "-")),
+                                List.of(Term.of(1, p.solid(), "s"), Term.of(1, "H2O", "l"), Term.of(1, "CO2", "g")), null),
+                        p.discovery(), e);
+                observations.add("A " + p.word() + " precipitate of " + p.name().toLowerCase(Locale.ROOT)
+                        + " forms, and bubbles of carbon dioxide appear.");
             }
             // Silver oxide from silver ions and hydroxide.
             if (has("Ag+") && has("OH-")) {
@@ -1354,6 +1583,8 @@ public class ChemistryEngine {
                 observations.add("A " + h.colourWord() + " precipitate of " + h.solid() + " forms"
                         + (fromNh3 > fromOh ? " (ammonia supplies the hydroxide ions)." : "."));
                 if ("Fe(OH)2".equals(h.solid())) observations.add("Left in air, it would slowly turn orange-brown as it oxidises.");
+                if ("Mn(OH)2".equals(h.solid())) observations.add("It slowly darkens to brown as air oxidises it.");
+                if ("Co(OH)2".equals(h.solid())) observations.add("On standing it slowly turns pink, then brown in air.");
             }
             complexes();
         }
@@ -1405,6 +1636,7 @@ public class ChemistryEngine {
                 observations.add("Then the white precipitate dissolves again in the excess "
                         + (viaOh ? "alkali - zinc hydroxide is amphoteric." : "ammonia, forming a colourless complex."));
             }
+            Inorganic.moreComplexes(this);
         }
 
         void magnesiumWater() {
@@ -1525,6 +1757,7 @@ public class ChemistryEngine {
 
         double ph() {
             if (aqMl <= 0) return Double.NaN;
+            if (get("H2SO4(conc)") > EPS) return 0;
             double h = molar("H+");
             double oh = molar("OH-");
             double ph;
@@ -1533,28 +1766,39 @@ public class ChemistryEngine {
             } else if (oh > 1e-7) {
                 ph = 14 + Math.log10(oh);
             } else {
-                double ca = molar("CH3COOH"), cb = molar("CH3COO-"), nb = molar("NH3"), na = molar("NH4+");
-                if (ca > EPS && cb > EPS) ph = 4.76 + Math.log10(cb / ca);
-                else if (nb > EPS && na > EPS) ph = 9.25 + Math.log10(nb / na);
-                else if (ca > EPS) ph = 0.5 * (4.76 - Math.log10(ca));
-                else if (nb > EPS) ph = 14 - 0.5 * (4.75 - Math.log10(nb));
-                else if (molar("CO3^2-") > EPS) ph = 14 - 0.5 * (3.67 - Math.log10(molar("CO3^2-")));
-                else if (molar("HCO3-") > EPS) ph = 8.3;
-                else {
+                ph = Double.NaN;
+                // 1. The strongest weak acid present sets the pH (as a buffer when its conjugate base is there too).
+                for (Acids.Weak w : Acids.WEAK) {
+                    double ca = molar(w.key());
+                    if (ca <= EPS) continue;
+                    double cb = molar(w.conj()) * w.perAnion();
+                    ph = cb > EPS ? w.pKa() + Math.log10(cb / ca) : 0.5 * (w.pKa() - Math.log10(ca));
+                    break;
+                }
+                double nb = molar("NH3"), na = molar("NH4+");
+                if (Double.isNaN(ph)) {
+                    if (nb > EPS && na > EPS) ph = 9.25 + Math.log10(nb / na);
+                    else if (nb > EPS) ph = 14 - 0.5 * (4.75 - Math.log10(nb));
+                    else if (molar("PO4^3-") > EPS) ph = 14 - 0.5 * (1.65 - Math.log10(molar("PO4^3-")));
+                    else if (molar("CO3^2-") > EPS) ph = 14 - 0.5 * (3.67 - Math.log10(molar("CO3^2-")));
+                    else if (molar("HCO3-") > EPS) ph = 8.3;
+                }
+                if (Double.isNaN(ph)) {
                     double acidPh = Double.NaN;
-                    double[][] acids = {{molar("NH4+"), 9.25}, {molar("Cu^2+"), 7.5}, {molar("Fe^3+"), 2.2},
-                            {molar("Zn^2+"), 9.0}, {molar("Fe^2+"), 9.5}};
-                    for (double[] a : acids) {
-                        if (a[0] > EPS) {
-                            double v = 0.5 * (a[1] - Math.log10(a[0]));
+                    for (Object[] a : Acids.CATION_ACIDS) {
+                        double c = molar((String) a[0]);
+                        if (c > EPS) {
+                            double v = 0.5 * ((double) a[1] - Math.log10(c));
                             acidPh = Double.isNaN(acidPh) ? v : Math.min(acidPh, v);
                         }
                     }
                     double basePh = Double.NaN;
-                    double[][] bases = {{molar("CH3COO-"), 9.25}, {molar("OCl-"), 6.5}};
-                    for (double[] b : bases) {
-                        if (b[0] > EPS) {
-                            double v = 14 - 0.5 * (b[1] - Math.log10(b[0]));
+                    List<Object[]> bases = new ArrayList<>(Acids.OTHER_BASES);
+                    for (Acids.Weak w : Acids.WEAK) bases.add(new Object[] {w.conj(), w.pKa()});
+                    for (Object[] b : bases) {
+                        double c = molar((String) b[0]);
+                        if (c > EPS) {
+                            double v = 14 - 0.5 * ((14 - (double) b[1]) - Math.log10(c));
                             basePh = Double.isNaN(basePh) ? v : Math.max(basePh, v);
                         }
                     }
@@ -1568,17 +1812,15 @@ public class ChemistryEngine {
         void indicators(double ph) {
             if (Double.isNaN(ph) || bleached) return;
             boolean acidBaseChemistry = hadAcid || hadBase || Math.abs(ph - 7) > 1.5;
-            for (String ind : List.of("ind:pp", "ind:ui", "ind:mo")) {
+            for (String ind : INDICATORS) {
                 if (!has(ind)) continue;
-                Colour neutral = indicatorColour(ind, 7.0);
-                Colour now = indicatorColour(ind, ph);
-                boolean changed = "ind:pp".equals(ind) ? indicatorStrength(ind, ph) > 0.05 : now.distance(neutral) > 0.06;
-                if (!changed || !acidBaseChemistry) continue;
-                String name = switch (ind) {
-                    case "ind:pp" -> "Phenolphthalein";
-                    case "ind:ui" -> "Universal indicator";
-                    default -> "Methyl orange";
-                };
+                boolean changed = indicatorChanged(ind, ph);
+                if (!changed || !acidBaseChemistry) {
+                    reasons.add(indicatorName(ind) + " is " + indicatorWord(ind, ph)
+                            + String.format(Locale.ROOT, " here (pH about %.1f) - no colour change.", ph));
+                    continue;
+                }
+                String name = indicatorName(ind);
                 boolean acidic = ph < 7;
                 nextStart();
                 reaction("indicator-" + ind.substring(4), name + (acidic ? " in acid" : " in alkali"), "indicator",
@@ -1661,7 +1903,7 @@ public class ChemistryEngine {
                     } else if (ionic >= 2) {
                         finalReasons.add("Every possible pair of ions here is soluble, so all the ions stay dissolved and nothing new forms.");
                     } else {
-                        finalReasons.add("These substances simply mix: no new substances form under these conditions.");
+                        finalReasons.add(describeMix());
                     }
                 }
             }
@@ -1673,6 +1915,32 @@ public class ChemistryEngine {
                     : reactions.stream().filter(r -> "physical".equals(r.type())).toList(),
                     finalCues, kind == Kind.REACTION || kind == Kind.NO_REACTION ? observations : List.of(),
                     pending, mismatches, finalReasons, productList, ms, null);
+        }
+
+        /** Plain-language description of a mixture in which nothing chemical happens. */
+        String describeMix() {
+            List<Substance> subs = portions.stream().map(Portion::substance).toList();
+            List<String> names = subs.stream().map(s -> s.name().toLowerCase(Locale.ROOT)).toList();
+            String joined = names.size() == 2 ? names.get(0) + " and " + names.get(1)
+                    : String.join(", ", names.subList(0, names.size() - 1)) + " and " + names.get(names.size() - 1);
+            if (subs.stream().allMatch(s -> s.acid() != null || s.hasTag("acid"))) {
+                return "These are all acids, and acids don't react with each other - mixing them just gives a more dilute mixture of acids.";
+            }
+            if (subs.stream().allMatch(s -> s.base() != null || s.hasTag("alkali") || s.carbonate() != null && !s.isSolid())) {
+                return "These are all bases, and bases don't react with each other - the mixture is just a more dilute alkaline solution.";
+            }
+            Substance gas = subs.stream().filter(Substance::isGas).findFirst().orElse(null);
+            if (gas != null) {
+                return gas.name() + " doesn't react with " + (names.size() == 2 ? names.get(subs.indexOf(gas) == 0 ? 1 : 0) : "the other substances")
+                        + " at " + Math.round(tempC) + " °C - " + (aqMl > 0 ? "it bubbles through and escapes." : "the gas just surrounds it.");
+            }
+            boolean liquids = aqMl > 0 || organicMl > 0;
+            boolean coloured = subs.stream().anyMatch(s -> !s.isSolid() && !s.isGas() && s.opacity() > 0.2);
+            boolean dissolved = !observations.isEmpty();
+            return "No new substance forms: " + joined + (liquids ? " simply mix" + (aqMl > 0 && organicMl <= 0 ? " into one solution" : "")
+                    : " just sit together") + ", and each keeps its own particles."
+                    + (dissolved ? " Dissolving is a physical change, not a reaction." : "")
+                    + (coloured && liquids ? " The colour you see is just the original colours blended and diluted." : "");
         }
 
         Colour solutionColour(double ph) {
@@ -1689,7 +1957,26 @@ public class ChemistryEngine {
             addColour(cs, ws, "Br2", "#d0661a", 40);
             addColour(cs, ws, "Ni^2+", "#5fbf6a", 6);
             addColour(cs, ws, "Co^2+", "#e58fb0", 8);
-            addColour(cs, ws, "Cr^3+", "#4f8a5a", 10);
+            // Chromium(III) is violet as the sulfate, green once chloride ions join it.
+            addColour(cs, ws, "Cr^3+", has("Cl-") || !has("SO4^2-") ? "#4f8a5a" : "#6a4f8f", 10);
+            addColour(cs, ws, "Cr2O7^2-", "#f08a1c", 60);
+            addColour(cs, ws, "CrO4^2-", "#f2d21a", 40);
+            addColour(cs, ws, "MnO4^2-", "#2f8a3a", 400);
+            addColour(cs, ws, "[Fe(SCN)]^2+", "#9a0f12", 600);
+            addColour(cs, ws, "[Fe(C2O4)3]^3-", "#b8d44a", 20);
+            addColour(cs, ws, "[Fe(Sal)]^+", "#5a1f6a", 400);
+            addColour(cs, ws, "Fe(CH3COO)", "#8a3a1a", 80);
+            addColour(cs, ws, "[Ni(NH3)6]^2+", "#7a6ad8", 20);
+            addColour(cs, ws, "[Co(NH3)6]^2+", "#c8a26a", 10);
+            addColour(cs, ws, "[Cr(OH)6]^3-", "#2f6a3a", 20);
+            addColour(cs, ws, "Cu(cplx)", "#1f4fd8", 30);
+            addColour(cs, ws, "Cu(biuret)", "#5d8ee8", 60);
+            addColour(cs, ws, "Cu(protein)", "#7a3fb0", 120);
+            addColour(cs, ws, "Cu(gly)", "#1d3fc8", 30);
+            addColour(cs, ws, "[Cu(S2O3)2]^3-", "#eef6fb", 0.5);
+            addColour(cs, ws, "[Fe(S2O3)]^+", "#5a2a7a", 400);
+            addColour(cs, ws, "dcpip", "#2b54c8", ph < 5 ? 0 : 900);
+            addColour(cs, ws, "dcpip", "#e88aa8", ph < 5 ? 900 : 0);
             double i2 = molar("I2");
             if (i2 > EPS) {
                 if (starchComplex) {
@@ -1700,7 +1987,7 @@ public class ChemistryEngine {
                     ws.add(i2 * 90);
                 }
             }
-            for (String ind : List.of("ind:pp", "ind:ui", "ind:mo")) {
+            for (String ind : INDICATORS) {
                 double c = molar(ind);
                 if (c <= EPS || Double.isNaN(ph) || bleached) continue;
                 double strength = indicatorStrength(ind, ph) * c * 9000;
@@ -1735,12 +2022,48 @@ public class ChemistryEngine {
 
     // ------------------------------------------------------------------------------ indicators
 
+    /** Every pH indicator species the engine colours, in reporting order. */
+    static final List<String> INDICATORS = List.of(
+            "ind:pp", "ind:ui", "ind:mo", "ind:lit", "ind:btb", "ind:mr", "ind:tp", "ind:pr", "ind:rc", "ind:tur", "ind:hci");
+
+    static String indicatorName(String ind) {
+        return switch (ind) {
+            case "ind:pp" -> "Phenolphthalein";
+            case "ind:ui" -> "Universal indicator";
+            case "ind:mo" -> "Methyl orange";
+            case "ind:lit" -> "Litmus";
+            case "ind:btb" -> "Bromothymol blue";
+            case "ind:mr" -> "Methyl red";
+            case "ind:tp" -> "Thymolphthalein";
+            case "ind:pr" -> "Phenol red";
+            case "ind:rc" -> "Red cabbage indicator";
+            case "ind:tur" -> "Turmeric";
+            default -> "Hydrogencarbonate indicator";
+        };
+    }
+
+    /** Two-colour indicator: acid colour below lo, base colour above hi, a blend in between. */
+    private static Colour band(double ph, double lo, double hi, String acidHex, String baseHex) {
+        if (ph <= lo) return Colour.hex(acidHex, 1);
+        if (ph >= hi) return Colour.hex(baseHex, 1);
+        return Colour.lerp(Colour.hex(acidHex, 1), Colour.hex(baseHex, 1), (ph - lo) / (hi - lo));
+    }
+
+    private static final double[] RC_PH = {2, 4, 6, 7, 8, 10, 12};
+    private static final String[] RC_HEX = {"#d8204a", "#c2407a", "#8a3f9a", "#6a3fa0", "#3f5ab8", "#2f9a7a", "#d6c82a"};
+
     static Colour indicatorColour(String ind, double ph) {
         return switch (ind) {
             case "ind:pp" -> Colour.hex("#e8338a", 1);
-            case "ind:mo" -> ph < 3.1 ? Colour.hex("#e0302a", 1)
-                    : ph > 4.4 ? Colour.hex("#f2c230", 1)
-                    : Colour.lerp(Colour.hex("#e0302a", 1), Colour.hex("#f2c230", 1), (ph - 3.1) / 1.3);
+            case "ind:tp" -> Colour.hex("#2f5fd0", 1);
+            case "ind:mo" -> band(ph, 3.1, 4.4, "#e0302a", "#f2c230");
+            case "ind:lit" -> ph < 6.5 ? band(ph, 4.5, 6.5, "#d8343a", "#7a4fa0") : band(ph, 6.5, 8.3, "#7a4fa0", "#2f5fc8");
+            case "ind:btb" -> ph < 7.0 ? band(ph, 6.0, 7.0, "#e8d02a", "#3f9a55") : band(ph, 7.0, 7.6, "#3f9a55", "#2a5fc0");
+            case "ind:mr" -> band(ph, 4.4, 6.2, "#d8303a", "#f0c02a");
+            case "ind:pr" -> band(ph, 6.8, 8.2, "#f0c02a", "#e0306a");
+            case "ind:tur" -> band(ph, 7.4, 8.6, "#f2b81a", "#a8381a");
+            case "ind:hci" -> ph < 8.3 ? band(ph, 7.6, 8.3, "#e8c02a", "#e2563a") : band(ph, 8.3, 9.2, "#e2563a", "#8a2f9a");
+            case "ind:rc" -> scale(ph, RC_PH, RC_HEX);
             default -> universal(ph);
         };
     }
@@ -1749,16 +2072,45 @@ public class ChemistryEngine {
         if ("ind:pp".equals(ind)) {
             return ph < 8.2 ? 0 : Math.min(1, (ph - 8.2) / 1.8);
         }
+        if ("ind:tp".equals(ind)) {
+            return ph < 9.3 ? 0 : Math.min(1, (ph - 9.3) / 1.2);
+        }
         return 1;
+    }
+
+    /** Whether the indicator visibly differs from its colour in pure water. */
+    static boolean indicatorChanged(String ind, double ph) {
+        if ("ind:pp".equals(ind) || "ind:tp".equals(ind)) return indicatorStrength(ind, ph) > 0.05;
+        return indicatorColour(ind, ph).distance(indicatorColour(ind, 7.0)) > 0.06;
     }
 
     static String indicatorWord(String ind, double ph) {
         return switch (ind) {
             case "ind:pp" -> ph < 8.2 ? "colourless" : ph < 9.5 ? "pale pink" : "bright pink";
+            case "ind:tp" -> ph < 9.3 ? "colourless" : ph < 10.5 ? "pale blue" : "blue";
             case "ind:mo" -> ph < 3.1 ? "red" : ph > 4.4 ? "yellow" : "orange";
+            case "ind:lit" -> ph < 5 ? "red" : ph > 8 ? "blue" : "purple";
+            case "ind:btb" -> ph < 6.0 ? "yellow" : ph > 7.6 ? "blue" : "green";
+            case "ind:mr" -> ph < 4.4 ? "red" : ph > 6.2 ? "yellow" : "orange";
+            case "ind:pr" -> ph < 6.8 ? "yellow" : ph > 8.2 ? "red-pink" : "orange";
+            case "ind:tur" -> ph < 7.4 ? "yellow" : ph > 8.6 ? "red-brown" : "orange";
+            case "ind:hci" -> ph < 7.6 ? "yellow" : ph < 8.0 ? "orange" : ph < 8.8 ? "red" : "purple";
+            case "ind:rc" -> ph < 3 ? "red" : ph < 5 ? "pink" : ph < 6.5 ? "purple-pink" : ph < 7.5 ? "purple"
+                    : ph < 9 ? "blue" : ph < 11 ? "green" : "yellow";
             default -> ph < 2.5 ? "red" : ph < 4.5 ? "orange" : ph < 6.2 ? "yellow" : ph < 7.8 ? "green"
                     : ph < 9.5 ? "blue" : ph < 11.5 ? "indigo" : "violet";
         };
+    }
+
+    private static Colour scale(double ph, double[] phs, String[] hexes) {
+        if (ph <= phs[0]) return Colour.hex(hexes[0], 1);
+        for (int i = 1; i < phs.length; i++) {
+            if (ph <= phs[i]) {
+                double t = (ph - phs[i - 1]) / (phs[i] - phs[i - 1]);
+                return Colour.lerp(Colour.hex(hexes[i - 1], 1), Colour.hex(hexes[i], 1), t);
+            }
+        }
+        return Colour.hex(hexes[hexes.length - 1], 1);
     }
 
     private static final double[] UI_PH = {1, 3, 5, 7, 9, 11, 13};
@@ -1777,7 +2129,13 @@ public class ChemistryEngine {
 
     // ------------------------------------------------------------------------------ helpers
 
+    /** Molar masses of solids registered by the precipitation table and other rules. */
+    static final Map<String, Double> MOLAR_MASS = new java.util.concurrent.ConcurrentHashMap<>(Map.of(
+            "Cu2O", 143.1, "Ag", 107.9, "Cu", 63.5, "CHI3", 393.7, "SiO2·xH2O", 78.0, "C", 12.0));
+
     static double molarMassOf(String formula) {
+        Double known = MOLAR_MASS.get(formula);
+        if (known != null) return known;
         return switch (formula) {
             case "AgI" -> 234.8;
             case "AgBr" -> 187.8;
@@ -1817,6 +2175,8 @@ public class ChemistryEngine {
             case "#eee3bf", "#efe6b0" -> "cream";
             case "#58a894" -> "blue-green";
             case "#a0a88a" -> "grey-green";
+            case "#151515", "#1e1e22" -> "black";
+            case "#b83a22", "#c0402a" -> "brick-red";
             default -> "white";
         };
     }

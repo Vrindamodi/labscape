@@ -1,0 +1,903 @@
+{
+  "version": "2026.11.09-1",
+  "note": "Catalogue shelf, loaded via substances.json include. Solution species are molarities; solid species are mol per mol of formula unit; weak acids are counted in moles of acidic protons. Interim content - needs chemistry + safety reviewer sign-off.",
+  "substances": [
+    {
+      "id": "hno3",
+      "name": "Nitric acid (dilute)",
+      "formula": "HNO3",
+      "concentrationM": 1,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive",
+        "oxidising"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H+": 1,
+        "NO3-": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "NO3",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": true
+      },
+      "tags": [
+        "acid",
+        "nitric_acid",
+        "nitrate"
+      ],
+      "description": "A strong acid that is also an oxidising agent: with copper it gives nitrogen monoxide instead of hydrogen."
+    },
+    {
+      "id": "h2so4-conc",
+      "name": "Sulfuric acid (concentrated)",
+      "formula": "H2SO4",
+      "concentrationM": 18.4,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f4f6f2",
+      "opacity": 0.1,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "H2SO4(conc)": 18.4
+      },
+      "acid": {
+        "protons": 2,
+        "anion": "SO4",
+        "anionCharge": 2,
+        "poly": true,
+        "strong": true
+      },
+      "tags": [
+        "acid",
+        "conc_acid",
+        "dehydrating"
+      ],
+      "description": "98% sulfuric acid, used a few drops at a time as a catalyst and dehydrating agent. Gets very hot when it meets water - always add acid to water.",
+      "density": 1.84
+    },
+    {
+      "id": "h3po4",
+      "name": "Phosphoric acid",
+      "formula": "H3PO4",
+      "concentrationM": 1,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H3PO4": 3
+      },
+      "acid": {
+        "protons": 3,
+        "anion": "PO4",
+        "anionCharge": 3,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid",
+        "phosphate"
+      ],
+      "description": "A weak, three-protic acid. Used in cola drinks and rust removers."
+    },
+    {
+      "id": "citric-acid",
+      "name": "Citric acid",
+      "formula": "C6H8O7",
+      "concentrationM": 0.5,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H3Cit": 1.5
+      },
+      "acid": {
+        "protons": 3,
+        "anion": "C6H5O7",
+        "anionCharge": 3,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid",
+        "citrate"
+      ],
+      "description": "The weak acid in lemons and limes. Fizzes with carbonates."
+    },
+    {
+      "id": "oxalic-acid",
+      "name": "Oxalic acid",
+      "formula": "H2C2O4",
+      "concentrationM": 0.5,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "toxic",
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "H2C2O4": 1
+      },
+      "acid": {
+        "protons": 2,
+        "anion": "C2O4",
+        "anionCharge": 2,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid",
+        "oxalate"
+      ],
+      "description": "A fairly strong organic acid found in rhubarb leaves. Toxic. Decolourises warm acidified permanganate."
+    },
+    {
+      "id": "lactic-acid",
+      "name": "Lactic acid",
+      "formula": "CH3CH(OH)COOH",
+      "concentrationM": 1,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "HLac": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "C3H5O3",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid"
+      ],
+      "description": "The acid in sour milk and in tired muscles."
+    },
+    {
+      "id": "methanoic-acid",
+      "name": "Methanoic acid",
+      "formula": "HCOOH",
+      "concentrationM": 1,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "HCOOH": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "HCOO",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid",
+        "formate"
+      ],
+      "description": "Formic acid - the sting of ants and nettles. Unusually for an acid, it is also a reducing agent."
+    },
+    {
+      "id": "propanoic-acid",
+      "name": "Propanoic acid",
+      "formula": "C2H5COOH",
+      "concentrationM": 1,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "C2H5COOH": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "C2H5COO",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid"
+      ],
+      "description": "A weak carboxylic acid used to stop bread going mouldy. Smells sharp and cheesy."
+    },
+    {
+      "id": "butanoic-acid",
+      "name": "Butanoic acid",
+      "formula": "C3H7COOH",
+      "concentrationM": 1,
+      "category": "acid",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "C3H7COOH": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "C3H7COO",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid"
+      ],
+      "description": "Smells of rancid butter - yet its esters smell of pineapple."
+    },
+    {
+      "id": "ethanoic-acid-glacial",
+      "name": "Glacial ethanoic acid",
+      "formula": "CH3COOH",
+      "category": "acid",
+      "form": "liquid",
+      "aqueous": false,
+      "colour": "#f6fbff",
+      "opacity": 0.05,
+      "hazards": [
+        "corrosive",
+        "flammable"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "CH3COOH": 17.4
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "CH3COO",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "molarMass": 60.05,
+      "tags": [
+        "acid",
+        "weak_acid",
+        "fuel"
+      ],
+      "description": "Pure (100%) ethanoic acid - it freezes into ice-like crystals at 17 °C. Pungent vinegar smell.",
+      "density": 1.05,
+      "miscibility": "miscible",
+      "flashPointC": 39
+    },
+    {
+      "id": "benzoic-acid",
+      "name": "Benzoic acid",
+      "formula": "C6H5COOH",
+      "category": "acid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "C6H5COOH(s)": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "C6H5COO",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "molarMass": 122.12,
+      "tags": [
+        "acid",
+        "weak_acid",
+        "fuel"
+      ],
+      "description": "White flaky crystals, barely soluble in cold water but much more soluble in hot. A food preservative (E210)."
+    },
+    {
+      "id": "salicylic-acid",
+      "name": "Salicylic acid",
+      "formula": "HOC6H4COOH",
+      "category": "acid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "HSal(s)": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "C7H5O3",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "molarMass": 138.12,
+      "tags": [
+        "acid",
+        "weak_acid",
+        "fuel"
+      ],
+      "description": "White needles, sparingly soluble in water. Made from willow bark; the parent of aspirin."
+    },
+    {
+      "id": "citric-acid-crystals",
+      "name": "Citric acid crystals",
+      "formula": "C6H8O7",
+      "category": "acid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "H3Cit(s)": 1
+      },
+      "acid": {
+        "protons": 3,
+        "anion": "C6H5O7",
+        "anionCharge": 3,
+        "poly": true,
+        "strong": false
+      },
+      "molarMass": 192.12,
+      "tags": [
+        "acid",
+        "weak_acid",
+        "citrate",
+        "fuel"
+      ],
+      "description": "Very soluble white crystals. Dissolving them takes in heat."
+    },
+    {
+      "id": "lioh",
+      "name": "Lithium hydroxide",
+      "formula": "LiOH",
+      "concentrationM": 0.5,
+      "category": "alkali",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Li+": 0.5,
+        "OH-": 0.5
+      },
+      "base": {
+        "cation": "Li",
+        "cationCharge": 1,
+        "hydroxides": 1,
+        "ammonia": false
+      },
+      "tags": [
+        "alkali"
+      ],
+      "description": "A strong alkali. Lithium compounds give a crimson flame."
+    },
+    {
+      "id": "baoh2",
+      "name": "Barium hydroxide",
+      "formula": "Ba(OH)2",
+      "concentrationM": 0.1,
+      "category": "alkali",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive",
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 30,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ba^2+": 0.1,
+        "OH-": 0.2
+      },
+      "base": {
+        "cation": "Ba",
+        "cationCharge": 2,
+        "hydroxides": 2,
+        "ammonia": false
+      },
+      "tags": [
+        "alkali"
+      ],
+      "description": "A strong, toxic alkali. With sulfuric acid it makes insoluble barium sulfate."
+    },
+    {
+      "id": "k2co3",
+      "name": "Potassium carbonate",
+      "formula": "K2CO3",
+      "concentrationM": 0.5,
+      "category": "alkali",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 1,
+        "CO3^2-": 0.5
+      },
+      "carbonate": {
+        "cation": "K",
+        "cationCharge": 1,
+        "cationCount": 2,
+        "unitProtons": 2
+      },
+      "tags": [
+        "salt",
+        "carbonate"
+      ],
+      "description": "Potash: a soluble carbonate that makes an alkaline solution."
+    },
+    {
+      "id": "na3po4",
+      "name": "Sodium phosphate",
+      "formula": "Na3PO4",
+      "concentrationM": 0.1,
+      "category": "alkali",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 50,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.3,
+        "PO4^3-": 0.1
+      },
+      "tags": [
+        "salt",
+        "phosphate"
+      ],
+      "description": "A strongly alkaline cleaning salt. Phosphate ions precipitate many metal ions."
+    },
+    {
+      "id": "naoh-pellets",
+      "name": "Sodium hydroxide pellets",
+      "formula": "NaOH",
+      "category": "alkali",
+      "form": "solid",
+      "solidForm": "pellets",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "NaOH(s)": 1
+      },
+      "base": {
+        "cation": "Na",
+        "cationCharge": 1,
+        "hydroxides": 1,
+        "ammonia": false
+      },
+      "molarMass": 40,
+      "tags": [
+        "alkali"
+      ],
+      "description": "Solid caustic soda. It dissolves with a lot of heat - and absorbs water from the air."
+    },
+    {
+      "id": "caoh2-powder",
+      "name": "Calcium hydroxide (slaked lime)",
+      "formula": "Ca(OH)2",
+      "category": "alkali",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Ca(OH)2(s)": 1
+      },
+      "molarMass": 74.09,
+      "tags": [
+        "alkali",
+        "basic_solid"
+      ],
+      "description": "Only slightly soluble: shaken with water and filtered it makes limewater."
+    },
+    {
+      "id": "cao-powder",
+      "name": "Calcium oxide (quicklime)",
+      "formula": "CaO",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "lumps",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CaO(s)": 1
+      },
+      "molarMass": 56.08,
+      "tags": [
+        "oxide",
+        "basic_solid"
+      ],
+      "description": "Quicklime. Reacts with water so exothermically that it steams."
+    },
+    {
+      "id": "mgo-powder",
+      "name": "Magnesium oxide",
+      "formula": "MgO",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "MgO(s)": 1
+      },
+      "molarMass": 40.3,
+      "tags": [
+        "oxide",
+        "basic_solid"
+      ],
+      "description": "A white basic oxide. Insoluble in water but neutralises acids."
+    },
+    {
+      "id": "zno-powder",
+      "name": "Zinc oxide",
+      "formula": "ZnO",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "ZnO(s)": 1
+      },
+      "molarMass": 81.38,
+      "tags": [
+        "oxide",
+        "basic_solid"
+      ],
+      "description": "A white amphoteric oxide - yellow when hot, white again when cold."
+    },
+    {
+      "id": "mgoh2-powder",
+      "name": "Magnesium hydroxide",
+      "formula": "Mg(OH)2",
+      "category": "alkali",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Mg(OH)2(s)": 1
+      },
+      "molarMass": 58.32,
+      "tags": [
+        "basic_solid"
+      ],
+      "description": "Milk of magnesia. Insoluble, but neutralises acids - an antacid."
+    },
+    {
+      "id": "caco3-powder",
+      "name": "Calcium carbonate powder",
+      "formula": "CaCO3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CaCO3(s)": 1
+      },
+      "carbonate": {
+        "cation": "Ca",
+        "cationCharge": 2,
+        "cationCount": 1,
+        "unitProtons": 2
+      },
+      "molarMass": 100.09,
+      "tags": [
+        "carbonate"
+      ],
+      "description": "Powdered chalk/limestone. A larger surface area than marble chips, so it reacts faster."
+    },
+    {
+      "id": "mgco3-powder",
+      "name": "Magnesium carbonate",
+      "formula": "MgCO3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "MgCO3(s)": 1
+      },
+      "molarMass": 84.31,
+      "tags": [
+        "carbonate",
+        "basic_solid"
+      ],
+      "description": "A light white powder used as gymnasts' chalk."
+    },
+    {
+      "id": "cuco3-powder",
+      "name": "Copper(II) carbonate",
+      "formula": "CuCO3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#4fa58a",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CuCO3(s)": 1
+      },
+      "molarMass": 123.56,
+      "tags": [
+        "carbonate",
+        "basic_solid"
+      ],
+      "description": "A green powder (basic copper carbonate - the green on old copper roofs). Turns black when heated strongly."
+    },
+    {
+      "id": "znco3-powder",
+      "name": "Zinc carbonate",
+      "formula": "ZnCO3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "ZnCO3(s)": 1
+      },
+      "molarMass": 125.39,
+      "tags": [
+        "carbonate",
+        "basic_solid"
+      ],
+      "description": "A white powder. Fizzes with acids; decomposes to zinc oxide when heated strongly."
+    }
+  ]
+}

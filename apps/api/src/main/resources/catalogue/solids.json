@@ -1,0 +1,763 @@
+{
+  "version": "2026.11.09-1",
+  "note": "Catalogue shelf, loaded via substances.json include. Solution species are molarities; solid species are mol per mol of formula unit; weak acids are counted in moles of acidic protons. Interim content - needs chemistry + safety reviewer sign-off.",
+  "substances": [
+    {
+      "id": "cacl2-anhydrous",
+      "name": "Anhydrous calcium chloride",
+      "formula": "CaCl2",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "granules",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CaCl2(s)": 1
+      },
+      "molarMass": 110.98,
+      "tags": [],
+      "description": "A drying agent. Dissolves with a lot of heat - used in self-heating cans."
+    },
+    {
+      "id": "nh4cl-solid",
+      "name": "Ammonium chloride crystals",
+      "formula": "NH4Cl",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "NH4Cl(s)": 1
+      },
+      "molarMass": 53.49,
+      "tags": [
+        "ammonium"
+      ],
+      "description": "Dissolving it takes in heat. When heated it seems to sublime."
+    },
+    {
+      "id": "hypo-crystals",
+      "name": "Sodium thiosulfate crystals",
+      "formula": "Na2S2O3·5H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Na2S2O3·5H2O(s)": 1
+      },
+      "molarMass": 248.18,
+      "tags": [
+        "thiosulfate"
+      ],
+      "description": "'Hypo', the photographers' fixer. Dissolving it makes water cold."
+    },
+    {
+      "id": "cocl2-crystals",
+      "name": "Cobalt(II) chloride crystals",
+      "formula": "CoCl2·6H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#c0466e",
+      "opacity": 1,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CoCl2·6H2O(s)": 1
+      },
+      "molarMass": 237.93,
+      "tags": [],
+      "description": "Pink crystals that turn blue when they lose their water."
+    },
+    {
+      "id": "cocl2-paper",
+      "name": "Cobalt chloride paper",
+      "formula": "CoCl2",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "paper",
+      "aqueous": false,
+      "colour": "#3b5fc8",
+      "opacity": 1,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 0.05,
+        "max": 1,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CoCl2(anh)": 1
+      },
+      "molarMass": 129.84,
+      "tags": [
+        "water_test"
+      ],
+      "description": "Dry blue paper that turns pink with water - a test for water."
+    },
+    {
+      "id": "feso4-crystals",
+      "name": "Iron(II) sulfate crystals",
+      "formula": "FeSO4·7H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#a9d6a0",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "FeSO4·7H2O(s)": 1
+      },
+      "molarMass": 278.01,
+      "tags": [],
+      "description": "Pale green crystals ('green vitriol')."
+    },
+    {
+      "id": "alum-crystals",
+      "name": "Potassium alum crystals",
+      "formula": "KAl(SO4)2·12H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "KAl(SO4)2·12H2O(s)": 1
+      },
+      "molarMass": 474.39,
+      "tags": [],
+      "description": "Far more soluble in hot water than cold - perfect for growing big crystals."
+    },
+    {
+      "id": "sand",
+      "name": "Sand",
+      "formula": "SiO2",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "grains",
+      "aqueous": false,
+      "colour": "#e2cf9c",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.5,
+        "max": 10,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "SiO2(s)": 1
+      },
+      "molarMass": 60.08,
+      "tags": [
+        "inert_solid"
+      ],
+      "description": "Silicon dioxide. Insoluble and unreactive - useful for practising filtration."
+    },
+    {
+      "id": "al-foil",
+      "name": "Aluminium foil",
+      "formula": "Al",
+      "category": "metal",
+      "form": "solid",
+      "solidForm": "foil",
+      "aqueous": false,
+      "colour": "#c4cad2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Al(s)": 1
+      },
+      "metal": {
+        "symbol": "Al",
+        "charge": 3,
+        "e0": -1.66,
+        "acidRate": 0.25,
+        "colour": "#c4cad2"
+      },
+      "molarMass": 26.98,
+      "tags": [
+        "metal",
+        "reactive_metal"
+      ],
+      "description": "A reactive metal protected by a thin oxide layer, so it often reacts slowly at first."
+    },
+    {
+      "id": "sn-granules",
+      "name": "Tin granules",
+      "formula": "Sn",
+      "category": "metal",
+      "form": "solid",
+      "solidForm": "granules",
+      "aqueous": false,
+      "colour": "#d4d6d8",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Sn(s)": 1
+      },
+      "metal": {
+        "symbol": "Sn",
+        "charge": 2,
+        "e0": -0.14,
+        "acidRate": 0.12,
+        "colour": "#d4d6d8"
+      },
+      "molarMass": 118.71,
+      "tags": [
+        "metal"
+      ],
+      "description": "Just above hydrogen in the reactivity series: reacts very slowly with dilute acids."
+    },
+    {
+      "id": "steel-wool",
+      "name": "Steel wool",
+      "formula": "Fe",
+      "category": "metal",
+      "form": "solid",
+      "solidForm": "wool",
+      "aqueous": false,
+      "colour": "#8c8f93",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Fe(s)": 1
+      },
+      "metal": {
+        "symbol": "Fe",
+        "charge": 2,
+        "e0": -0.44,
+        "acidRate": 0.6,
+        "colour": "#8c8f93"
+      },
+      "molarMass": 55.85,
+      "tags": [
+        "metal",
+        "reactive_metal"
+      ],
+      "description": "Fine iron threads with a huge surface area. Burns with sparks in a flame."
+    },
+    {
+      "id": "glucose-powder",
+      "name": "Glucose powder",
+      "formula": "C6H12O6",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "org:glucose": 1
+      },
+      "molarMass": 180.16,
+      "tags": [
+        "fuel",
+        "sugar"
+      ],
+      "description": "A reducing sugar: positive with Benedict's and Fehling's solutions."
+    },
+    {
+      "id": "starch-powder",
+      "name": "Starch powder (cornflour)",
+      "formula": "(C6H10O5)n",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "starch(s)": 1
+      },
+      "molarMass": 162.14,
+      "tags": [
+        "fuel"
+      ],
+      "description": "Makes a cloudy suspension in water. Turns blue-black with iodine."
+    },
+    {
+      "id": "znso4-crystals",
+      "name": "Zinc sulfate crystals",
+      "formula": "ZnSO4·7H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "ZnSO4·7H2O(s)": 1
+      },
+      "molarMass": 287.56,
+      "tags": [],
+      "description": "White vitriol: colourless crystals."
+    },
+    {
+      "id": "niso4-crystals",
+      "name": "Nickel(II) sulfate crystals",
+      "formula": "NiSO4·6H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#3fae5a",
+      "opacity": 1,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "NiSO4·6H2O(s)": 1
+      },
+      "molarMass": 262.85,
+      "tags": [],
+      "description": "Emerald-green crystals."
+    },
+    {
+      "id": "cucl2-crystals",
+      "name": "Copper(II) chloride crystals",
+      "formula": "CuCl2·2H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#3fa38a",
+      "opacity": 1,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "CuCl2·2H2O(s)": 1
+      },
+      "molarMass": 170.48,
+      "tags": [],
+      "description": "Blue-green crystals."
+    },
+    {
+      "id": "fecl3-crystals",
+      "name": "Iron(III) chloride crystals",
+      "formula": "FeCl3·6H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "lumps",
+      "aqueous": false,
+      "colour": "#b8701c",
+      "opacity": 1,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "FeCl3·6H2O(s)": 1
+      },
+      "molarMass": 270.3,
+      "tags": [],
+      "description": "Yellow-brown lumps that dissolve with some heat."
+    },
+    {
+      "id": "chrome-alum-crystals",
+      "name": "Chrome alum crystals",
+      "formula": "KCr(SO4)2·12H2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#4a2a6a",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "KCr(SO4)2·12H2O(s)": 1
+      },
+      "molarMass": 499.4,
+      "tags": [],
+      "description": "Deep purple octahedral crystals."
+    },
+    {
+      "id": "ki-crystals",
+      "name": "Potassium iodide crystals",
+      "formula": "KI",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "KI(s)": 1
+      },
+      "molarMass": 166,
+      "tags": [],
+      "description": "White crystals, very soluble. Dissolving them makes water colder."
+    },
+    {
+      "id": "kbr-crystals",
+      "name": "Potassium bromide crystals",
+      "formula": "KBr",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "KBr(s)": 1
+      },
+      "molarMass": 119,
+      "tags": [],
+      "description": "White crystals that dissolve readily."
+    },
+    {
+      "id": "cu2o-powder",
+      "name": "Copper(I) oxide",
+      "formula": "Cu2O",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#b83a22",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Cu2O(s)": 1
+      },
+      "molarMass": 143.09,
+      "tags": [],
+      "description": "Red-brown powder - the brick-red solid from Benedict's test. In acid it splits into copper and copper(II)."
+    },
+    {
+      "id": "al2o3-powder",
+      "name": "Aluminium oxide",
+      "formula": "Al2O3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Al2O3(s)": 1
+      },
+      "molarMass": 101.96,
+      "tags": [
+        "inert_solid"
+      ],
+      "description": "Alumina: very hard and unreactive with dilute acids at room temperature."
+    },
+    {
+      "id": "pb-granules",
+      "name": "Lead granules",
+      "formula": "Pb",
+      "category": "metal",
+      "form": "solid",
+      "solidForm": "granules",
+      "aqueous": false,
+      "colour": "#6b7078",
+      "opacity": 1,
+      "hazards": [
+        "toxic",
+        "environmental"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Pb(s)": 1
+      },
+      "metal": {
+        "symbol": "Pb",
+        "charge": 2,
+        "e0": -0.13,
+        "acidRate": 0.05,
+        "colour": "#6b7078"
+      },
+      "molarMass": 207.2,
+      "tags": [
+        "metal"
+      ],
+      "description": "A dense, toxic metal. Insoluble lead chloride or sulfate quickly coats it and stops it reacting with acids."
+    },
+    {
+      "id": "ag-foil",
+      "name": "Silver foil",
+      "formula": "Ag",
+      "category": "metal",
+      "form": "solid",
+      "solidForm": "foil",
+      "aqueous": false,
+      "colour": "#d9dde3",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Ag(s)": 1
+      },
+      "metal": {
+        "symbol": "Ag",
+        "charge": 1,
+        "e0": 0.8,
+        "acidRate": 0,
+        "colour": "#d9dde3"
+      },
+      "molarMass": 107.87,
+      "tags": [
+        "metal"
+      ],
+      "description": "A noble metal: no reaction with dilute acids or water."
+    },
+    {
+      "id": "aspirin",
+      "name": "Aspirin",
+      "formula": "CH3COOC6H4COOH",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "tablet",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "Asp(s)": 1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "C9H7O4",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "molarMass": 180.16,
+      "tags": [
+        "acid",
+        "weak_acid",
+        "fuel"
+      ],
+      "description": "Acetylsalicylic acid. Pure aspirin gives no colour with iron(III) chloride; once hydrolysed (hot alkali) it gives salicylate, which turns it violet."
+    },
+    {
+      "id": "vanillin",
+      "name": "Vanillin",
+      "formula": "C8H8O3",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "crystals",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "org:vanillin(s)": 1
+      },
+      "molarMass": 152.15,
+      "tags": [
+        "fuel",
+        "aldehyde"
+      ],
+      "description": "The flavour of vanilla - an aromatic aldehyde. Sparingly soluble in cold water."
+    },
+    {
+      "id": "candle-wax",
+      "name": "Candle wax",
+      "formula": "C25H52",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "lumps",
+      "aqueous": false,
+      "colour": "#f6f6f2",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.1,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "species": {
+        "org:wax": 1
+      },
+      "molarMass": 352.7,
+      "tags": [
+        "fuel",
+        "alkane"
+      ],
+      "description": "Paraffin wax: a mixture of solid alkanes. Melts at about 55 °C.",
+      "flashPointC": 200
+    }
+  ]
+}

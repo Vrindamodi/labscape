@@ -270,12 +270,12 @@ class SafetyPipelineTest {
     }
 
     @Test
-    void unmodelledCombinationIsUnsupportedWithNoCues() {
+    void formerlyUnmodelledCombinationsAreNowModelled() {
         SimulationResult r = mix(in("bleach", 5), in("ki", 5));
-        assertThat(r.outcome()).isEqualTo(Outcome.UNSUPPORTED);
-        assertThat(r.cues()).isEmpty();
-        assertThat(r.presentation().title()).isEqualTo(OutcomeCopy.UNSUPPORTED_TITLE);
-        assertThat(mix(in("na2s2o3", 5), in("fecl3", 5)).outcome()).isEqualTo(Outcome.UNSUPPORTED);
+        assertThat(r.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(discoveries(r)).contains("iodide-oxidation");
+        assertThat(mix(in("na2s2o3", 5), in("fecl3", 5)).outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(mix(in("ethanol", 10), in("ethanoic-acid", 10)).outcome()).isEqualTo(Outcome.NEEDS_CONDITIONS);
     }
 
     @Test
@@ -490,6 +490,8 @@ class SafetyPipelineTest {
             boolean ignite = temp > 50;
             for (int i = 0; i < all.size(); i++) {
                 for (int j = i + 1; j < all.size(); j++) {
+                    // Hot + spark: a deterministic quarter of the pairs (ChemistryCoverageTest sweeps them all at engine level).
+                    if (ignite && (i + j) % 4 != 0) continue;
                     SimulationResult r = mix(pairs, "pairs", temp, ignite, mid(all.get(i)), mid(all.get(j)));
                     assertSane(r, all.get(i).id() + "+" + all.get(j).id() + "@" + temp + (ignite ? "+spark" : ""));
                     counts.merge(r.outcome(), 1, Integer::sum);
@@ -510,8 +512,9 @@ class SafetyPipelineTest {
             n++;
         }
         System.out.println("Resolved " + n + " mixtures: " + counts);
+        // Unsupported now only comes from superheavy elements; procedure mismatch has its own test (starch-iodine hot).
         assertThat(counts.keySet()).contains(Outcome.REACTION, Outcome.NO_REACTION, Outcome.NEEDS_CONDITIONS,
-                Outcome.UNSUPPORTED, Outcome.PROHIBITED, Outcome.PROCEDURE_MISMATCH);
+                Outcome.UNSUPPORTED, Outcome.PROHIBITED);
     }
 
     private static In mid(Substance s) {

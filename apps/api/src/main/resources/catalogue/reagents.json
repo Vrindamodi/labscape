@@ -1,0 +1,589 @@
+{
+  "version": "2026.11.09-1",
+  "note": "Catalogue shelf, loaded via substances.json include. Solution species are molarities; solid species are mol per mol of formula unit; weak acids are counted in moles of acidic protons. Interim content - needs chemistry + safety reviewer sign-off.",
+  "substances": [
+    {
+      "id": "bromine-water",
+      "name": "Bromine water",
+      "formula": "Br2",
+      "concentrationM": 0.02,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#d0661a",
+      "opacity": 0.5,
+      "hazards": [
+        "toxic",
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Br2": 0.02
+      },
+      "tags": [
+        "reagent",
+        "bromine"
+      ],
+      "description": "Orange bromine dissolved in water: the test for C=C double bonds (it decolourises)."
+    },
+    {
+      "id": "chlorine-water",
+      "name": "Chlorine water",
+      "formula": "Cl2",
+      "concentrationM": 0.04,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#e3ef9a",
+      "opacity": 0.2,
+      "hazards": [
+        "toxic",
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Cl2": 0.04,
+        "HOCl": 0.01,
+        "H+": 0.01,
+        "Cl-": 0.01
+      },
+      "tags": [
+        "reagent",
+        "chlorine_source"
+      ],
+      "description": "Pale green chlorine dissolved in water. Displaces bromine and iodine; bleaches dyes."
+    },
+    {
+      "id": "fehlings-a",
+      "name": "Fehling's solution A",
+      "formula": "CuSO4",
+      "concentrationM": 0.25,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#2f8fe0",
+      "opacity": 0.5,
+      "hazards": [
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Cu^2+": 0.25,
+        "SO4^2-": 0.25
+      },
+      "tags": [
+        "reagent",
+        "copper_salt"
+      ],
+      "description": "Copper(II) sulfate. Mix with Fehling's B just before use."
+    },
+    {
+      "id": "fehlings-b",
+      "name": "Fehling's solution B",
+      "formula": "NaOH + KNaC4H4O6",
+      "concentrationM": 2.5,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 3.1,
+        "K+": 0.6,
+        "OH-": 2.5,
+        "Tart^2-": 0.6
+      },
+      "base": {
+        "cation": "Na",
+        "cationCharge": 1,
+        "hydroxides": 1,
+        "ammonia": false
+      },
+      "tags": [
+        "reagent",
+        "alkali"
+      ],
+      "description": "Alkaline sodium potassium tartrate (Rochelle salt). With Fehling's A it gives a deep blue solution."
+    },
+    {
+      "id": "benedicts",
+      "name": "Benedict's solution",
+      "formula": "Cu2+ / citrate / Na2CO3",
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#2d6fd8",
+      "opacity": 0.55,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Cu(cplx)": 0.07,
+        "Cit^3-": 0.6,
+        "CO3^2-": 0.9,
+        "Na+": 3.6
+      },
+      "tags": [
+        "reagent",
+        "copper_salt"
+      ],
+      "description": "Blue copper(II) citrate in sodium carbonate. Heated with a reducing sugar it turns green, yellow, orange then brick red."
+    },
+    {
+      "id": "tollens",
+      "name": "Tollens' reagent (freshly made)",
+      "formula": "[Ag(NH3)2]+",
+      "concentrationM": 0.05,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ag(NH3)2+": 0.05,
+        "NO3-": 0.05,
+        "NH3": 0.05,
+        "Na+": 0.05,
+        "OH-": 0.05
+      },
+      "tags": [
+        "reagent",
+        "tollens",
+        "ammonia_source"
+      ],
+      "description": "Ammoniacal silver nitrate. Warmed with an aldehyde it coats the glass with a silver mirror. Always made fresh and washed away straight after - never stored."
+    },
+    {
+      "id": "biuret",
+      "name": "Biuret reagent",
+      "formula": "Cu2+ / NaOH",
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#5d8ee8",
+      "opacity": 0.35,
+      "hazards": [
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Cu(biuret)": 0.01,
+        "OH-": 1,
+        "Na+": 1
+      },
+      "tags": [
+        "reagent",
+        "alkali"
+      ],
+      "description": "Pale blue alkaline copper(II). Turns purple with proteins (peptide bonds)."
+    },
+    {
+      "id": "kmno4-acid",
+      "name": "Acidified potassium manganate(VII)",
+      "formula": "KMnO4/H+",
+      "concentrationM": 0.01,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#7b1f8a",
+      "opacity": 0.85,
+      "hazards": [
+        "oxidising",
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.01,
+        "MnO4-": 0.01,
+        "H+": 1,
+        "SO4^2-": 0.5
+      },
+      "acid": {
+        "protons": 2,
+        "anion": "SO4",
+        "anionCharge": 2,
+        "poly": true,
+        "strong": true
+      },
+      "tags": [
+        "reagent",
+        "permanganate",
+        "acid"
+      ],
+      "description": "Purple permanganate in dilute sulfuric acid. Decolourised by reducing agents and by alkenes."
+    },
+    {
+      "id": "k2cr2o7-acid",
+      "name": "Acidified potassium dichromate(VI)",
+      "formula": "K2Cr2O7/H+",
+      "concentrationM": 0.05,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f08a1c",
+      "opacity": 0.6,
+      "hazards": [
+        "toxic",
+        "oxidising",
+        "corrosive"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "K+": 0.1,
+        "Cr2O7^2-": 0.05,
+        "H+": 1,
+        "SO4^2-": 0.5
+      },
+      "acid": {
+        "protons": 2,
+        "anion": "SO4",
+        "anionCharge": 2,
+        "poly": true,
+        "strong": true
+      },
+      "tags": [
+        "reagent",
+        "dichromate",
+        "acid"
+      ],
+      "description": "Orange dichromate in sulfuric acid. Turns green when it oxidises primary and secondary alcohols or aldehydes (on warming)."
+    },
+    {
+      "id": "agno3-acid",
+      "name": "Acidified silver nitrate",
+      "formula": "AgNO3/HNO3",
+      "concentrationM": 0.05,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "corrosive",
+        "environmental"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ag+": 0.05,
+        "NO3-": 0.15,
+        "H+": 0.1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "NO3",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": true
+      },
+      "tags": [
+        "reagent",
+        "silver_salt",
+        "acid",
+        "nitric_acid",
+        "nitrate"
+      ],
+      "description": "Silver nitrate with nitric acid - the acid stops carbonate giving a false positive in the halide test."
+    },
+    {
+      "id": "bacl2-acid",
+      "name": "Acidified barium chloride",
+      "formula": "BaCl2/HCl",
+      "concentrationM": 0.1,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Ba^2+": 0.1,
+        "Cl-": 0.3,
+        "H+": 0.1
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "Cl",
+        "anionCharge": 1,
+        "poly": false,
+        "strong": true
+      },
+      "tags": [
+        "reagent",
+        "acid"
+      ],
+      "description": "Barium chloride with hydrochloric acid: the sulfate test without false positives from carbonate."
+    },
+    {
+      "id": "dcpip",
+      "name": "DCPIP solution",
+      "formula": "DCPIP",
+      "concentrationM": 0.001,
+      "category": "other",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#2b54c8",
+      "opacity": 0.6,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "dcpip": 0.001
+      },
+      "tags": [
+        "reagent",
+        "dye"
+      ],
+      "description": "A blue dye decolourised by vitamin C - a test for ascorbic acid."
+    },
+    {
+      "id": "borax",
+      "name": "Borax solution",
+      "formula": "Na2B4O7",
+      "concentrationM": 0.1,
+      "category": "salt",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#eef6fb",
+      "opacity": 0.06,
+      "hazards": [
+        "toxic"
+      ],
+      "limits": {
+        "min": 1,
+        "max": 20,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "Na+": 0.2,
+        "B(OH)4-": 0.2,
+        "H3BO3": 0.2
+      },
+      "tags": [
+        "reagent",
+        "salt",
+        "borate"
+      ],
+      "description": "Sodium borate: a mild alkali that cross-links PVA glue into slime. Wash hands afterwards."
+    },
+    {
+      "id": "litmus",
+      "name": "Litmus solution",
+      "formula": "litmus",
+      "category": "indicator",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#7a4fa0",
+      "opacity": 0.7,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "ind:lit": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "Red in acid, blue in alkali, purple when neutral."
+    },
+    {
+      "id": "bromothymol-blue",
+      "name": "Bromothymol blue",
+      "formula": "BTB",
+      "category": "indicator",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#3f9a55",
+      "opacity": 0.7,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "ind:btb": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "Yellow below pH 6, green near neutral, blue above pH 7.6."
+    },
+    {
+      "id": "methyl-red",
+      "name": "Methyl red",
+      "formula": "MR",
+      "category": "indicator",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f0b52a",
+      "opacity": 0.7,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "ind:mr": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "Red below pH 4.4, yellow above pH 6.2."
+    },
+    {
+      "id": "thymolphthalein",
+      "name": "Thymolphthalein",
+      "formula": "TP",
+      "category": "indicator",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f4f6f8",
+      "opacity": 0.05,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "ind:tp": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "Colourless until about pH 9.4, then blue."
+    },
+    {
+      "id": "phenol-red",
+      "name": "Phenol red",
+      "formula": "PR",
+      "category": "indicator",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#f2a03a",
+      "opacity": 0.7,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "ind:pr": 0.02
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "Yellow below pH 6.8, red above pH 8.2."
+    },
+    {
+      "id": "hco3-indicator",
+      "name": "Hydrogencarbonate indicator",
+      "formula": "HCI",
+      "category": "indicator",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#e2563a",
+      "opacity": 0.7,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 10,
+        "unit": "drops"
+      },
+      "model": "full",
+      "species": {
+        "ind:hci": 0.02,
+        "HCO3-": 0.0005,
+        "Na+": 0.0005
+      },
+      "tags": [
+        "indicator"
+      ],
+      "description": "Red at about pH 8.3; yellow when carbon dioxide is added, purple when it is removed."
+    }
+  ]
+}

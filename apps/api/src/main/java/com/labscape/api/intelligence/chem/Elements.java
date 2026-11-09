@@ -119,6 +119,12 @@ final class Elements {
         if (Set.of("alkali", "alkaline-earth", "lanthanide").contains(cat) || Set.of("Al", "Zn", "Fe", "Ti").contains(sym)) {
             tags.add("reactive_metal");
         }
+        // Safety tags used by the prohibited-pattern rules.
+        if ("I".equals(sym)) tags.add("iodine");
+        if ("F".equals(sym)) tags.add("fluorine");
+        if ("Cl".equals(sym)) tags.add("chlorine_source");
+        if ("Hg".equals(sym)) tags.add("mercury");
+        if ("S".equals(sym)) tags.add("sulfur_element");
         if (Set.of("C", "S", "P").contains(sym)) {
             tags.add("fuel");
             tags.add("fuel_element");
@@ -147,7 +153,7 @@ final class Elements {
             metalInfo = new Substance.MetalInfo(sym, charge, e0, rate, colour);
         }
 
-        return new Substance("el-" + sym, name, formula, null, "element", form, solidForm, false, colour, opacity,
+        return Substance.basic("el-" + sym, name, formula, null, "element", form, solidForm, false, colour, opacity,
                 hazards, limits, "element", List.of(), Map.of(speciesKey, 1.0), null, null, null, metalInfo, molar,
                 tags, fact, info);
     }
