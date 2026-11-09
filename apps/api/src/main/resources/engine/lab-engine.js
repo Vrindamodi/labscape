@@ -142,14 +142,28 @@ var LabEngine = (() => {
         };
         let x = 0;
         if (ionProduct(0, solid === 0 ? basePh : void 0) > d.ksp) {
-          let lo = 0;
-          let hi = d.anion === "OH-" ? totCat / d.nCat : Math.min(totCat / d.nCat, totAn / d.nAn);
-          for (let i = 0; i < 48; i++) {
-            const mid = (lo + hi) / 2;
-            if (ionProduct(mid) > d.ksp) lo = mid;
-            else hi = mid;
+          if (d.anion === "OH-") {
+            const capped = (h) => Math.min(totCat, Math.pow(d.ksp / Math.pow(KW / h, d.nAn), 1 / d.nCat) * litres);
+            let lo = -15;
+            let hi = 1;
+            for (let i = 0; i < 64; i++) {
+              const mid = (lo + hi) / 2;
+              const h = Math.pow(10, mid);
+              trial[d.cation] = capped(h);
+              if (residual(h, trial, litres) > 0) hi = mid;
+              else lo = mid;
+            }
+            x = Math.max(0, (totCat - capped(Math.pow(10, (lo + hi) / 2))) / d.nCat);
+          } else {
+            let lo = 0;
+            let hi = Math.min(totCat / d.nCat, totAn / d.nAn);
+            for (let i = 0; i < 48; i++) {
+              const mid = (lo + hi) / 2;
+              if (ionProduct(mid) > d.ksp) lo = mid;
+              else hi = mid;
+            }
+            x = (lo + hi) / 2;
           }
-          x = (lo + hi) / 2;
         }
         dissolved[d.cation] = Math.max(0, totCat - x * d.nCat);
         if (d.anion !== "OH-") dissolved[d.anion] = Math.max(0, totAn - x * d.nAn);
@@ -446,6 +460,17 @@ var LabEngine = (() => {
     const out = { state: clone(prev), cues: [], notes: [] };
     advanceInPlace(out, dtMs);
     return out;
+  }
+  function advanceTicks(prev, tickMs, until, onTick) {
+    if (prev.t + tickMs > until) return prev;
+    const out = { state: clone(prev), cues: [], notes: [] };
+    while (out.state.t + tickMs <= until) {
+      out.cues = [];
+      out.notes = [];
+      advanceInPlace(out, tickMs);
+      onTick(out);
+    }
+    return out.state;
   }
   function replay(setup, events) {
     let state = initialState(setup);
@@ -8850,12 +8875,10 @@ var LabEngine = (() => {
     const notes = [];
     const sorted = [...events].sort((a, b) => a.seq - b.seq);
     const step = (until) => {
-      while (state.t + TICK_MS <= until) {
-        const r = advance(state, TICK_MS);
-        state = r.state;
+      state = advanceTicks(state, TICK_MS, until, (r) => {
         notes.push(...r.notes);
-        feedback.push(...evaluator.tick(state, state.t));
-      }
+        feedback.push(...evaluator.tick(r.state, r.state.t));
+      });
     };
     for (const e of sorted) {
       step(e.t);

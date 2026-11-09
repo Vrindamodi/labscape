@@ -496,10 +496,14 @@ function Visual({ item, state, cues, quality, reducedMotion }: { item: Item; sta
     case "test_tube_rack":
       return (
         <group>
-          <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
-            <boxGeometry args={[1.2, 0.05, 0.32]} />
-            <meshStandardMaterial color="#a8743f" roughness={0.6} />
-          </mesh>
+          {/* Two thin rails instead of a solid top board, so the bottom of each tube (where small
+              volumes and precipitates sit) stays visible from the usual raised camera. */}
+          {[-0.13, 0.13].map((z) => (
+            <mesh key={z} position={[0, 0.25, z]} castShadow receiveShadow>
+              <boxGeometry args={[1.2, 0.04, 0.05]} />
+              <meshStandardMaterial color="#a8743f" roughness={0.6} />
+            </mesh>
+          ))}
           <mesh position={[0, 0.04, 0]} receiveShadow>
             <boxGeometry args={[1.2, 0.05, 0.32]} />
             <meshStandardMaterial color="#8b5e30" roughness={0.6} />

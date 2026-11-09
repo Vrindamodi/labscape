@@ -968,7 +968,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
 
       {/* dock */}
       <div ref={dockRef} className="absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-16px)] -translate-x-1/2 overflow-x-auto [scrollbar-width:none]">
-        <Glass radius="xl" className="flex items-center gap-1 p-2" role="toolbar" aria-label="Bench tools">
+        <Glass radius="xl" className="flex items-center gap-0.5 p-1.5 sm:gap-1 sm:p-2" role="toolbar" aria-label="Bench tools">
           <DockButton
             icon={<RotateCw />}
             label="Stir"

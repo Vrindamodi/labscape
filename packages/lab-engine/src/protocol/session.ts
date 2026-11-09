@@ -1,6 +1,6 @@
 import type { LabEvent } from "@labscape/contracts";
 import { stateHash } from "../engine/hash";
-import { advance, applyEvent, type Note } from "../engine/reducer";
+import { advanceTicks, applyEvent, type Note } from "../engine/reducer";
 import { initialState, type LabState } from "../engine/state";
 import { Evaluator } from "./evaluator";
 import type { ExperimentContent, Feedback, GoldenRun, Report } from "./types";
@@ -20,12 +20,10 @@ export function runSession(content: ExperimentContent, events: LabEvent[], opts:
   const notes: Note[] = [];
   const sorted = [...events].sort((a, b) => a.seq - b.seq);
   const step = (until: number) => {
-    while (state.t + TICK_MS <= until) {
-      const r = advance(state, TICK_MS);
-      state = r.state;
+    state = advanceTicks(state, TICK_MS, until, (r) => {
       notes.push(...r.notes);
-      feedback.push(...evaluator.tick(state, state.t));
-    }
+      feedback.push(...evaluator.tick(r.state, r.state.t));
+    });
   };
   for (const e of sorted) {
     step(e.t);

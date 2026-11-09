@@ -964,7 +964,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         {!readOnly && (
           <div className="flex justify-center">
             <div className="max-w-full overflow-x-auto rounded-[22px] [scrollbar-width:none]">
-              <Glass radius="xl" className="flex w-max items-center gap-1 p-1.5" role="toolbar" aria-label="Bench tools">
+              <Glass radius="xl" className="flex w-max items-center gap-0.5 p-1.5 sm:gap-1" role="toolbar" aria-label="Bench tools">
                 {(["stir", "swirl", "shake"] as const)
                   .filter((k) => k !== "shake" || mixOn?.kind === "shake" || mixTarget?.kind === "test_tube" || mixTarget?.kind === "boiling_tube")
                   .map((k) => {

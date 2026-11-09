@@ -50,7 +50,7 @@ export const DockButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
       ref={ref}
       type="button"
       className={cx(
-        "relative flex h-[56px] min-w-[72px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-[14px] px-1.5 text-[13px] font-semibold whitespace-nowrap transition-[color,background-color,box-shadow] duration-200 disabled:cursor-not-allowed disabled:opacity-35",
+        "relative flex h-[52px] min-w-[46px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-[12px] px-1 text-[11px] font-semibold whitespace-nowrap sm:h-[56px] sm:min-w-[72px] sm:rounded-[14px] sm:px-1.5 sm:text-[13px] transition-[color,background-color,box-shadow] duration-200 disabled:cursor-not-allowed disabled:opacity-35",
         tone === "on" && "bg-[rgba(61,139,255,.28)] text-white shadow-[inset_0_0_0_1px_rgba(110,170,255,.55)]",
         tone === "hot" && "bg-[rgba(255,138,61,.18)] text-[#ffd59a] shadow-[inset_0_0_0_1px_rgba(255,160,90,.5)]",
         tone === "danger" && "text-[#ff9b9b] hover:bg-[rgba(255,91,107,.12)]",
@@ -70,7 +70,7 @@ export const DockButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
 });
 
 export function DockSeparator() {
-  return <span className="mx-1 h-9 w-px shrink-0 bg-[rgba(140,180,255,.16)]" aria-hidden />;
+  return <span className="mx-0 h-9 w-px shrink-0 bg-[rgba(140,180,255,.16)] sm:mx-1" aria-hidden />;
 }
 
 /** The round tilt gauge from the pour card: a conic arc filled to the tilt angle. */

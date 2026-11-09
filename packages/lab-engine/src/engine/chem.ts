@@ -150,14 +150,31 @@ export function equilibrate(dissolved: Amounts, solids: Partial<Record<Precipita
       let x = 0;
       // With no solid present, x = 0 is the current solution, whose pH is already known.
       if (ionProduct(0, solid === 0 ? basePh : undefined) > d.ksp) {
-        let lo = 0;
-        let hi = d.anion === "OH-" ? totCat / d.nCat : Math.min(totCat / d.nCat, totAn / d.nAn);
-        for (let i = 0; i < 48; i++) {
-          const mid = (lo + hi) / 2;
-          if (ionProduct(mid) > d.ksp) lo = mid;
-          else hi = mid;
+        if (d.anion === "OH-") {
+          // Hydroxide: at a given [H+] the dissolved metal is capped by Ksp, so one bisection on pH
+          // (charge balance with the capped metal, still increasing in h) finds the equilibrium
+          // directly instead of re-solving the pH for every trial amount of solid.
+          const capped = (h: number) => Math.min(totCat, Math.pow(d.ksp / Math.pow(KW / h, d.nAn), 1 / d.nCat) * litres);
+          let lo = -15;
+          let hi = 1;
+          for (let i = 0; i < 64; i++) {
+            const mid = (lo + hi) / 2;
+            const h = Math.pow(10, mid);
+            trial[d.cation] = capped(h);
+            if (residual(h, trial, litres) > 0) hi = mid;
+            else lo = mid;
+          }
+          x = Math.max(0, (totCat - capped(Math.pow(10, (lo + hi) / 2))) / d.nCat);
+        } else {
+          let lo = 0;
+          let hi = Math.min(totCat / d.nCat, totAn / d.nAn);
+          for (let i = 0; i < 48; i++) {
+            const mid = (lo + hi) / 2;
+            if (ionProduct(mid) > d.ksp) lo = mid;
+            else hi = mid;
+          }
+          x = (lo + hi) / 2;
         }
-        x = (lo + hi) / 2;
       }
       dissolved[d.cation] = Math.max(0, totCat - x * d.nCat);
       if (d.anion !== "OH-") dissolved[d.anion as Ion] = Math.max(0, totAn - x * d.nAn);

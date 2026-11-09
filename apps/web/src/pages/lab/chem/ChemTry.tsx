@@ -429,7 +429,7 @@ export function ChemTry({ content, attempt, onSaved, onSaving, onSaveError, onDo
       assist.current = null;
       setAssisting(null);
       setSimSpeed(1);
-      if (gaveUp) announce("That step needs a different start. Try Reset step, then Do this step for me again.", "polite");
+      if (gaveUp) announce("That step needs a different start. Try Reset, then Do this step for me again.", "polite");
       return;
     }
     const nextIn = a.i < a.events.length ? a.events[a.i]!.t - a.segStart - el : Infinity;
@@ -584,7 +584,7 @@ export function ChemTry({ content, attempt, onSaved, onSaving, onSaveError, onDo
             dockExtra={
               <>
                 <DockButton icon={<Undo2 />} label="Undo" kbd="Ctrl+Z" disabled={!session.canUndo || !!assisting} title="Undo your last action (Ctrl+Z)" onClick={undo} />
-                <DockButton icon={<ListRestart />} label="Reset step" tone="danger" disabled={!canReset || !!assisting} title="Put the bench back to the start of this step" onClick={() => resetKeep !== null && rewindTo(resetKeep)} />
+                <DockButton icon={<ListRestart />} label="Reset" tone="danger" disabled={!canReset || !!assisting} title="Put the bench back to the start of this step" onClick={() => resetKeep !== null && rewindTo(resetKeep)} />
               </>
             }
             overlay={showMe ? <ShowMeInPlace content={content} step={showMe} onClose={() => setShowMe(null)} /> : null}

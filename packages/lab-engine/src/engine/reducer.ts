@@ -30,6 +30,23 @@ export function advance(prev: LabState, dtMs: number): StepOutput {
   return out;
 }
 
+/**
+ * Lets time pass in fixed ticks up to `until`, calling `onTick` after each one, on a single working
+ * copy. Same steps and results as calling advance() once per tick, without copying the whole bench
+ * every tick (long waits replay many times faster, which matters for server scoring).
+ */
+export function advanceTicks(prev: LabState, tickMs: number, until: number, onTick: (out: StepOutput) => void): LabState {
+  if (prev.t + tickMs > until) return prev;
+  const out: StepOutput = { state: clone(prev), cues: [], notes: [] };
+  while (out.state.t + tickMs <= until) {
+    out.cues = [];
+    out.notes = [];
+    advanceInPlace(out, tickMs);
+    onTick(out);
+  }
+  return out.state;
+}
+
 /** Replays a whole log from the bench setup. Used by the server to re-score and by "resume". */
 export function replay(setup: LabState["setup"], events: LabEvent[]): StepOutput {
   let state = initialState(setup);

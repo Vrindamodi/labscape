@@ -125,6 +125,10 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
   // beat uses (and what each item stands in, e.g. a thermometer's beaker).
   const allIds = useMemo(() => content.bench.items.map((i) => i.id), [content]);
   const lastFrame = useRef<BenchFrame>({ key: "all", ids: allIds });
+  // Items of the previous beat stay in frame too, so the vessel you were just watching (e.g. the
+  // cylinder that is about to foam) never drifts out of view while the next beat lights a splint.
+  const prevBeatIds = useRef<{ beat: number; ids: string[] }>({ beat: -1, ids: [] });
+  const beatIds = useRef<{ beat: number; ids: string[] }>({ beat: -1, ids: [] });
   const frame = useMemo<BenchFrame>(() => {
     if (!started) return (lastFrame.current = { key: `all-${recentre}`, ids: allIds });
     const from = beat?.t ?? 0;
@@ -141,6 +145,11 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
       }
     }
     const tall = inBeat.some((e) => e.type === "liquid.pour" && session.state.items[String(e.payload.to)]?.kind === "burette_50");
+    if (beatIds.current.beat !== beatIdx) {
+      prevBeatIds.current = beatIds.current;
+      beatIds.current = { beat: beatIdx, ids: [...ids] };
+    }
+    if (prevBeatIds.current.beat === beatIdx - 1) for (const id of prevBeatIds.current.ids) if (session.state.items[id] && session.state.items[id]!.socket !== "worn") ids.add(id);
     if (ids.size) lastFrame.current = { key: `b${beatIdx}-${recentre}`, ids: [...ids], tall };
     else lastFrame.current = { ...lastFrame.current, key: `${lastFrame.current.key.split("-")[0]}-${recentre}` };
     return lastFrame.current;
