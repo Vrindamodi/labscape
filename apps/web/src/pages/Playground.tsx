@@ -1,5 +1,5 @@
 import { GraphSandbox, type GraphBuild } from "@labscape/mathlab";
-import { CIRCUIT_EXAMPLES, CircuitSandbox, MotionSandbox, type CircuitBuild, type MotionBuild } from "@labscape/physics";
+import { CIRCUIT_EXAMPLES, CircuitSandbox, MOTION_TABS, MotionSandbox, type CircuitBuild, type MotionBuild, type MotionTab } from "@labscape/physics";
 import { Button, cx, ErrorState, FullscreenLab, Skeleton, useShell } from "@labscape/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import katex from "katex";
@@ -16,9 +16,9 @@ type Started = { id: string; mode: Mode; snapshot: unknown; usage: Usage };
 
 const MODES: Record<Mode, { title: string; blurb: string; icon: LucideIcon; colour: string; to: string }> = {
   chemistry: { title: "Chemistry bench", blurb: "Mix anything on the shelf. The safety engine decides what really happens.", icon: Beaker, colour: "#2DD4BF", to: "/playground/chemistry" },
-  circuits: { title: "Circuit builder", blurb: "Drop batteries, bulbs, meters and fuses on a board and wire them however you like.", icon: Cable, colour: "#38BDF8", to: "/playground/circuits" },
-  motion: { title: "Motion lab", blurb: "Throw things on the Moon, add air resistance, swing a pendulum to 170°.", icon: Orbit, colour: "#a78bfa", to: "/playground/motion" },
-  graphing: { title: "Graphing", blurb: "Plot up to six functions; every letter becomes a slider you can sweep.", icon: FunctionSquare, colour: "#FB923C", to: "/playground/graphing" },
+  circuits: { title: "Circuit builder", blurb: "Batteries, bulbs, motors, buzzers, dimmers and light sensors: wire them however you like and build a night light or an alarm.", icon: Cable, colour: "#38BDF8", to: "/playground/circuits" },
+  motion: { title: "Motion lab", blurb: "Throw things on the Moon, crash carts together, bounce a mass on a spring, slide a block down a ramp.", icon: Orbit, colour: "#a78bfa", to: "/playground/motion" },
+  graphing: { title: "Graphing", blurb: "Plot up to six functions, turn every letter into a slider and draw the slope of any curve.", icon: FunctionSquare, colour: "#FB923C", to: "/playground/graphing" },
 };
 
 /** The same idea seen from two subjects (build plan 4.9: cross-subject bridges). */
@@ -253,12 +253,12 @@ export function PlaygroundRun() {
   const M = MODES[m];
   const bridge = BRIDGES.find((b) => b.id === params.get("bridge"));
   const example = CIRCUIT_EXAMPLES[params.get("example") ?? ""];
-  const tab = params.get("tab");
+  const tab = MOTION_TABS.find((t) => t === params.get("tab")) as MotionTab | undefined;
   let body: ReactNode = null;
   if (session) {
     const snap = session.snapshot as Record<string, unknown> | null;
     if (m === "circuits") body = <CircuitSandbox key={session.id} initial={(snap as CircuitBuild | null) ?? (example ? structuredClone(example.build) : null)} onChange={onChange} />;
-    else if (m === "motion") body = <MotionSandbox key={session.id} initial={(snap as MotionBuild | null) ?? (tab === "pendulum" || tab === "projectile" ? ({ tab } as MotionBuild) : null)} onChange={onChange} />;
+    else if (m === "motion") body = <MotionSandbox key={session.id} initial={(snap as MotionBuild | null) ?? (tab ? { tab } : null)} onChange={onChange} />;
     else body = <GraphSandbox key={session.id} initial={(snap as GraphBuild | null) ?? bridge?.graph ?? null} onChange={onChange} renderTex={(tex) => katex.renderToString(tex, { throwOnError: false })} />;
   }
 
