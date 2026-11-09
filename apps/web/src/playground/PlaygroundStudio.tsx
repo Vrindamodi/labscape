@@ -200,8 +200,11 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     return { colour: `#${h(r)}${h(g)}${h(b)}`, opacity: Math.min(1, op / Math.max(1, tot)) };
   }, []);
 
+  /** One-shot effects already shown for the current mixture: stirring or heating again must not replay a pop. */
+  const played = useRef(new Set<string>());
   const applyResult = useCallback(
-    (r: SimulationResult, next: TrayItem[]) => {
+    (r: SimulationResult, next: TrayItem[], firstTime: boolean) => {
+      if (firstTime) played.current.clear();
       setOnline(true);
       setResult(r);
       const p = r.presentation;
@@ -228,6 +231,10 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       }));
       let lastColour = base.colour;
       for (const c of r.cues) {
+        const sig = JSON.stringify({ ...c, startMs: 0 });
+        const seen = played.current.has(sig);
+        played.current.add(sig);
+        if (seen && c.kind !== "layers") continue;
         later(c.startMs ?? 0, () => {
           switch (c.kind) {
             case "colour": {
@@ -384,7 +391,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   );
 
   const resolve = useCallback(
-    async (next: TrayItem[], cond: { temp: number; stir: boolean; ign: boolean }, revert: () => void) => {
+    async (next: TrayItem[], cond: { temp: number; stir: boolean; ign: boolean }, revert: () => void, fresh = true) => {
       if (!next.length) return;
       setBusy(true);
       try {
@@ -402,7 +409,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           flash(r.presentation?.message ?? "That is outside the safe range.");
           return;
         }
-        applyResult(r, next);
+        applyResult(r, next, fresh);
         if (r.outcome === "needs_conditions" || r.outcome === "unsupported") flash(r.presentation?.message ?? "Nothing happens yet.", "warn");
       } catch (e) {
         revert();
@@ -431,7 +438,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     void resolve(mergeTray(nextAdds), { temp: plateC, stir: stirring, ign: ignition }, () => setAdds(prev));
   };
 
-  const reResolve = (cond: { temp: number; stir: boolean; ign: boolean }) => tray.length && void resolve(tray, cond, () => {});
+  const reResolve = (cond: { temp: number; stir: boolean; ign: boolean }) => tray.length && void resolve(tray, cond, () => {}, false);
 
   /* ---------------------------------------------------------------- dispensing */
 
