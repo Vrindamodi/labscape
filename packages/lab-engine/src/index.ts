@@ -19,3 +19,4 @@ export * from "./bench/colour";
 export * from "./bench/stages";
 export * from "./studio/Glass";
 export * from "./studio/SuitUp";
+export * from "./studio/PlaygroundScene";

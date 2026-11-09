@@ -1,4 +1,4 @@
-import { ChemistryPlayground } from "@labscape/playground";
+import { PlaygroundStudio } from "../../playground/PlaygroundStudio";
 import { ErrorState, FullscreenLab, Skeleton } from "@labscape/ui";
 import { useNavigate } from "react-router-dom";
 import { LimitReached, usePlaygroundSession } from "../../pages/Playground";
@@ -29,7 +29,7 @@ export default function ChemistryPlaygroundRoute() {
   return (
     <FullscreenLab>
       {session ? (
-        <ChemistryPlayground onDiscoveries={onDiscoveries} />
+        <PlaygroundStudio onDiscoveries={onDiscoveries} />
       ) : (
         <div className="h-screen bg-[#0b0f1a] p-4">
           {loading && <Skeleton className="h-full rounded-2xl" />}

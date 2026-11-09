@@ -442,8 +442,10 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         e.preventDefault();
         complete(activeVerb!.id, sel!.id, cursorRef.current);
         setCursor(null);
-      } else if (e.key === "[") (setSpeed("custom"), setTilt((t) => Math.max(0, t - 5)));
-      else if (e.key === "]") (setSpeed("custom"), setTilt((t) => Math.min(135, t + 5)));
+      } else if (e.key === "[" || e.key === "]") {
+        setSpeed("custom");
+        setTilt((t) => Math.max(0, Math.min(135, t + (e.key === "]" ? 5 : -5))));
+      }
       else if (e.key === " " && pourTarget && !e.repeat) {
         e.preventDefault();
         if (pourTarget.mode === "drop") dropOnce();
