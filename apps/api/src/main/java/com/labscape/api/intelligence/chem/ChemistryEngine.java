@@ -247,6 +247,8 @@ public class ChemistryEngine {
             c.put("colour", Colour.hex(hex, 0.95).toJson());
             c.put("turbidity", round(turbidity, 3));
             c.put("settleMs", settleMs);
+            // Lead(II) iodide comes out as glittering golden plates rather than a powder.
+            if ("PbI2".equals(formula)) c.put("form", "crystals");
         }
 
         @Override
@@ -312,6 +314,7 @@ public class ChemistryEngine {
             precipitation();
             magnesiumWater();
             starchIodine();
+            heating();
 
             // Ammonium + hydroxide re-form ammonia (keeps ammonia mixtures at a realistic pH ~ 9-11).
             double nh = Math.min(get("NH4+"), get("OH-"));
@@ -1139,6 +1142,7 @@ public class ChemistryEngine {
                     Map<String, Object> c = cue("deposit", solidTarget.get(key), start);
                     c.put("colour", Colour.hex(ion.depositHex(), 1).toJson());
                     c.put("durationMs", (long) clamp(6000 / tf, 2000, 9000));
+                    c.put("form", "Ag".equals(ion.symbol()) ? "crystals" : "coating");
                     dissolveSolid(key, start, (long) clamp(9000 / tf, 3000, 12000));
                     reaction("displacement-" + m.symbol().toLowerCase(Locale.ROOT) + "-" + ion.symbol().toLowerCase(Locale.ROOT),
                             p.substance().name() + " displaces " + elementName(ion.symbol()).toLowerCase(Locale.ROOT), "displacement",
@@ -1451,6 +1455,70 @@ public class ChemistryEngine {
             observations.add(clockDelayMs > 0
                     ? "After a pause, the whole mixture suddenly turns blue-black - an iodine clock!"
                     : "The mixture turns an intense blue-black: the starch test for iodine is positive.");
+        }
+
+        // ---------------------------------------------------------------- heating: steam, evaporation, sublimation
+
+        /** Salts that crystallise out when their solution is evaporated: {cation, anion, name, colour}. */
+        static final String[][] CRYSTAL_SALTS = {
+                {"Cu^2+", "SO4^2-", "copper(II) sulfate", "#2f86dc"},
+                {"Fe^3+", "Cl-", "iron(III) chloride", "#c98a2e"},
+                {"Fe^2+", "SO4^2-", "iron(II) sulfate", "#a6d6a0"},
+                {"Cu^2+", "Cl-", "copper(II) chloride", "#3fa38a"},
+                {"Na+", "Cl-", "sodium chloride", "#f4f6f8"},
+                {"K+", "NO3-", "potassium nitrate", "#f4f6f8"},
+                {"Mg^2+", "SO4^2-", "magnesium sulfate", "#f4f6f8"},
+                {"Zn^2+", "SO4^2-", "zinc sulfate", "#f4f6f8"},
+                {"Na+", "SO4^2-", "sodium sulfate", "#f4f6f8"},
+                {"K+", "Cl-", "potassium chloride", "#f4f6f8"},
+                {"K+", "Br-", "potassium bromide", "#f4f6f8"},
+                {"K+", "I-", "potassium iodide", "#f4f6f8"},
+                {"Na+", "NO3-", "sodium nitrate", "#f4f6f8"},
+                {"NH4+", "NO3-", "ammonium nitrate", "#f4f6f8"},
+                {"NH4+", "Cl-", "ammonium chloride", "#f4f6f8"},
+                {"Na+", "CH3COO-", "sodium ethanoate", "#f4f6f8"},
+                {"Ca^2+", "Cl-", "calcium chloride", "#f4f6f8"},
+                {"Ba^2+", "Cl-", "barium chloride", "#f4f6f8"}};
+
+        /**
+         * Physical changes the hot plate causes: steam condensing on the cooler glass, a dissolved salt
+         * crystallising as water evaporates, and iodine subliming into violet vapour.
+         */
+        void heating() {
+            if (aqMl > 0 && tempC >= 60) {
+                Map<String, Object> c = cue("condense", "vessel", 600);
+                c.put("colour", Colour.hex("#d6eeff", 0.8).toJson());
+                c.put("amount", round(clamp((tempC - 50) / 40, 0.3, 1), 2));
+                c.put("durationMs", 6000);
+                observations.add("Steam rises off the hot liquid and condenses into droplets of water on the cooler glass above it.");
+            }
+            if (aqMl > 0 && tempC >= 80) {
+                for (String[] s : CRYSTAL_SALTS) {
+                    if (molar(s[0]) < 0.02 || molar(s[1]) < 0.02) continue;
+                    Map<String, Object> c = cue("crystals", "vessel", 2500);
+                    c.put("colour", Colour.hex(s[3], 1).toJson());
+                    c.put("amount", round(clamp(Math.min(molar(s[0]), molar(s[1])) * 1.5, 0.25, 1), 2));
+                    c.put("durationMs", 7000);
+                    c.put("label", "Crystals of " + s[2] + " growing as water evaporates");
+                    observations.add("As water steams away, " + ("#f4f6f8".equals(s[3]) ? "white" : colourWord(s[3]))
+                            + " crystals of " + s[2] + " start to grow around the edge of the liquid - crystallisation by evaporation.");
+                    break;
+                }
+            }
+            if (tempC >= 60) {
+                for (Portion p : portions) {
+                    if (!"el-I".equals(p.substance().id())) continue;
+                    String key = p.substance().species().keySet().iterator().next();
+                    if (!has(key)) continue;
+                    Map<String, Object> c = cue("smoke", "vessel", 300);
+                    c.put("colour", Colour.hex("#8a4fd0", 0.75).toJson());
+                    c.put("density", 0.7);
+                    c.put("durationMs", 7000);
+                    c.put("label", "Violet iodine vapour");
+                    observations.add("Violet iodine vapour rises from the warm crystals - iodine sublimes straight from solid to gas.");
+                    break;
+                }
+            }
         }
 
         // ---------------------------------------------------------------- pH and indicators

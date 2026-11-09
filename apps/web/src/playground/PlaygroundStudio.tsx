@@ -1,5 +1,5 @@
 import type { SimulationResult } from "@labscape/contracts";
-import { DockButton, DockSeparator, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type HeldKind, type PlaygroundView } from "@labscape/lab-engine";
+import { DockButton, DockSeparator, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type HeldKind, type PlaygroundView, type SceneCaption } from "@labscape/lab-engine";
 import { useMotion } from "@labscape/motion";
 import { dispenseMode, fetchCatalogue, liquidMl, loadDiscoveries, ProblemError, resolveMix, saveDiscoveries, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem } from "@labscape/playground";
 import { cx } from "@labscape/ui";
@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as
 import { useNavigate } from "react-router-dom";
 import { MicroView } from "./MicroView";
 import { PeriodicDrawer } from "./PeriodicDrawer";
+import { capitalise, colourDistance, colourName } from "./colourName";
 
 type Speed = "drop" | "slow" | "steady" | "fast";
 const RATE: Record<Speed, number> = { drop: 0.3, slow: 1.5, steady: 4, fast: 9 };
@@ -42,7 +43,18 @@ const EMPTY_VIEW: Omit<PlaygroundView, "held" | "focus" | "plateC" | "stirring" 
   flame: null,
   light: null,
   smoke: null,
+  condense: null,
+  blast: null,
+  colourBurst: null,
+  skate: null,
+  layer: null,
+  crystals: null,
+  bubble: "fine",
 };
+
+/** Bubble rate from the engine (4..140 per second) mapped to a visible 0.2..1 on a log scale. */
+const gasLevel = (ratePerS: number) => Math.max(0.2, Math.min(1, 0.2 + (Math.log10(Math.max(4, ratePerS) / 4) / Math.log10(35)) * 0.8));
+const SOUND_CAPTION: Record<string, string> = { pop: "Squeaky pop!", "squeaky-pop": "Squeaky pop!", bang: "BANG! The gases explode", crackle: "Crackling", sizzle: "Sizzling and hissing", hiss: "Hissing", whoosh: "Whoosh!" };
 
 type LogLine = { t: number; text: string; tone?: "good" | "warn" | "bad" };
 const clock = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, "0")}:${String(Math.floor((ms / 1000) % 60)).padStart(2, "0")}`;
@@ -146,6 +158,16 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   }, []);
 
   const later = (ms: number, f: () => void) => timers.current.push(window.setTimeout(f, ms));
+  /** Captions beside the beaker connect the words in the Live panel with what is on screen. */
+  const [captions, setCaptions] = useState<SceneCaption[]>([]);
+  const capSeq = useRef(0);
+  const caption = (text: string, opts: Omit<SceneCaption, "id" | "text"> = {}, ms = 6500) => {
+    const id = `cap${++capSeq.current}`;
+    setCaptions((cs) => [...cs.filter((c) => c.text !== text), { id, text, ...opts }].slice(-4));
+    later(ms, () => setCaptions((cs) => cs.filter((c) => c.id !== id)));
+  };
+  /** A white screen flash for explosions and burning magnesium (never with reduced motion). */
+  const [screenFlash, setScreenFlash] = useState(0);
   const showSmell = (text: string, colour: string) => {
     setSmell({ text, colour });
     later(9000, () => setSmell((x) => (x?.text === text ? null : x)));
@@ -194,26 +216,51 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       if (r.outcome === "reaction") setReactionPulse((n) => n + 1);
       setGlowTool(p?.neededTool ?? null);
       const base = baseColour(next);
-      setVisual((v) => ({ ...v, colour: base.colour, opacity: base.opacity, solid: next.some((x) => x.item.form === "solid") ? { colour: next.find((x) => x.item.form === "solid")!.item.colour, amount: Math.min(1, next.filter((x) => x.item.form === "solid").reduce((a, x) => a + x.amount, 0) / 5) } : null }));
+      const solidItems = next.filter((x) => x.item.form === "solid");
+      const liquid = next.reduce((a, x) => a + liquidMl(x), 0);
+      const nameOf = (formula: string) => p?.compounds.find((x) => x.formula === formula)?.name ?? formula;
+      setVisual((v) => ({
+        ...v,
+        colour: base.colour,
+        opacity: base.opacity,
+        solid: solidItems.length ? { colour: solidItems[0]!.item.colour, amount: Math.min(1, solidItems.reduce((a, x) => a + x.amount, 0) / 5), ...(v.solid?.coat ? { coat: v.solid.coat } : {}) } : null,
+        layer: null,
+      }));
+      let lastColour = base.colour;
       for (const c of r.cues) {
         later(c.startMs ?? 0, () => {
           switch (c.kind) {
-            case "colour":
-              setVisual((v) => ({ ...v, colour: oklabToHex(c.to), opacity: Math.max(v.opacity, c.to.alpha ?? 0.45) }));
+            case "colour": {
+              const to = oklabToHex(c.to);
+              const from = c.target === "vessel" ? lastColour : oklabToHex(c.from);
+              const clear = (c.to.alpha ?? 1) < 0.12;
+              setVisual((v) => ({ ...v, colour: to, opacity: Math.max(clear ? 0.05 : v.opacity, c.to.alpha ?? 0.45), ...(colourDistance(from, to) > 2500 && liquid > 1 ? { colourBurst: { pulse: (v.colourBurst?.pulse ?? 0) + 1, colour: to } } : {}) }));
+              if (colourDistance(from, to) > 2500 && r.outcome === "reaction") caption(`Colour change: ${colourName(from)} → ${clear ? "colourless" : colourName(to)}`, { from, colour: to });
+              lastColour = to;
               break;
-            case "precipitate":
-              setVisual((v) => ({ ...v, precipitate: { colour: oklabToHex(c.colour), turbidity: c.turbidity, settled: 0 } }));
+            }
+            case "precipitate": {
+              const col = oklabToHex(c.colour);
+              const crystals = c.form === "crystals";
+              setVisual((v) => ({ ...v, precipitate: { colour: col, turbidity: c.turbidity, settled: 0, form: c.form ?? "powder" } }));
               later(Math.min(6000, c.settleMs), () => setVisual((v) => (v.precipitate ? { ...v, precipitate: { ...v.precipitate, settled: 1 } } : v)));
-              sound.play("drip");
+              sound.play(crystals ? "tinkle" : "drip");
+              caption(`${capitalise(colourName(col))} ${crystals ? "crystals" : "precipitate"}: ${nameOf(c.id).toLowerCase()}`, { colour: col });
+              later(Math.min(6000, c.settleMs), () => caption(`The ${colourName(col)} solid settles to the bottom`, { colour: col }, 4500));
               break;
-            case "gas":
-              setVisual((v) => ({ ...v, gas: Math.min(1, 0.35 + c.ratePerS / 3), gasColour: c.colour ? oklabToHex(c.colour) : null }));
-              sound.play("fizz");
-              sound.loop("fizz", true, 0.7);
+            }
+            case "gas": {
+              const level = gasLevel(c.ratePerS);
+              const gasCol = c.colour ? oklabToHex(c.colour) : null;
+              setVisual((v) => ({ ...v, gas: level, gasColour: gasCol, bubble: c.bubble }));
+              sound.play("fizz", level);
+              sound.loop("fizz", true, 0.3 + level * 0.9);
               later(Math.max(5000, Math.min(16000, c.durationMs)), () => {
                 setVisual((v) => ({ ...v, gas: 0, gasColour: null }));
                 sound.loop("fizz", false);
               });
+              caption(`${level > 0.75 ? "Vigorous fizzing" : level > 0.4 ? "Fizzing" : "A few bubbles"}: ${nameOf(c.gas).toLowerCase()}${gasCol ? ` (${colourName(gasCol)} gas)` : ""}`, gasCol ? { colour: gasCol } : {});
+              if (c.smell && !/no smell/i.test(c.smell)) caption(`Smell: ${c.smell.toLowerCase()}`, { tone: c.hazard === "toxic" ? "bad" : "info" });
               addLog(`${c.gas} gas given off${c.smell ? ` · smell: ${c.smell}` : ""}`);
               if (c.smell && !/no smell/i.test(c.smell)) showSmell(c.smell, c.colour ? oklabToHex(c.colour) : "#c8f7a5");
               if (c.hazard && c.warning) {
@@ -224,37 +271,91 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
                 later(Math.max(9000, Math.min(16000, c.durationMs + 3000)), () => setHazard((h) => (h?.gas === c.gas ? null : h)));
               }
               break;
+            }
             case "dissolve":
-              later(Math.min(4000, c.durationMs), () => setVisual((v) => (v.solid ? { ...v, solid: (c.fraction ?? 1) >= 1 ? null : { ...v.solid, amount: v.solid.amount * (1 - (c.fraction ?? 1)) } } : v)));
+              if (c.target.startsWith("precipitate:")) {
+                later(Math.min(4000, c.durationMs), () => setVisual((v) => (v.precipitate && (c.fraction ?? 1) >= 0.99 ? { ...v, precipitate: null } : v)));
+                caption(`The ${nameOf(c.target.slice("precipitate:".length)).toLowerCase()} precipitate dissolves`);
+              } else later(Math.min(4000, c.durationMs), () => setVisual((v) => (v.solid ? { ...v, solid: (c.fraction ?? 1) >= 1 ? null : { ...v.solid, amount: v.solid.amount * (1 - (c.fraction ?? 1)) } } : v)));
               break;
-            case "flame":
-              setVisual((v) => ({ ...v, flame: { colour: oklabToHex(c.colour), intensity: c.intensity } }));
+            case "flame": {
+              const col = oklabToHex(c.colour);
+              setVisual((v) => ({ ...v, flame: { colour: col, intensity: c.intensity } }));
               sound.play("whoosh");
               later(Math.min(6000, c.durationMs), () => setVisual((v) => ({ ...v, flame: null })));
+              caption(`${capitalise(colourName(col))} flame`, { colour: col });
               break;
-            case "light":
-              setVisual((v) => ({ ...v, light: { colour: oklabToHex(c.colour), intensity: c.intensity } }));
-              later(Math.min(5000, c.durationMs), () => setVisual((v) => ({ ...v, light: null })));
+            }
+            case "light": {
+              const col = oklabToHex(c.colour);
+              setVisual((v) => ({ ...v, light: { colour: col, intensity: c.intensity } }));
+              later(Math.min(5000, Math.max(700, c.durationMs)), () => setVisual((v) => ({ ...v, light: null })));
+              if (c.intensity >= 0.9 && c.durationMs >= 1500) {
+                caption("Blinding white light - don't look straight at it", { colour: col, tone: "warn" });
+                if (!reduced) setScreenFlash((n) => n + 1);
+              } else caption(c.durationMs >= 1500 ? `Glowing ${colourName(col)}` : "A bright flash", { colour: col });
               break;
-            case "smoke":
-              setVisual((v) => ({ ...v, smoke: { colour: oklabToHex(c.colour), density: c.density } }));
+            }
+            case "smoke": {
+              const col = oklabToHex(c.colour);
+              setVisual((v) => ({ ...v, smoke: { colour: col, density: c.density } }));
               later(Math.min(8000, c.durationMs), () => setVisual((v) => ({ ...v, smoke: null })));
+              caption(c.label ?? `${capitalise(colourName(col))} smoke`, { colour: col });
               break;
-            case "deposit":
-              setVisual((v) => ({ ...v, solid: { colour: oklabToHex(c.colour), amount: Math.max(0.3, v.solid?.amount ?? 0.3) } }));
+            }
+            case "deposit": {
+              const col = oklabToHex(c.colour);
+              const form = c.form ?? "coating";
+              setVisual((v) => {
+                const same = v.solid?.coat?.colour === col;
+                const coat = same ? v.solid!.coat! : { colour: col, form, durationMs: c.durationMs, pulse: (v.solid?.coat?.pulse ?? 0) + 1 };
+                return { ...v, solid: { colour: v.solid?.colour ?? "#9aa0a6", amount: Math.max(0.3, v.solid?.amount ?? 0.3), coat } };
+              });
+              const metal = p?.compounds.find((x) => x.state === "s" && /^[A-Z][a-z]?$/.test(x.formula))?.name?.toLowerCase() ?? "metal";
+              caption(form === "crystals" ? `Sparkling ${metal} crystals growing on the metal` : `A ${colourName(col)} coating of ${metal} grows on the metal`, { colour: col });
               break;
+            }
             case "temperature":
               setTargetC((t) => (temp ? temp.value : t + c.deltaC));
               if (Math.abs(c.deltaC) >= 2) sound.play(c.deltaC > 0 ? "sizzle" : "freeze");
+              if (Math.abs(c.deltaC) >= 1) caption(c.deltaC > 0 ? `Getting warmer: +${c.deltaC.toFixed(1)} °C` : `Getting colder: ${c.deltaC.toFixed(1)} °C`, { colour: c.deltaC > 0 ? "#ff8a3d" : "#7cc4ff" });
               break;
-            case "sound":
-              if (c.soundId === "squeaky-pop" || c.soundId === "pop") sound.play("pop");
-              else if (c.soundId === "bang") sound.play("bang");
-              else if (c.soundId === "crackle") sound.play("crackle");
+            case "sound": {
+              const id = c.soundId;
+              if (id === "squeaky-pop" || id === "pop") {
+                sound.play("squeakyPop");
+                setVisual((v) => ({ ...v, blast: { pulse: (v.blast?.pulse ?? 0) + 1, colour: "#cfe6ff", strength: 0.6 } }));
+              } else if (id === "bang") {
+                sound.play("bang");
+                setVisual((v) => ({ ...v, blast: { pulse: (v.blast?.pulse ?? 0) + 1, colour: "#fff2c4", strength: 1 } }));
+                if (!reduced) setScreenFlash((n) => n + 1);
+              } else if (id === "crackle" || id === "sizzle" || id === "hiss" || id === "whoosh") sound.play(id);
+              if (SOUND_CAPTION[id]) caption(SOUND_CAPTION[id], id === "bang" ? { tone: "warn" } : {});
               break;
+            }
+            case "condense":
+              setVisual((v) => ({ ...v, condense: { colour: oklabToHex(c.colour), amount: Math.max(v.condense?.amount ?? 0, c.amount), pulse: v.condense && liquid > 1 ? v.condense.pulse : (v.condense?.pulse ?? 0) + 1 } }));
+              caption(liquid > 1 ? "Steam condensing into water droplets on the glass" : "Water droplets forming on the glass", { colour: "#bfe4ff" });
+              break;
+            case "skate":
+              setVisual((v) => ({ ...v, skate: { pulse: (v.skate?.pulse ?? 0) + 1, colour: oklabToHex(c.colour), durationMs: c.durationMs } }));
+              caption("The metal melts into a ball and skates across the surface", { colour: oklabToHex(c.colour) });
+              break;
+            case "layers":
+              setVisual((v) => ({ ...v, layer: { colour: oklabToHex(c.colour), volumeMl: c.volumeMl } }));
+              caption("The oil floats on top as a separate layer", { colour: oklabToHex(c.colour) });
+              break;
+            case "crystals": {
+              const col = oklabToHex(c.colour);
+              setVisual((v) => ({ ...v, crystals: { colour: col, amount: c.amount, durationMs: c.durationMs, pulse: v.crystals?.colour === col ? v.crystals.pulse : (v.crystals?.pulse ?? 0) + 1 } }));
+              sound.play("tinkle");
+              caption(c.label ?? "Crystals growing", { colour: col }, 8000);
+              break;
+            }
             case "odour":
               addLog(`Smell: ${c.description} (waft, never sniff)`);
               showSmell(c.description, "#d9f99d");
+              caption(`Smell: ${c.description}`);
               break;
             default:
               break;
@@ -462,6 +563,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setTargetC(plateC);
     setSmell(null);
     setHazard(null);
+    setCaptions([]);
+    sound.loop("fizz", false);
     if (!silent) addLog("Emptied and rinsed the beaker");
     sound.play("pour");
   };
@@ -481,6 +584,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     stirring,
     swirling,
     focus,
+    thermometer: levelMl > 0 ? { targetC } : null,
+    captions,
     held: held
       ? {
           kind: (heldMode === "pour" ? "bottle" : heldMode) as HeldKind,
@@ -514,6 +619,19 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       <div className="absolute inset-0">
         <PlaygroundScene view={view} reducedMotion={reduced} />
       </div>
+      <AnimatePresence>
+        {screenFlash > 0 && !reduced && (
+          <motion.div
+            key={screenFlash}
+            className="pointer-events-none absolute inset-0 z-[2]"
+            style={{ background: "radial-gradient(circle at 50% 55%, rgba(255,255,255,.85), rgba(255,250,230,.35) 45%, transparent 75%)" }}
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            aria-hidden
+          />
+        )}
+      </AnimatePresence>
       {held && heldMode === "pour" && (
         <div className="absolute inset-0 z-[1] cursor-ns-resize" onPointerDown={onPadDown} onPointerMove={onPadMove} onPointerUp={onPadUp} onPointerCancel={onPadUp} aria-hidden />
       )}
@@ -697,6 +815,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
               if (iceBath) return heatTo(22);
               heatTo(5);
               setIceBath(true);
+              caption("Frost forms on the cold glass as the liquid cools", { colour: "#eaf6ff" });
             }}
           />
           <DockSeparator />
