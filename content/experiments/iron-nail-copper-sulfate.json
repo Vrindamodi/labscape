@@ -6,6 +6,10 @@
   "title": "Iron nail in copper sulfate",
   "fidelity": "approximate",
   "reviewStatus": "draft",
+  "idea": {
+    "text": "Iron is more reactive than copper. When an iron nail sits in copper sulfate solution, iron atoms give electrons to the copper ions: copper metal coats the nail and iron goes into the solution instead. This is a displacement reaction.",
+    "analogy": "Like a stronger player taking a weaker player's place on the team: iron takes copper's place in the solution, and copper is pushed out as solid metal."
+  },
   "bench": {
     "items": [
       {
@@ -91,6 +95,18 @@
         "vol-1",
         "vol-2",
         "vol-3"
+      ],
+      "whatIf": {
+        "order": "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.",
+        "rate": "Fast pouring splashes the blue solution, which stains and irritates skin and eyes.",
+        "overshoot": "Too much solution won't change what happens, but the tube gets too full to handle safely.",
+        "quantity": "More solution means more copper ions, so the blue takes longer to fade. Less solution fades sooner."
+      },
+      "explore": [
+        {
+          "if": "use a more dilute copper sulfate solution",
+          "then": "Fewer copper ions: the coat builds up more slowly, and the blue fades sooner because there's less copper to remove."
+        }
       ]
     },
     {
@@ -110,6 +126,23 @@
         "nail-1",
         "nail-2",
         "nail-3"
+      ],
+      "whatIf": {
+        "order": "Pour the copper sulfate in first so the nail has something to react with."
+      },
+      "explore": [
+        {
+          "if": "use a rusty nail",
+          "then": "Rust is a layer of iron oxide that stops copper ions reaching the iron, so the coat forms slowly and patchily. That's why the nail is sanded."
+        },
+        {
+          "if": "use copper wire instead of an iron nail",
+          "then": "Nothing happens. Copper can't displace copper. You need a metal that is more reactive than copper."
+        },
+        {
+          "if": "use a strip of zinc",
+          "then": "Zinc is even more reactive than iron, so the copper coat forms faster and the blue fades sooner."
+        }
       ]
     },
     {
@@ -127,6 +160,12 @@
         "wait-1",
         "wait-2",
         "wait-3"
+      ],
+      "explore": [
+        {
+          "if": "warm the solution",
+          "then": "Particles move faster and collide more often, so the copper coat forms more quickly."
+        }
       ]
     },
     {
@@ -144,6 +183,12 @@
         "wait-1",
         "wait-2",
         "wait-3"
+      ],
+      "explore": [
+        {
+          "if": "leave it overnight",
+          "then": "Much more of the blue fades, as long as there's enough iron left. The solution turns pale green from iron(II) ions."
+        }
       ]
     }
   ],
@@ -239,16 +284,19 @@
     "captions": [
       {
         "t": 0,
-        "text": "Copper sulfate into a boiling tube, then a clean iron nail."
+        "text": "Copper sulfate into a boiling tube, then a clean iron nail.",
+        "why": "The blue colour comes from copper ions (Cu²⁺) in the solution. The nail is sanded so its surface is bare iron, not rust.",
+        "safety": "Copper sulfate irritates eyes and skin and is harmful if swallowed: goggles on, and wash your hands afterwards."
       },
       {
         "t": 12000,
         "text": "Within seconds a copper coat starts to form...",
-        "slow": true
+        "why": "Iron atoms give electrons to copper ions. The copper ions become copper atoms, which stick to the nail as a pinky-brown coat."
       },
       {
         "t": 30000,
-        "text": "Time-lapse: ten minutes later the blue has faded."
+        "text": "Time-lapse: ten minutes later the blue has faded.",
+        "why": "Each copper ion that turns into metal leaves the solution, so the blue fades. Iron ions (Fe²⁺) go in instead, and they are pale green."
       }
     ],
     "events": [

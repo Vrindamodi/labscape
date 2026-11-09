@@ -40,7 +40,14 @@ export type BenchProps = {
   onQuality: (q: Quality) => void;
   reducedMotion: boolean;
   children?: ReactNode;
+  /**
+   * Camera framing: when the key changes the camera glides to fit these items (close-up on the
+   * action). The learner can still orbit and zoom; the next key change reframes. Optional.
+   */
+  frame?: BenchFrame | null;
 };
+
+export type BenchFrame = { key: string; ids: string[] };
 
 export function Bench3D(props: BenchProps) {
   return (
@@ -79,7 +86,7 @@ function Scene(p: BenchProps) {
         makeDefault
         target={[0, 0.7, 0]}
         enablePan
-        minDistance={3}
+        minDistance={p.frame ? 1.6 : 3}
         maxDistance={12}
         minPolarAngle={0.35}
         maxPolarAngle={1.32}
@@ -96,6 +103,7 @@ function Scene(p: BenchProps) {
       ))}
       <DragPlane {...p} />
       <HandDragPlane {...p} />
+      {p.frame && <CameraRig frame={p.frame} state={p.state} reducedMotion={p.reducedMotion} />}
       {p.children}
     </>
   );
@@ -176,6 +184,17 @@ function baseY(item: Item, _state: LabState): number {
 
 /** Where a dragged held item currently is (scene units), shared between the drag plane and the item. */
 const handDrag: { active: boolean; x: number; z: number; begin: (() => void) | null } = { active: false, x: 0, z: 0, begin: null };
+
+/**
+ * Starts carrying the item in hand with the pointer from outside the canvas (a shelf drag). Give the
+ * item's bench position (mm); releasing the pointer over a glowing target uses it, as on the bench.
+ */
+export function beginHandDrag(xMm: number, zMm: number) {
+  handDrag.active = true;
+  handDrag.x = xMm * U;
+  handDrag.z = zMm * U;
+  handDrag.begin?.();
+}
 
 function ItemNode({ item, state, cues, selected, targets, onPick, pour, hand, mixing, quality, reducedMotion }: BenchProps & { item: Item }) {
   const group = useRef<THREE.Group>(null);
@@ -911,6 +930,8 @@ function HandDragPlane({ hand, state, targets, onDropOnto }: BenchProps) {
     handDrag.begin = () => {
       if (controls) controls.enabled = false;
     };
+    // A drag that started on a shelf outside the canvas is already under way.
+    if (handDrag.active && controls) controls.enabled = false;
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
@@ -921,6 +942,79 @@ function HandDragPlane({ hand, state, targets, onDropOnto }: BenchProps) {
       if (controls) controls.enabled = true;
     };
   }, [active, camera, dom, controls]);
+  return null;
+}
+
+/* ------------------------------------------------------------------ camera framing */
+
+/** Rough height of a piece of equipment (mm), from its glass profile. */
+function tallMm(kind: EquipmentKind): number {
+  const p = KINDS[kind].profile;
+  return p.length ? Math.max(...p.map(([, h]) => h)) : kind === "clamp_stand" || kind === "burette_50" ? 520 : 120;
+}
+
+/** Viewing direction (from the target towards the camera): about 24 degrees above the bench. */
+const VIEW_DIR = new THREE.Vector3(0, 0.41, 0.91).normalize();
+
+/**
+ * Glides the camera to fit a set of items whenever the frame key changes, so the equipment in use
+ * fills the view instead of sitting small in the middle of a wide bench. Orbiting cancels the glide.
+ */
+function CameraRig({ frame, state, reducedMotion }: { frame: BenchFrame; state: LabState; reducedMotion: boolean }) {
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const controls = useThree((s) => s.controls) as (THREE.EventDispatcher<{ start: object }> & { target: THREE.Vector3; update: () => void }) | null;
+  const size = useThree((s) => s.size);
+  const anim = useRef<{ until: number; pos: THREE.Vector3; target: THREE.Vector3 } | null>(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  useEffect(() => {
+    const items = frame.ids.map((id) => stateRef.current.items[id]).filter((it): it is Item => !!it && it.socket !== "worn");
+    if (!items.length) return;
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, top = 0;
+    for (const it of items) {
+      const r = footprint(it.kind);
+      minX = Math.min(minX, it.x * U - r);
+      maxX = Math.max(maxX, it.x * U + r);
+      minZ = Math.min(minZ, it.z * U - r);
+      maxZ = Math.max(maxZ, it.z * U + r);
+      top = Math.max(top, tallMm(it.kind) * U);
+    }
+    const centre = new THREE.Vector3((minX + maxX) / 2, Math.min(1.2, top * 0.45 + 0.1), (minZ + maxZ) / 2);
+    const aspect = Math.max(0.4, size.width / Math.max(1, size.height));
+    const vfov = THREE.MathUtils.degToRad(camera.fov);
+    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
+    // Room either side for the hand to carry and tilt a vessel over its target.
+    const width = maxX - minX + 1.1;
+    const height = Math.max(top + 0.7, (maxZ - minZ) * 0.45 + 0.8);
+    const dist = THREE.MathUtils.clamp(Math.max(width / 2 / Math.tan(hfov / 2), height / 2 / Math.tan(vfov / 2)), 2.2, 11);
+    const pos = centre.clone().addScaledVector(VIEW_DIR, dist);
+    if (reducedMotion) {
+      camera.position.copy(pos);
+      controls?.target.copy(centre);
+      controls?.update();
+      return;
+    }
+    anim.current = { until: performance.now() + 1400, pos, target: centre };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frame.key, frame.ids.join("|"), size.width, size.height]);
+
+  useEffect(() => {
+    if (!controls) return;
+    const stop = () => (anim.current = null);
+    controls.addEventListener("start", stop);
+    return () => controls.removeEventListener("start", stop);
+  }, [controls]);
+
+  useFrame((_, dt) => {
+    const a = anim.current;
+    if (!a || !controls) return;
+    const k = 1 - Math.exp(-dt * 4.5);
+    camera.position.lerp(a.pos, k);
+    controls.target.lerp(a.target, k);
+    controls.update();
+    if (performance.now() > a.until) anim.current = null;
+  });
   return null;
 }
 

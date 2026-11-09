@@ -6,6 +6,10 @@
   "title": "Precipitation reactions",
   "fidelity": "exact",
   "reviewStatus": "draft",
+  "idea": {
+    "text": "Some ions from two clear solutions can join to make a solid that won't dissolve. The solid suddenly appears as a cloudy precipitate, and its colour helps identify which ions were there.",
+    "analogy": "Like a crowded dance floor: most people keep moving around, but certain pairs grab each other and sit down together, and those pairs are the solid that drops out."
+  },
   "bench": {
     "items": [
       {
@@ -124,6 +128,18 @@
         "vol-1",
         "vol-2",
         "vol-3"
+      ],
+      "whatIf": {
+        "order": "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.",
+        "rate": "A fast pour into a narrow test tube splashes the solution out.",
+        "overshoot": "More copper sulfate means you'll need more drops of sodium hydroxide before you see a lot of precipitate.",
+        "quantity": "The amount changes how much precipitate you can make, not what colour it is."
+      },
+      "explore": [
+        {
+          "if": "use more copper sulfate",
+          "then": "You'd need more drops of sodium hydroxide before all the copper ions are used up, and you'd get more blue precipitate."
+        }
       ]
     },
     {
@@ -149,6 +165,20 @@
         "drop-1",
         "drop-2",
         "drop-3"
+      ],
+      "whatIf": {
+        "order": "Copper sulfate goes in first so the drops have copper ions to react with.",
+        "not-dropwise": "Pouring sodium hydroxide in fast hides where the precipitate forms and wastes a corrosive chemical. Drop by drop, you see the blue solid appear where each drop lands."
+      },
+      "explore": [
+        {
+          "if": "add a lot of extra sodium hydroxide",
+          "then": "More blue precipitate forms until all the copper ions are used up. Copper hydroxide doesn't redissolve in dilute sodium hydroxide."
+        },
+        {
+          "if": "use iron(II) sulfate instead of copper sulfate",
+          "then": "You'd get a green precipitate of iron(II) hydroxide. A different metal ion gives a different coloured precipitate, which is how chemists identify them."
+        }
       ]
     },
     {
@@ -174,7 +204,13 @@
         "vol-1",
         "vol-2",
         "vol-3"
-      ]
+      ],
+      "whatIf": {
+        "order": "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.",
+        "rate": "A fast pour splashes toxic barium chloride solution. Pour gently.",
+        "overshoot": "More barium chloride means more precipitate once the sulfate goes in, and more toxic waste to dispose of.",
+        "quantity": "The amount changes how much precipitate forms, not its colour."
+      }
     },
     {
       "id": "so4-drops",
@@ -199,6 +235,20 @@
         "drop-1",
         "drop-2",
         "drop-3"
+      ],
+      "whatIf": {
+        "order": "Barium chloride goes in first so the drops have barium ions to react with.",
+        "not-dropwise": "Pouring the sulfate in fast means you miss the moment the white solid first appears. Drop by drop shows it forming."
+      },
+      "explore": [
+        {
+          "if": "add dilute hydrochloric acid first",
+          "then": "Chemists add acid first in the sulfate test so carbonate ions can't give a false white precipitate. Barium sulfate still forms."
+        },
+        {
+          "if": "use sodium chloride instead of sodium sulfate",
+          "then": "No precipitate: barium chloride dissolves, so Ba²⁺ and Cl⁻ ions just stay in solution."
+        }
       ]
     }
   ],
@@ -282,16 +332,19 @@
     "captions": [
       {
         "t": 0,
-        "text": "Goggles on: barium salts are toxic."
+        "text": "Goggles on: barium salts are toxic.",
+        "why": "Precipitation tests identify ions in solution, but some of the chemicals used are hazardous.",
+        "safety": "Barium compounds are toxic if swallowed and sodium hydroxide is corrosive. Goggles on, small volumes, and no hand-to-mouth."
       },
       {
         "t": 4000,
         "text": "Copper sulfate, then sodium hydroxide drop by drop...",
-        "slow": true
+        "why": "Cu²⁺ ions meet OH⁻ ions and form copper(II) hydroxide, a pale blue solid that doesn't dissolve in water."
       },
       {
         "t": 16000,
-        "text": "Barium chloride meets sodium sulfate: a thick white precipitate."
+        "text": "Barium chloride meets sodium sulfate: a thick white precipitate.",
+        "why": "Ba²⁺ and SO₄²⁻ form barium sulfate, which hardly dissolves at all, so it appears almost instantly. This is the test for sulfate ions."
       }
     ],
     "events": [

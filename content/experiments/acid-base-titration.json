@@ -6,6 +6,10 @@
   "title": "Acid-base titration",
   "fidelity": "exact",
   "reviewStatus": "draft",
+  "idea": {
+    "text": "Acids and alkalis cancel each other out: they neutralise. In a titration you add alkali from a burette, a little at a time, to an exact volume of acid until it is just neutralised. An indicator changes colour at that moment, and the volume used tells you how strong the acid is.",
+    "analogy": "Like filling a glass to the brim in dim light: pour fast at first, then drop by drop near the top, because one drop too many and it overflows."
+  },
   "bench": {
     "items": [
       {
@@ -112,6 +116,19 @@
         "fill-1",
         "fill-2",
         "fill-3"
+      ],
+      "whatIf": {
+        "rate": "Pouring fast into the narrow burette funnel makes it overflow, splashing corrosive alkali, often near face height. Pour slowly, with the burette below eye level."
+      },
+      "explore": [
+        {
+          "if": "fill the burette above eye level",
+          "then": "Any overflow runs down towards your face. Lower the burette, or stand so its top is below your eyes while you fill it."
+        },
+        {
+          "if": "leave the funnel in the burette",
+          "then": "Drips from the funnel can fall into the burette during the titration and change the volume you read. Take it out after filling."
+        }
       ]
     },
     {
@@ -138,6 +155,15 @@
         "bubble-1",
         "bubble-2",
         "bubble-3"
+      ],
+      "whatIf": {
+        "order": "The burette needs to be filled before there's anything to run through it."
+      },
+      "explore": [
+        {
+          "if": "leave the air bubble in the tip",
+          "then": "The bubble gets pushed out during the titration, so the scale says more liquid went in than really did. Your titre comes out too big."
+        }
       ]
     },
     {
@@ -162,6 +188,16 @@
         "read-1",
         "read-2",
         "read-3"
+      ],
+      "whatIf": {
+        "reading": "Reading from above or below eye level shifts the number you see (parallax). Bend down so your eye is level with the bottom of the curved surface, the meniscus.",
+        "order": "Read the starting volume only after the bubble has been cleared, otherwise the bubble is counted in your reading."
+      },
+      "explore": [
+        {
+          "if": "read the top of the meniscus instead of the bottom",
+          "then": "Every reading shifts by the same amount, so the difference (the titre) can still be right, but only if you read it the same way every time."
+        }
       ]
     },
     {
@@ -192,6 +228,16 @@
         "pipette-1",
         "pipette-2",
         "pipette-3"
+      ],
+      "whatIf": {
+        "overshoot": "The pipette is made to measure one exact volume. If the meniscus isn't on the mark, the amount of acid is wrong, and so is every calculation after it.",
+        "quantity": "The pipette is made to measure one exact volume. If the meniscus isn't on the mark, the amount of acid is wrong, and so is every calculation after it."
+      },
+      "explore": [
+        {
+          "if": "use a measuring cylinder instead of a pipette",
+          "then": "A cylinder is only accurate to about ±0.5 mL, so your acid volume could be 5% out. A pipette is accurate to about ±0.05 mL."
+        }
       ]
     },
     {
@@ -217,6 +263,16 @@
         "pipette-1",
         "pipette-2",
         "pipette-3"
+      ],
+      "whatIf": {
+        "order": "Fill the pipette with acid before trying to empty it into the flask.",
+        "quantity": "If some acid is left behind or spilt, the flask has less than 10.00 mL and the titre comes out too small."
+      },
+      "explore": [
+        {
+          "if": "blow out the last drop from the pipette",
+          "then": "Pipettes are made to leave that last drop in the tip. Blowing it out adds extra acid, so the titre comes out slightly too big."
+        }
       ]
     },
     {
@@ -245,6 +301,16 @@
         "ind-1",
         "ind-2",
         "ind-3"
+      ],
+      "whatIf": {
+        "order": "Put the acid in the flask first, then the indicator.",
+        "overshoot": "A few extra drops won't change much, but indicators are weak acids themselves, so a lot of indicator uses up a little extra alkali."
+      },
+      "explore": [
+        {
+          "if": "use universal indicator instead",
+          "then": "Universal indicator changes gradually through many colours, so there's no sharp moment to stop. Phenolphthalein snaps from colourless to pink."
+        }
       ]
     },
     {
@@ -263,6 +329,12 @@
         "tile-1",
         "tile-2",
         "tile-3"
+      ],
+      "explore": [
+        {
+          "if": "skip the white tile",
+          "then": "The first faint pink is much harder to see against a dark bench, so you're more likely to go past the end point."
+        }
       ]
     },
     {
@@ -300,6 +372,17 @@
         "rough-1",
         "rough-2",
         "rough-3"
+      ],
+      "whatIf": {
+        "order": "Read the burette and get the acid and indicator ready before adding any alkali, or you won't know how much you used.",
+        "portion-too-big": "Big portions overshoot the end point by more, so the rough result is less useful. About 1 mL at a time, swirling in between.",
+        "no-mixing": "Without swirling, the alkali sits in one patch that turns pink while the rest of the flask is still acidic. You might stop too early."
+      },
+      "explore": [
+        {
+          "if": "skip the rough run",
+          "then": "You wouldn't know where the end point is, so you'd have to add every drop slowly from the start. The rough run saves time and stops you overshooting."
+        }
       ]
     },
     {
@@ -324,7 +407,10 @@
         "read-1",
         "read-2",
         "read-3"
-      ]
+      ],
+      "whatIf": {
+        "reading": "Reading from above or below eye level shifts the number you see (parallax). Bend down so your eye is level with the bottom of the curved surface, the meniscus."
+      }
     },
     {
       "id": "pipette-accurate",
@@ -349,6 +435,16 @@
         "pipette-1",
         "pipette-2",
         "pipette-3"
+      ],
+      "whatIf": {
+        "overshoot": "If the meniscus isn't on the mark, the flask gets the wrong amount of acid and the accurate titre won't match the rough one.",
+        "quantity": "If the meniscus isn't on the mark, the flask gets the wrong amount of acid and the accurate titre won't match the rough one."
+      },
+      "explore": [
+        {
+          "if": "skip rinsing the pipette",
+          "then": "Leftover water inside dilutes the acid you draw up, so there are fewer moles of acid and the titre comes out too small."
+        }
       ]
     },
     {
@@ -374,7 +470,11 @@
         "pipette-1",
         "pipette-2",
         "pipette-3"
-      ]
+      ],
+      "whatIf": {
+        "order": "Fill the pipette with acid before trying to empty it into the flask.",
+        "quantity": "If some acid is left behind or spilt, the flask has less than 10.00 mL and the titre comes out too small."
+      }
     },
     {
       "id": "indicator-accurate",
@@ -402,7 +502,10 @@
         "ind-1",
         "ind-2",
         "ind-3"
-      ]
+      ],
+      "whatIf": {
+        "order": "Put the acid in the flask first, then the indicator."
+      }
     },
     {
       "id": "tile-accurate",
@@ -420,6 +523,12 @@
         "tile-1",
         "tile-2",
         "tile-3"
+      ],
+      "explore": [
+        {
+          "if": "skip the white tile",
+          "then": "The first faint pink is much harder to see against a dark bench, so you're more likely to go past the end point."
+        }
       ]
     },
     {
@@ -475,6 +584,27 @@
         "acc-1",
         "acc-2",
         "acc-3"
+      ],
+      "whatIf": {
+        "order": "Finish the rough run and set up the second flask first: you need the rough titre to know when to slow down.",
+        "not-dropwise": "Near the end point a single drop changes the colour. A stream here sails past it, so the titre comes out too big and the acid seems stronger than it really is.",
+        "overshoot": "Once you're past the end point you can't go back: the flask is now alkaline. The titre is too big, so you'd calculate the acid as stronger than it is. Undo, or start a new flask.",
+        "no-mixing": "Unmixed drops make a pink patch that fades when you swirl. Swirl after every drop so you see the true colour of the whole flask.",
+        "quantity": "A titre that's off means the acid's concentration you calculate will be off by the same proportion."
+      },
+      "explore": [
+        {
+          "if": "add the alkali faster near the end",
+          "then": "You'd overshoot. The extra alkali after the end point still counts in your reading, so the acid looks more concentrated than it is."
+        },
+        {
+          "if": "stop at the first pink flash",
+          "then": "A pink flash that disappears when you swirl means acid is still left. Wait for a faint pink that lasts 30 seconds."
+        },
+        {
+          "if": "use 0.200 M sodium hydroxide instead",
+          "then": "Each mL now carries twice as many OH⁻ ions, so you'd need about half the volume. The answer for the acid would come out the same."
+        }
       ]
     },
     {
@@ -499,6 +629,15 @@
         "read-1",
         "read-2",
         "read-3"
+      ],
+      "whatIf": {
+        "reading": "Reading from above or below eye level shifts the number you see (parallax). Bend down so your eye is level with the bottom of the curved surface, the meniscus."
+      },
+      "explore": [
+        {
+          "if": "take away the wrong starting reading",
+          "then": "The titre is the final reading minus the reading at the start of that run. Mixing them up gives a volume that means nothing."
+        }
       ]
     }
   ],
@@ -654,37 +793,46 @@
     "captions": [
       {
         "t": 0,
-        "text": "Fill the burette slowly with 0.100 M sodium hydroxide."
+        "text": "Fill the burette slowly with 0.100 M sodium hydroxide.",
+        "why": "A burette adds liquid in tiny, measured amounts and lets you read how much you used, to 0.05 mL.",
+        "safety": "Sodium hydroxide is corrosive. Fill the burette below eye level using a funnel, and pour slowly so it can't overflow."
       },
       {
         "t": 18000,
         "text": "Run a little through to clear the air bubble from the tip.",
-        "slow": true
+        "why": "An air bubble in the tip would be counted as liquid when you read the scale, so your result would be wrong."
       },
       {
         "t": 22000,
-        "text": "Read the starting volume at eye level: 1.00 mL."
+        "text": "Read the starting volume at eye level: 1.00 mL.",
+        "why": "Read the bottom of the curved surface (the meniscus) with your eye level with it. Looking from above or below shifts the reading."
       },
       {
         "t": 24000,
-        "text": "Pipette exactly 10.00 mL of the acid into a conical flask and add phenolphthalein."
+        "text": "Pipette exactly 10.00 mL of the acid into a conical flask and add phenolphthalein.",
+        "why": "A pipette measures one exact volume very accurately. Phenolphthalein is colourless in acid and turns pink once there is the slightest excess of alkali.",
+        "safety": "Always use a pipette filler, never your mouth."
       },
       {
         "t": 31000,
-        "text": "Rough run: about 1 mL at a time, swirling, until the pink stays."
+        "text": "Rough run: about 1 mL at a time, swirling, until the pink stays.",
+        "why": "The rough run finds roughly where the end point is, so the accurate run can go quickly up to just before it."
       },
       {
         "t": 57000,
-        "text": "Accurate run: run in quickly to 9 mL..."
+        "text": "Accurate run: run in quickly to 9 mL...",
+        "why": "Up to about 1 mL before the rough end point there is still plenty of acid left, so nothing can go wrong yet."
       },
       {
         "t": 67000,
         "text": "...then drop by drop, swirling after each one.",
-        "slow": true
+        "slow": true,
+        "why": "Near the end point a single drop (0.05 mL) is enough to tip the flask from acid to alkali. Swirling mixes each drop in before the next."
       },
       {
         "t": 77000,
-        "text": "A faint pink that lasts 30 seconds: the end point."
+        "text": "A faint pink that lasts 30 seconds: the end point.",
+        "why": "Now the moles of NaOH added equal the moles of HCl in the flask. From the volume used you can work out the acid's concentration."
       }
     ],
     "events": [

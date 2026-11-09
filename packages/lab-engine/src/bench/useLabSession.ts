@@ -33,6 +33,13 @@ export type LabSession = {
   stopped: boolean;
   /** Rewind the whole session to just after event seq (restart from a step). */
   rewind: (keepThroughSeq: number) => void;
+  /** Is there a user action to undo? */
+  canUndo: boolean;
+  /**
+   * Undo the last user action (one gesture: a whole pour, a stirring run, one placement). Rewinds the
+   * log and returns the seq kept through, so the caller can rewind the server log to match, or null.
+   */
+  undo: () => number | null;
 };
 
 const TICK_MS = 100;
@@ -48,6 +55,8 @@ type Options = {
   onNote?: (n: Note) => void;
   /** Demo mode: play this script instead of the golden run (replays of a real attempt). */
   script?: { t: number; type: LabEvent["type"]; payload: unknown }[];
+  /** Start with the clock paused (the demo waits for its Start button). */
+  startPaused?: boolean;
 };
 
 /**
@@ -96,7 +105,7 @@ export function useLabSession(content: ExperimentContent, opts: Options): LabSes
   const [notes, setNotes] = useState<LiveNote[]>(() => initial.ns.slice(-30).map((n) => ({ ...n, at: 0, uid: keyRef.current++ })));
   const [feedback, setFeedback] = useState<Feedback[]>(initial.fb);
   const [speed, setSpeed] = useState(1);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(!!opts.startPaused);
   const [stopped, setStopped] = useState(!!initial.ev?.stopped);
   const lastEval = useRef(initial.s.t);
 
@@ -214,7 +223,21 @@ export function useLabSession(content: ExperimentContent, opts: Options): LabSes
     [content, mode, reset],
   );
 
-  const rewind = useCallback((keep: number) => reset(eventsRef.current.filter((e) => e.seq <= keep)), [reset]);
+  const rewind = useCallback(
+    (keep: number) => {
+      // Unsent events past the rewind point are dropped too, so autosave never re-sends them.
+      pendingRef.current = pendingRef.current.filter((e) => e.seq <= keep);
+      reset(eventsRef.current.filter((e) => e.seq <= keep));
+    },
+    [reset],
+  );
+
+  const undo = useCallback(() => {
+    const keep = undoPoint(eventsRef.current);
+    if (keep === null) return null;
+    rewind(keep);
+    return keep;
+  }, [rewind]);
 
   return {
     state,
@@ -235,5 +258,46 @@ export function useLabSession(content: ExperimentContent, opts: Options): LabSes
     seek,
     stopped,
     rewind,
+    canUndo: eventsRef.current.some(isAction),
+    undo,
   };
+}
+
+const MIX = new Set(["mix.swirl", "mix.stir", "mix.shake"]);
+/** Events further apart than this (simulation time) belong to different gestures. */
+const GESTURE_GAP_MS = 1500;
+
+function isAction(e: LabEvent) {
+  if (e.actor !== "user" || e.type === "hint.shown") return false;
+  return !(e.type === "param.set" && String(e.payload.key).startsWith("answer:"));
+}
+
+function gestureKey(e: LabEvent) {
+  const p = e.payload as Record<string, unknown>;
+  return [e.type, p.from ?? p.equipmentId ?? p.instrument ?? p.target ?? p.key ?? "", p.to ?? p.into ?? ""].join("|");
+}
+
+/**
+ * Where to rewind to for one undo: the seq just before the last user gesture. A gesture is a run of
+ * events with the same type and items (a pour arrives as many small chunks, a burette as many drops)
+ * plus any stirring or swirling done during it, with no pause longer than 1.5 s. Null: nothing to undo.
+ */
+export function undoPoint(events: LabEvent[]): number | null {
+  const sorted = [...events].sort((a, b) => a.seq - b.seq);
+  let i = sorted.length - 1;
+  while (i >= 0 && !isAction(sorted[i]!)) i--;
+  if (i < 0) return null;
+  const last = sorted[i]!;
+  const key = gestureKey(last);
+  const lastIsMix = MIX.has(last.type);
+  let j = i;
+  while (j > 0) {
+    const p = sorted[j - 1]!;
+    const next = sorted[j]!;
+    if (!isAction(p) || next.t - p.t > GESTURE_GAP_MS) break;
+    const k = gestureKey(p);
+    if (k === key || (lastIsMix ? MIX.has(p.type) && k.split("|")[1] === key.split("|")[1] : MIX.has(p.type))) j--;
+    else break;
+  }
+  return j > 0 ? sorted[j - 1]!.seq : 0;
 }

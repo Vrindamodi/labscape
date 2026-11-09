@@ -21,6 +21,8 @@ export type ExperimentContent = {
   observations: Observations;
   safety: SafetyRule[];
   golden: GoldenRun;
+  /** Optional "The idea" card shown before the demo: the concept in 2-3 sentences plus a picture-level analogy. */
+  idea?: { text: string; analogy: string };
   scoring?: Partial<Record<ScoreDimension, number>>;
 };
 
@@ -37,6 +39,14 @@ export type StepSpec = ProtocolStep & {
   optional?: boolean;
   /** Short label for the step list. */
   title: string;
+  /**
+   * "What if" texts keyed by deviation code (order, rate, overshoot, quantity, no-mixing,
+   * not-dropwise, portion-too-big, wrong-equipment, reading) or a safety rule code: the real-world
+   * consequence of that mistake in plain words, shown instead of a bare error. Display only.
+   */
+  whatIf?: Record<string, string>;
+  /** "What if I do it differently?" pairs shown on request in Try (safe alternatives and their effect). Display only. */
+  explore?: { if: string; then: string }[];
 };
 
 export type SafetyRule = {
@@ -61,10 +71,16 @@ export type Observations = {
 
 export type GoldenRun = {
   durationS: number;
-  captions: { t: number; text: string; slow?: boolean }[];
+  captions: DemoBeat[];
   /** A LabEvent script (id/seq/attemptId are filled in at replay time). */
   events: { t: number; type: LabEventType; payload: Record<string, unknown> }[];
 };
+
+/**
+ * One beat of the demo: the caption, plus optional teaching text for the concept panel
+ * (why = the science idea, safety = the safety reason). Display only.
+ */
+export type DemoBeat = { t: number; text: string; slow?: boolean; why?: string; safety?: string };
 
 export type Severity = "minor" | "major" | "order" | "safety";
 

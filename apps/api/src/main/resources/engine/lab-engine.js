@@ -970,6 +970,10 @@ var LabEngine = (() => {
     title: "Acid-base titration",
     fidelity: "exact",
     reviewStatus: "draft",
+    idea: {
+      text: "Acids and alkalis cancel each other out: they neutralise. In a titration you add alkali from a burette, a little at a time, to an exact volume of acid until it is just neutralised. An indicator changes colour at that moment, and the volume used tells you how strong the acid is.",
+      analogy: "Like filling a glass to the brim in dim light: pour fast at first, then drop by drop near the top, because one drop too many and it overflows."
+    },
     bench: {
       items: [
         {
@@ -1076,6 +1080,19 @@ var LabEngine = (() => {
           "fill-1",
           "fill-2",
           "fill-3"
+        ],
+        whatIf: {
+          rate: "Pouring fast into the narrow burette funnel makes it overflow, splashing corrosive alkali, often near face height. Pour slowly, with the burette below eye level."
+        },
+        explore: [
+          {
+            if: "fill the burette above eye level",
+            then: "Any overflow runs down towards your face. Lower the burette, or stand so its top is below your eyes while you fill it."
+          },
+          {
+            if: "leave the funnel in the burette",
+            then: "Drips from the funnel can fall into the burette during the titration and change the volume you read. Take it out after filling."
+          }
         ]
       },
       {
@@ -1102,6 +1119,15 @@ var LabEngine = (() => {
           "bubble-1",
           "bubble-2",
           "bubble-3"
+        ],
+        whatIf: {
+          order: "The burette needs to be filled before there's anything to run through it."
+        },
+        explore: [
+          {
+            if: "leave the air bubble in the tip",
+            then: "The bubble gets pushed out during the titration, so the scale says more liquid went in than really did. Your titre comes out too big."
+          }
         ]
       },
       {
@@ -1126,6 +1152,16 @@ var LabEngine = (() => {
           "read-1",
           "read-2",
           "read-3"
+        ],
+        whatIf: {
+          reading: "Reading from above or below eye level shifts the number you see (parallax). Bend down so your eye is level with the bottom of the curved surface, the meniscus.",
+          order: "Read the starting volume only after the bubble has been cleared, otherwise the bubble is counted in your reading."
+        },
+        explore: [
+          {
+            if: "read the top of the meniscus instead of the bottom",
+            then: "Every reading shifts by the same amount, so the difference (the titre) can still be right, but only if you read it the same way every time."
+          }
         ]
       },
       {
@@ -1156,6 +1192,16 @@ var LabEngine = (() => {
           "pipette-1",
           "pipette-2",
           "pipette-3"
+        ],
+        whatIf: {
+          overshoot: "The pipette is made to measure one exact volume. If the meniscus isn't on the mark, the amount of acid is wrong, and so is every calculation after it.",
+          quantity: "The pipette is made to measure one exact volume. If the meniscus isn't on the mark, the amount of acid is wrong, and so is every calculation after it."
+        },
+        explore: [
+          {
+            if: "use a measuring cylinder instead of a pipette",
+            then: "A cylinder is only accurate to about \xB10.5 mL, so your acid volume could be 5% out. A pipette is accurate to about \xB10.05 mL."
+          }
         ]
       },
       {
@@ -1181,6 +1227,16 @@ var LabEngine = (() => {
           "pipette-1",
           "pipette-2",
           "pipette-3"
+        ],
+        whatIf: {
+          order: "Fill the pipette with acid before trying to empty it into the flask.",
+          quantity: "If some acid is left behind or spilt, the flask has less than 10.00 mL and the titre comes out too small."
+        },
+        explore: [
+          {
+            if: "blow out the last drop from the pipette",
+            then: "Pipettes are made to leave that last drop in the tip. Blowing it out adds extra acid, so the titre comes out slightly too big."
+          }
         ]
       },
       {
@@ -1209,6 +1265,16 @@ var LabEngine = (() => {
           "ind-1",
           "ind-2",
           "ind-3"
+        ],
+        whatIf: {
+          order: "Put the acid in the flask first, then the indicator.",
+          overshoot: "A few extra drops won't change much, but indicators are weak acids themselves, so a lot of indicator uses up a little extra alkali."
+        },
+        explore: [
+          {
+            if: "use universal indicator instead",
+            then: "Universal indicator changes gradually through many colours, so there's no sharp moment to stop. Phenolphthalein snaps from colourless to pink."
+          }
         ]
       },
       {
@@ -1227,6 +1293,12 @@ var LabEngine = (() => {
           "tile-1",
           "tile-2",
           "tile-3"
+        ],
+        explore: [
+          {
+            if: "skip the white tile",
+            then: "The first faint pink is much harder to see against a dark bench, so you're more likely to go past the end point."
+          }
         ]
       },
       {
@@ -1264,6 +1336,17 @@ var LabEngine = (() => {
           "rough-1",
           "rough-2",
           "rough-3"
+        ],
+        whatIf: {
+          order: "Read the burette and get the acid and indicator ready before adding any alkali, or you won't know how much you used.",
+          "portion-too-big": "Big portions overshoot the end point by more, so the rough result is less useful. About 1 mL at a time, swirling in between.",
+          "no-mixing": "Without swirling, the alkali sits in one patch that turns pink while the rest of the flask is still acidic. You might stop too early."
+        },
+        explore: [
+          {
+            if: "skip the rough run",
+            then: "You wouldn't know where the end point is, so you'd have to add every drop slowly from the start. The rough run saves time and stops you overshooting."
+          }
         ]
       },
       {
@@ -1288,7 +1371,10 @@ var LabEngine = (() => {
           "read-1",
           "read-2",
           "read-3"
-        ]
+        ],
+        whatIf: {
+          reading: "Reading from above or below eye level shifts the number you see (parallax). Bend down so your eye is level with the bottom of the curved surface, the meniscus."
+        }
       },
       {
         id: "pipette-accurate",
@@ -1313,6 +1399,16 @@ var LabEngine = (() => {
           "pipette-1",
           "pipette-2",
           "pipette-3"
+        ],
+        whatIf: {
+          overshoot: "If the meniscus isn't on the mark, the flask gets the wrong amount of acid and the accurate titre won't match the rough one.",
+          quantity: "If the meniscus isn't on the mark, the flask gets the wrong amount of acid and the accurate titre won't match the rough one."
+        },
+        explore: [
+          {
+            if: "skip rinsing the pipette",
+            then: "Leftover water inside dilutes the acid you draw up, so there are fewer moles of acid and the titre comes out too small."
+          }
         ]
       },
       {
@@ -1338,7 +1434,11 @@ var LabEngine = (() => {
           "pipette-1",
           "pipette-2",
           "pipette-3"
-        ]
+        ],
+        whatIf: {
+          order: "Fill the pipette with acid before trying to empty it into the flask.",
+          quantity: "If some acid is left behind or spilt, the flask has less than 10.00 mL and the titre comes out too small."
+        }
       },
       {
         id: "indicator-accurate",
@@ -1366,7 +1466,10 @@ var LabEngine = (() => {
           "ind-1",
           "ind-2",
           "ind-3"
-        ]
+        ],
+        whatIf: {
+          order: "Put the acid in the flask first, then the indicator."
+        }
       },
       {
         id: "tile-accurate",
@@ -1384,6 +1487,12 @@ var LabEngine = (() => {
           "tile-1",
           "tile-2",
           "tile-3"
+        ],
+        explore: [
+          {
+            if: "skip the white tile",
+            then: "The first faint pink is much harder to see against a dark bench, so you're more likely to go past the end point."
+          }
         ]
       },
       {
@@ -1439,6 +1548,27 @@ var LabEngine = (() => {
           "acc-1",
           "acc-2",
           "acc-3"
+        ],
+        whatIf: {
+          order: "Finish the rough run and set up the second flask first: you need the rough titre to know when to slow down.",
+          "not-dropwise": "Near the end point a single drop changes the colour. A stream here sails past it, so the titre comes out too big and the acid seems stronger than it really is.",
+          overshoot: "Once you're past the end point you can't go back: the flask is now alkaline. The titre is too big, so you'd calculate the acid as stronger than it is. Undo, or start a new flask.",
+          "no-mixing": "Unmixed drops make a pink patch that fades when you swirl. Swirl after every drop so you see the true colour of the whole flask.",
+          quantity: "A titre that's off means the acid's concentration you calculate will be off by the same proportion."
+        },
+        explore: [
+          {
+            if: "add the alkali faster near the end",
+            then: "You'd overshoot. The extra alkali after the end point still counts in your reading, so the acid looks more concentrated than it is."
+          },
+          {
+            if: "stop at the first pink flash",
+            then: "A pink flash that disappears when you swirl means acid is still left. Wait for a faint pink that lasts 30 seconds."
+          },
+          {
+            if: "use 0.200 M sodium hydroxide instead",
+            then: "Each mL now carries twice as many OH\u207B ions, so you'd need about half the volume. The answer for the acid would come out the same."
+          }
         ]
       },
       {
@@ -1463,6 +1593,15 @@ var LabEngine = (() => {
           "read-1",
           "read-2",
           "read-3"
+        ],
+        whatIf: {
+          reading: "Reading from above or below eye level shifts the number you see (parallax). Bend down so your eye is level with the bottom of the curved surface, the meniscus."
+        },
+        explore: [
+          {
+            if: "take away the wrong starting reading",
+            then: "The titre is the final reading minus the reading at the start of that run. Mixing them up gives a volume that means nothing."
+          }
         ]
       }
     ],
@@ -1618,37 +1757,46 @@ var LabEngine = (() => {
       captions: [
         {
           t: 0,
-          text: "Fill the burette slowly with 0.100 M sodium hydroxide."
+          text: "Fill the burette slowly with 0.100 M sodium hydroxide.",
+          why: "A burette adds liquid in tiny, measured amounts and lets you read how much you used, to 0.05 mL.",
+          safety: "Sodium hydroxide is corrosive. Fill the burette below eye level using a funnel, and pour slowly so it can't overflow."
         },
         {
           t: 18e3,
           text: "Run a little through to clear the air bubble from the tip.",
-          slow: true
+          why: "An air bubble in the tip would be counted as liquid when you read the scale, so your result would be wrong."
         },
         {
           t: 22e3,
-          text: "Read the starting volume at eye level: 1.00 mL."
+          text: "Read the starting volume at eye level: 1.00 mL.",
+          why: "Read the bottom of the curved surface (the meniscus) with your eye level with it. Looking from above or below shifts the reading."
         },
         {
           t: 24e3,
-          text: "Pipette exactly 10.00 mL of the acid into a conical flask and add phenolphthalein."
+          text: "Pipette exactly 10.00 mL of the acid into a conical flask and add phenolphthalein.",
+          why: "A pipette measures one exact volume very accurately. Phenolphthalein is colourless in acid and turns pink once there is the slightest excess of alkali.",
+          safety: "Always use a pipette filler, never your mouth."
         },
         {
           t: 31e3,
-          text: "Rough run: about 1 mL at a time, swirling, until the pink stays."
+          text: "Rough run: about 1 mL at a time, swirling, until the pink stays.",
+          why: "The rough run finds roughly where the end point is, so the accurate run can go quickly up to just before it."
         },
         {
           t: 57e3,
-          text: "Accurate run: run in quickly to 9 mL..."
+          text: "Accurate run: run in quickly to 9 mL...",
+          why: "Up to about 1 mL before the rough end point there is still plenty of acid left, so nothing can go wrong yet."
         },
         {
           t: 67e3,
           text: "...then drop by drop, swirling after each one.",
-          slow: true
+          slow: true,
+          why: "Near the end point a single drop (0.05 mL) is enough to tip the flask from acid to alkali. Swirling mixes each drop in before the next."
         },
         {
           t: 77e3,
-          text: "A faint pink that lasts 30 seconds: the end point."
+          text: "A faint pink that lasts 30 seconds: the end point.",
+          why: "Now the moles of NaOH added equal the moles of HCl in the flask. From the volume used you can work out the acid's concentration."
         }
       ],
       events: [
@@ -2178,6 +2326,7 @@ var LabEngine = (() => {
     title: "Diluting acid safely",
     fidelity: "approximate",
     reviewStatus: "draft",
+    idea: { text: "Mixing concentrated sulfuric acid with water gives out a lot of heat. Add a little acid to a lot of water, slowly, and that heat spreads through all the water so nothing boils. Do it the other way round and the first drops of water boil instantly and spit acid.", analogy: "A spoonful of boiling water poured into a full bath barely warms it, but a bath's worth of heat dumped into one spoonful would boil it over. Always put the small, dangerous thing into the big, safe thing." },
     bench: { items: [
       { id: "acid", kind: "reagent_bottle", label: "Concentrated sulfuric acid", x: -300, z: -60, fill: { reagentId: "h2so4-conc", volumeMl: 30 } },
       { id: "water", kind: "reagent_bottle", label: "Distilled water", x: -220, z: -60, fill: { reagentId: "water", volumeMl: 200 } },
@@ -2188,12 +2337,12 @@ var LabEngine = (() => {
       { id: "goggles", kind: "goggles", x: 320, z: 110 }
     ] },
     steps: [
-      { id: "goggles", title: "Goggles on", instruction: "Concentrated acid destroys skin and eyes. Goggles on before anything else.", action: "equipment.place", from: "goggles", complete: { onEvent: true }, scoring: { equipment: 1 }, hints: ["safe-1", "safe-2", "safe-3"] },
-      { id: "water-first", title: "Water into the beaker first", instruction: "Pour about 50 mL of water into the beaker.", requires: ["goggles"], action: "liquid.pour", from: "water", to: "beaker", quantity: { target: 50, plusMinus: 5, unit: "mL" }, technique: { kind: "pour", maxRateMlPerS: 25 }, hints: ["order-1", "order-2", "order-3"] },
-      { id: "thermometer", title: "Thermometer in", instruction: "Stand the thermometer in the water to watch the temperature.", action: "equipment.connect", from: "thermo", to: "beaker", complete: { onEvent: true }, hints: ["temp-1", "temp-2", "temp-3"] },
-      { id: "measure-acid", title: "Measure 5 mL of acid", instruction: "Pour 5 mL of concentrated acid into the measuring cylinder, very slowly.", requires: ["goggles"], action: "liquid.pour", from: "acid", to: "cyl", quantity: { target: 5, plusMinus: 0.5, unit: "mL" }, technique: { kind: "slow_pour", maxRateMlPerS: 1.5 }, hints: ["slow-1", "slow-2", "slow-3"] },
-      { id: "acid-into-water", title: "Acid into water, slowly", instruction: "Pour the acid slowly into the water down a glass rod, stirring all the time.", requires: ["water-first", "measure-acid"], action: "liquid.pour", from: "cyl", to: "beaker", quantity: { target: 5, plusMinus: 0.5, unit: "mL" }, technique: { kind: "slow_pour", maxRateMlPerS: 1 }, mixing: { kind: "stir_continuous", during: "each_addition", withinMs: 3e3 }, onDeviation: { order: { severity: "major", consequence: "blocked" } }, hints: ["slow-1", "slow-2", "slow-3"] },
-      { id: "read-temp", title: "Read the temperature", instruction: "Read the thermometer. How much did it warm up?", requires: ["acid-into-water"], action: "measure.read", from: "thermo", measurement: { instrument: "thermo", readTo: 1, unit: "\xB0C" }, hints: ["temp-1", "temp-2", "temp-3"] }
+      { id: "goggles", title: "Goggles on", instruction: "Concentrated acid destroys skin and eyes. Goggles on before anything else.", action: "equipment.place", from: "goggles", complete: { onEvent: true }, scoring: { equipment: 1 }, hints: ["safe-1", "safe-2", "safe-3"], explore: [{ if: "wear my normal glasses instead of goggles", then: "Ordinary glasses leave gaps at the top and sides. Splashes come from any direction, so you need goggles that seal around your eyes." }] },
+      { id: "water-first", title: "Water into the beaker first", instruction: "Pour about 50 mL of water into the beaker.", requires: ["goggles"], action: "liquid.pour", from: "water", to: "beaker", quantity: { target: 50, plusMinus: 5, unit: "mL" }, technique: { kind: "pour", maxRateMlPerS: 25 }, hints: ["order-1", "order-2", "order-3"], whatIf: { order: "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.", rate: "Pouring water fast mostly just splashes water, which is harmless here. But it's a bad habit for the acid later, where a splash can burn.", overshoot: "Too much water won't hurt anyone, but a very full beaker is hard to stir without slopping acid solution over the side.", quantity: "The amount of water changes the result: less water gets hotter (the same heat goes into less liquid), more water warms up less." }, explore: [{ if: "use 25 mL of water instead of 50 mL", then: "The same heat goes into half as much water, so the temperature rise is roughly twice as big. The mixture could get close to boiling." }, { if: "use 100 mL of water instead of 50 mL", then: "The heat is spread through twice as much water, so it warms up only about half as much. Safer, but the acid ends up more dilute." }] },
+      { id: "thermometer", title: "Thermometer in", instruction: "Stand the thermometer in the water to watch the temperature.", action: "equipment.connect", from: "thermo", to: "beaker", complete: { onEvent: true }, hints: ["temp-1", "temp-2", "temp-3"], explore: [{ if: "skip the thermometer", then: "The dilution would still work, but you'd have no evidence that heat was given out. Measuring turns a feeling into data." }] },
+      { id: "measure-acid", title: "Measure 5 mL of acid", instruction: "Pour 5 mL of concentrated acid into the measuring cylinder, very slowly.", requires: ["goggles"], action: "liquid.pour", from: "acid", to: "cyl", quantity: { target: 5, plusMinus: 0.5, unit: "mL" }, technique: { kind: "slow_pour", maxRateMlPerS: 1.5 }, hints: ["slow-1", "slow-2", "slow-3"], whatIf: { order: "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.", rate: "Concentrated acid poured fast glugs and splashes, and every splash is a drop that can burn through skin and clothes. Keep the flow under 1.5 mL/s.", overshoot: "Too much acid means more heat when it goes into the water. Doubling the acid roughly doubles the temperature rise.", quantity: "The amount of acid sets how much heat is given out: more acid makes a hotter mixture, less acid a cooler but more dilute one." }, explore: [{ if: "pour the acid straight from the bottle into the beaker", then: "You lose control of both the amount and the speed. Measuring into a small cylinder first means you know exactly how much goes in, and can add it slowly." }, { if: "use 10 mL of acid instead of 5 mL", then: "Twice the acid gives out about twice the heat into the same water, so the temperature rise roughly doubles. Added quickly, that's hot enough to spit." }] },
+      { id: "acid-into-water", title: "Acid into water, slowly", instruction: "Pour the acid slowly into the water down a glass rod, stirring all the time.", requires: ["water-first", "measure-acid"], action: "liquid.pour", from: "cyl", to: "beaker", quantity: { target: 5, plusMinus: 0.5, unit: "mL" }, technique: { kind: "slow_pour", maxRateMlPerS: 1 }, mixing: { kind: "stir_continuous", during: "each_addition", withinMs: 3e3 }, onDeviation: { order: { severity: "major", consequence: "blocked" } }, hints: ["slow-1", "slow-2", "slow-3"], whatIf: { order: "Acid first and water on top is the dangerous order: the water floats on the dense acid and boils the moment it touches it, spitting hot acid out of the beaker. The water must already be in the beaker.", rate: "Pouring concentrated acid quickly releases a burst of heat in one spot. The water there can boil and spit acid before the heat has time to spread. Under 1 mL/s lets it spread.", "no-mixing": "Without stirring, the heavy acid sinks and makes a hot layer at the bottom. Stirring shares the heat through all the water so no spot gets hot enough to boil.", overshoot: "More acid than planned means more heat in the same water: a bigger temperature rise and a stronger final solution.", quantity: "A different amount of acid changes the result: more acid, hotter and stronger; less acid, cooler and weaker.", "water-into-acid": "In a real lab, water poured onto concentrated sulfuric acid boils the instant it touches, throwing out droplets of hot, concentrated acid. People are badly burned this way. Always acid into water, never water into acid." }, explore: [{ if: "pour the water into the acid instead", then: "The water floats on top of the dense acid and boils on contact, spraying hot acid. It's the classic lab accident this experiment teaches you to avoid." }, { if: "don't stir while pouring", then: "The acid sinks and heats one layer at the bottom strongly. Stirring spreads the heat so the whole beaker warms evenly." }, { if: "stand the beaker in an ice bath first", then: "The ice soaks up heat as it is given out, so the temperature rises less. Chemists do this when they dilute large amounts of acid." }] },
+      { id: "read-temp", title: "Read the temperature", instruction: "Read the thermometer. How much did it warm up?", requires: ["acid-into-water"], action: "measure.read", from: "thermo", measurement: { instrument: "thermo", readTo: 1, unit: "\xB0C" }, hints: ["temp-1", "temp-2", "temp-3"], whatIf: { reading: "Reading from above or below eye level shifts the number you see (parallax). Bend down so your eye is level with the bottom of the curved surface, the meniscus.", order: "Read the temperature after the acid has gone in. Before that you're only measuring room-temperature water." }, explore: [{ if: "wait five minutes before reading", then: "The beaker loses heat to the air, so the reading drifts back towards room temperature. Read soon after mixing to catch the biggest rise." }] }
     ],
     hints: {
       "safe-1": { rung: 1, text: "Concentrated acid is the most dangerous thing on this bench." },
@@ -2225,10 +2374,12 @@ var LabEngine = (() => {
     golden: {
       durationS: 45,
       captions: [
-        { t: 0, text: "Goggles on before touching concentrated acid." },
-        { t: 4e3, text: "Water goes into the beaker FIRST." },
-        { t: 12e3, text: "Measure 5 mL of acid, very slowly.", slow: true },
-        { t: 22e3, text: "Acid into water, slowly, stirring all the time. Feel the heat." }
+        { t: 0, text: "Goggles on before touching concentrated acid.", why: "Concentrated sulfuric acid is corrosive: it destroys skin and eyes within seconds.", safety: "Eye protection goes on first because splashes happen without warning, and eyes cannot heal the way skin does." },
+        { t: 4e3, text: "Water goes into the beaker FIRST.", why: "The water is there to soak up the heat. The more water waiting in the beaker, the smaller its temperature rise.", safety: "With plenty of water already in place, every drop of acid lands in a big volume of water." },
+        { t: 8e3, text: "Thermometer in, to watch the temperature.", why: "Diluting acid is exothermic: it gives out heat energy. The thermometer turns 'it got warm' into a number." },
+        { t: 12e3, text: "Measure 5 mL of acid, very slowly.", slow: true, why: "Concentrated acid is thick and dense (about 1.8 g per mL, almost twice as heavy as water), so it glugs if you tip it fast.", safety: "A slow pour means no splashes, and a small measured volume keeps the heat released small too." },
+        { t: 22e3, text: "Acid into water, slowly, stirring all the time.", why: "The dense acid sinks and mixes into the water, so the heat is shared by all 50 mL. Stirring spreads it even faster.", safety: "Water poured onto concentrated acid floats on top and boils on contact, spraying hot acid. Remember: do what you oughta, add acid to water." },
+        { t: 38e3, text: "Read the thermometer: the water got warmer.", why: "The temperature rise shows the heat given out as the acid spreads through the water. More acid, or less water, would mean a bigger rise." }
       ],
       events: [
         { t: 1e3, type: "equipment.place", payload: { equipmentId: "goggles", x: 0, y: 0, socket: "worn" } },
@@ -2253,6 +2404,7 @@ var LabEngine = (() => {
     title: "Flame tests",
     fidelity: "qualitative",
     reviewStatus: "draft",
+    idea: { text: "When metal compounds are heated in a hot flame, their electrons jump up to higher energy levels, then fall back and give out light. Each metal gives out its own colours, so the flame colour tells you which metal is there.", analogy: "Like a glowing fingerprint: every metal ion signs the flame with its own colour." },
     bench: { items: [
       { id: "bunsen", kind: "bunsen", x: 0, z: -40 },
       { id: "loop", kind: "wire_loop", x: 120, z: 90 },
@@ -2267,18 +2419,18 @@ var LabEngine = (() => {
     ] },
     steps: [
       { id: "goggles", title: "Goggles on", instruction: "Goggles on, long hair tied back.", action: "equipment.place", from: "goggles", complete: { onEvent: true }, scoring: { equipment: 1 }, hints: ["safe-1", "safe-2", "safe-3"] },
-      { id: "air-hole", title: "Open the air hole", instruction: "Open the Bunsen's air hole so you get a hot, nearly invisible blue flame.", action: "param.set", from: "bunsen", complete: { onEvent: true }, scoring: { technique: 1 }, hints: ["flame-1", "flame-2", "flame-3"] },
-      { id: "light", title: "Light the Bunsen", instruction: "Turn on the gas and light the burner.", requires: ["goggles"], action: "heat.set", from: "bunsen", complete: { onEvent: true }, hints: ["flame-1", "flame-2", "flame-3"] },
-      { id: "clean", title: "Clean the loop", instruction: "Dip the loop in the acid, then hold it in the flame until it adds no colour.", requires: ["light"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"] },
-      { id: "lithium", title: "Test lithium", instruction: "Dip the clean loop in lithium chloride and hold it in the edge of the flame.", requires: ["clean"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:Li+" }, hints: ["test-1", "test-2", "test-3"] },
-      { id: "clean-2", title: "Clean again", instruction: "Clean the loop in acid and flame before the next metal.", requires: ["lithium"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"] },
-      { id: "sodium", title: "Test sodium", instruction: "Sodium chloride next.", requires: ["clean-2"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:Na+" }, hints: ["test-1", "test-2", "test-3"] },
-      { id: "clean-3", title: "Clean again", instruction: "Sodium's yellow hides other colours. Clean thoroughly.", requires: ["sodium"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"] },
-      { id: "potassium", title: "Test potassium", instruction: "Potassium chloride next.", requires: ["clean-3"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:K+" }, hints: ["test-1", "test-2", "test-3"] },
-      { id: "clean-4", title: "Clean again", instruction: "Clean the loop.", requires: ["potassium"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"] },
-      { id: "calcium", title: "Test calcium", instruction: "Calcium chloride next.", requires: ["clean-4"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:Ca2+" }, hints: ["test-1", "test-2", "test-3"] },
-      { id: "clean-5", title: "Clean again", instruction: "Clean the loop.", requires: ["calcium"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"] },
-      { id: "copper", title: "Test copper", instruction: "Finally, copper(II) chloride.", requires: ["clean-5"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:Cu2+" }, hints: ["test-1", "test-2", "test-3"] }
+      { id: "air-hole", title: "Open the air hole", instruction: "Open the Bunsen's air hole so you get a hot, nearly invisible blue flame.", action: "param.set", from: "bunsen", complete: { onEvent: true }, scoring: { technique: 1 }, hints: ["flame-1", "flame-2", "flame-3"], explore: [{ if: "keep the air hole closed", then: "You get a yellow, sooty, cooler flame. Its own yellow would hide the metal colours, especially sodium's." }] },
+      { id: "light", title: "Light the Bunsen", instruction: "Turn on the gas and light the burner.", requires: ["goggles"], action: "heat.set", from: "bunsen", complete: { onEvent: true }, hints: ["flame-1", "flame-2", "flame-3"], whatIf: { order: "Lighting a burner before goggles are on puts a flame and hot acid near unprotected eyes. Goggles first, always." }, explore: [{ if: "turn the gas on and wait before lighting", then: "Gas builds up around the burner and lights with a whoosh. Have the flame ready, then turn on the gas." }] },
+      { id: "clean", title: "Clean the loop", instruction: "Dip the loop in the acid, then hold it in the flame until it adds no colour.", requires: ["light"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"], whatIf: { order: "There's no flame yet, so the loop can't be cleaned. Light the burner first." }, explore: [{ if: "skip cleaning the loop", then: "Leftover salt on the wire burns with its own colour, so you'd see a mix of colours and couldn't tell which metal you were testing." }] },
+      { id: "lithium", title: "Test lithium", instruction: "Dip the clean loop in lithium chloride and hold it in the edge of the flame.", requires: ["clean"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:Li+" }, hints: ["test-1", "test-2", "test-3"], whatIf: { order: "Clean the loop first. Any leftover salt would colour the flame as well and confuse the result." }, explore: [{ if: "hold the loop in the middle of the flame", then: "Just above the blue cone is the hottest part of the flame and gives the brightest colour. The middle is cooler." }] },
+      { id: "clean-2", title: "Clean again", instruction: "Clean the loop in acid and flame before the next metal.", requires: ["lithium"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"], whatIf: { order: "Test the current metal first, then clean the loop before the next one." }, explore: [{ if: "skip cleaning the loop", then: "Lithium left on the wire would add crimson to the next flame, so sodium's colour would look wrong." }] },
+      { id: "sodium", title: "Test sodium", instruction: "Sodium chloride next.", requires: ["clean-2"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:Na+" }, hints: ["test-1", "test-2", "test-3"], whatIf: { order: "Clean the loop first. Leftover lithium would add crimson to the flame." }, explore: [{ if: "test sodium and potassium mixed together", then: "Sodium's bright yellow swamps potassium's faint lilac. You'd only see yellow, unless you looked through blue cobalt glass." }] },
+      { id: "clean-3", title: "Clean again", instruction: "Sodium's yellow hides other colours. Clean thoroughly.", requires: ["sodium"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"], whatIf: { order: "Test the current metal first, then clean the loop before the next one." }, explore: [{ if: "clean only quickly after sodium", then: "Even a trace of sodium gives a strong yellow that would hide potassium's lilac completely." }] },
+      { id: "potassium", title: "Test potassium", instruction: "Potassium chloride next.", requires: ["clean-3"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:K+" }, hints: ["test-1", "test-2", "test-3"], whatIf: { order: "Clean the loop first. Sodium is the worst for hiding other colours." }, explore: [{ if: "look through blue cobalt glass", then: "The glass blocks yellow light, so any sodium contamination disappears and potassium's lilac shows clearly." }] },
+      { id: "clean-4", title: "Clean again", instruction: "Clean the loop.", requires: ["potassium"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"], whatIf: { order: "Test the current metal first, then clean the loop before the next one." } },
+      { id: "calcium", title: "Test calcium", instruction: "Calcium chloride next.", requires: ["clean-4"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:Ca2+" }, hints: ["test-1", "test-2", "test-3"], whatIf: { order: "Clean the loop first, so only calcium colours the flame." } },
+      { id: "clean-5", title: "Clean again", instruction: "Clean the loop.", requires: ["calcium"], action: "equipment.connect", from: "loop", complete: { predicate: "new:loop-clean" }, scoring: { technique: 1 }, hints: ["clean-1", "clean-2", "clean-3"], whatIf: { order: "Test the current metal first, then clean the loop before the next one." } },
+      { id: "copper", title: "Test copper", instruction: "Finally, copper(II) chloride.", requires: ["clean-5"], action: "equipment.connect", from: "loop", complete: { predicate: "new:flame:Cu2+" }, hints: ["test-1", "test-2", "test-3"], whatIf: { order: "Clean the loop first, so only copper colours the flame." }, explore: [{ if: "use copper sulfate instead of copper chloride", then: "Still blue-green: the colour comes from the copper ion, not from the chloride or sulfate." }] }
     ],
     hints: {
       "safe-1": { rung: 1, text: "Flames and acid: what should you wear?" },
@@ -2308,12 +2460,12 @@ var LabEngine = (() => {
     golden: {
       durationS: 70,
       captions: [
-        { t: 0, text: "Open the air hole and light the Bunsen: a hot blue flame." },
-        { t: 6e3, text: "Clean the loop in acid until the flame shows no colour." },
-        { t: 14e3, text: "Lithium: crimson.", slow: true },
-        { t: 28e3, text: "Sodium: intense yellow-orange." },
-        { t: 42e3, text: "Potassium: lilac." },
-        { t: 54e3, text: "Calcium: orange-red. Copper: blue-green." }
+        { t: 0, text: "Open the air hole and light the Bunsen: a hot blue flame.", why: "A blue flame (air hole open) is very hot and has almost no colour of its own, so any colour you see comes from the metal.", safety: "Hot flame and acid on the bench: goggles on and long hair tied back." },
+        { t: 6e3, text: "Clean the loop in acid until the flame shows no colour.", why: "Acid dissolves leftover salt from the wire. Anything left on it would add its colour to the next metal's." },
+        { t: 14e3, text: "Lithium: crimson.", slow: true, why: "Lithium's electrons fall back across energy gaps that match red light." },
+        { t: 28e3, text: "Sodium: intense yellow-orange.", why: "Sodium's yellow is so bright that a tiny trace can hide other colours. That's why the loop is cleaned between tests." },
+        { t: 42e3, text: "Potassium: lilac.", why: "Lilac is faint and easily hidden by sodium's yellow. Chemists sometimes look through blue cobalt glass, which blocks the yellow." },
+        { t: 54e3, text: "Calcium: orange-red. Copper: blue-green.", why: "Different metals have different energy gaps, so they give different colours. Fireworks use these same metal salts for their colours." }
       ],
       events: [
         { t: 1e3, type: "equipment.place", payload: { equipmentId: "goggles", x: 0, y: 0, socket: "worn" } },
@@ -2359,6 +2511,10 @@ var LabEngine = (() => {
     title: "Magnesium and acid: the squeaky pop",
     fidelity: "approximate",
     reviewStatus: "draft",
+    idea: {
+      text: "Magnesium is more reactive than hydrogen, so it pushes hydrogen out of hydrochloric acid. The hydrogen bubbles off as a gas, and you can prove it is hydrogen because it burns with a squeaky pop.",
+      analogy: "Like musical chairs: magnesium takes hydrogen's seat in the acid, and hydrogen is left standing, so it bubbles away as a gas."
+    },
     bench: {
       items: [
         {
@@ -2464,6 +2620,22 @@ var LabEngine = (() => {
           "vol-1",
           "vol-2",
           "vol-3"
+        ],
+        whatIf: {
+          order: "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.",
+          rate: "A fast pour into a narrow test tube splashes acid up the sides and out of the top.",
+          overshoot: "More acid fills the tube higher, so the fizzing can froth over the top. 5 mL is plenty.",
+          quantity: "The amount of acid changes how long the fizzing lasts. With too little, some magnesium may be left unreacted."
+        },
+        explore: [
+          {
+            if: "use 2 M acid instead of 1 M",
+            then: "The fizzing is faster and the tube gets hotter, because acid particles hit the magnesium more often. More gas, sooner."
+          },
+          {
+            if: "use 0.1 M acid",
+            then: "Very slow fizzing: there are ten times fewer acid particles, so you might not collect enough hydrogen for a pop."
+          }
         ]
       },
       {
@@ -2485,6 +2657,21 @@ var LabEngine = (() => {
           "mg-1",
           "mg-2",
           "mg-3"
+        ],
+        whatIf: {
+          order: "Add the acid first so the magnesium has something to react with.",
+          overshoot: "More magnesium makes more hydrogen and more heat, and the tube can froth over. A 2 cm strip is plenty.",
+          quantity: "More magnesium makes more gas and heat; less makes less. A 2 cm strip is about right for one test tube."
+        },
+        explore: [
+          {
+            if: "use magnesium powder instead of ribbon",
+            then: "Powder has a much bigger surface area, so the reaction is much faster and hotter. It can fizz violently."
+          },
+          {
+            if: "use copper instead of magnesium",
+            then: "Nothing happens. Copper is less reactive than hydrogen, so it can't push hydrogen out of the acid."
+          }
         ]
       },
       {
@@ -2504,6 +2691,19 @@ var LabEngine = (() => {
           "gas-1",
           "gas-2",
           "gas-3"
+        ],
+        whatIf: {
+          order: "Add the magnesium first. Until then there's no gas to collect."
+        },
+        explore: [
+          {
+            if: "hold the collection tube the right way up",
+            then: "Hydrogen is much lighter than air, so it floats up and out of the tube. It must be upside down to trap the gas."
+          },
+          {
+            if: "wait a minute before collecting",
+            then: "Most of the hydrogen escapes into the room first, so you might not collect enough for a pop."
+          }
         ]
       },
       {
@@ -2520,6 +2720,12 @@ var LabEngine = (() => {
           "burn-1",
           "burn-2",
           "burn-3"
+        ],
+        explore: [
+          {
+            if: "use a match instead of the burner",
+            then: "That works too. The burner is just a steady flame for lighting the splint."
+          }
         ]
       },
       {
@@ -2539,7 +2745,10 @@ var LabEngine = (() => {
           "burn-1",
           "burn-2",
           "burn-3"
-        ]
+        ],
+        whatIf: {
+          order: "Light the burner first: the splint needs a flame to catch."
+        }
       },
       {
         id: "pop",
@@ -2559,6 +2768,19 @@ var LabEngine = (() => {
           "pop-1",
           "pop-2",
           "pop-3"
+        ],
+        whatIf: {
+          order: "You need both ready: hydrogen collected in the tube and a burning splint. Otherwise there's nothing to pop."
+        },
+        explore: [
+          {
+            if: "use a glowing splint instead of a burning one",
+            then: "A glowing splint relights in oxygen, not hydrogen. Hydrogen needs a lit flame to make its pop."
+          },
+          {
+            if: "collect pure hydrogen with no air in the tube",
+            then: "The loudest pop comes from hydrogen mixed with some air. A tube of almost pure hydrogen may just burn quietly at the mouth."
+          }
         ]
       }
     ],
@@ -2678,20 +2900,26 @@ var LabEngine = (() => {
       captions: [
         {
           t: 0,
-          text: "Goggles on, then 5 mL of 1 M hydrochloric acid."
+          text: "Goggles on, then 5 mL of 1 M hydrochloric acid.",
+          why: "Only a small volume is needed: the reaction makes plenty of gas.",
+          safety: "1 M hydrochloric acid is corrosive and can damage eyes, so goggles go on first."
         },
         {
           t: 6e3,
           text: "Drop in the magnesium and trap the gas straight away.",
-          slow: true
+          slow: true,
+          why: "Magnesium + hydrochloric acid \u2192 magnesium chloride + hydrogen. The fizzing is hydrogen gas bubbling out.",
+          safety: "Hydrogen is lighter than air, so the collection tube is held upside down over the reaction tube to catch it as it rises."
         },
         {
           t: 2e4,
-          text: "Light a splint while the gas collects..."
+          text: "Light a splint while the gas collects...",
+          why: "The splint has to be burning when it meets the hydrogen. Feel the tube: it's warm, because the reaction is exothermic."
         },
         {
           t: 5e4,
-          text: "Squeaky pop: hydrogen!"
+          text: "Squeaky pop: hydrogen!",
+          why: "Hydrogen mixed with air burns so fast it makes a tiny explosion: the pop. The only product is water."
         }
       ],
       events: [
@@ -2791,6 +3019,10 @@ var LabEngine = (() => {
     title: "Iron nail in copper sulfate",
     fidelity: "approximate",
     reviewStatus: "draft",
+    idea: {
+      text: "Iron is more reactive than copper. When an iron nail sits in copper sulfate solution, iron atoms give electrons to the copper ions: copper metal coats the nail and iron goes into the solution instead. This is a displacement reaction.",
+      analogy: "Like a stronger player taking a weaker player's place on the team: iron takes copper's place in the solution, and copper is pushed out as solid metal."
+    },
     bench: {
       items: [
         {
@@ -2876,6 +3108,18 @@ var LabEngine = (() => {
           "vol-1",
           "vol-2",
           "vol-3"
+        ],
+        whatIf: {
+          order: "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.",
+          rate: "Fast pouring splashes the blue solution, which stains and irritates skin and eyes.",
+          overshoot: "Too much solution won't change what happens, but the tube gets too full to handle safely.",
+          quantity: "More solution means more copper ions, so the blue takes longer to fade. Less solution fades sooner."
+        },
+        explore: [
+          {
+            if: "use a more dilute copper sulfate solution",
+            then: "Fewer copper ions: the coat builds up more slowly, and the blue fades sooner because there's less copper to remove."
+          }
         ]
       },
       {
@@ -2895,6 +3139,23 @@ var LabEngine = (() => {
           "nail-1",
           "nail-2",
           "nail-3"
+        ],
+        whatIf: {
+          order: "Pour the copper sulfate in first so the nail has something to react with."
+        },
+        explore: [
+          {
+            if: "use a rusty nail",
+            then: "Rust is a layer of iron oxide that stops copper ions reaching the iron, so the coat forms slowly and patchily. That's why the nail is sanded."
+          },
+          {
+            if: "use copper wire instead of an iron nail",
+            then: "Nothing happens. Copper can't displace copper. You need a metal that is more reactive than copper."
+          },
+          {
+            if: "use a strip of zinc",
+            then: "Zinc is even more reactive than iron, so the copper coat forms faster and the blue fades sooner."
+          }
         ]
       },
       {
@@ -2912,6 +3173,12 @@ var LabEngine = (() => {
           "wait-1",
           "wait-2",
           "wait-3"
+        ],
+        explore: [
+          {
+            if: "warm the solution",
+            then: "Particles move faster and collide more often, so the copper coat forms more quickly."
+          }
         ]
       },
       {
@@ -2929,6 +3196,12 @@ var LabEngine = (() => {
           "wait-1",
           "wait-2",
           "wait-3"
+        ],
+        explore: [
+          {
+            if: "leave it overnight",
+            then: "Much more of the blue fades, as long as there's enough iron left. The solution turns pale green from iron(II) ions."
+          }
         ]
       }
     ],
@@ -3024,16 +3297,19 @@ var LabEngine = (() => {
       captions: [
         {
           t: 0,
-          text: "Copper sulfate into a boiling tube, then a clean iron nail."
+          text: "Copper sulfate into a boiling tube, then a clean iron nail.",
+          why: "The blue colour comes from copper ions (Cu\xB2\u207A) in the solution. The nail is sanded so its surface is bare iron, not rust.",
+          safety: "Copper sulfate irritates eyes and skin and is harmful if swallowed: goggles on, and wash your hands afterwards."
         },
         {
           t: 12e3,
           text: "Within seconds a copper coat starts to form...",
-          slow: true
+          why: "Iron atoms give electrons to copper ions. The copper ions become copper atoms, which stick to the nail as a pinky-brown coat."
         },
         {
           t: 3e4,
-          text: "Time-lapse: ten minutes later the blue has faded."
+          text: "Time-lapse: ten minutes later the blue has faded.",
+          why: "Each copper ion that turns into metal leaves the solution, so the blue fades. Iron ions (Fe\xB2\u207A) go in instead, and they are pale green."
         }
       ],
       events: [
@@ -3112,6 +3388,10 @@ var LabEngine = (() => {
     title: "Acid-base indicators",
     fidelity: "exact",
     reviewStatus: "draft",
+    idea: {
+      text: "Indicators are dyes that change colour depending on whether a solution is acidic, neutral or alkaline. Universal indicator shows a whole rainbow of colours across the pH scale from 1 to 14; litmus just turns red in acid and blue in alkali.",
+      analogy: "Like a mood ring for liquids: the colour tells you how acidic or alkaline a solution is."
+    },
     bench: {
       items: [
         {
@@ -3236,6 +3516,17 @@ var LabEngine = (() => {
           "vol-1",
           "vol-2",
           "vol-3"
+        ],
+        whatIf: {
+          rate: "A fast pour into a narrow test tube splashes. 2 mL is a small amount: tilt gently.",
+          overshoot: "More liquid dilutes the indicator, so the colour comes out paler and harder to judge.",
+          quantity: "A very different volume in each tube makes the colours harder to compare fairly."
+        },
+        explore: [
+          {
+            if: "use 1 M acid instead of 0.1 M",
+            then: "Still red: universal indicator shows pH, and both are very acidic (about pH 0 and pH 1). The difference is too small to see."
+          }
         ]
       },
       {
@@ -3258,6 +3549,17 @@ var LabEngine = (() => {
           "vol-1",
           "vol-2",
           "vol-3"
+        ],
+        whatIf: {
+          rate: "A fast pour into a narrow test tube splashes. 2 mL is a small amount: tilt gently.",
+          overshoot: "More liquid dilutes the indicator, so the colour comes out paler and harder to judge.",
+          quantity: "A very different volume in each tube makes the colours harder to compare fairly."
+        },
+        explore: [
+          {
+            if: "use tap water instead of distilled water",
+            then: "Tap water has dissolved minerals and gases, so it might show yellow-green or blue-green instead of pure green."
+          }
         ]
       },
       {
@@ -3280,6 +3582,17 @@ var LabEngine = (() => {
           "vol-1",
           "vol-2",
           "vol-3"
+        ],
+        whatIf: {
+          rate: "A fast pour into a narrow test tube splashes. 2 mL is a small amount: tilt gently.",
+          overshoot: "More liquid dilutes the indicator, so the colour comes out paler and harder to judge.",
+          quantity: "A very different volume in each tube makes the colours harder to compare fairly."
+        },
+        explore: [
+          {
+            if: "use a weak alkali like baking soda solution",
+            then: "Blue rather than purple: weak alkalis have a lower pH, around 8 to 9."
+          }
         ]
       },
       {
@@ -3309,6 +3622,18 @@ var LabEngine = (() => {
           "ind-1",
           "ind-2",
           "ind-3"
+        ],
+        whatIf: {
+          order: "Chemically it would still work, but put the liquid in first so you can watch the colour change as the drops land.",
+          "not-dropwise": "Pouring indicator floods the tube and makes the colour very dark. Two drops are enough to see it clearly.",
+          overshoot: "Too many drops make the colour very dark, so it's harder to judge which shade it is.",
+          quantity: "Too much indicator makes the colour very dark, so it's harder to judge which shade it is."
+        },
+        explore: [
+          {
+            if: "add the indicator before the acid",
+            then: "You'd get the same colour in the end: it depends on the final mixture, not on the order."
+          }
         ]
       },
       {
@@ -3333,7 +3658,12 @@ var LabEngine = (() => {
           "ind-1",
           "ind-2",
           "ind-3"
-        ]
+        ],
+        whatIf: {
+          order: "Chemically it would still work, but put the water in first so you can watch the colour as the drops land.",
+          overshoot: "Too many drops make the colour very dark, so it's harder to judge which shade it is.",
+          quantity: "Too much indicator makes the colour very dark, so it's harder to judge which shade it is."
+        }
       },
       {
         id: "ui-3",
@@ -3357,7 +3687,12 @@ var LabEngine = (() => {
           "ind-1",
           "ind-2",
           "ind-3"
-        ]
+        ],
+        whatIf: {
+          order: "Chemically it would still work, but put the alkali in first so you can watch the colour as the drops land.",
+          overshoot: "Too many drops make the colour very dark, so it's harder to judge which shade it is.",
+          quantity: "Too much indicator makes the colour very dark, so it's harder to judge which shade it is."
+        }
       },
       {
         id: "acid-t4",
@@ -3375,7 +3710,11 @@ var LabEngine = (() => {
           "vol-1",
           "vol-2",
           "vol-3"
-        ]
+        ],
+        whatIf: {
+          overshoot: "More acid dilutes the litmus, so the red is paler.",
+          quantity: "A very different volume makes the colours harder to compare fairly."
+        }
       },
       {
         id: "litmus-acid",
@@ -3394,6 +3733,15 @@ var LabEngine = (() => {
           "ind-1",
           "ind-2",
           "ind-3"
+        ],
+        whatIf: {
+          order: "Chemically it would still work, but put the acid in first so you can see the litmus change."
+        },
+        explore: [
+          {
+            if: "add litmus to the water instead",
+            then: "Purple: neutral litmus sits halfway between its red and blue forms."
+          }
         ]
       },
       {
@@ -3412,7 +3760,11 @@ var LabEngine = (() => {
           "vol-1",
           "vol-2",
           "vol-3"
-        ]
+        ],
+        whatIf: {
+          overshoot: "More alkali dilutes the litmus, so the blue is paler.",
+          quantity: "A very different volume makes the colours harder to compare fairly."
+        }
       },
       {
         id: "litmus-base",
@@ -3431,6 +3783,15 @@ var LabEngine = (() => {
           "ind-1",
           "ind-2",
           "ind-3"
+        ],
+        whatIf: {
+          order: "Chemically it would still work, but put the alkali in first so you can see the litmus change."
+        },
+        explore: [
+          {
+            if: "use litmus paper instead of litmus solution",
+            then: "Same idea: red paper turns blue in alkali, blue paper turns red in acid. Paper is handy for a quick test."
+          }
         ]
       }
     ],
@@ -3502,16 +3863,19 @@ var LabEngine = (() => {
       captions: [
         {
           t: 0,
-          text: "2 mL each of acid, water and alkali into three tubes."
+          text: "2 mL each of acid, water and alkali into three tubes.",
+          why: "Using the same small volume in each tube makes it a fair comparison.",
+          safety: "These are dilute, but acid and alkali can still sting eyes and skin, so pour gently into the small tubes."
         },
         {
           t: 1e4,
           text: "Two drops of universal indicator in each...",
-          slow: true
+          why: "Universal indicator is a mix of several dyes. Each changes colour at a different pH, so together they make a rainbow."
         },
         {
           t: 2e4,
-          text: "Red, green, purple: a pH rainbow. Now litmus in acid and alkali."
+          text: "Red, green, purple: a pH rainbow. Now litmus in acid and alkali.",
+          why: "Red means acidic (0.1 M hydrochloric acid is about pH 1), green means neutral (pH 7), purple means strongly alkaline (about pH 13). Litmus has only two colours: red in acid, blue in alkali."
         }
       ],
       events: [
@@ -3659,6 +4023,10 @@ var LabEngine = (() => {
     title: "Precipitation reactions",
     fidelity: "exact",
     reviewStatus: "draft",
+    idea: {
+      text: "Some ions from two clear solutions can join to make a solid that won't dissolve. The solid suddenly appears as a cloudy precipitate, and its colour helps identify which ions were there.",
+      analogy: "Like a crowded dance floor: most people keep moving around, but certain pairs grab each other and sit down together, and those pairs are the solid that drops out."
+    },
     bench: {
       items: [
         {
@@ -3777,6 +4145,18 @@ var LabEngine = (() => {
           "vol-1",
           "vol-2",
           "vol-3"
+        ],
+        whatIf: {
+          order: "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.",
+          rate: "A fast pour into a narrow test tube splashes the solution out.",
+          overshoot: "More copper sulfate means you'll need more drops of sodium hydroxide before you see a lot of precipitate.",
+          quantity: "The amount changes how much precipitate you can make, not what colour it is."
+        },
+        explore: [
+          {
+            if: "use more copper sulfate",
+            then: "You'd need more drops of sodium hydroxide before all the copper ions are used up, and you'd get more blue precipitate."
+          }
         ]
       },
       {
@@ -3802,6 +4182,20 @@ var LabEngine = (() => {
           "drop-1",
           "drop-2",
           "drop-3"
+        ],
+        whatIf: {
+          order: "Copper sulfate goes in first so the drops have copper ions to react with.",
+          "not-dropwise": "Pouring sodium hydroxide in fast hides where the precipitate forms and wastes a corrosive chemical. Drop by drop, you see the blue solid appear where each drop lands."
+        },
+        explore: [
+          {
+            if: "add a lot of extra sodium hydroxide",
+            then: "More blue precipitate forms until all the copper ions are used up. Copper hydroxide doesn't redissolve in dilute sodium hydroxide."
+          },
+          {
+            if: "use iron(II) sulfate instead of copper sulfate",
+            then: "You'd get a green precipitate of iron(II) hydroxide. A different metal ion gives a different coloured precipitate, which is how chemists identify them."
+          }
         ]
       },
       {
@@ -3827,7 +4221,13 @@ var LabEngine = (() => {
           "vol-1",
           "vol-2",
           "vol-3"
-        ]
+        ],
+        whatIf: {
+          order: "Without goggles, one splash in the eye can cause serious, sometimes permanent, damage within seconds. That's why goggles go on before you open any bottle.",
+          rate: "A fast pour splashes toxic barium chloride solution. Pour gently.",
+          overshoot: "More barium chloride means more precipitate once the sulfate goes in, and more toxic waste to dispose of.",
+          quantity: "The amount changes how much precipitate forms, not its colour."
+        }
       },
       {
         id: "so4-drops",
@@ -3852,6 +4252,20 @@ var LabEngine = (() => {
           "drop-1",
           "drop-2",
           "drop-3"
+        ],
+        whatIf: {
+          order: "Barium chloride goes in first so the drops have barium ions to react with.",
+          "not-dropwise": "Pouring the sulfate in fast means you miss the moment the white solid first appears. Drop by drop shows it forming."
+        },
+        explore: [
+          {
+            if: "add dilute hydrochloric acid first",
+            then: "Chemists add acid first in the sulfate test so carbonate ions can't give a false white precipitate. Barium sulfate still forms."
+          },
+          {
+            if: "use sodium chloride instead of sodium sulfate",
+            then: "No precipitate: barium chloride dissolves, so Ba\xB2\u207A and Cl\u207B ions just stay in solution."
+          }
         ]
       }
     ],
@@ -3935,16 +4349,19 @@ var LabEngine = (() => {
       captions: [
         {
           t: 0,
-          text: "Goggles on: barium salts are toxic."
+          text: "Goggles on: barium salts are toxic.",
+          why: "Precipitation tests identify ions in solution, but some of the chemicals used are hazardous.",
+          safety: "Barium compounds are toxic if swallowed and sodium hydroxide is corrosive. Goggles on, small volumes, and no hand-to-mouth."
         },
         {
           t: 4e3,
           text: "Copper sulfate, then sodium hydroxide drop by drop...",
-          slow: true
+          why: "Cu\xB2\u207A ions meet OH\u207B ions and form copper(II) hydroxide, a pale blue solid that doesn't dissolve in water."
         },
         {
           t: 16e3,
-          text: "Barium chloride meets sodium sulfate: a thick white precipitate."
+          text: "Barium chloride meets sodium sulfate: a thick white precipitate.",
+          why: "Ba\xB2\u207A and SO\u2084\xB2\u207B form barium sulfate, which hardly dissolves at all, so it appears almost instantly. This is the test for sulfate ions."
         }
       ],
       events: [

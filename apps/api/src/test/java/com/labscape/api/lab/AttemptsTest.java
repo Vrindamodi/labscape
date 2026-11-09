@@ -87,6 +87,37 @@ class AttemptsTest {
     }
 
     @Test
+    void undoRewindsTheLogAndLaterEventsReuseTheirSeqs() throws Exception {
+        Cookie c = mvc.perform(post("/v1/auth/guest").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andReturn().getResponse().getCookie("ls_session");
+        String id = send(c, "/v1/attempts", Map.of("experimentSlug", "precipitation-reactions")).path("id").asText();
+        ArrayNode events = golden(engine.content("precipitation-reactions").orElseThrow());
+
+        // The learner does the first two actions, then a wrong one (seq 3)...
+        ArrayNode firstTwo = mapper.createArrayNode();
+        firstTwo.add(events.get(0));
+        firstTwo.add(events.get(1));
+        send(c, "/v1/attempts/" + id + "/events", Map.of("events", firstTwo, "stage", "try"));
+        ObjectNode wrong = events.get(2).deepCopy();
+        ((ObjectNode) wrong.path("payload")).put("from", "bacl2");
+        wrong.put("id", "wrong-3");
+        send(c, "/v1/attempts/" + id + "/events", Map.of("events", mapper.createArrayNode().add(wrong)));
+
+        // ...undoes it (the client rewinds the server log to seq 2), then carries on with the right events.
+        JsonNode rewound = send(c, "/v1/attempts/" + id + "/restart", Map.of("keepThroughSeq", 2));
+        assertThat(rewound.path("events").size()).isEqualTo(2);
+        ArrayNode rest = mapper.createArrayNode();
+        for (int i = 2; i < events.size(); i++) rest.add(events.get(i));
+        JsonNode saved = send(c, "/v1/attempts/" + id + "/events", Map.of("events", rest));
+        assertThat(saved.path("inserted").asInt()).isEqualTo(events.size() - 2);
+
+        // The undone event is gone, so the replayed run is clean.
+        JsonNode done = send(c, "/v1/attempts/" + id + "/finish", Map.of("tailMs", 1000));
+        assertThat(done.path("status").asText()).isEqualTo("completed");
+        assertThat(done.path("report").path("stars").asInt()).isEqualTo(3);
+    }
+
+    @Test
     void physicsAndMathsAttemptsAreScoredOnTheServer() throws Exception {
         Cookie c = mvc.perform(post("/v1/auth/guest").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andReturn().getResponse().getCookie("ls_session");
