@@ -7,19 +7,32 @@ import { Check, CreditCard, Crown, Receipt, ShieldCheck, Sparkles } from "lucide
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError, post, rupees } from "../lib/api";
+import { loadRazorpay, type RazorpayOptions, type RazorpaySuccess } from "../lib/razorpay";
 import { useSession } from "../lib/session";
 import type { EntitlementsView, Invoice, Plan } from "../lib/types";
 
-type Checkout = { subscriptionId: string; mode: string; plan: string; amountPaise: number };
+type Checkout = {
+  subscriptionId: string;
+  mode: string;
+  plan: string;
+  amountPaise: number;
+  currency?: string;
+  description?: string;
+  razorpayKeyId?: string;
+  prefill?: { name?: string; email?: string };
+};
+
+const planName = (id: string) => (id === "premium_annual" ? "Premium Annual" : "Premium Monthly");
 
 export default function Plans() {
-  const { me } = useSession();
+  const { me, refresh } = useSession();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { toast } = useShell();
   const [interval, setInterval] = useState<"month" | "year">("year");
   const [checkout, setCheckout] = useState<Checkout | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const plans = useQuery({ queryKey: ["plans"], queryFn: () => api<{ plans: Plan[]; mode: string; currentPlan: string }>("/v1/billing/plans") });
   const ent = useQuery({ queryKey: ["entitlements"], queryFn: () => api<EntitlementsView>("/v1/entitlements"), enabled: !!me });
   const invoices = useQuery({ queryKey: ["invoices"], queryFn: () => api<Invoice[]>("/v1/billing/invoices"), enabled: !!me && !me.guest });
@@ -28,19 +41,7 @@ export default function Plans() {
   const paid = plans.data?.plans.find((p) => p.id === (interval === "year" ? "premium_annual" : "premium_monthly"));
   const monthly = plans.data?.plans.find((p) => p.id === "premium_monthly");
   const current = ent.data?.plan ?? "free";
-
-  const start = async (planId: string) => {
-    if (!me) return navigate("/onboarding");
-    if (me.guest) return navigate("/signup");
-    setBusy(planId);
-    try {
-      setCheckout(await post<Checkout>("/v1/billing/checkout", { plan: planId }));
-    } catch (e) {
-      toast({ kind: "danger", title: "Checkout didn't start", body: e instanceof ApiError ? e.message : "Try again in a moment." });
-    } finally {
-      setBusy(null);
-    }
-  };
+  const live = plans.data?.mode === "razorpay";
 
   const refreshAll = () => {
     void qc.invalidateQueries({ queryKey: ["entitlements"] });
@@ -48,6 +49,109 @@ export default function Plans() {
     void qc.invalidateQueries({ queryKey: ["invoices"] });
     void qc.invalidateQueries({ queryKey: ["plans"] });
     void qc.invalidateQueries({ queryKey: ["library"] });
+  };
+
+  const welcome = (planId: string) => {
+    refreshAll();
+    void refresh();
+    sound.play("levelUp");
+    celebrate({ preset: "confetti", count: 140, colors: ["#ffe07a", "#ffc23d", "#ff8a3d", "#fff", "#8b5cf6"] });
+    toast({ kind: "reward", title: "Welcome to Premium ✨", body: "Everything is unlocked. Enjoy the full lab." });
+    setSuccess(planId);
+  };
+
+  /** Checkout succeeded in the Razorpay window: confirm the signature server side, then refresh. */
+  const confirmPayment = async (co: Checkout, response: RazorpaySuccess) => {
+    setBusy(co.plan);
+    try {
+      await post<EntitlementsView>("/v1/billing/verify", response);
+      welcome(co.plan);
+    } catch (e) {
+      if (e instanceof ApiError && e.code === "PAYMENT_SIGNATURE_INVALID") {
+        toast({ kind: "danger", title: "We couldn't confirm that payment", body: "If you were charged, it will be refunded or applied automatically. Contact support if Premium doesn't switch on." });
+      } else {
+        // The payment went through at Razorpay; its webhook will switch Premium on even if this call failed.
+        toast({ kind: "info", title: "Payment received", body: "We're confirming it with Razorpay. Premium switches on within a minute." });
+        window.setTimeout(refreshAll, 5_000);
+        window.setTimeout(refreshAll, 20_000);
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const openRazorpay = async (co: Checkout) => {
+    if (!co.razorpayKeyId) {
+      toast({ kind: "danger", title: "Payments aren't set up", body: "Please try again later." });
+      return;
+    }
+    let Razorpay;
+    try {
+      Razorpay = await loadRazorpay();
+    } catch {
+      toast({ kind: "danger", title: "Payment window didn't load", body: "Check your connection or disable blockers for checkout.razorpay.com, then try again." });
+      return;
+    }
+    const name = co.prefill?.name ?? me?.displayName;
+    const email = co.prefill?.email ?? me?.email ?? undefined;
+    let settled = false;
+    const options: RazorpayOptions = {
+      key: co.razorpayKeyId,
+      subscription_id: co.subscriptionId,
+      name: "LABscape",
+      description: co.description ?? planName(co.plan),
+      prefill: { ...(name ? { name } : {}), ...(email ? { email } : {}) },
+      notes: { plan: co.plan },
+      theme: { color: "#2f80ff" },
+      handler: (response) => {
+        settled = true;
+        void confirmPayment(co, response);
+      },
+      modal: {
+        ondismiss: () => {
+          if (!settled) toast({ kind: "info", title: "Checkout closed", body: "Nothing was charged. You can subscribe any time." });
+        },
+      },
+    };
+    const rzp = new Razorpay(options);
+    rzp.on("payment.failed", (r) => {
+      toast({ kind: "warning", title: "Payment failed", body: r.error.description ?? "Your bank declined the payment. Try another method." });
+    });
+    rzp.open();
+  };
+
+  const start = async (planId: string) => {
+    if (!me) return navigate("/onboarding");
+    if (me.guest) return navigate("/signup");
+    setBusy(planId);
+    let co: Checkout;
+    try {
+      co = await post<Checkout>("/v1/billing/checkout", { plan: planId });
+    } catch (e) {
+      toast({ kind: "danger", title: "Checkout didn't start", body: e instanceof ApiError ? e.message : "Try again in a moment." });
+      setBusy(null);
+      return;
+    }
+    if (co.mode === "razorpay") {
+      await openRazorpay(co);
+      setBusy(null);
+    } else {
+      setBusy(null);
+      setCheckout(co);
+    }
+  };
+
+  const toggleCancel = async () => {
+    setBusy("cancel");
+    try {
+      await post(`/v1/billing/subscription/${ent.data?.cancelAtPeriodEnd ? "resume" : "cancel"}`);
+      if (!ent.data?.cancelAtPeriodEnd) toast({ kind: "info", title: "Subscription cancelled", body: "Premium stays on until the end of this billing period." });
+    } catch (e) {
+      toast({ kind: "danger", title: "That didn't work", body: e instanceof ApiError ? e.message : "Try again in a moment." });
+    } finally {
+      setBusy(null);
+      refreshAll();
+    }
   };
 
   return (
@@ -70,24 +174,16 @@ export default function Plans() {
 
       {current !== "free" && ent.data && (
         <div className="mx-auto mt-8 max-w-xl">
-          <Callout tone="success" title={`You're on ${current === "premium_annual" ? "Premium Annual" : "Premium Monthly"}`}>
-            {ent.data.cancelAtPeriodEnd ? "Cancelled — " : ent.data.status === "grace" ? "Payment failed — Premium stays on during the grace period until " : "Renews "}
+          <Callout tone="success" title={`You're on ${planName(current)}`}>
+            {ent.data.cancelAtPeriodEnd ? "Cancelled — Premium stays on until " : ent.data.status === "grace" ? "Payment failed — Premium stays on during the grace period until " : "Renews "}
             {ent.data.currentPeriodEnd ? new Date(ent.data.currentPeriodEnd).toLocaleDateString() : ""}.
-            <div className="mt-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                loading={busy === "cancel"}
-                onClick={async () => {
-                  setBusy("cancel");
-                  await post(`/v1/billing/subscription/${ent.data?.cancelAtPeriodEnd ? "resume" : "cancel"}`).catch(() => {});
-                  setBusy(null);
-                  refreshAll();
-                }}
-              >
-                {ent.data.cancelAtPeriodEnd ? "Resume subscription" : "Cancel at period end"}
-              </Button>
-            </div>
+            {!(live && ent.data.cancelAtPeriodEnd) && (
+              <div className="mt-2">
+                <Button size="sm" variant="secondary" loading={busy === "cancel"} onClick={() => void toggleCancel()}>
+                  {ent.data.cancelAtPeriodEnd ? "Resume subscription" : "Cancel at period end"}
+                </Button>
+              </div>
+            )}
           </Callout>
         </div>
       )}
@@ -130,11 +226,11 @@ export default function Plans() {
                     size="lg"
                     className="relative mt-6"
                     loading={busy === paid.id}
-                    disabled={current === paid.id}
+                    disabled={current === paid.id || (live && current !== "free")}
                     icon={<Crown className="h-5 w-5" />}
                     onClick={() => void start(paid.id)}
                   >
-                    {current === paid.id ? "Your current plan" : current !== "free" ? "Switch plan" : `Go Premium ${interval === "year" ? "Annual" : "Monthly"}`}
+                    {current === paid.id ? "Your current plan" : current !== "free" ? (live ? "Premium is active" : "Switch plan") : `Go Premium ${interval === "year" ? "Annual" : "Monthly"}`}
                   </Button>
                   <p className="relative mt-3 flex items-center justify-center gap-1.5 text-xs text-white/40"><ShieldCheck className="h-3.5 w-3.5" />Secure payments · GST invoice · cancel any time</p>
                 </Card>
@@ -169,13 +265,22 @@ export default function Plans() {
         checkout={checkout}
         onClose={() => setCheckout(null)}
         onPaid={() => {
+          const plan = checkout?.plan ?? "premium_monthly";
           setCheckout(null);
-          refreshAll();
-          sound.play("levelUp");
-          celebrate({ preset: "confetti", count: 140, colors: ["#ffe07a", "#ffc23d", "#ff8a3d", "#fff", "#8b5cf6"] });
-          toast({ kind: "reward", title: "Welcome to Premium ✨", body: "Everything is unlocked. Enjoy the full lab." });
+          welcome(plan);
         }}
       />
+
+      <Modal open={!!success} onClose={() => setSuccess(null)} title="Payment successful" width={420}>
+        {success && (
+          <div className="p-6 text-center">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#ffc23d]/20 text-[#ffd77a]"><Crown className="h-7 w-7" /></div>
+            <div className="mt-4 font-heading text-xl font-semibold">{`You're on ${planName(success)}`}</div>
+            <p className="mt-2 text-sm text-white/60">Every experiment, scenario and theme is unlocked. Your GST invoice will appear in Billing history.</p>
+            <Button variant="premium" className="mt-5 w-full" onClick={() => { setSuccess(null); navigate("/"); }}>Start exploring</Button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

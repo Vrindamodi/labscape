@@ -1,5 +1,6 @@
 package com.labscape.api.core.billing;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,6 +46,19 @@ public class BillingController {
         return billing.checkout(user(jwt), Boolean.TRUE.equals(jwt.getClaimAsBoolean("guest")), req.plan());
     }
 
+    /** The Razorpay Checkout handler response (snake_case as Checkout returns it, or camelCase). */
+    public record VerifyRequest(
+            @JsonAlias("razorpay_payment_id") String razorpayPaymentId,
+            @JsonAlias("razorpay_subscription_id") String razorpaySubscriptionId,
+            @JsonAlias("razorpay_signature") String razorpaySignature) {}
+
+    /** Confirms a Checkout payment (optimistic; the webhook remains the source of truth). */
+    @PostMapping("/billing/verify")
+    public Entitlements.View verify(@AuthenticationPrincipal Jwt jwt, @RequestBody VerifyRequest req) {
+        billing.verifyPayment(user(jwt), req.razorpayPaymentId(), req.razorpaySubscriptionId(), req.razorpaySignature());
+        return entitlements.view(user(jwt));
+    }
+
     public record SandboxPay(String subscriptionId, boolean succeed) {}
 
     @PostMapping("/billing/sandbox/pay")
@@ -71,9 +85,11 @@ public class BillingController {
     }
 
     @PostMapping("/billing/webhook")
-    public ResponseEntity<Map<String, Object>> webhook(@RequestBody String body,
-            @RequestHeader(value = "X-Razorpay-Signature", required = false) String signature) {
-        boolean applied = billing.handleWebhook(body, signature);
+    public ResponseEntity<Map<String, Object>> webhook(@RequestBody byte[] body,
+            @RequestHeader(value = "X-Razorpay-Signature", required = false) String signature,
+            @RequestHeader(value = "X-Razorpay-Event-Id", required = false) String eventId) {
+        // The signature covers the exact bytes Razorpay sent, so the body is never re-serialised.
+        boolean applied = billing.handleWebhook(body, signature, eventId);
         return ResponseEntity.ok(Map.of("applied", applied));
     }
 
