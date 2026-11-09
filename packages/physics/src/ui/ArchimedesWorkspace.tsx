@@ -5,6 +5,7 @@ import { buoyancy, SINKERS } from "../core/mechanics";
 import type { ArchimedesSetup, ArchimedesState } from "../labs/mechanics";
 import { DragHandle, easeInOut, GhostHand, LabStyles, mix, paramOf, PulseRect, Stage, Tag, useCommitLater, useDemoPreview, useFocusStep, V3, type Pt } from "./interact";
 import { Btn, Panel, ReadingInput } from "./kit";
+import { submitted } from "./guide";
 import type { SimSession } from "./useSimSession";
 
 const W = 560;
@@ -252,7 +253,7 @@ export function ArchimedesWorkspace({ session }: { session: SimSession<Archimede
         <Panel title="Spring balance (lens)" glow={!ro && (focus === "weigh-air" || focus === "weigh-water")}>
           <ScaleLens value={shownN} min={0} max={2.5} minor={0.02} major={0.1} unit="N" />
           <div className="mt-2">
-            <ReadingInput label={s.immersed > 0 ? "Reading in water" : "Reading in air"} unit="N" onRecord={(v) => session.dispatch("measure.read", { instrument: "balance", reading: { key: s.immersed > 0 ? "water" : "air", value: v, unit: "N" } })} disabled={ro} />
+            <ReadingInput label={s.immersed > 0 ? "Reading in water" : "Reading in air"} unit="N" onRecord={(v) => session.dispatch("measure.read", { instrument: "balance", reading: { key: s.immersed > 0 ? "water" : "air", value: v, unit: "N" } })} value={submitted(session.events, s.immersed > 0 ? "water" : "air", "balance")} disabled={ro} />
           </div>
         </Panel>
         <Panel title="Can and cylinder" glow={jugPulse || waitPulse || cylPulse}>
@@ -272,13 +273,13 @@ export function ArchimedesWorkspace({ session }: { session: SimSession<Archimede
         <Panel title="Measuring cylinder (lens)" glow={!ro && focus === "volume"}>
           {s.cylinderPlaced ? <ScaleLens value={cylMl} min={0} max={50} minor={1} major={5} unit="mL" vertical /> : <p className="text-xs text-[#8fa6d1]">Place the cylinder first.</p>}
           <div className="mt-2">
-            <ReadingInput label="Volume of water" unit="mL" onRecord={(v) => session.dispatch("measure.read", { instrument: "cylinder", reading: { key: "volume", value: v, unit: "mL" } })} disabled={ro || !s.cylinderPlaced} />
+            <ReadingInput label="Volume of water" unit="mL" onRecord={(v) => session.dispatch("measure.read", { instrument: "cylinder", reading: { key: "volume", value: v, unit: "mL" } })} value={submitted(session.events, "volume", "cylinder")} disabled={ro || !s.cylinderPlaced} />
           </div>
         </Panel>
         <Panel title="Compare" glow={!ro && focus === "compare"}>
           <div className="space-y-2">
-            <ReadingInput label="Upthrust (air − water)" unit="N" onRecord={(v) => session.dispatch("param.set", { key: "result:upthrust", value: v })} disabled={ro} />
-            <ReadingInput label="Weight of water displaced" unit="N" onRecord={(v) => session.dispatch("param.set", { key: "result:displaced", value: v })} disabled={ro} />
+            <ReadingInput label="Upthrust (air − water)" unit="N" onRecord={(v) => session.dispatch("param.set", { key: "result:upthrust", value: v })} value={submitted(session.events, "result:upthrust")} disabled={ro} />
+            <ReadingInput label="Weight of water displaced" unit="N" onRecord={(v) => session.dispatch("param.set", { key: "result:displaced", value: v })} value={submitted(session.events, "result:displaced")} disabled={ro} />
           </div>
         </Panel>
       </div>

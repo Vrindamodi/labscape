@@ -1,3 +1,4 @@
+import { useSubmittedText } from "@labscape/physics";
 import { Keyboard } from "lucide-react";
 import { useId, useMemo, useRef, useState } from "react";
 import { parse, ParseError, toText } from "../core/expr";
@@ -7,11 +8,11 @@ const KEYS = ["x", "^", "(", ")", "+", "−", "×", "÷", "sqrt(", "sin(", "cos(
 /**
  * Expression input with live parsing: the reading of what you typed appears underneath (so "2x^2"
  * shows as 2x^2, errors point at the problem), plus an on-screen keypad for phones. Stands in for
- * MathLive behind the same props.
+ * MathLive behind the same props. `value` is the expression already submitted: the box shows it.
  */
-export function MathInput({ label, onSubmit, disabled, placeholder = "e.g. 3x^2 - 3", submitLabel = "Check" }: { label: string; onSubmit: (expr: string) => void; disabled?: boolean; placeholder?: string; submitLabel?: string }) {
+export function MathInput({ label, onSubmit, value = null, disabled, placeholder = "e.g. 3x^2 - 3", submitLabel = "Check" }: { label: string; onSubmit: (expr: string) => void; value?: number | string | null; disabled?: boolean; placeholder?: string; submitLabel?: string }) {
   const id = useId();
-  const [v, setV] = useState("");
+  const [v, setV] = useSubmittedText(value);
   const [pad, setPad] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const parsed = useMemo(() => {

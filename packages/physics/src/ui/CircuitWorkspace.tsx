@@ -5,6 +5,7 @@ import { BAND_HEX, colourBands, type Component } from "../core/circuit";
 import { bulbConfig, bulbLit, circuitNow, fitR, isClosed, meterValue, ohmsWiringOk, type CircuitState } from "../labs/circuits";
 import { DragHandle, easeInOut, GhostHand, LabStyles, mix, Num, paramOf, Pulse, Stage, Tag, useCommitLater, useDemoPreview, useFocusStep, useSvgDrag, V3, type Pt } from "./interact";
 import { Btn, LiveGraph, Panel, ParamSlider, ReadingInput, Readout, sf } from "./kit";
+import { submitted } from "./guide";
 import type { SimSession } from "./useSimSession";
 
 type Pos = { x: number; y: number; vertical?: boolean };
@@ -630,8 +631,8 @@ function OhmsPanel({ session, r, rheo, focus }: { session: SimSession<CircuitSta
       <Panel title="Record your readings" glow={!ro && focus === "readings"}>
         <p className="mb-2 text-xs text-[#8fa6d1]">Write down what each meter shows. A reading is complete when you have both V and I.</p>
         <div className="space-y-2">
-          <ReadingInput label="Voltmeter reading" unit="V" onRecord={(v) => session.dispatch("measure.read", { instrument: "voltmeter", reading: { key: "V", value: v, unit: "V" } })} disabled={ro} />
-          <ReadingInput label="Ammeter reading" unit="A" onRecord={(v) => session.dispatch("measure.read", { instrument: "ammeter", reading: { key: "I", value: v, unit: "A" } })} disabled={ro} />
+          <ReadingInput label="Voltmeter reading" unit="V" onRecord={(v) => session.dispatch("measure.read", { instrument: "voltmeter", reading: { key: "V", value: v, unit: "V" } })} value={submitted(session.events, "V", "voltmeter")} disabled={ro} />
+          <ReadingInput label="Ammeter reading" unit="A" onRecord={(v) => session.dispatch("measure.read", { instrument: "ammeter", reading: { key: "I", value: v, unit: "A" } })} value={submitted(session.events, "I", "ammeter")} disabled={ro} />
         </div>
         {(s.pending.V !== null || s.pending.I !== null) && <p className="mt-2 text-xs text-[#ffc23d]">Half a reading: {s.pending.V !== null ? `V = ${s.pending.V}` : `I = ${s.pending.I}`}. Now record the other meter.</p>}
       </Panel>
@@ -660,7 +661,7 @@ function OhmsPanel({ session, r, rheo, focus }: { session: SimSession<CircuitSta
         )}
         <LiveGraph series={[{ label: "readings", colour: V3.cyan, mode: "scatter", points: s.readings.filter((x) => x.V !== null && x.I !== null).map((x) => ({ x: x.I!, y: x.V! })) }]} xLabel="I / A" yLabel="V / V" height={150} fitOrigin />
         <div className="mt-2">
-          <ReadingInput label="Gradient = R" unit="Ω" onRecord={(v) => session.dispatch("param.set", { key: "result:R", value: v })} disabled={ro || s.readings.length < 2} />
+          <ReadingInput label="Gradient = R" unit="Ω" onRecord={(v) => session.dispatch("param.set", { key: "result:R", value: v })} value={submitted(session.events, "result:R")} disabled={ro || s.readings.length < 2} />
           {fit !== null && <p className="mt-1 text-[11px] text-[#8fa6d1]">Tip: the dashed line is the best fit through the origin.</p>}
         </div>
       </Panel>
@@ -684,7 +685,7 @@ function SeriesPanel({ session, focus }: { session: SimSession<CircuitState>; fo
           <SwitchButton session={session} />
         </div>
         <div className="mt-3">
-          <ReadingInput label="Ammeter reading" unit="A" onRecord={(v) => session.dispatch("measure.read", { instrument: "ammeter", reading: { key: "I", value: v, unit: "A" } })} disabled={ro} />
+          <ReadingInput label="Ammeter reading" unit="A" onRecord={(v) => session.dispatch("measure.read", { instrument: "ammeter", reading: { key: "I", value: v, unit: "A" } })} value={submitted(session.events, "I", "ammeter")} disabled={ro} />
         </div>
       </Panel>
       <Panel title="Bulbs" glow={!ro && focus === "unscrew"}>

@@ -1,4 +1,4 @@
-import { Btn, DragHandle, easeInOut, GhostHand, LabStyles, mix, Num, Panel, ParamSlider, paramOf, Pulse, ReadingInput, Readout, sf, Stage, Tag, useCommitLater, useDemoPreview, useEased, useFocusStep, useSvgDrag, V3, type Pt, type SimSession } from "@labscape/physics";
+import { Btn, DragHandle, easeInOut, GhostHand, LabStyles, mix, Num, Panel, ParamSlider, paramOf, Pulse, ReadingInput, Readout, sf, Stage, submitted, Tag, useCommitLater, useDemoPreview, useEased, useFocusStep, useSvgDrag, V3, type Pt, type SimSession } from "@labscape/physics";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowDown, ArrowUp, Check, RotateCcw, Scale } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -269,8 +269,8 @@ export function QuadraticWorkspace({ session }: { session: SimSession<QuadState>
         <Panel title="Read the roots" glow={!ro && focus === "roots"}>
           <p className="mb-2 text-xs text-[#8fa6d1]">Where does the curve cross the x-axis?</p>
           <div className="space-y-2">
-            <ReadingInput label="First root" onRecord={(v) => session.dispatch("param.set", { key: "result:root1", value: v })} disabled={ro} />
-            <ReadingInput label="Second root" onRecord={(v) => session.dispatch("param.set", { key: "result:root2", value: v })} disabled={ro} />
+            <ReadingInput label="First root" onRecord={(v) => session.dispatch("param.set", { key: "result:root1", value: v })} value={submitted(session.events, "result:root1")} disabled={ro} />
+            <ReadingInput label="Second root" onRecord={(v) => session.dispatch("param.set", { key: "result:root2", value: v })} value={submitted(session.events, "result:root2")} disabled={ro} />
           </div>
         </Panel>
         <div className="grid grid-cols-2 gap-2">
@@ -564,7 +564,7 @@ export function BalanceWorkspace({ session }: { session: SimSession<BalanceState
           {s.history.length > 0 && <p className="mt-2 font-mono text-[11px] text-[#8fa6d1]">{s.history.map((h) => h.replace("both:", "both ").replace("*", "×").replace("/", "÷")).join("  →  ")}</p>}
         </Panel>
         <Panel title="Answer" glow={!ro && (focus === "answer-1" || focus === "answer-2")}>
-          <ReadingInput label="x =" onRecord={(v) => session.dispatch("param.set", { key: s.eq === 0 ? "result:x1" : "result:x2", value: v })} disabled={ro} />
+          <ReadingInput label="x =" onRecord={(v) => session.dispatch("param.set", { key: s.eq === 0 ? "result:x1" : "result:x2", value: v })} value={submitted(session.events, s.eq === 0 ? "result:x1" : "result:x2")} disabled={ro} />
           {s.eq === 0 && solvedHere && answered && (
             <Btn tone="primary" className="mt-2 w-full" onClick={() => session.dispatch("param.set", { key: "equation", value: 1 })} disabled={ro}>
               <Check className="h-4 w-4" /> Next equation
@@ -862,9 +862,9 @@ export function UnitCircleWorkspace({ session }: { session: SimSession<CircleSta
         </Panel>
         <Panel title="Read off the circle" glow={!ro && (focus === "thirty" || focus === "quadrant" || focus === "radians")}>
           <div className="space-y-2">
-            <ReadingInput label="sin θ" onRecord={(v) => session.dispatch("measure.read", { instrument: "circle", reading: { key: "sin", value: v, unit: "" } })} disabled={ro} />
-            <ReadingInput label="cos θ" onRecord={(v) => session.dispatch("measure.read", { instrument: "circle", reading: { key: "cos", value: v, unit: "" } })} disabled={ro} />
-            <ReadingInput label="θ in radians" unit="rad" onRecord={(v) => session.dispatch("measure.read", { instrument: "circle", reading: { key: "rad", value: v, unit: "rad" } })} disabled={ro} />
+            <ReadingInput label="sin θ" onRecord={(v) => session.dispatch("measure.read", { instrument: "circle", reading: { key: "sin", value: v, unit: "" } })} value={submitted(session.events, "sin", "circle")} disabled={ro} />
+            <ReadingInput label="cos θ" onRecord={(v) => session.dispatch("measure.read", { instrument: "circle", reading: { key: "cos", value: v, unit: "" } })} value={submitted(session.events, "cos", "circle")} disabled={ro} />
+            <ReadingInput label="θ in radians" unit="rad" onRecord={(v) => session.dispatch("measure.read", { instrument: "circle", reading: { key: "rad", value: v, unit: "rad" } })} value={submitted(session.events, "rad", "circle")} disabled={ro} />
           </div>
           <Btn className="mt-2 w-full" onClick={() => session.dispatch("timer.mark", { label: "sin-equals-cos" })} disabled={ro}>
             <ArrowUp className="h-3.5 w-3.5" />

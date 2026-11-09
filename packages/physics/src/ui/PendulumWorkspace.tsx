@@ -7,6 +7,7 @@ import type { PendulumSetup, PendulumState } from "../labs/mechanics";
 import { gFromPeriods } from "../labs/mechanics";
 import { DragHandle, easeInOut, GhostHand, LabStyles, mix, paramOf, Stage, Tag, useCommitLater, useDemoPreview, useFocusStep, V3, type Pt } from "./interact";
 import { Btn, LiveGraph, Panel, ReadingInput, Readout, sf } from "./kit";
+import { submitted } from "./guide";
 import type { SimSession } from "./useSimSession";
 
 const W = 420;
@@ -293,7 +294,7 @@ export function PendulumWorkspace({ session }: { session: SimSession<PendulumSta
           <RulerLens stringM={stringM} bobR={setup.bobRadiusM} />
           <p className="mt-2 text-[11px] text-[#8fa6d1]">Measure from the pivot to the bob's centre.</p>
           <div className="mt-2">
-            <ReadingInput label="Length L" unit="m" onRecord={(v) => session.dispatch("measure.read", { instrument: "metre-rule", reading: { key: "L", value: v, unit: "m" } })} disabled={ro} width="w-20" />
+            <ReadingInput label="Length L" unit="m" onRecord={(v) => session.dispatch("measure.read", { instrument: "metre-rule", reading: { key: "L", value: v, unit: "m" } })} value={submitted(session.events, "L", "metre-rule")} disabled={ro} width="w-20" />
           </div>
         </Panel>
       </div>
@@ -377,7 +378,7 @@ export function PendulumWorkspace({ session }: { session: SimSession<PendulumSta
             <Readout label="4π² ÷ gradient" value={gEst ? sf(gEst, 4) : "–"} unit="m/s²" />
           </div>
           <div className="mt-2">
-            <ReadingInput label="Your value of g" unit="m/s²" onRecord={(v) => session.dispatch("param.set", { key: "result:g", value: v })} disabled={ro || points.length < 2} />
+            <ReadingInput label="Your value of g" unit="m/s²" onRecord={(v) => session.dispatch("param.set", { key: "result:g", value: v })} value={submitted(session.events, "result:g")} disabled={ro || points.length < 2} />
           </div>
         </Panel>
       </div>
