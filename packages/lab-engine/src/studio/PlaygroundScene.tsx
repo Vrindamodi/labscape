@@ -57,7 +57,9 @@ export type PlaygroundView = {
   /** A metal ball skating over the surface (sodium, potassium...). */
   skate?: { pulse: number; colour: string; durationMs: number } | null;
   /** An immiscible layer floating on top (oil). */
-  layer?: { colour: string; volumeMl: number } | null;
+  layer?: { colour: string; volumeMl: number; position?: "top" | "bottom" } | null;
+  /** A silver mirror plating the inside of the glass (Tollens' test); grows in over a few seconds. */
+  mirror?: { colour: string; pulse: number } | null;
   /** Crystals growing at the waterline and on the bottom. */
   crystals?: { colour: string; amount: number; pulse: number; durationMs: number } | null;
   /** Bubble size from the engine's gas cue. */
@@ -501,7 +503,8 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
       {(condense || steamy) && <Droplets amount={Math.max(condense?.amount ?? 0, steamy ? Math.min(1, (view.liquidC - 45) / 40) : 0)} pulse={condense?.pulse ?? 0} hot={steamy} floor={view.levelMl > 0.5 ? 0.012 + h : 0.012} colour={condense?.colour ?? "#d6eeff"} count={quality === "high" ? 130 : 60} reducedMotion={reducedMotion} />}
       {view.colourBurst && view.levelMl > 1 && !reducedMotion && <InkSwirl pulse={view.colourBurst.pulse} colour={view.colourBurst.colour} top={h} />}
       {view.skate && view.levelMl > 1 && <Skater pulse={view.skate.pulse} colour={view.skate.colour} durationMs={view.skate.durationMs} top={h} reducedMotion={reducedMotion} />}
-      {view.layer && view.levelMl > 1 && <OilLayer colour={view.layer.colour} fraction={Math.min(0.9, view.layer.volumeMl / Math.max(1, view.levelMl))} height={h} />}
+      {view.layer && view.levelMl > 1 && <OilLayer colour={view.layer.colour} fraction={Math.min(0.9, view.layer.volumeMl / Math.max(1, view.levelMl))} height={h} bottom={view.layer.position === "bottom"} />}
+      {view.mirror && <SilverMirror colour={view.mirror.colour} pulse={view.mirror.pulse} top={view.levelMl > 1 ? h : BEAKER_H * 0.3} reducedMotion={reducedMotion} />}
       {view.crystals && <CrystalGrowth colour={view.crystals.colour} amount={view.crystals.amount} pulse={view.crystals.pulse} durationMs={view.crystals.durationMs} top={view.levelMl > 1 ? h : 0.03} count={quality === "high" ? 90 : 45} reducedMotion={reducedMotion} />}
       {view.blast && <Blast pulse={view.blast.pulse} colour={view.blast.colour} strength={view.blast.strength} reducedMotion={reducedMotion} />}
       {view.thermometer && view.levelMl > 0.5 && <Thermometer c={view.liquidC} target={view.thermometer.targetC} reducedMotion={reducedMotion} />}
@@ -1331,10 +1334,10 @@ function Skater({ pulse, colour, durationMs, top, reducedMotion }: { pulse: numb
 }
 
 /** An immiscible layer (oil) floating on top of the water, with a visible boundary between them. */
-function OilLayer({ colour, fraction, height }: { colour: string; fraction: number; height: number }) {
+function OilLayer({ colour, fraction, height, bottom }: { colour: string; fraction: number; height: number; bottom?: boolean }) {
   const th = Math.max(0.02, height * fraction);
   return (
-    <group position={[0, 0.012 + height - th / 2, 0]}>
+    <group position={[0, 0.012 + (bottom ? th / 2 : height - th / 2), 0]}>
       <mesh renderOrder={2}>
         <cylinderGeometry args={[LIQ_R * 1.002, LIQ_R * 1.002, th, 48]} />
         <meshPhysicalMaterial color={colour} emissive={colour} emissiveIntensity={0.18} transparent opacity={0.72} roughness={0.05} clearcoat={1} depthWrite={false} />
@@ -1344,6 +1347,33 @@ function OilLayer({ colour, fraction, height }: { colour: string; fraction: numb
         <meshBasicMaterial color="#5c4a10" transparent opacity={0.35} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
     </group>
+  );
+}
+
+/** A shiny metal film creeping up the inside of the glass from the bottom to just above the liquid. */
+function SilverMirror({ colour, pulse, top, reducedMotion }: { colour: string; pulse: number; top: number; reducedMotion: boolean }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const mat = useRef<THREE.MeshStandardMaterial>(null);
+  const start = useRef<number | null>(null);
+  useEffect(() => {
+    start.current = null;
+  }, [pulse]);
+  const full = Math.min(BEAKER_H * 0.9, top + 0.04);
+  useFrame(({ clock }) => {
+    if (start.current === null) start.current = clock.elapsedTime;
+    const t = reducedMotion ? 1 : Math.min(1, (clock.elapsedTime - start.current) / 4);
+    const k = 1 - Math.pow(1 - t, 3);
+    if (ref.current) {
+      ref.current.scale.y = Math.max(0.001, k);
+      ref.current.position.y = 0.012 + (full * k) / 2;
+    }
+    if (mat.current) mat.current.opacity = 0.35 + 0.55 * k;
+  });
+  return (
+    <mesh ref={ref} renderOrder={2}>
+      <cylinderGeometry args={[BEAKER_R - 0.006, BEAKER_R - 0.006, full, 64, 1, true]} />
+      <meshStandardMaterial ref={mat} color={colour} metalness={1} roughness={0.08} transparent opacity={0.35} side={THREE.DoubleSide} depthWrite={false} />
+    </mesh>
   );
 }
 

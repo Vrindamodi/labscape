@@ -48,6 +48,7 @@ const EMPTY_VIEW: Omit<PlaygroundView, "held" | "focus" | "plateC" | "stirring" 
   colourBurst: null,
   skate: null,
   layer: null,
+  mirror: null,
   crystals: null,
   bubble: "fine",
 };
@@ -99,7 +100,7 @@ function Swatch({ colour }: { colour: string }) {
   return <span className="h-4 w-4 shrink-0 rounded-[5px] shadow-[inset_0_0_0_1px_rgba(255,255,255,.35)]" style={{ background: colour }} />;
 }
 
-type Need = "heat" | "catalyst" | "acid" | "spark";
+type Need = "heat" | "catalyst" | "acid" | "alkali" | "spark";
 
 /** What a mix still needs, from the engine's neededTool plus what its message mentions. */
 function needsOf(r: SimulationResult | null): Need[] {
@@ -109,8 +110,10 @@ function needsOf(r: SimulationResult | null): Need[] {
   const out = new Set<Need>();
   const tool = p?.neededTool;
   if (tool === "heater" || (r.outcome === "needs_conditions" && /\b(heat|warm)/.test(text))) out.add("heat");
-  if (tool === "acid" || (r.outcome === "needs_conditions" && /sulfuric acid|acid catalyst/.test(text))) out.add("acid");
+  // with focusRef the engine names the exact shelf item, so the message text is not guessed from
+  if (tool === "acid" || (!p?.focusRef && r.outcome === "needs_conditions" && /sulfuric acid|acid catalyst/.test(text))) out.add("acid");
   if (tool === "catalyst") out.add("catalyst");
+  if (tool === "alkali") out.add("alkali");
   if (tool === "spark") out.add("spark");
   return [...out];
 }
@@ -119,16 +122,18 @@ function needsOf(r: SimulationResult | null): Need[] {
  * Friendly, actionable copy for a mix that is waiting for something ("Needs heat - try Heat") or
  * that the engine has no checked model for. Never shows the engine's internal wording.
  */
-function friendlyOutcome(r: SimulationResult | null): { title: string; line: string; detail: string | null } | null {
+function friendlyOutcome(r: SimulationResult | null, nameOf: (id: string) => string | undefined = () => undefined): { title: string; line: string; detail: string | null } | null {
   if (!r) return null;
   const needs = needsOf(r);
   const msg = r.presentation?.message ?? "";
   if (needs.length) {
     const concentrated = /concentrated/i.test(msg);
-    const words: Record<Need, string> = { heat: "heat", catalyst: "a catalyst", acid: concentrated ? "a catalyst" : "an acid", spark: "a flame" };
+    const focus = r.presentation?.focusRef ? nameOf(r.presentation.focusRef) : undefined;
+    const words: Record<Need, string> = { heat: "heat", catalyst: "a catalyst", acid: concentrated ? "a catalyst" : "an acid", alkali: "an alkali", spark: "a flame" };
     const acts: Record<Need, string> = {
       heat: "Heat (about 60 °C)",
-      catalyst: "add a pinch of manganese(IV) oxide",
+      catalyst: focus ? `add a few drops of ${focus.charAt(0).toLowerCase()}${focus.slice(1)}` : "add a pinch of manganese(IV) oxide",
+      alkali: focus ? `add ${focus.charAt(0).toLowerCase()}${focus.slice(1)}` : "add some sodium hydroxide solution",
       acid: concentrated ? "add a few drops of concentrated sulfuric acid" : "add a few drops of dilute sulfuric acid",
       spark: "Spark",
     };
@@ -157,6 +162,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const navigate = useNavigate();
   const { reduced } = useMotion();
   const [cat, setCat] = useState<CatalogueResponse | null>(null);
+  const shelfName = (id: string) => cat?.substances.find((x) => x.id === id)?.name;
   const [online, setOnline] = useState<boolean | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [adds, setAdds] = useState<TrayItem[]>([]);
@@ -296,6 +302,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         opacity: base.opacity,
         solid: solidItems.length ? { colour: solidItems[0]!.item.colour, amount: Math.min(1, solidItems.reduce((a, x) => a + x.amount, 0) / 5), ...(v.solid?.coat ? { coat: v.solid.coat } : {}) } : null,
         layer: null,
+        mirror: null,
       }));
       let lastColour = base.colour;
       for (const c of r.cues) {
@@ -380,6 +387,11 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
             }
             case "deposit": {
               const col = oklabToHex(c.colour);
+              if (c.form === "mirror") {
+                setVisual((v) => ({ ...v, mirror: { colour: "#e8ecf2", pulse: (v.mirror?.pulse ?? 0) + 1 } }));
+                caption("A shiny silver mirror coats the inside of the glass", { colour: "#e8ecf2" }, 8000);
+                break;
+              }
               const form = c.form ?? "coating";
               setVisual((v) => {
                 const same = v.solid?.coat?.colour === col;
@@ -417,8 +429,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
               caption("The metal melts into a ball and skates across the surface", { colour: oklabToHex(c.colour) });
               break;
             case "layers":
-              setVisual((v) => ({ ...v, layer: { colour: oklabToHex(c.colour), volumeMl: c.volumeMl } }));
-              caption("The oil floats on top as a separate layer", { colour: oklabToHex(c.colour) });
+              setVisual((v) => ({ ...v, layer: { colour: oklabToHex(c.colour), volumeMl: c.volumeMl, position: c.position ?? "top" } }));
+              caption(c.label ?? (c.position === "bottom" ? "The denser liquid sinks to the bottom as a separate layer" : "The lighter liquid floats on top as a separate layer"), { colour: oklabToHex(c.colour) });
               break;
             case "crystals": {
               const col = oklabToHex(c.colour);
@@ -478,7 +490,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           return;
         }
         applyResult(r, next, fresh);
-        if (r.outcome === "needs_conditions" || r.outcome === "unsupported") flash(friendlyOutcome(r)?.line ?? "Nothing happens yet.", "warn");
+        if (r.outcome === "needs_conditions" || r.outcome === "unsupported") flash(friendlyOutcome(r, shelfName)?.line ?? "Nothing happens yet.", "warn");
       } catch (e) {
         revert();
         if (e instanceof ProblemError && e.status === 429) flash(e.problem.detail ?? "Slow down: too many blocked mixes. Try again shortly.", "bad");
@@ -737,7 +749,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       </div>
     );
 
-  const friendly = friendlyOutcome(result);
+  const friendly = friendlyOutcome(result, shelfName);
   const freeStyle = { left: insets.left, right: insets.right };
   const holdCard = held && (
     <HoldCard
@@ -858,10 +870,10 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
                 pick(it);
                 if (!wide) setShelfOpen(false);
               }}
-              glow={needs.includes("catalyst") ? "mno2-powder" : needs.includes("acid") ? "h2so4" : null}
+              glow={result?.presentation?.focusRef && (needs.includes("catalyst") || needs.includes("acid") || needs.includes("alkali")) ? result.presentation.focusRef : needs.includes("catalyst") ? "mno2-powder" : needs.includes("acid") ? "h2so4" : null}
               onTable={() => setDrawer("table")}
               onClose={wide ? null : () => setShelfOpen(false)}
-              collapsible={wide && short && !!held && !needs.includes("catalyst") && !needs.includes("acid")}
+              collapsible={wide && short && !!held && !needs.includes("catalyst") && !needs.includes("acid") && !needs.includes("alkali")}
             />
           )}
         </div>
