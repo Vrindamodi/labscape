@@ -2,6 +2,7 @@ import { sound } from "@labscape/audio";
 import { CelebrationLayer, MotionProvider } from "@labscape/motion";
 import { ShellProvider } from "@labscape/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MotionGlobalConfig } from "framer-motion";
 import { StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -16,6 +17,9 @@ import "./index.css";
 if (import.meta.env.DEV && new URLSearchParams(location.search).get("raf") === "timer") {
   window.requestAnimationFrame = (cb) => window.setTimeout(() => cb(performance.now()), 16);
   window.cancelAnimationFrame = (id) => window.clearTimeout(id);
+  // A hidden pane does not advance the document timeline either, so CSS/WAAPI transitions (stage
+  // changes wait for them) would never finish: skip them.
+  MotionGlobalConfig.skipAnimations = true;
 }
 
 const root = document.getElementById("root");

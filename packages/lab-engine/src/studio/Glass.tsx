@@ -14,7 +14,7 @@ export const Glass = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement> &
 });
 
 export function Kicker({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx("text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8fa6d1]", className)}>{children}</div>;
+  return <div className={cx("text-[13px] font-semibold uppercase tracking-[0.06em] text-[#8fa6d1]", className)}>{children}</div>;
 }
 
 /** Segmented control (speed, tabs). */
@@ -50,7 +50,7 @@ export const DockButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
       ref={ref}
       type="button"
       className={cx(
-        "relative flex h-[54px] w-[70px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-[14px] text-[12px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-35",
+        "relative flex h-[56px] min-w-[72px] shrink-0 select-none flex-col items-center justify-center gap-1 rounded-[14px] px-1.5 text-[13px] font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-35",
         tone === "on" && "bg-[rgba(61,139,255,.28)] text-white shadow-[inset_0_0_0_1px_rgba(110,170,255,.55)]",
         tone === "hot" && "bg-[rgba(255,138,61,.18)] text-[#ffd59a] shadow-[inset_0_0_0_1px_rgba(255,160,90,.5)]",
         tone === "danger" && "text-[#ff9b9b] hover:bg-[rgba(255,91,107,.12)]",
@@ -59,10 +59,12 @@ export const DockButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTM
       )}
       aria-keyshortcuts={kbd}
       {...rest}
+      title={rest.title ?? (kbd ? `${label} (${kbd})` : undefined)}
     >
       <span className="[&>svg]:h-5 [&>svg]:w-5">{icon}</span>
       {label}
-      {kbd && <span className="absolute right-1.5 top-1 font-mono text-[9px] text-white/30">{kbd}</span>}
+      {/* Keyboard hint: a small superscript in the corner, single keys only, hidden on narrow screens. */}
+      {kbd && kbd.length <= 2 && <span className="pointer-events-none absolute right-1 top-0.5 hidden rounded px-1 text-[10px] font-semibold leading-4 text-white/40 md:block">{kbd}</span>}
     </button>
   );
 });

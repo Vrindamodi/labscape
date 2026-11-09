@@ -3,12 +3,13 @@ import { cx, Kbd } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import { Droplet, Droplets, Eye, Flame, Glasses, Hand, Minus, MoveDown, Plus, RotateCw, Snowflake, ThermometerSun, Vibrate, Wind, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { buretteRateMlPerS, DROP_ML, KINDS, pourRateMlPerS, type EquipmentKind } from "../engine/equipment";
 import { reagent } from "../engine/reagents";
 import { look, type Item } from "../engine/state";
 import type { StepSpec } from "../protocol/types";
 import { DockButton, DockSeparator, Glass, GhostButton, Kicker, PrimaryButton, Readout, Segmented, SquareButton, TiltGauge } from "../studio/Glass";
-import { beginHandDrag, Bench3D, PourStream, type BenchFrame, type HandState, type MixKind, type PourAnim, type Quality } from "./Bench3D";
+import { beginHandDrag, Bench3D, PourStream, type BenchFrame, type BenchLabel, type HandState, type MixKind, type PourAnim, type Quality } from "./Bench3D";
 import { EXTRA_MASS_G, extraAccepts, extraEvents, extraVerbsFor, type ExtraVerbId } from "./extraVerbs";
 import { labSound, LoopSound } from "./labSound";
 import type { LabSession } from "./useLabSession";
@@ -33,10 +34,23 @@ export type WorkbenchProps = {
   dockExtra?: ReactNode;
   /** Lets a shelf outside the bench pick things up, or start dragging them onto the bench. */
   control?: MutableRefObject<WorkbenchControl | null>;
+  /** Called when the pour card opens or closes (its mode: pour, drops or pipette delivery). */
+  onPourChange?: (mode: "pour" | "drop" | "pipette-out" | null) => void;
   /** Called when the item in hand (or selected) changes. */
   onHeldChange?: (id: string | null) => void;
   /** Camera framing (close-up on the items in use). */
   frame?: BenchFrame | null;
+  /** The learner moved the camera themselves (the page stops auto-framing and offers "Re-centre"). */
+  onUserCamera?: () => void;
+  /**
+   * Studio: where the in-hand card and the readouts go (a side panel), so nothing sits on top of
+   * the 3D bench. Without it they render in the strip under the bench.
+   */
+  handSlot?: HTMLElement | null;
+  /** Studio: a message for the strip under the bench that takes priority (e.g. a live warning). */
+  stripMessage?: ReactNode;
+  /** Studio: extra buttons at the right of the strip under the bench (e.g. Re-centre). */
+  stripExtra?: ReactNode;
 };
 
 export type WorkbenchControl = {
@@ -47,11 +61,40 @@ export type WorkbenchControl = {
   /** Pick it up and start carrying it with the pointer: releasing it over a glowing vessel uses it. */
   dragFromShelf: (id: string) => void;
   putDown: () => void;
+  /**
+   * The easy way to do a transfer: pick up `from` if needed, use it on `to`, and for a pour start
+   * pouring `amountMl` straight away (the pour card stays open to stop or change it).
+   */
+  transfer: (from: string, to: string, amountMl?: number) => void;
 };
 
 const MASS_G: Record<string, number> = { "mg-ribbon": 0.05, "iron-nail": 3 };
 
-type Verb = "pour" | "drop" | "draw" | "deliver" | "dip" | "flame" | "mouth" | "collect" | "thermo" | "add-solid" | ExtraVerbId;
+type Verb = "pour" | "drop" | "draw" | "deliver" | "dip" | "flame" | "mouth" | "collect" | "thermo" | "add-solid" | "place" | ExtraVerbId;
+
+/** Items that give `it` somewhere to stand (a white tile, a rack, a tripod), other than where it is now. */
+function standsFor(it: Item, items: Item[]): Item[] {
+  const fits = KINDS[it.kind].fits as string[];
+  return items.filter((p) => p.id !== it.id && p.socket !== "worn" && (KINDS[p.kind].provides ?? []).some((s) => s !== "clamp" && fits.includes(s)) && it.socket?.split(":")[1] !== p.id);
+}
+
+/**
+ * What a learner picks up and what they then click for a step. Usually the step's `from` and
+ * `to`; collecting a gas is done by holding the empty tube over the one that makes it, and a
+ * vessel is stood on a tile by clicking the tile.
+ */
+export function stepHands(step: StepSpec | null | undefined, items: Record<string, Item>): { pick: string | null; target: string | null } {
+  if (!step) return { pick: null, target: null };
+  const from = step.from && items[step.from] ? step.from : null;
+  const to = step.to && items[step.to] ? step.to : null;
+  if (step.action === "timer.mark" || step.action.startsWith("mix.")) return { pick: null, target: null };
+  if (step.action === "equipment.connect" && from && to && items[to]!.kind === "test_tube" && !(items[to]!.liquid?.volumeMl ?? 0)) return { pick: to, target: from };
+  if (step.action === "equipment.place" && from && items[from]!.kind !== "goggles") {
+    const stand = standsFor(items[from]!, Object.values(items))[0];
+    return { pick: from, target: stand?.id ?? null };
+  }
+  return { pick: from, target: to };
+}
 type Speed = "drop" | "slow" | "steady" | "fast" | "custom";
 const SPEED_RATE: Record<Exclude<Speed, "custom">, number> = { drop: 0.35, slow: 1.4, steady: 4, fast: 10 };
 const SPEED_LABEL: Record<Speed, string> = { drop: "Dropwise", slow: "Slow pour", steady: "Steady pour", fast: "Fast pour", custom: "Your tilt" };
@@ -92,6 +135,7 @@ function verbsFor(it: Item): VerbDef[] {
 
 function accepts(verb: Verb, it: Item, held?: Item | null): boolean {
   if (held && extraAccepts(verb, held, it)) return true;
+  if (verb === "place") return !!held && standsFor(held, [it]).length > 0;
   switch (verb) {
     case "pour":
       return !!it.liquid && it.kind !== "reagent_bottle" && it.kind !== "dropper_bottle" && it.kind !== "pipette_10" && it.kind !== "wash_bottle";
@@ -125,8 +169,10 @@ function safeReagent(id: string | undefined) {
 }
 
 const fmtMl = (v: number) => (v < 10 ? v.toFixed(2) : v.toFixed(1));
+/** "Sodium hydroxide 0.100 M" -> "sodium hydroxide 0.100 M". */
+const lowerFirst = (s: string | undefined) => (s ? (/^[A-Z][a-z]/.test(s) ? s.charAt(0).toLowerCase() + s.slice(1) : s) : undefined);
 
-export function Workbench({ session, step, onLiveWarning, readOnly, overlay, className, chrome = "classic", dockExtra, control, onHeldChange, frame }: WorkbenchProps) {
+export function Workbench({ session, step, onLiveWarning, readOnly, overlay, className, chrome = "classic", dockExtra, control, onHeldChange, onPourChange, frame, onUserCamera, handSlot, stripMessage, stripExtra }: WorkbenchProps) {
   const studio = chrome === "studio";
   const { reduced } = useMotion();
   const { state, dispatch } = session;
@@ -169,9 +215,18 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
 
   const items = useMemo(() => Object.values(state.items), [state.items]);
   const sel = selected ? state.items[selected] ?? null : null;
-  const verbs = useMemo(() => (sel ? [...verbsFor(sel), ...extraVerbsFor(sel, Object.values(state.items))] : []), [sel, state.items]);
+  const verbs = useMemo<VerbDef[]>(() => {
+    if (!sel) return [];
+    const all = Object.values(state.items);
+    const v: VerbDef[] = [...verbsFor(sel), ...extraVerbsFor(sel, all)];
+    if (standsFor(sel, all).length && sel.kind !== "burette_50" && sel.kind !== "thermometer") v.push({ id: "place", label: "Stand on", icon: <MoveDown className="h-4 w-4" />, target: true });
+    return v;
+  }, [sel, state.items]);
   const holding = !!sel && verbs.length > 0;
-  const activeVerb = holding ? verbs.find((v) => v.id === verb) ?? verbs[0]! : null;
+  const hands = stepHands(step, state.items);
+  // Holding what the step needs: start on the verb that reaches the step's target (e.g. "Stand on" the tile).
+  const stepVerb = holding && !readOnly && sel!.id === hands.pick && hands.target && state.items[hands.target] ? verbs.find((v) => v.target && accepts(v.id, state.items[hands.target!]!, sel)) : undefined;
+  const activeVerb = holding ? verbs.find((v) => v.id === verb) ?? stepVerb ?? verbs[0]! : null;
   const flash = useCallback((text: string) => {
     setStatus(text);
     window.setTimeout(() => setStatus((s) => (s === text ? null : s)), 2600);
@@ -187,14 +242,25 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
   }, []);
 
   useEffect(() => onHeldChange?.(selected), [selected, onHeldChange]);
+  useEffect(() => onPourChange?.(pourTarget?.mode ?? null), [pourTarget?.mode, onPourChange]);
 
   /* ---------------------------------------------------------------- targets and guidance */
 
   const choosing = holding && activeVerb?.target && !pourTarget;
   const targets = choosing ? items.filter((it) => it.id !== sel!.id && accepts(activeVerb!.id, it, sel)).map((i) => i.id) : pourTarget ? [pourTarget.to] : [];
   // Guidance: with nothing in hand, the step's source glows; once it is in hand, its destination does.
-  const guide = !readOnly && step ? (!holding && step.from && state.items[step.from] ? step.from : holding && step.to && sel?.id === step.from && targets.includes(step.to) ? step.to : null) : null;
+  const guide = !readOnly && step ? (!holding && hands.pick ? hands.pick : holding && hands.target && sel?.id === hands.pick && targets.includes(hands.target) ? hands.target : null) : null;
   const glow = [...targets, ...(guide && !targets.includes(guide) ? [guide] : []), ...(shown && !targets.includes(shown) ? [shown] : [])];
+  // One glowing ring and one name tag for the next thing to click; the item in hand keeps its tag.
+  const rings = [...(guide ? [guide] : pourTarget ? [pourTarget.to] : []), ...(shown && shown !== guide ? [shown] : [])];
+  const labels: BenchLabel[] = readOnly
+    ? []
+    : [
+        ...(sel ? [{ id: sel.id, tone: "held" as const }] : []),
+        ...rings.filter((id) => id !== sel?.id).map((id) => ({ id, tone: id === guide ? ("guide" as const) : ("target" as const) })),
+      ];
+  /** Set by transfer(): start pouring this amount as soon as the pour card is ready. */
+  const autoPour = useRef<number | null>(null);
 
   const complete = (v: Verb, from: string, to: string) => {
     const src = state.items[from];
@@ -206,10 +272,17 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         pourRef.current.poured = 0;
         // Pre-fill the amount the step asks for.
         const q = step && step.from === from && step.to === to ? step.quantity : undefined;
-        setAmount(q && q.unit === "mL" ? q.target : null);
+        const wanted = autoPour.current !== null && autoPour.current > 0 ? autoPour.current : null;
+        setAmount(wanted ?? (q && q.unit === "mL" ? q.target : null));
+        if (autoPour.current !== null) {
+          autoPour.current = null;
+          pourRef.current.poured = 0;
+          window.setTimeout(() => setPouring(true), 450);
+        }
         if (step?.technique && "maxRateMlPerS" in step.technique && step.technique.maxRateMlPerS !== undefined) {
           const band = step.technique.maxRateMlPerS;
-          setSpeed(band <= 0.6 ? "drop" : band <= 2 ? "slow" : band <= 6 ? "steady" : "fast");
+          // The fastest preset that stays inside the band (with a margin: a hand is never perfectly steady).
+          setSpeed(band >= SPEED_RATE.fast * 1.15 ? "fast" : band >= SPEED_RATE.steady * 1.15 ? "steady" : band >= SPEED_RATE.slow * 1.15 ? "slow" : "drop");
         }
         labSound.clink(0.5);
         break;
@@ -248,6 +321,14 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
       }
       case "flame":
         break;
+      case "place": {
+        const stand = state.items[to]!;
+        const kind = (KINDS[stand.kind].provides ?? []).find((x) => (KINDS[state.items[from]!.kind].fits as string[]).includes(x)) ?? "bench";
+        dispatch("equipment.place", { equipmentId: from, x: stand.x, y: stand.z, socket: kind + ":" + to });
+        labSound.clink(0.5);
+        putDown();
+        break;
+      }
       default:
         // Part 5 verbs (heat, litmus, water bath, filter): plain events, then put the item down.
         if (src) for (const e of extraEvents(v, src, to)) dispatch(e.type as never, e.payload as never);
@@ -293,6 +374,18 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         if (verbsFor(it).some((v) => v.target)) beginHandDrag(it.x, it.z);
       },
       putDown,
+      transfer: (from, to, amountMl) => {
+        const it = state.items[from];
+        if (readOnly || !it || !state.items[to]) return;
+        const vs = [...verbsFor(it), ...extraVerbsFor(it, Object.values(state.items))];
+        const v = vs.find((x) => x.target && accepts(x.id, state.items[to]!, it));
+        if (!v) return pickUp(from);
+        setSelected(from);
+        setVerb(v.id);
+        setPouring(false);
+        if (v.id === "pour") autoPour.current = amountMl ?? -1;
+        complete(v.id, from, to);
+      },
     };
   }
 
@@ -592,6 +685,8 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
   // its target and tilts, so the learner sees the motion instead of liquid teleporting.
   const [ghost, setGhost] = useState<{ from: string; to: string | null; tilt: number } | null>(null);
   const lastSeq = useRef(0);
+  const ghostTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(ghostTimer.current), []);
   const evs = session.events;
   useEffect(() => {
     if (!readOnly || !evs.length) return;
@@ -601,14 +696,18 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
       return;
     }
     lastSeq.current = e.seq;
-    const p = e.payload as { from?: string; to?: string; equipmentId?: string };
+    const p = e.payload as { from?: string; to?: string; equipmentId?: string; durationMs?: number };
+    // A clamped burette does not move: its drips show the flow.
+    if (p.from && state.items[p.from]?.kind === "burette_50") return;
     if ((e.type === "liquid.pour" || e.type === "liquid.drop") && p.from && p.to && state.items[p.from] && state.items[p.to] && p.from !== p.to) {
       setGhost({ from: p.from, to: p.to, tilt: e.type === "liquid.pour" ? 75 : 20 });
     } else if ((e.type === "equipment.connect" || e.type === "solid.add") && p.from && state.items[p.from]) {
       setGhost({ from: p.from, to: p.to && state.items[p.to] ? p.to : null, tilt: 0 });
     } else return;
-    const t = window.setTimeout(() => setGhost(null), reduced ? 400 : 1400);
-    return () => window.clearTimeout(t);
+    // Long pours stay on screen for (part of) their recorded duration so the stream is seen.
+    const ms = reduced ? 400 : Math.max(1400, Math.min(3500, (p.durationMs ?? 0) / Math.max(0.25, session.speed)));
+    window.clearTimeout(ghostTimer.current);
+    ghostTimer.current = window.setTimeout(() => setGhost(null), ms);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readOnly, evs.length]);
 
@@ -669,13 +768,119 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
   const goggles = items.find((i) => i.kind === "goggles" && i.socket !== "worn");
   const rateTone = band === undefined ? "#39d6ff" : liveRate <= band ? "#3de8a8" : liveRate <= band * 1.25 ? "#ffc23d" : "#ff5b6b";
 
-  return (
-    <div className={cx("relative h-full w-full overflow-hidden rounded-xl bg-[#0b1530] font-sans", className)} aria-label="Lab bench">
+  const readouts = focus && focusLook && (focus.liquid?.volumeMl ?? 0) > 0 && (
+    <div className="flex gap-2">
+      <Readout label={`${focus.label} · volume`} value={fmtMl(focusLook.volumeMl)} unit="mL" />
+      <Readout label="Temperature" value={focusLook.tempC.toFixed(1)} unit="°" delta={Math.abs(focusLook.tempC - 22) >= 0.3 ? `${focusLook.tempC > 22 ? "▲" : "▼"} ${Math.abs(focusLook.tempC - 22).toFixed(1)}` : null} tone={focusLook.tempC > 22 ? "up" : "down"} />
+    </div>
+  );
+
+  const handCard =
+    !readOnly && sel ? (
+      <Glass className="p-3" role="region" aria-label={`Tools for ${sel.label}`}>
+        {pourTarget ? (
+          <PourCard
+            from={sel}
+            to={toItem}
+            mode={pourTarget.mode}
+            tilt={tilt}
+            rate={liveRate}
+            rateTone={rateTone}
+            band={band}
+            speed={speed}
+            setSpeed={setSpeed}
+            amount={amount}
+            setAmount={setAmount}
+            stepAmount={step && step.from === pourTarget.from && step.to === pourTarget.to && step.quantity?.unit === "mL" ? step.quantity.target : null}
+            poured={poured}
+            available={available}
+            pouring={pouring}
+            onAuto={() => {
+              if (pourTarget.mode === "drop") return dropOnce();
+              if (pourTarget.mode === "pipette-out") {
+                const v = state.items[pourTarget.from]?.liquid?.volumeMl ?? 0;
+                dispatch("liquid.drop", { from: pourTarget.from, to: pourTarget.to, drops: 1, volumeMl: Math.round(v * 1000) / 1000 });
+                putDown();
+                return;
+              }
+              if (speed === "custom") setSpeed("steady");
+              pourRef.current.poured = 0;
+              setPoured(0);
+              setPouring(true);
+            }}
+            onStop={() => setPouring(false)}
+            onDropwise={() => {
+              setSpeed("drop");
+              setPouring(true);
+            }}
+            onChange={() => {
+              setPouring(false);
+              setPourTarget(null);
+            }}
+            onPutDown={putDown}
+          />
+        ) : (
+          <HandCard
+            item={sel}
+            verbs={verbs}
+            active={activeVerb}
+            setVerb={setVerb}
+            targetsCount={targets.length}
+            onFlame={flameIt}
+            onExtra={extraNow}
+            onPutDown={putDown}
+            onGoggles={() => {
+              dispatch("equipment.place", { equipmentId: sel.id, x: 0, y: 0, socket: "worn" });
+              labSound.clink(0.4);
+              putDown();
+            }}
+            onGas={() => dispatch("heat.set", { target: sel.id, powerPct: sel.gasOn ? 0 : 100 })}
+            onAirhole={() => dispatch("param.set", { key: `airhole:${sel.id}`, value: !sel.airHoleOpen })}
+            onStopcock={(v) => dispatch("param.set", { key: `stopcock:${sel.id}`, value: v })}
+            onRead={() => setLens(`read:${sel.id}`)}
+          />
+        )}
+      </Glass>
+    ) : null;
+
+  // One short line under the bench (studio): what is happening or what to do next.
+  const stripText: ReactNode = status ? (
+    <span className="text-[#3de8a8]">{status}</span>
+  ) : stripMessage ? (
+    stripMessage
+  ) : readOnly ? null : pourTarget?.mode === "pour" && pouring ? (
+    <>
+      <MoveDown className="h-4 w-4 text-[#39d6ff]" /> Pouring… {fmtMl(poured)} mL so far
+    </>
+  ) : pourTarget?.mode === "pour" ? (
+    <>
+      <MoveDown className="h-4 w-4 text-[#39d6ff]" /> Press <b className="mx-1 text-white">Pour</b> in the panel (or press and hold on the bench)
+    </>
+  ) : pourTarget ? (
+    <>
+      <Droplet className="h-4 w-4 text-[#39d6ff]" /> {pourTarget.mode === "drop" ? "Press Add one drop, or tap the bench" : "Press Let it drain"}
+    </>
+  ) : choosing ? (
+    <>
+      <span className="h-2 w-2 rounded-full bg-[#39d6ff] motion-safe:animate-pulse" />
+      {guide ? `Now click the ${lowerFirst(state.items[guide]?.label) ?? "glowing vessel"}` : `Click where it goes (or drag it there)`}
+    </>
+  ) : !sel ? (
+    <>
+      <Hand className="h-4 w-4 text-[#39d6ff]" />
+      {guide ? `Pick up the ${lowerFirst(state.items[guide]?.label) ?? "glowing item"}` : "Click a bottle or vessel to pick it up"}
+    </>
+  ) : null;
+
+  const bench = (
+    <>
       <Bench3D
         state={state}
         cues={session.cues}
         selected={choosing && cursor ? cursor : selected}
         targets={glow}
+        rings={readOnly ? [] : rings}
+        labels={labels}
         onPick={onPick}
         onBackground={() => !choosing && !pourTarget && putDown()}
         onPlace={(id, x, z, socket) => dispatch("equipment.place", { equipmentId: id, x, y: z, ...(socket ? { socket } : {}) })}
@@ -684,6 +889,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         onDropOnto={onDropOnto}
         mixing={mixOnLive ? { id: mixOnLive.target, kind: mixOnLive.kind } : mix && mixTarget ? { id: mixTarget.id, kind: mix } : null}
         frame={frame ?? null}
+        {...(onUserCamera ? { onUserCamera } : {})}
         pour={pourAnim}
         quality={quality}
         onQuality={setQuality}
@@ -692,7 +898,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
         <PourStream state={state} pour={pourAnim} />
       </Bench3D>
 
-      {/* drag-to-tilt pad over the bench while pouring */}
+      {/* drag-to-tilt pad over the bench while pouring (optional: the panel has a Pour button) */}
       {!readOnly && pourTarget && (
         <div
           className={cx("absolute inset-0 z-[5]", pourTarget.mode === "pour" ? "cursor-ns-resize" : "cursor-pointer")}
@@ -716,175 +922,138 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
 
       {overlay}
 
+      <AnimatePresence>
+        {lens && (
+          <ReadingLens
+            spec={lens}
+            items={state.items}
+            onCancel={() => setLens(null)}
+            onRead={(instrument, value, trueValue, unit) => {
+              dispatch("measure.read", { instrument, reading: { key: instrument, value, unit }, trueValue });
+              setLens(null);
+            }}
+            onDraw={(from, into, volumeMl) => {
+              dispatch("liquid.draw", { from, into, volumeMl });
+              setLens(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+
+  if (studio) {
+    return (
+      <div className={cx("flex h-full w-full flex-col gap-2 font-sans", className)} aria-label="Lab bench">
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl bg-[#0b1530]">{bench}</div>
+
+        {/* status strip: one line, never on top of the bench */}
+        {!readOnly && (
+          <div className="flex min-h-[38px] items-center gap-2 px-1">
+            <div className="flex min-w-0 flex-1 items-center justify-center gap-2 truncate text-center text-[14px] font-semibold text-[#dbe7ff]" role="status" aria-live="polite">
+              {stripText}
+            </div>
+            {stripExtra}
+          </div>
+        )}
+
+        {/* the in-hand card and readouts: in the side panel when the page gives a slot */}
+        {!readOnly && (readouts || handCard) && (handSlot ? createPortal(<div className="space-y-2">{readouts}{handCard}</div>, handSlot) : <div className="max-h-[40%] space-y-2 overflow-y-auto">{readouts}{handCard}</div>)}
+
+        {/* tool dock */}
+        {!readOnly && (
+          <div className="flex justify-center">
+            <div className="max-w-full overflow-x-auto rounded-[22px] [scrollbar-width:none]">
+              <Glass radius="xl" className="flex w-max items-center gap-1 p-1.5" role="toolbar" aria-label="Bench tools">
+                {(["stir", "swirl", "shake"] as const)
+                  .filter((k) => k !== "shake" || mixOn?.kind === "shake" || mixTarget?.kind === "test_tube" || mixTarget?.kind === "boiling_tube")
+                  .map((k) => {
+                    const on = mixOn?.kind === k;
+                    const name = k[0]!.toUpperCase() + k.slice(1);
+                    const why = mixTarget ? (k === "stir" ? "Stir needs a beaker and a glass rod on the bench" : k === "swirl" ? "Swirl a flask or beaker" : "Shake a test tube") : "Put some liquid in a vessel first";
+                    return (
+                      <DockButton
+                        key={k}
+                        icon={k === "shake" ? <Vibrate /> : k === "stir" ? <RotateCw /> : <Wind />}
+                        label={on ? "Stop" : name}
+                        kbd={k === "swirl" ? "W" : k === "shake" ? "K" : "S"}
+                        tone={on ? "on" : "default"}
+                        disabled={!on && !canMix(k)}
+                        aria-pressed={on}
+                        title={on ? `Stop ${k}ing` : canMix(k) && mixTarget ? `${name} the ${mixTarget.label.toLowerCase()} (click again to stop)` : why}
+                        onClick={() => toggleMix(k)}
+                      />
+                    );
+                  })}
+                <DockSeparator />
+                <DockButton
+                  icon={<Flame />}
+                  label={burner?.gasOn ? "Heat off" : "Heat"}
+                  tone={burner?.gasOn ? "hot" : burner && guide === burner.id ? "on" : "default"}
+                  disabled={!burner}
+                  title={burner ? (burner.gasOn ? "Turn the Bunsen burner off" : "Light the Bunsen burner") : "No heating in this experiment"}
+                  onClick={() => burner && dispatch("heat.set", { target: burner.id, powerPct: burner.gasOn ? 0 : 100 })}
+                />
+                {burner?.gasOn && <DockButton icon={<Wind />} label={burner.airHoleOpen ? "Air open" : "Air shut"} tone={burner.airHoleOpen ? "on" : "default"} onClick={() => dispatch("param.set", { key: `airhole:${burner.id}`, value: !burner.airHoleOpen })} />}
+                <DockButton
+                  icon={<Snowflake />}
+                  label="Ice bath"
+                  tone={mixTarget?.inIceBath ? "on" : "default"}
+                  disabled={!mixTarget}
+                  aria-pressed={!!mixTarget?.inIceBath}
+                  title={mixTarget ? (mixTarget.inIceBath ? `Take the ${mixTarget.label.toLowerCase()} out of the ice` : `Stand the ${mixTarget.label.toLowerCase()} in ice to cool it`) : "Put some liquid in a vessel first"}
+                  onClick={() => mixTarget && dispatch("cool.set", { target: mixTarget.id, method: mixTarget.inIceBath ? "air" : "ice_bath" })}
+                />
+                {(goggles || items.some(readable)) && <DockSeparator />}
+                {goggles && (
+                  <DockButton
+                    icon={<Glasses />}
+                    label="Goggles"
+                    tone={guide === goggles.id ? "on" : "default"}
+                    onClick={() => {
+                      dispatch("equipment.place", { equipmentId: goggles.id, x: 0, y: 0, socket: "worn" });
+                      labSound.clink(0.4);
+                    }}
+                  />
+                )}
+                {items.some(readable) && (
+                  <DockButton icon={<Eye />} label="Read" kbd="R" disabled={!sel || !readable(sel)} title={sel && readable(sel) ? `Read the ${sel.label.toLowerCase()}` : "Pick up a thermometer, burette or cylinder to read it"} onClick={() => sel && setLens(`read:${sel.id}`)} />
+                )}
+                {dockExtra && <DockSeparator />}
+                {dockExtra}
+              </Glass>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={cx("relative h-full w-full overflow-hidden rounded-xl bg-[#0b1530] font-sans", className)} aria-label="Lab bench">
+      {bench}
+
       {/* anchored readouts for the vessel being worked on */}
-      {focus && focusLook && (focus.liquid?.volumeMl ?? 0) > 0 && (
-        <div className={cx("pointer-events-none absolute left-3 top-3 z-[6] flex gap-2", studio && sel && "max-md:hidden")}>
-          <Readout label={`${focus.label} · volume`} value={fmtMl(focusLook.volumeMl)} unit="mL" />
-          <Readout label="Temperature" value={focusLook.tempC.toFixed(1)} unit="°" delta={Math.abs(focusLook.tempC - 22) >= 0.3 ? `${focusLook.tempC > 22 ? "▲" : "▼"} ${Math.abs(focusLook.tempC - 22).toFixed(1)}` : null} tone={focusLook.tempC > 22 ? "up" : "down"} />
-        </div>
-      )}
+      {readouts && <div className="pointer-events-none absolute left-3 top-3 z-[6]">{readouts}</div>}
 
       {/* the card beside the thing in hand */}
       <AnimatePresence>
-        {!readOnly && sel && (
-          <motion.div key={sel.id} initial={reduced ? false : { opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 14 }} transition={{ duration: 0.18 }} className={cx("absolute right-3 top-3 z-10 w-[min(272px,calc(100%-24px))] overflow-y-auto rounded-[18px] [scrollbar-width:thin]", studio ? "max-h-[calc(100%-140px)]" : "max-h-[calc(100%-96px)]")}>
-            <Glass className="p-3" role="region" aria-label={`Tools for ${sel.label}`}>
-              {pourTarget ? (
-                <PourCard
-                  from={sel}
-                  to={toItem}
-                  mode={pourTarget.mode}
-                  tilt={tilt}
-                  rate={liveRate}
-                  rateTone={rateTone}
-                  band={band}
-                  speed={speed}
-                  setSpeed={setSpeed}
-                  amount={amount}
-                  setAmount={setAmount}
-                  poured={poured}
-                  available={available}
-                  pouring={pouring}
-                  onAuto={() => {
-                    if (pourTarget.mode === "drop") return dropOnce();
-                    if (speed === "custom") setSpeed("steady");
-                    pourRef.current.poured = 0;
-                    setPoured(0);
-                    setPouring(true);
-                  }}
-                  onStop={() => setPouring(false)}
-                  onDropwise={() => {
-                    setSpeed("drop");
-                    setPouring(true);
-                  }}
-                  onChange={() => {
-                    setPouring(false);
-                    setPourTarget(null);
-                  }}
-                  onPutDown={putDown}
-                />
-              ) : (
-                <HandCard
-                  item={sel}
-                  verbs={verbs}
-                  active={activeVerb}
-                  setVerb={setVerb}
-                  targetsCount={targets.length}
-                  onFlame={flameIt}
-                  onExtra={extraNow}
-                  onPutDown={putDown}
-                  onGoggles={() => {
-                    dispatch("equipment.place", { equipmentId: sel.id, x: 0, y: 0, socket: "worn" });
-                    labSound.clink(0.4);
-                    putDown();
-                  }}
-                  onGas={() => dispatch("heat.set", { target: sel.id, powerPct: sel.gasOn ? 0 : 100 })}
-                  onAirhole={() => dispatch("param.set", { key: `airhole:${sel.id}`, value: !sel.airHoleOpen })}
-                  onStopcock={(v) => dispatch("param.set", { key: `stopcock:${sel.id}`, value: v })}
-                  onRead={() => setLens(`read:${sel.id}`)}
-                />
-              )}
-            </Glass>
+        {handCard && sel && (
+          <motion.div key={sel.id} initial={reduced ? false : { opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 14 }} transition={{ duration: 0.18 }} className="absolute right-3 top-3 z-10 max-h-[calc(100%-96px)] w-[min(272px,calc(100%-24px))] overflow-y-auto rounded-[18px] [scrollbar-width:thin]">
+            {handCard}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* first-time hint */}
-      {!readOnly && !sel && (
-        <div className={cx("pointer-events-none absolute left-1/2 z-[6] w-max max-w-[calc(100%-24px)] -translate-x-1/2", studio ? "bottom-[84px]" : "top-3")}>
+      {!readOnly && stripText && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-[6] w-max max-w-[calc(100%-24px)] -translate-x-1/2">
           <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-[#dbe7ff]">
-            <Hand className="h-4 w-4 text-[#39d6ff]" />
-            {guide ? `${studio ? "Drag or click" : "Pick up"} the glowing ${state.items[guide]?.label.toLowerCase() ?? "item"}` : "Click a bottle or vessel to pick it up"}
+            {stripText}
           </Glass>
         </div>
       )}
-      {!readOnly && choosing && (
-        <div className={cx("pointer-events-none absolute left-1/2 z-[6] w-max max-w-[calc(100%-24px)] -translate-x-1/2", studio ? "bottom-[84px]" : "top-3")}>
-          <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-[#dbe7ff]">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-[#39d6ff]" />
-            Drag it onto a glowing {activeVerb?.id === "draw" ? "bottle" : "vessel"}, or click one
-          </Glass>
-        </div>
-      )}
-      {!readOnly && pourTarget?.mode === "pour" && !pouring && (
-        <div className={cx("pointer-events-none absolute left-1/2 z-[6] w-max max-w-[calc(100%-24px)] -translate-x-1/2", studio ? "bottom-[84px]" : "top-3")}>
-          <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-[#dbe7ff]">
-            <MoveDown className="h-4 w-4 text-[#39d6ff]" /> Press and hold on the bench to pour · drag down to tilt more
-          </Glass>
-        </div>
-      )}
-      <AnimatePresence>
-        {status && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={cx("pointer-events-none absolute left-1/2 z-[7] -translate-x-1/2", studio ? "bottom-[128px]" : "top-16")} role="status">
-            <Glass radius="md" className="px-3 py-1.5 text-[13px] font-semibold text-[#3de8a8]">{status}</Glass>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* bottom tool dock */}
-      {!readOnly && studio && (
-        <div className="absolute bottom-3 left-1/2 z-10 max-w-[calc(100%-16px)] -translate-x-1/2 overflow-x-auto rounded-[22px] [scrollbar-width:none]">
-          <Glass radius="xl" className="flex w-max items-center gap-1 p-1.5" role="toolbar" aria-label="Bench tools">
-            {(["stir", "swirl", "shake"] as const)
-              .filter((k) => k !== "shake" || mixOn?.kind === "shake" || mixTarget?.kind === "test_tube" || mixTarget?.kind === "boiling_tube")
-              .map((k) => {
-                const on = mixOn?.kind === k;
-                const name = k[0]!.toUpperCase() + k.slice(1);
-                const why = mixTarget ? (k === "stir" ? "Stir needs a beaker and a glass rod on the bench" : k === "swirl" ? "Swirl a flask or beaker" : "Shake a test tube") : "Put some liquid in a vessel first";
-                return (
-                  <DockButton
-                    key={k}
-                    icon={k === "shake" ? <Vibrate /> : k === "stir" ? <RotateCw /> : <Wind />}
-                    label={on ? "Stop" : name}
-                    kbd={k === "swirl" ? "W" : k === "shake" ? "K" : "S"}
-                    tone={on ? "on" : "default"}
-                    disabled={!on && !canMix(k)}
-                    aria-pressed={on}
-                    title={on ? `Stop ${k}ing` : canMix(k) && mixTarget ? `${name} the ${mixTarget.label.toLowerCase()} (click again to stop)` : why}
-                    onClick={() => toggleMix(k)}
-                  />
-                );
-              })}
-            <DockSeparator />
-            <DockButton
-              icon={<Flame />}
-              label={burner?.gasOn ? "Heat off" : "Heat"}
-              tone={burner?.gasOn ? "hot" : burner && guide === burner.id ? "on" : "default"}
-              disabled={!burner}
-              title={burner ? (burner.gasOn ? "Turn the Bunsen burner off" : "Light the Bunsen burner") : "No heating in this experiment"}
-              onClick={() => burner && dispatch("heat.set", { target: burner.id, powerPct: burner.gasOn ? 0 : 100 })}
-            />
-            {burner?.gasOn && <DockButton icon={<Wind />} label={burner.airHoleOpen ? "Air open" : "Air shut"} tone={burner.airHoleOpen ? "on" : "default"} onClick={() => dispatch("param.set", { key: `airhole:${burner.id}`, value: !burner.airHoleOpen })} />}
-            <DockButton
-              icon={<Snowflake />}
-              label="Ice bath"
-              tone={mixTarget?.inIceBath ? "on" : "default"}
-              disabled={!mixTarget}
-              aria-pressed={!!mixTarget?.inIceBath}
-              title={mixTarget ? (mixTarget.inIceBath ? `Take the ${mixTarget.label.toLowerCase()} out of the ice` : `Stand the ${mixTarget.label.toLowerCase()} in ice to cool it`) : "Put some liquid in a vessel first"}
-              onClick={() => mixTarget && dispatch("cool.set", { target: mixTarget.id, method: mixTarget.inIceBath ? "air" : "ice_bath" })}
-            />
-            {(goggles || items.some(readable)) && <DockSeparator />}
-            {goggles && (
-              <DockButton
-                icon={<Glasses />}
-                label="Goggles"
-                tone={guide === goggles.id ? "on" : "default"}
-                onClick={() => {
-                  dispatch("equipment.place", { equipmentId: goggles.id, x: 0, y: 0, socket: "worn" });
-                  labSound.clink(0.4);
-                }}
-              />
-            )}
-            {items.some(readable) && (
-              <DockButton icon={<Eye />} label="Read" kbd="R" disabled={!sel || !readable(sel)} title={sel && readable(sel) ? `Read the ${sel.label.toLowerCase()}` : "Pick up a thermometer, burette or cylinder to read it"} onClick={() => sel && setLens(`read:${sel.id}`)} />
-            )}
-            {dockExtra && <DockSeparator />}
-            {dockExtra}
-          </Glass>
-        </div>
-      )}
-      {!readOnly && !studio && (
+      {!readOnly && (
         <div className="absolute bottom-3 left-1/2 z-10 max-w-[calc(100%-24px)] -translate-x-1/2 overflow-x-auto">
           <Glass radius="xl" className="flex items-center gap-1 p-2" role="toolbar" aria-label="Bench tools">
             {(["swirl", "stir", "shake"] as const).map((k) => (
@@ -923,28 +1092,6 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
           </Glass>
         </div>
       )}
-
-      <AnimatePresence>
-        {lens && (
-          <ReadingLens
-            spec={lens}
-            items={state.items}
-            onCancel={() => setLens(null)}
-            onRead={(instrument, value, trueValue, unit) => {
-              dispatch("measure.read", { instrument, reading: { key: instrument, value, unit }, trueValue });
-              setLens(null);
-            }}
-            onDraw={(from, into, volumeMl) => {
-              dispatch("liquid.draw", { from, into, volumeMl });
-              setLens(null);
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      <div className={cx("pointer-events-none absolute bottom-[86px] right-3 hidden text-[11px] text-white/35", !studio && "sm:block")}>
-        {quality === "lite" ? "Lite graphics" : "High graphics"} · drag to look around · scroll to zoom
-      </div>
     </div>
   );
 }
@@ -962,15 +1109,15 @@ function ItemHeader({ item, sub }: { item: Item; sub?: string }) {
     <div className="flex items-start gap-2.5">
       <span className="mt-0.5 h-[14px] w-[14px] shrink-0 rounded-[4px] ring-1 ring-white/20" style={{ background: r?.hex ?? (l ? undefined : "#334155") }} />
       <div className="min-w-0 flex-1">
-        <div className="truncate font-heading text-[14px] font-bold">{sub ?? item.label}</div>
-        <div className="font-mono text-[11.5px] text-[#8fa6d1]">
+        <div className="truncate font-heading text-[16px] font-bold">{sub ?? item.label}</div>
+        <div className="text-[13px] text-[#a9bde4]">
           {r ? `${r.formula} · ` : ""}
           {item.liquid ? `${fmtMl(item.liquid.volumeMl)} mL` : KINDS[item.kind].label}
         </div>
         {r && r.hazards.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {r.hazards.map((h) => (
-              <span key={h} className="rounded-md bg-[rgba(255,91,107,.14)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#ff9b9b] ring-1 ring-inset ring-[rgba(255,91,107,.35)]">
+              <span key={h} className="rounded-md bg-[rgba(255,91,107,.14)] px-1.5 py-0.5 text-[11.5px] font-bold uppercase tracking-wide text-[#ff9b9b] ring-1 ring-inset ring-[rgba(255,91,107,.35)]">
                 {h}
               </span>
             ))}
@@ -1001,7 +1148,7 @@ function HandCard(p: {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Kicker>{p.verbs.length ? "In your hand" : "Selected"}</Kicker>
-        <button onClick={p.onPutDown} className="text-[12px] font-semibold text-[#8fa6d1] hover:text-white">
+        <button onClick={p.onPutDown} className="text-[13px] font-semibold text-[#8fa6d1] hover:text-white">
           {p.verbs.length ? "Put down" : "Close"}
         </button>
       </div>
@@ -1010,7 +1157,7 @@ function HandCard(p: {
         <Segmented value={p.active!.id} label="What to do with it" size="sm" options={p.verbs.map((v) => ({ id: v.id, label: v.label }))} onChange={p.setVerb} />
       )}
       {p.active && p.active.target && (
-        <p className="text-[12.5px] leading-snug text-[#c8d6f3]">
+        <p className="text-[14px] leading-snug text-[#c8d6f3]">
           {p.targetsCount ? (
             <>
               <b className="text-white">Drag it</b> onto a glowing {p.active.id === "draw" ? "bottle" : "vessel"} (or click one).
@@ -1047,11 +1194,11 @@ function HandCard(p: {
       )}
       {it.kind === "burette_50" && (
         <label className="block">
-          <span className="flex justify-between text-[12px] text-[#8fa6d1]">
+          <span className="flex justify-between text-[13px] text-[#a9bde4]">
             <span>
               Stopcock <Kbd>0</Kbd>–<Kbd>5</Kbd>
             </span>
-            <span className="font-mono">
+            <span className="tabular-nums">
               {Math.round((it.stopcock ?? 0) * 100)}% · {buretteRateMlPerS(it.stopcock ?? 0, false).toFixed(2)} mL/s
             </span>
           </span>
@@ -1079,6 +1226,8 @@ function PourCard(p: {
   setSpeed: (s: Speed) => void;
   amount: number | null;
   setAmount: (v: number | null) => void;
+  /** The amount the current step asks for (offered as the first chip). */
+  stepAmount?: number | null;
   poured: number;
   available: number;
   pouring: boolean;
@@ -1098,14 +1247,14 @@ function PourCard(p: {
     <div className="space-y-2.5">
       <div className="flex items-center gap-2">
         <span className="h-[14px] w-[14px] shrink-0 rounded-[4px]" style={{ background: r?.hex ?? "#ffd23f" }} />
-        <b className="min-w-0 flex-1 truncate font-heading text-[14px]">
+        <b className="min-w-0 flex-1 truncate font-heading text-[16px]">
           {verbing} {r?.formula ?? p.from.label}
         </b>
-        <button onClick={p.onChange} className="text-[12px] font-semibold text-[#8fa6d1] hover:text-white">
+        <button onClick={p.onChange} className="text-[13px] font-semibold text-[#8fa6d1] hover:text-white">
           Change
         </button>
       </div>
-      <div className="text-[12px] text-[#8fa6d1]">
+      <div className="text-[14px] text-[#a9bde4]">
         into <b className="text-white">{p.to?.label}</b>
       </div>
 
@@ -1118,7 +1267,7 @@ function PourCard(p: {
               <div className="font-heading text-[20px] font-bold tabular-nums">
                 {p.rate.toFixed(1)} <span className="text-[13px] text-[#8fa6d1]">mL/s</span>
               </div>
-              <div className="text-[12px] font-semibold" style={{ color: p.rateTone }}>
+              <div className="text-[13px] font-semibold" style={{ color: p.rateTone }}>
                 {p.band !== undefined && p.rate > p.band ? "Too fast!" : p.pouring ? SPEED_LABEL[p.speed] : p.band !== undefined ? `Keep under ${p.band} mL/s` : "Ready"}
               </div>
             </div>
@@ -1141,18 +1290,21 @@ function PourCard(p: {
             </SquareButton>
             <div className="flex h-[38px] min-w-0 flex-1 items-center justify-between rounded-[11px] border border-[rgba(140,180,255,.2)] bg-[rgba(2,8,24,.65)] px-3">
               <b className="font-heading text-[17px] tabular-nums">{amt === null ? "—" : fmtMl(amt)}</b>
-              <small className="text-[11.5px] text-[#8fa6d1]">{amt === null ? "no limit" : "mL target"}</small>
+              <small className="text-[13px] text-[#8fa6d1]">{amt === null ? "no limit" : "mL target"}</small>
             </div>
             <SquareButton aria-label="More" disabled={max <= 0} onClick={() => p.setAmount(Math.min(max, +((amt ?? 0) + step).toFixed(2)))}>
               <Plus className="h-4 w-4" />
             </SquareButton>
           </div>
           <div className="flex gap-1">
-            {[1, 5, 10, 25, 50].filter((v) => v <= max + 1e-6).map((v) => (
-              <button key={v} onClick={() => p.setAmount(amt === v ? null : v)} className={cx("h-[26px] flex-1 rounded-lg font-mono text-[12px] font-semibold", amt === v ? "bg-[rgba(61,139,255,.3)] text-white" : "bg-[rgba(120,160,255,.08)] text-[#a9bde4] hover:text-white")}>
-                {v}
-              </button>
-            ))}
+            {[...new Set([...(p.stepAmount ? [p.stepAmount] : []), 1, 5, 10, 25, 50])]
+              .filter((v) => v <= max + 1e-6)
+              .slice(0, 5)
+              .map((v) => (
+                <button key={v} onClick={() => p.setAmount(amt === v ? null : v)} className={cx("h-[30px] flex-1 rounded-lg text-[13px] font-semibold tabular-nums", amt === v ? "bg-[rgba(61,139,255,.3)] text-white" : "bg-[rgba(120,160,255,.08)] text-[#a9bde4] hover:text-white", v === p.stepAmount && amt !== v && "ring-1 ring-inset ring-[#39d6ff]/60")}>
+                  {v === p.stepAmount ? `${v} mL` : v}
+                </button>
+              ))}
           </div>
           {amt !== null && (
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10" aria-label={`${fmtMl(p.poured)} of ${fmtMl(amt)} mL poured`}>
