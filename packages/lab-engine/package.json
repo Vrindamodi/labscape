@@ -17,15 +17,17 @@
   "dependencies": {
     "@labscape/audio": "workspace:^",
     "@labscape/contracts": "workspace:*",
+    "@labscape/mathlab": "workspace:*",
     "@labscape/motion": "workspace:^",
+    "@labscape/physics": "workspace:*",
     "@labscape/ui": "workspace:^",
     "@react-three/drei": "9.117.0",
     "@react-three/fiber": "8.17.10",
+    "@react-three/postprocessing": "2.16.3",
     "framer-motion": "11.11.17",
     "lucide-react": "0.453.0",
-    "three": "0.169.0",
-    "@labscape/physics": "workspace:*",
-    "@labscape/mathlab": "workspace:*"
+    "postprocessing": "6.36.4",
+    "three": "0.169.0"
   },
   "devDependencies": {
     "@types/node": "22.9.0",

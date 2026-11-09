@@ -6,9 +6,11 @@ import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { ArrowLeft, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Wind, X, Zap } from "lucide-react";
+import { ArrowLeft, Atom, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Wind, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { MicroView } from "./MicroView";
+import { PeriodicDrawer } from "./PeriodicDrawer";
 
 type Speed = "drop" | "slow" | "steady" | "fast";
 const RATE: Record<Speed, number> = { drop: 0.3, slow: 1.5, steady: 4, fast: 9 };
@@ -29,7 +31,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 ];
 const CAP_COLOUR: Record<string, string> = { acid: "#ef4444", alkali: "#3d8bff", salt: "#a855f7", indicator: "#ec4899", metal: "#94a3b8", solid: "#f59e0b", element: "#22c55e" };
 
-const EMPTY_VIEW: Omit<PlaygroundView, "held" | "focus" | "plateC" | "stirring" | "swirling" | "levelMl" | "capacityMl"> = {
+const EMPTY_VIEW: Omit<PlaygroundView, "held" | "focus" | "plateC" | "stirring" | "swirling" | "levelMl" | "capacityMl" | "smell" | "liquidC" | "iceBath" | "reactionPulse" | "sparkPulse"> = {
   colour: "#cfe6ff",
   opacity: 0.05,
   precipitate: null,
@@ -84,7 +86,20 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [swirling, setSwirling] = useState(false);
   const [ignition, setIgnition] = useState(false);
   const [visual, setVisual] = useState(EMPTY_VIEW);
-  const [liveTemp, setLiveTemp] = useState(22);
+  /** The liquid's temperature eases toward what the engine says (heating takes time). */
+  const [liquidC, setLiquidC] = useState(22);
+  const [targetC, setTargetC] = useState(22);
+  const [iceBath, setIceBath] = useState(false);
+  const [smell, setSmell] = useState<{ text: string; colour: string } | null>(null);
+  const [reactionPulse, setReactionPulse] = useState(0);
+  const [sparkPulse, setSparkPulse] = useState(0);
+  const [drawer, setDrawer] = useState<"shelf" | "table">("shelf");
+  const plateRef = useRef(22);
+  useEffect(() => {
+    if (Math.abs(targetC - liquidC) < 0.05) return;
+    const id = window.setInterval(() => setLiquidC((c) => (Math.abs(targetC - c) < 0.08 ? targetC : c + (targetC - c) * 0.07)), 150);
+    return () => window.clearInterval(id);
+  }, [targetC, liquidC]);
   const [ph, setPh] = useState<number | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
   const t0 = useRef(Date.now());
@@ -117,7 +132,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         setCat(c);
         setOnline(c.safetyEngineOnline);
         setPlateC(c.conditions.defaultTemperatureC);
-        setLiveTemp(c.conditions.defaultTemperatureC);
+        setTargetC(c.conditions.defaultTemperatureC);
+        setLiquidC(c.conditions.defaultTemperatureC);
         const first = c.discoveries.findIndex((d) => !loadDiscoveries()[d.id]);
         setMissionIdx(first < 0 ? 0 : first);
       })
@@ -127,6 +143,10 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   }, []);
 
   const later = (ms: number, f: () => void) => timers.current.push(window.setTimeout(f, ms));
+  const showSmell = (text: string, colour: string) => {
+    setSmell({ text, colour });
+    later(9000, () => setSmell((x) => (x?.text === text ? null : x)));
+  };
   const addLog = useCallback((text: string, tone?: LogLine["tone"]) => setLog((l) => [...l, { t: Date.now() - t0.current, text, ...(tone ? { tone } : {}) }].slice(-60)), []);
   const flash = (text: string, tone: "warn" | "bad" | "good" = "warn") => {
     setNote({ text, tone });
@@ -163,7 +183,12 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       const temp = r.measurements.find((m) => m.key === "temperature");
       const phM = r.measurements.find((m) => m.key === "pH");
       setPh(phM ? phM.value : null);
-      if (temp) setLiveTemp(temp.value);
+      if (temp) {
+        setTargetC(temp.value);
+        // Heat from a reaction leaks away: the liquid drifts back to the plate setting.
+        if (Math.abs(temp.value - plateRef.current) > 1) later(14000, () => setTargetC(plateRef.current));
+      }
+      if (r.outcome === "reaction") setReactionPulse((n) => n + 1);
       setGlowTool(p?.neededTool ?? null);
       const base = baseColour(next);
       setVisual((v) => ({ ...v, colour: base.colour, opacity: base.opacity, solid: next.some((x) => x.item.form === "solid") ? { colour: next.find((x) => x.item.form === "solid")!.item.colour, amount: Math.min(1, next.filter((x) => x.item.form === "solid").reduce((a, x) => a + x.amount, 0) / 5) } : null }));
@@ -179,10 +204,15 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
               sound.play("drip");
               break;
             case "gas":
-              setVisual((v) => ({ ...v, gas: Math.min(1, 0.25 + c.ratePerS / 4), gasColour: c.colour ? oklabToHex(c.colour) : null }));
+              setVisual((v) => ({ ...v, gas: Math.min(1, 0.35 + c.ratePerS / 3), gasColour: c.colour ? oklabToHex(c.colour) : null }));
               sound.play("fizz");
-              later(Math.min(9000, c.durationMs), () => setVisual((v) => ({ ...v, gas: 0, gasColour: null })));
-              if (c.smell) addLog(`Smell: ${c.smell} (waft, never sniff)`);
+              sound.loop("fizz", true, 0.7);
+              later(Math.max(5000, Math.min(16000, c.durationMs)), () => {
+                setVisual((v) => ({ ...v, gas: 0, gasColour: null }));
+                sound.loop("fizz", false);
+              });
+              addLog(`${c.gas} gas given off${c.smell ? ` · smell: ${c.smell}` : ""}`);
+              if (c.smell && !/no smell/i.test(c.smell)) showSmell(c.smell, c.colour ? oklabToHex(c.colour) : "#c8f7a5");
               break;
             case "dissolve":
               later(Math.min(4000, c.durationMs), () => setVisual((v) => (v.solid ? { ...v, solid: (c.fraction ?? 1) >= 1 ? null : { ...v.solid, amount: v.solid.amount * (1 - (c.fraction ?? 1)) } } : v)));
@@ -204,7 +234,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
               setVisual((v) => ({ ...v, solid: { colour: oklabToHex(c.colour), amount: Math.max(0.3, v.solid?.amount ?? 0.3) } }));
               break;
             case "temperature":
-              setLiveTemp((t) => (temp ? temp.value : t + c.deltaC));
+              setTargetC((t) => (temp ? temp.value : t + c.deltaC));
               if (Math.abs(c.deltaC) >= 2) sound.play(c.deltaC > 0 ? "sizzle" : "freeze");
               break;
             case "sound":
@@ -214,6 +244,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
               break;
             case "odour":
               addLog(`Smell: ${c.description} (waft, never sniff)`);
+              showSmell(c.description, "#d9f99d");
               break;
             default:
               break;
@@ -237,6 +268,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         }
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [baseColour, found, cat, onDiscoveries, addLog],
   );
 
@@ -395,8 +427,11 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const heatTo = (c: number) => {
     const t = Math.max(cat?.conditions.minTemperatureC ?? 5, Math.min(cat?.conditions.maxTemperatureC ?? 90, c));
     setPlateC(t);
-    setLiveTemp(t);
-    addLog(t > 22 ? `Heated to ${t} °C` : t < 22 ? `Cooled to ${t} °C in an ice bath` : "Hot plate off");
+    plateRef.current = t;
+    setTargetC(t);
+    if (t >= 22) setIceBath(false);
+    sound.play(t > 22 ? "sizzle" : t < 22 ? "freeze" : "click");
+    addLog(t > 22 ? `Hot plate set to ${t} °C` : t < 22 ? `Into an ice bath (${t} °C)` : "Hot plate off");
     reResolve({ temp: t, stir: stirring, ign: ignition });
   };
   const undo = () => {
@@ -414,7 +449,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setPh(null);
     setVisual(EMPTY_VIEW);
     setIgnition(false);
-    setLiveTemp(plateC);
+    setTargetC(plateC);
+    setSmell(null);
     if (!silent) addLog("Emptied and rinsed the beaker");
     sound.play("pour");
   };
@@ -426,6 +462,11 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     levelMl: levelMl + (heldMode === "pour" ? inFlight : 0),
     capacityMl: capacity,
     plateC,
+    liquidC,
+    iceBath,
+    smell: smell ? { colour: smell.colour } : null,
+    reactionPulse,
+    sparkPulse,
     stirring,
     swirling,
     focus,
@@ -510,12 +551,35 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         </Glass>
       )}
 
-      {!focus && <Shelf cat={cat} held={held} onPick={pick} glow={glowTool === "catalyst" ? "mno2-powder" : glowTool === "acid" ? "h2so4" : null} />}
+      {!focus && drawer === "shelf" && <Shelf cat={cat} held={held} onPick={pick} glow={glowTool === "catalyst" ? "mno2-powder" : glowTool === "acid" ? "h2so4" : null} onTable={() => setDrawer("table")} />}
+      {!focus && drawer === "table" && cat && (
+        <PeriodicDrawer
+          elements={cat.substances.filter((x) => x.element)}
+          onClose={() => setDrawer("shelf")}
+          onHold={(it) => {
+            setDrawer("shelf");
+            pick(it);
+          }}
+        />
+      )}
+
+      {/* a smell, made visible */}
+      <AnimatePresence>
+        {smell && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pointer-events-none absolute left-1/2 top-[230px] z-10 -translate-x-1/2 xl:left-[calc(50%+60px)]" role="status">
+            <Glass radius="md" className="max-w-xs px-3.5 py-2.5">
+              <Kicker>Smell</Kicker>
+              <div className="text-[13.5px] font-semibold">{smell.text}</div>
+              <div className="mt-0.5 text-[11.5px] text-[#ffd59a]">Waft it towards you with your hand. Never sniff a beaker directly.</div>
+            </Glass>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* readouts */}
       {levelMl > 0 && (
         <div className="pointer-events-none absolute bottom-[100px] left-1/2 z-10 flex -translate-x-1/2 gap-2 lg:left-[340px] lg:translate-x-0">
-          <Readout label="Temperature" value={liveTemp.toFixed(1)} unit="°" delta={Math.abs(liveTemp - 22) >= 0.5 ? `${liveTemp > 22 ? "▲" : "▼"} ${Math.abs(liveTemp - 22).toFixed(1)}` : null} tone={liveTemp > 22 ? "up" : "down"} />
+          <Readout label="Temperature" value={liquidC.toFixed(1)} unit="°" delta={Math.abs(liquidC - 22) >= 0.5 ? `${liquidC > 22 ? "▲" : "▼"} ${Math.abs(liquidC - 22).toFixed(1)}` : null} tone={liquidC > 22 ? "up" : "down"} />
           {ph !== null && <Readout label="pH" value={ph.toFixed(2)} delta={ph < 6.5 ? "acidic" : ph > 7.5 ? "alkaline" : "neutral"} tone={ph < 6.5 ? "up" : ph > 7.5 ? "down" : "ok"} />}
           <Readout label="Volume" value={fmt(levelMl + inFlight, "mL")} unit="mL" />
         </div>
@@ -559,6 +623,12 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         </Glass>
       )}
 
+      {focus && result?.presentation?.reactions[0]?.participants && (
+        <div className="pointer-events-none absolute right-8 top-[110px] z-10 hidden md:block">
+          <MicroView reactants={result.presentation.reactions[0].participants.reactants} products={result.presentation.reactions[0].participants.products} size={320} />
+        </div>
+      )}
+
       {/* dock */}
       <div className="absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-24px)] -translate-x-1/2 overflow-x-auto">
         <Glass radius="xl" className="flex items-center gap-1 p-2" role="toolbar" aria-label="Bench tools">
@@ -585,12 +655,22 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
             disabled={!tray.length}
             onClick={() => {
               setIgnition(true);
+              setSparkPulse((n) => n + 1);
               sound.play("spark");
               addLog("Held a lit splint to the mouth");
               reResolve({ temp: plateC, stir: stirring, ign: true });
             }}
           />
-          <DockButton icon={<Snowflake />} label="Ice bath" tone={plateC < 15 ? "on" : "default"} onClick={() => heatTo(plateC < 15 ? 22 : 5)} />
+          <DockButton
+            icon={<Snowflake />}
+            label="Ice bath"
+            tone={iceBath ? "on" : "default"}
+            onClick={() => {
+              if (iceBath) return heatTo(22);
+              heatTo(5);
+              setIceBath(true);
+            }}
+          />
           <DockSeparator />
           <DockButton icon={<Undo2 />} label="Undo" disabled={!adds.length || busy} onClick={undo} />
           <DockButton icon={<Eraser />} label="Empty" tone="danger" disabled={!adds.length} onClick={() => empty()} />
@@ -675,7 +755,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
 
 /* ------------------------------------------------------------------ shelf */
 
-function Shelf({ cat, held, onPick, glow }: { cat: CatalogueResponse | null; held: ShelfItem | null; onPick: (it: ShelfItem) => void; glow: string | null }) {
+function Shelf({ cat, held, onPick, glow, onTable }: { cat: CatalogueResponse | null; held: ShelfItem | null; onPick: (it: ShelfItem) => void; glow: string | null; onTable: () => void }) {
   const [q, setQ] = useState("");
   const [f, setF] = useState<Filter>("all");
   const [open, setOpen] = useState(false);
@@ -689,8 +769,12 @@ function Shelf({ cat, held, onPick, glow }: { cat: CatalogueResponse | null; hel
         <FlaskConical className="h-4 w-4" /> Chemicals
       </button>
       <Glass className={cx("absolute bottom-[96px] left-4 top-[84px] z-20 w-[300px] flex-col p-3.5 lg:flex", open ? "flex" : "hidden")} aria-label="Chemicals shelf">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <b className="font-heading text-[16px]">Chemicals</b>
+          <span className="flex-1" />
+          <button onClick={onTable} className="flex h-8 items-center gap-1.5 rounded-[10px] border border-[rgba(140,180,255,.16)] bg-[rgba(120,160,255,.10)] px-2.5 text-[12px] font-semibold text-[#dbe7ff] hover:bg-[rgba(120,160,255,.18)]">
+            <Atom className="h-4 w-4" /> Periodic table
+          </button>
           <button onClick={() => setOpen(false)} className="rounded p-1 text-[#8fa6d1] hover:text-white lg:hidden" aria-label="Close shelf">
             <X className="h-4 w-4" />
           </button>
@@ -882,14 +966,20 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
 
 function HeatButton({ plateC, glow, onHeat }: { plateC: number; glow: boolean; onHeat: (c: number) => void }) {
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<number | null>(null);
+  const shown = draft ?? plateC;
+  const commit = () => {
+    if (draft !== null && draft !== plateC) onHeat(draft);
+    setDraft(null);
+  };
   return (
     <div className="relative">
       <DockButton icon={<Thermometer />} label={plateC > 22 ? `${plateC} °C` : "Heat"} tone={plateC > 22 ? "hot" : glow ? "on" : "default"} className={glow ? "animate-pulse" : ""} onClick={() => setOpen((o) => !o)} aria-expanded={open} />
       {open && (
         <Glass radius="md" className="absolute bottom-[64px] left-1/2 w-56 -translate-x-1/2 p-3">
           <Kicker>Hot plate</Kicker>
-          <div className="mt-1 font-heading text-[20px] font-bold tabular-nums">{plateC} °C</div>
-          <input type="range" min={22} max={90} step={1} value={Math.max(22, plateC)} onChange={(e) => onHeat(Number(e.target.value))} className="mt-2 w-full accent-[#ff8a3d]" aria-label="Hot plate temperature" />
+          <div className="mt-1 font-heading text-[20px] font-bold tabular-nums">{shown} °C</div>
+          <input type="range" min={22} max={90} step={1} value={Math.max(22, shown)} onChange={(e) => setDraft(Number(e.target.value))} onPointerUp={commit} onKeyUp={commit} onBlur={commit} className="mt-2 w-full accent-[#ff8a3d]" aria-label="Hot plate temperature" />
           <div className="mt-2 flex gap-1">
             {[22, 40, 60, 80].map((t) => (
               <button key={t} onClick={() => onHeat(t)} className={cx("h-7 flex-1 rounded-lg font-mono text-[12px] font-semibold", plateC === t ? "bg-[rgba(255,138,61,.3)] text-white" : "bg-white/[0.06] text-[#a9bde4]")}>
@@ -996,6 +1086,11 @@ function SidePanel({ tab, setTab, result, log, tray, online, busy }: { tab: Tab;
               <div key={r.id} className="rounded-[14px] border border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)] p-3">
                 <Kicker>{r.type}</Kicker>
                 <b className="font-heading text-[15px]">{r.name}</b>
+                {r.participants && (
+                  <div className="mt-2 flex justify-center">
+                    <MicroView reactants={r.participants.reactants} products={r.participants.products} size={250} label={false} />
+                  </div>
+                )}
                 {r.participants && (
                   <div className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-[13px]">
                     {r.participants.reactants.map((x, i) => (
