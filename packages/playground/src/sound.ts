@@ -8,6 +8,8 @@ export type SoundCue =
   | "drip"
   | "scoop"
   | "pop"
+  | "squeakyPop"
+  | "tinkle"
   | "bang"
   | "crackle"
   | "sizzle"
@@ -129,6 +131,16 @@ class SoundKit {
       case "pop":
         this.burst(0, 0.12, "lowpass", 2400, 0.8, 0.5, 300);
         this.tone(420, 0, 0.12, "sine", 0.3, 90);
+        break;
+      case "squeakyPop":
+        // The hydrogen test: a sharp crack with a short high squeak riding on it.
+        this.burst(0, 0.1, "bandpass", 2600, 0.9, 0.55, 600);
+        this.tone(1900, 0, 0.16, "square", 0.08, 700);
+        this.tone(380, 0, 0.14, "sine", 0.32, 80);
+        break;
+      case "tinkle":
+        // Crystals forming: a scatter of tiny glassy chimes.
+        for (let i = 0; i < 7; i++) this.tone(2400 + Math.random() * 2600, i * 0.11 + Math.random() * 0.05, 0.22, "sine", 0.04);
         break;
       case "bang":
         this.burst(0, 0.7, "lowpass", 1800, 0.5, 0.9, 80);

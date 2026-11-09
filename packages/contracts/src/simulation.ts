@@ -6,6 +6,7 @@
  * Rule: engines decide WHAT happens; animation layers decide HOW it looks.
  * Nothing (colour change, bubble, precipitate...) is drawn without a cue from an engine.
  *
+ * v0.4.0: `crystals` cue; optional `form` on precipitate and deposit cues.
  * v0.3.0: ignition condition, smoke/flame/condense/skate cues, gas colour + smell,
  * compounds, facts and structured participants.
  * v0.2.0: cues carry optional startMs; added `layers` cue, `fraction` on dissolve,
@@ -92,10 +93,18 @@ export type ObservationCue =
       colour: Oklab;
       turbidity: number;
       settleMs: number;
+      /** v0.4: "crystals" for glittering plates (e.g. lead(II) iodide); default powder. */
+      form?: "powder" | "crystals";
     })
   | (CueBase & { kind: "temperature"; deltaC: number; tauMs: number })
   | (CueBase & { kind: "dissolve"; durationMs: number; fraction?: number })
-  | (CueBase & { kind: "deposit"; colour: Oklab; durationMs: number })
+  | (CueBase & {
+      kind: "deposit";
+      colour: Oklab;
+      durationMs: number;
+      /** v0.4: "crystals" for a sparkly growth (silver tree); default an even coating. */
+      form?: "coating" | "crystals";
+    })
   | (CueBase & { kind: "light"; colour: Oklab; intensity: number; durationMs: number })
   | (CueBase & { kind: "layers"; colour: Oklab; volumeMl: number })
   | (CueBase & {
@@ -109,7 +118,9 @@ export type ObservationCue =
   | (CueBase & { kind: "condense"; colour: Oklab; amount: number; durationMs: number })
   | (CueBase & { kind: "skate"; colour: Oklab; durationMs: number })
   | (CueBase & { kind: "odour"; description: string })
-  | (CueBase & { kind: "sound"; soundId: string });
+  | (CueBase & { kind: "sound"; soundId: string })
+  /** v0.4: crystals growing out of a solution as it evaporates or cools. */
+  | (CueBase & { kind: "crystals"; colour: Oklab; amount: number; durationMs: number; label?: string });
 
 export type ReactionSummary = {
   id: string;

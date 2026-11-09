@@ -324,6 +324,52 @@ class SafetyPipelineTest {
         assertThat(r.presentation().facts()).isNotEmpty();
     }
 
+    private static JsonNode firstCue(SimulationResult r, String kind) {
+        return r.cues().stream().filter(c -> kind.equals(c.get("kind").asText())).findFirst().orElseThrow();
+    }
+
+    @Test
+    void hydrogenPopIsHeardAndLeavesDropletsOnTheGlass() {
+        SimulationResult r = spark(in("el-H", 100), in("el-O", 50));
+        assertThat(r.cues()).anySatisfy(c -> {
+            assertThat(c.get("kind").asText()).isEqualTo("sound");
+            assertThat(c.get("soundId").asText()).isIn("pop", "bang");
+        });
+        JsonNode condense = firstCue(r, "condense");
+        assertThat(condense.get("amount").asDouble()).isGreaterThan(0.3);
+        assertThat(r.presentation().message()).containsIgnoringCase("droplets");
+    }
+
+    @Test
+    void heatingASaltSolutionSteamsAndGrowsCrystals() {
+        SimulationResult cool = mix(22, in("cuso4", 50));
+        assertThat(hasCue(cool, "crystals")).isFalse();
+        assertThat(hasCue(cool, "condense")).isFalse();
+
+        SimulationResult hot = mix(90, in("cuso4", 50));
+        assertThat(hasCue(hot, "condense")).isTrue();
+        JsonNode crystals = firstCue(hot, "crystals");
+        assertThat(crystals.get("label").asText()).contains("copper(II) sulfate");
+        assertThat(hot.presentation().observations()).anySatisfy(o -> assertThat(o).contains("crystals of copper(II) sulfate"));
+    }
+
+    @Test
+    void warmIodineGivesVioletVapour() {
+        SimulationResult r = mix(70, in("el-I", 0.5));
+        assertThat(r.cues()).anySatisfy(c -> {
+            assertThat(c.get("kind").asText()).isEqualTo("smoke");
+            assertThat(c.get("label").asText()).containsIgnoringCase("iodine");
+        });
+    }
+
+    @Test
+    void goldenRainIsCrystallineAndSilverGrowsCrystals() {
+        SimulationResult r = mix(in("pbno3", 10), in("ki", 5));
+        assertThat(firstCue(r, "precipitate").get("form").asText()).isEqualTo("crystals");
+        SimulationResult ag = mix(in("agno3", 20), in("cu-turnings", 1));
+        assertThat(firstCue(ag, "deposit").get("form").asText()).isEqualTo("crystals");
+    }
+
     @Test
     void sodiumAndChlorineMakeSalt() {
         SimulationResult r = mix(in("el-Na", 0.2), in("el-Cl", 100));

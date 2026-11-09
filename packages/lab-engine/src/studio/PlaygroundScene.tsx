@@ -1,4 +1,4 @@
-import { OrbitControls, PerformanceMonitor } from "@react-three/drei";
+import { Html, OrbitControls, PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -21,10 +21,10 @@ export type PlaygroundView = {
   /** Liquid colour (CSS) and how see-through it is (0 clear .. 1 opaque). */
   colour: string;
   opacity: number;
-  /** Suspended precipitate: colour and cloudiness 0..1; settles to the bottom over time. */
-  precipitate: { colour: string; turbidity: number; settled: number } | null;
-  /** Undissolved solid at the bottom (colour, amount 0..1). */
-  solid: { colour: string; amount: number } | null;
+  /** Suspended precipitate: colour and cloudiness 0..1; settles to the bottom over time. Crystals glitter. */
+  precipitate: { colour: string; turbidity: number; settled: number; form?: "powder" | "crystals" } | null;
+  /** Undissolved solid at the bottom (colour, amount 0..1), optionally with a metal coating growing on it. */
+  solid: { colour: string; amount: number; coat?: { colour: string; form: "coating" | "crystals"; durationMs: number; pulse: number } } | null;
   /** Gas bubbling: 0 none .. 1 vigorous; optional coloured gas above the liquid. */
   gas: number;
   gasColour: string | null;
@@ -46,7 +46,30 @@ export type PlaygroundView = {
   /** What is in hand and how it is being used. */
   held: { kind: HeldKind; colour: string; capColour: string; tiltDeg: number; flowing: boolean; label: string } | null;
   focus: boolean;
+
+  /* ---- optional extras: every one may be left out ---- */
+  /** Droplets condensing on the inside of the glass (pulse restarts them). Hot liquid makes them anyway. */
+  condense?: { colour: string; amount: number; pulse: number } | null;
+  /** An explosive pop or bang: flash, fireball and shock ring at the mouth. */
+  blast?: { pulse: number; colour: string; strength: number } | null;
+  /** A new colour swirling through the liquid (makes a colour change obvious). */
+  colourBurst?: { pulse: number; colour: string } | null;
+  /** A metal ball skating over the surface (sodium, potassium...). */
+  skate?: { pulse: number; colour: string; durationMs: number } | null;
+  /** An immiscible layer floating on top (oil). */
+  layer?: { colour: string; volumeMl: number } | null;
+  /** Crystals growing at the waterline and on the bottom. */
+  crystals?: { colour: string; amount: number; pulse: number; durationMs: number } | null;
+  /** Bubble size from the engine's gas cue. */
+  bubble?: "fine" | "medium" | "coarse";
+  /** A thermometer standing in the beaker; targetC is where the liquid is heading. */
+  thermometer?: { targetC: number } | null;
+  /** Short captions shown beside the beaker so words and effects line up. */
+  captions?: SceneCaption[];
 };
+
+/** A caption beside the beaker. `colour` draws a swatch; `from` + `colour` draw a colour change. */
+export type SceneCaption = { id: string; text: string; colour?: string; from?: string; tone?: "info" | "warn" | "bad" };
 
 const U = 0.01;
 const BEAKER = KINDS.beaker_250;
@@ -69,7 +92,7 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker }: { view: Playg
     >
       <PerformanceMonitor onDecline={() => setQuality("lite")} flipflops={2} />
       <Env />
-      <CameraRig focus={view.focus} pulse={view.reactionPulse} reducedMotion={reducedMotion} />
+      <CameraRig focus={view.focus} pulse={view.reactionPulse} blast={view.blast?.pulse ?? 0} reducedMotion={reducedMotion} />
       <hemisphereLight args={["#bcd4ff", "#0b1020", 0.4]} />
       <directionalLight position={[3, 7, 4]} intensity={1.3} castShadow={quality === "high"} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} />
       <pointLight position={[-4, 3.6, -2.5]} intensity={10} color="#3a8cff" distance={12} decay={1.6} />
@@ -83,6 +106,7 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker }: { view: Playg
         <BeakerWithContents view={view} quality={quality} reducedMotion={reducedMotion} />
       </group>
       <TestTubeRack />
+      {view.captions && view.captions.length > 0 && <Captions captions={view.captions} reducedMotion={reducedMotion} />}
       {view.held && <Held held={view.held} view={view} quality={quality} reducedMotion={reducedMotion} />}
       {quality === "high" && (
         <EffectComposer multisampling={4}>
@@ -112,7 +136,7 @@ function Env() {
 }
 
 /** Focus pushes the camera in; each reaction gives it a small kick. */
-function CameraRig({ focus, pulse, reducedMotion }: { focus: boolean; pulse: number; reducedMotion: boolean }) {
+function CameraRig({ focus, pulse, blast, reducedMotion }: { focus: boolean; pulse: number; blast: number; reducedMotion: boolean }) {
   const { camera } = useThree();
   const controls = useRef<{ update: () => void } | null>(null);
   const want = useMemo(() => new THREE.Vector3(), []);
@@ -124,6 +148,10 @@ function CameraRig({ focus, pulse, reducedMotion }: { focus: boolean; pulse: num
   useEffect(() => {
     if (pulse && !reducedMotion) kick.current = 1;
   }, [pulse, reducedMotion]);
+  useEffect(() => {
+    // An explosion shakes the bench harder than an ordinary reaction.
+    if (blast && !reducedMotion) kick.current = 3;
+  }, [blast, reducedMotion]);
   useFrame(({ clock }, dt) => {
     if (moving.current) {
       want.set(0, focus ? 1.45 : 2.3, focus ? 2.6 : 4.6);
@@ -403,6 +431,9 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
   // The bath tops out at 90 °C, so "boiling" here means a hard simmer: it starts gently from 55 °C.
   const simmer = view.levelMl > 1 ? Math.max(0, Math.min(1, (view.liquidC - 55) / 30)) : 0;
   const boiling = simmer > 0.75;
+  const condense = view.condense && view.condense.amount > 0 ? view.condense : null;
+  // Hot liquid steams; the steam condenses into beads on the cooler glass above it.
+  const steamy = view.levelMl > 1 && view.liquidC > 55;
   return (
     <group ref={group}>
       <pointLight ref={glow} position={[0, 0.25, 0]} intensity={0} distance={1.4} decay={2} />
@@ -415,15 +446,25 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
         <meshPhysicalMaterial ref={surfaceMat} color="#ffffff" transparent opacity={0.38} roughness={0} clearcoat={1} envMapIntensity={1.6} depthWrite={false} />
       </mesh>
       {view.precipitate && view.levelMl > 1 && <Precipitate p={view.precipitate} height={h} quality={quality} reducedMotion={reducedMotion} />}
-      {view.solid && view.solid.amount > 0.01 && <SolidLumps colour={view.solid.colour} amount={view.solid.amount} reducedMotion={reducedMotion} />}
-      {((view.gas > 0.01 && view.levelMl > 1) || simmer > 0) && <Bubbles radius={LIQ_R * 0.85} height={h} rate={Math.max(view.gas, simmer * 0.9)} big={boiling && view.gas < 0.2} count={quality === "high" ? 160 : 60} reducedMotion={reducedMotion} />}
+      {view.solid && view.solid.amount > 0.01 && <SolidLumps colour={view.solid.colour} amount={view.solid.amount} coat={view.solid.coat} reducedMotion={reducedMotion} />}
+      {((view.gas > 0.01 && view.levelMl > 1) || simmer > 0) && (
+        <Bubbles radius={LIQ_R * 0.85} height={h} rate={Math.max(view.gas, simmer * 0.9)} big={boiling && view.gas < 0.2} size={view.gas > 0.01 ? BUBBLE_SIZE[view.bubble ?? "fine"] : 1} count={quality === "high" ? 160 : 60} reducedMotion={reducedMotion} />
+      )}
+      {(condense || steamy) && <Droplets amount={Math.max(condense?.amount ?? 0, steamy ? Math.min(1, (view.liquidC - 45) / 40) : 0)} pulse={condense?.pulse ?? 0} hot={steamy} floor={view.levelMl > 0.5 ? 0.012 + h : 0.012} colour={condense?.colour ?? "#d6eeff"} count={quality === "high" ? 130 : 60} reducedMotion={reducedMotion} />}
+      {view.colourBurst && view.levelMl > 1 && !reducedMotion && <InkSwirl pulse={view.colourBurst.pulse} colour={view.colourBurst.colour} top={h} />}
+      {view.skate && view.levelMl > 1 && <Skater pulse={view.skate.pulse} colour={view.skate.colour} durationMs={view.skate.durationMs} top={h} reducedMotion={reducedMotion} />}
+      {view.layer && view.levelMl > 1 && <OilLayer colour={view.layer.colour} fraction={Math.min(0.9, view.layer.volumeMl / Math.max(1, view.levelMl))} height={h} />}
+      {view.crystals && <CrystalGrowth colour={view.crystals.colour} amount={view.crystals.amount} pulse={view.crystals.pulse} durationMs={view.crystals.durationMs} top={view.levelMl > 1 ? h : 0.03} count={quality === "high" ? 90 : 45} reducedMotion={reducedMotion} />}
+      {view.blast && <Blast pulse={view.blast.pulse} colour={view.blast.colour} strength={view.blast.strength} reducedMotion={reducedMotion} />}
+      {view.thermometer && view.levelMl > 0.5 && <Thermometer c={view.liquidC} target={view.thermometer.targetC} reducedMotion={reducedMotion} />}
       {view.precipitate && view.levelMl > 1 && <Cloudiness p={view.precipitate} height={h} reducedMotion={reducedMotion} />}
       {view.gas > 0.01 && view.levelMl > 1 && <Fizz top={h} intensity={view.gas} reducedMotion={reducedMotion} />}
       {view.gasColour && view.gas > 0.01 && <Plume colour={view.gasColour} top={h} intensity={view.gas} reducedMotion={reducedMotion} />}
       {view.smell && <SmellWisps colour={view.smell.colour} reducedMotion={reducedMotion} />}
+      {view.smell && <SmellCloud colour={view.smell.colour} reducedMotion={reducedMotion} />}
       {view.liquidC > 38 && view.levelMl > 1 && <Steam top={h} intensity={Math.min(1, (view.liquidC - 38) / 45)} reducedMotion={reducedMotion} />}
       {view.flame && view.flame.intensity > 0.02 && <Flame colour={view.flame.colour} intensity={view.flame.intensity} reducedMotion={reducedMotion} />}
-      {view.light && view.light.intensity > 0.02 && <pointLight position={[0, BEAKER_H * 0.5, 0]} color={view.light.colour} intensity={8 * view.light.intensity} distance={3} />}
+      {view.light && view.light.intensity > 0.02 && <LightFlash colour={view.light.colour} intensity={view.light.intensity} reducedMotion={reducedMotion} />}
       {view.smoke && view.smoke.density > 0.02 && <Smoke colour={view.smoke.colour} density={view.smoke.density} reducedMotion={reducedMotion} />}
       {view.stirring && view.levelMl > 1 && <StirBar reducedMotion={reducedMotion} />}
       {view.held?.flowing && view.held.kind !== "gas" && view.levelMl > 0.5 && <Splash top={h} colour={view.held.colour} reducedMotion={reducedMotion} />}
@@ -448,7 +489,9 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
 /* ------------------------------------------------------------------ particle effects */
 
 /** Instanced rising bubbles. Rate sets how many are live; boiling makes big rolling ones. */
-function Bubbles({ radius, height, rate, big, count, reducedMotion }: { radius: number; height: number; rate: number; big: boolean; count: number; reducedMotion: boolean }) {
+const BUBBLE_SIZE = { fine: 0.85, medium: 1.35, coarse: 2 } as const;
+
+function Bubbles({ radius, height, rate, big, size = 1, count, reducedMotion }: { radius: number; height: number; rate: number; big: boolean; size?: number; count: number; reducedMotion: boolean }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const seeds = useMemo(() => Array.from({ length: count }, (_, i) => ({ a: (i * 2.399) % (Math.PI * 2), r: Math.sqrt(((i * 0.618) % 1)) * radius, s: 0.35 + ((i * 0.37) % 1) * 0.6, o: (i * 0.173) % 1, size: 0.01 + ((i * 0.53) % 1) * 0.016 })), [count, radius]);
   const m = useMemo(() => new THREE.Object3D(), []);
@@ -465,7 +508,7 @@ function Bubbles({ radius, height, rate, big, count, reducedMotion }: { radius: 
         const wob = Math.sin(t * 8 + i) * 0.008;
         m.position.set(Math.cos(b.a) * b.r + wob, y + 0.015, Math.sin(b.a) * b.r);
         const grow = 0.6 + (y / Math.max(0.01, height)) * 0.8;
-        m.scale.setScalar(b.size * grow * (big ? 2.4 : 1));
+        m.scale.setScalar(b.size * grow * (big ? 2.4 : size));
       }
       m.updateMatrix();
       mesh.setMatrixAt(i, m.matrix);
@@ -547,7 +590,8 @@ function Precipitate({ p, height, quality, reducedMotion }: { p: NonNullable<Pla
   const layer = useRef<THREE.Mesh>(null);
   const layerMat = useRef<THREE.MeshStandardMaterial>(null);
   const n = quality === "high" ? 420 : 160;
-  const seeds = useMemo(() => Array.from({ length: n }, () => ({ a: Math.random() * Math.PI * 2, r: Math.sqrt(Math.random()) * LIQ_R * 0.92, y: Math.random(), sp: 0.4 + Math.random() * 0.8, s: 0.006 + Math.random() * 0.009 })), [n]);
+  const seeds = useMemo(() => Array.from({ length: n }, () => ({ a: Math.random() * Math.PI * 2, r: Math.sqrt(Math.random()) * LIQ_R * 0.92, y: Math.random(), sp: 0.4 + Math.random() * 0.8, s: 0.007 + Math.random() * 0.01, rot: Math.random() * 6.3 })), [n]);
+  const crystal = p.form === "crystals";
   const m = useMemo(() => new THREE.Object3D(), []);
   const settle = useRef(0);
   const col = useMemo(() => new THREE.Color(), []);
@@ -576,7 +620,14 @@ function Precipitate({ p, height, quality, reducedMotion }: { p: NonNullable<Pla
         const yTop = height * (1 - settle.current * 0.92);
         const y = ((s.y - t * 0.02 * s.sp) % 1 + 1) % 1;
         m.position.set(Math.cos(a) * s.r, 0.016 + y * Math.max(0.01, yTop), Math.sin(a) * s.r);
-        m.scale.setScalar(s.s);
+        if (crystal) {
+          // Thin plates that tumble as they fall, catching the light (golden rain).
+          m.rotation.set(s.rot + t * 1.3 * s.sp, s.rot * 0.7, t * 0.9 * s.sp);
+          m.scale.setScalar(s.s * 1.7);
+        } else {
+          m.rotation.set(0, 0, 0);
+          m.scale.setScalar(s.s);
+        }
       }
       m.updateMatrix();
       mesh.setMatrixAt(i, m.matrix);
@@ -586,8 +637,8 @@ function Precipitate({ p, height, quality, reducedMotion }: { p: NonNullable<Pla
   return (
     <>
       <instancedMesh ref={ref} args={[undefined, undefined, n]} renderOrder={2}>
-        <icosahedronGeometry args={[1, 0]} />
-        <meshStandardMaterial ref={mat} color={p.colour} roughness={0.8} transparent opacity={0.9} />
+        {crystal ? <boxGeometry args={[1, 0.16, 0.8]} /> : <icosahedronGeometry args={[1, 0]} />}
+        <meshStandardMaterial ref={mat} color={p.colour} roughness={crystal ? 0.15 : 0.8} metalness={crystal ? 0.55 : 0} emissive={crystal ? p.colour : "#000000"} emissiveIntensity={crystal ? 0.35 : 0} transparent opacity={0.9} />
       </instancedMesh>
       <mesh ref={layer} renderOrder={1}>
         <cylinderGeometry args={[LIQ_R * 0.97, LIQ_R * 0.97, 1, 40]} />
@@ -597,23 +648,88 @@ function Precipitate({ p, height, quality, reducedMotion }: { p: NonNullable<Pla
   );
 }
 
-function SolidLumps({ colour, amount, reducedMotion }: { colour: string; amount: number; reducedMotion: boolean }) {
+const NEEDLES_PER_LUMP = 7;
+
+/**
+ * Undissolved lumps on the floor. A displacement coat grows over them: an even skin (copper on
+ * iron) or, for silver, glittering needles sprouting outwards (the "silver tree").
+ */
+function SolidLumps({ colour, amount, coat, reducedMotion }: { colour: string; amount: number; coat?: NonNullable<PlaygroundView["solid"]>["coat"]; reducedMotion: boolean }) {
   const ref = useRef<THREE.Group>(null);
+  // One shared material for every lump's coat so a single opacity write grows them all.
+  const shell = useMemo(() => new THREE.MeshStandardMaterial({ transparent: true, opacity: 0, depthWrite: false }), []);
+  useEffect(() => () => shell.dispose(), [shell]);
+  useEffect(() => {
+    if (!coat) return;
+    shell.color.set(coat.colour);
+    shell.roughness = coat.form === "crystals" ? 0.25 : 0.85;
+    shell.metalness = coat.form === "crystals" ? 0.8 : 0.35;
+  }, [shell, coat]);
+  const needles = useRef<THREE.InstancedMesh>(null);
   const lumps = useMemo(() => Array.from({ length: 9 }, (_, i) => ({ x: Math.cos(i * 2.4) * LIQ_R * 0.5 * ((i % 3) / 3 + 0.3), z: Math.sin(i * 2.4) * LIQ_R * 0.5 * ((i % 3) / 3 + 0.3), r: i * 0.9, s: 0.025 + (i % 4) * 0.008 })), []);
-  useFrame(({ clock }) => {
-    if (!ref.current || reducedMotion) return;
-    ref.current.children.forEach((c, i) => (c.rotation.y = clock.elapsedTime * 0.1 + i));
-  });
+  const dirs = useMemo(
+    () =>
+      Array.from({ length: lumps.length * NEEDLES_PER_LUMP }, (_, i) => {
+        const d = new THREE.Vector3(Math.sin(i * 2.17) * 0.9, 0.45 + ((i * 0.618) % 1) * 0.8, Math.cos(i * 1.73) * 0.9).normalize();
+        return { d, q: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d), len: 0.025 + ((i * 0.37) % 1) * 0.035 };
+      }),
+    [lumps.length],
+  );
+  const m = useMemo(() => new THREE.Object3D(), []);
+  const start = useRef(-100);
+  const { clock } = useThree();
+  useEffect(() => {
+    if (coat?.pulse) start.current = clock.elapsedTime;
+  }, [coat?.pulse, clock]);
   const shown = Math.max(1, Math.round(lumps.length * Math.min(1, amount)));
+  const k = 0.85 + amount * 0.5;
+  useFrame(({ clock: c }) => {
+    if (ref.current && !reducedMotion) ref.current.children.forEach((ch, i) => (ch.rotation.y = c.elapsedTime * 0.1 + i));
+    const g = !coat ? 0 : reducedMotion ? 1 : Math.min(1, Math.max(0, (c.elapsedTime - start.current) / Math.max(0.5, coat.durationMs / 1000)));
+    shell.opacity = coat ? 0.1 + 0.85 * g : 0;
+    const mesh = needles.current;
+    if (!mesh) return;
+    for (let i = 0; i < dirs.length; i++) {
+      const lump = Math.floor(i / NEEDLES_PER_LUMP);
+      const n = dirs[i]!;
+      const l = lumps[lump]!;
+      if (!coat || coat.form !== "crystals" || lump >= shown) m.scale.setScalar(0);
+      else {
+        const r = l.s * k;
+        const len = n.len * Math.pow(g, 0.7);
+        m.position.set(l.x + n.d.x * (r + len / 2), 0.02 + l.s * 0.5 + n.d.y * (r + len / 2), l.z + n.d.z * (r + len / 2));
+        m.quaternion.copy(n.q);
+        m.scale.set(0.007, Math.max(0.0001, len), 0.007);
+      }
+      m.updateMatrix();
+      mesh.setMatrixAt(i, m.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  });
   return (
-    <group ref={ref}>
-      {lumps.slice(0, shown).map((l, i) => (
-        <mesh key={i} position={[l.x, 0.02 + l.s * 0.5, l.z]} rotation={[l.r, l.r * 0.5, 0]} castShadow>
-          <dodecahedronGeometry args={[l.s * (0.6 + amount * 0.6), 0]} />
-          <meshStandardMaterial color={colour} roughness={0.6} metalness={0.15} />
-        </mesh>
-      ))}
-    </group>
+    <>
+      <group ref={ref}>
+        {lumps.slice(0, shown).map((l, i) => (
+          <group key={i} position={[l.x, 0.02 + l.s * 0.5, l.z]} rotation={[l.r, l.r * 0.5, 0]}>
+            <mesh castShadow>
+              <dodecahedronGeometry args={[l.s * k, 0]} />
+              <meshStandardMaterial color={colour} roughness={0.6} metalness={0.15} />
+            </mesh>
+            {coat && (
+              <mesh scale={1.14} material={shell}>
+                <dodecahedronGeometry args={[l.s * k, 1]} />
+              </mesh>
+            )}
+          </group>
+        ))}
+      </group>
+      {coat?.form === "crystals" && (
+        <instancedMesh ref={needles} args={[undefined, undefined, dirs.length]}>
+          <coneGeometry args={[1, 1, 5]} />
+          <meshStandardMaterial color={coat.colour} metalness={0.9} roughness={0.15} emissive={coat.colour} emissiveIntensity={0.3} />
+        </instancedMesh>
+      )}
+    </>
   );
 }
 
@@ -908,6 +1024,420 @@ function SparkBurst({ pulse, reducedMotion }: { pulse: number; reducedMotion: bo
       </instancedMesh>
     </>
   );
+}
+
+/* ------------------------------------------------------------------ "show what the words say" effects */
+
+/** Seconds since `pulse` last changed (large when it never has). */
+function usePulseStart(pulse: number) {
+  const start = useRef(-1000);
+  const { clock } = useThree();
+  useEffect(() => {
+    if (pulse) start.current = clock.elapsedTime;
+  }, [pulse, clock]);
+  return start;
+}
+
+/**
+ * Condensation: the glass mists over, then the mist gathers into beads on the inside wall that grow
+ * and, once heavy enough, run down. Hot liquid keeps making new ones; when it cools the beads stay
+ * and the big ones trickle back down.
+ */
+function Droplets({ amount, pulse, hot, floor, colour, count, reducedMotion }: { amount: number; pulse: number; hot: boolean; floor: number; colour: string; count: number; reducedMotion: boolean }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const film = useRef<THREE.MeshStandardMaterial>(null);
+  const m = useMemo(() => new THREE.Object3D(), []);
+  const seeds = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => {
+        // Three in five beads sit on the wall facing the camera, where they read best.
+        const front = i % 5 < 3;
+        const a = front ? (((i * 0.618) % 1) - 0.5) * 2.4 : ((i * 0.371) % 1) * Math.PI * 2;
+        return { a, y: (i * 0.4142) % 1, s: 0.55 + ((i * 0.7548) % 1) * 0.75, b: ((i * 0.5698) % 1) * 2.2, runner: i % 4 === 0, acc: 0.18 + ((i * 0.31) % 1) * 0.3, period: 4.5 + ((i * 0.83) % 1) * 3 };
+      }),
+    [count],
+  );
+  const start = usePulseStart(pulse);
+  const wasHot = useRef(false);
+  useFrame(({ clock }) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const now = clock.elapsedTime;
+    // Vapour cooling: keep the beads (as if fully grown) and let the heavy ones run down.
+    if (wasHot.current && !hot) start.current = now - 2.4;
+    wasHot.current = hot;
+    const age = now - start.current;
+    const R = BEAKER_R - 0.016;
+    const top = BEAKER_H - 0.05;
+    const span = Math.max(0.05, top - floor - 0.03);
+    const lim = amount <= 0 ? 0 : Math.round(count * Math.min(1, 0.35 + amount * 0.65));
+    for (let i = 0; i < count; i++) {
+      const s = seeds[i]!;
+      let size = 0;
+      let y = floor + 0.03 + s.y * span;
+      let stretch = 1;
+      if (i < lim) {
+        if (hot) {
+          const t = reducedMotion ? 0.6 * s.period : (now + s.b * 3) % s.period;
+          size = 0.026 * s.s * Math.min(1, t / 1.6);
+          if (s.runner && !reducedMotion && t > 2.2) {
+            const d = 0.5 * s.acc * (t - 2.2) ** 2;
+            y -= d;
+            stretch = 1 + Math.min(1.3, d * 9);
+          }
+        } else if (age >= 0) {
+          const g = reducedMotion ? 1 : Math.min(1, Math.max(0, (age - s.b * 0.6) / 1.2));
+          const fade = age > 45 ? Math.max(0, 1 - (age - 45) / 12) : 1;
+          size = 0.026 * s.s * g * fade;
+          const tt = age - 2 - s.b;
+          if (s.runner && !reducedMotion && tt > 0) {
+            const d = 0.5 * s.acc * tt * tt;
+            y -= d;
+            stretch = 1 + Math.min(1.3, d * 9);
+          }
+        }
+        if (y < floor + 0.012) size = 0; // it has run back into the liquid
+      }
+      m.position.set(Math.sin(s.a) * R, y, Math.cos(s.a) * R);
+      m.rotation.set(0, s.a, 0);
+      // Flattened against the glass, longer when running.
+      m.scale.set(size, size * stretch * 1.1, size * 0.45);
+      m.updateMatrix();
+      mesh.setMatrixAt(i, m.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (film.current) {
+      // A mist film fogs the glass first, then clears as the mist gathers into beads.
+      const mist = hot ? 0.14 * amount : age >= 0 && age < 9 ? 0.4 * amount * Math.min(1, age / 0.4) * Math.max(0, 1 - Math.max(0, age - 0.8) / 6) : 0;
+      film.current.opacity += (mist - film.current.opacity) * (reducedMotion ? 1 : 0.12);
+    }
+  });
+  return (
+    <>
+      <instancedMesh ref={ref} args={[undefined, undefined, count]} renderOrder={5} frustumCulled={false}>
+        <sphereGeometry args={[1, 12, 10]} />
+        <meshStandardMaterial color="#f4fbff" emissive={colour} emissiveIntensity={0.4} roughness={0.04} metalness={0.25} envMapIntensity={2.5} transparent opacity={0.92} />
+      </instancedMesh>
+      <mesh position={[0, 0.04 + (BEAKER_H * 0.9) / 2, 0]} renderOrder={4}>
+        <cylinderGeometry args={[BEAKER_R - 0.01, BEAKER_R - 0.01, BEAKER_H * 0.9, 48, 1, true]} />
+        <meshStandardMaterial ref={film} color="#eef8ff" transparent opacity={0} roughness={1} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+    </>
+  );
+}
+
+/** An explosive pop or bang: a fireball flash, a shock ring racing out from the mouth and a burst of light. */
+function Blast({ pulse, colour, strength, reducedMotion }: { pulse: number; colour: string; strength: number; reducedMotion: boolean }) {
+  const core = useRef<THREE.Mesh>(null);
+  const ring = useRef<THREE.Mesh>(null);
+  const ring2 = useRef<THREE.Mesh>(null);
+  const light = useRef<THREE.PointLight>(null);
+  const start = usePulseStart(pulse);
+  useFrame(({ clock }) => {
+    const age = clock.elapsedTime - start.current;
+    const s = Math.max(0.3, strength);
+    if (core.current) {
+      const life = reducedMotion ? 0.9 : 0.45;
+      core.current.visible = age >= 0 && age < life;
+      if (core.current.visible) {
+        const k = age / life;
+        core.current.scale.setScalar(reducedMotion ? 0.22 * s : (0.12 + k * 0.55) * s);
+        (core.current.material as THREE.MeshBasicMaterial).opacity = reducedMotion ? 0.35 : 0.95 * (1 - k);
+      }
+    }
+    for (const r of [ring.current, ring2.current]) {
+      if (!r) continue;
+      r.visible = !reducedMotion && age >= 0 && age < 0.8;
+      if (r.visible) {
+        r.scale.setScalar(0.25 + age * 2.4 * s);
+        (r.material as THREE.MeshBasicMaterial).opacity = 0.85 * (1 - age / 0.8);
+      }
+    }
+    if (light.current) light.current.intensity = age >= 0 && age < 0.6 ? (reducedMotion ? 4 : 45 * s * Math.max(0, 1 - age * 2.2)) : 0;
+  });
+  return (
+    <group position={[0, BEAKER_H * 0.7, 0]}>
+      <mesh ref={core} visible={false} renderOrder={6}>
+        <sphereGeometry args={[1, 24, 16]} />
+        <meshBasicMaterial color={colour} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh ref={ring} position={[0, BEAKER_H * 0.3, 0]} rotation-x={-Math.PI / 2} visible={false}>
+        <ringGeometry args={[0.9, 1, 64]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh ref={ring2} position={[0, 0.1, 0.05]} visible={false}>
+        <ringGeometry args={[0.92, 1, 64]} />
+        <meshBasicMaterial color={colour} transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      <pointLight ref={light} color={colour} intensity={0} distance={5} />
+    </group>
+  );
+}
+
+/** A flash or glow from the engine's light cue: a bright core in the beaker plus real light on the bench. */
+function LightFlash({ colour, intensity, reducedMotion }: { colour: string; intensity: number; reducedMotion: boolean }) {
+  const core = useRef<THREE.Mesh>(null);
+  const light = useRef<THREE.PointLight>(null);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    // Burning magnesium flickers with a blinding white glare.
+    const flicker = reducedMotion ? 1 : intensity > 0.9 ? 0.8 + Math.sin(t * 41) * 0.12 + Math.sin(t * 67) * 0.08 : 0.92 + Math.sin(t * 13) * 0.08;
+    if (core.current) {
+      core.current.scale.setScalar((0.12 + intensity * 0.22) * flicker);
+      (core.current.material as THREE.MeshBasicMaterial).opacity = Math.min(0.95, 0.35 + intensity * 0.6) * (reducedMotion ? 0.6 : 1);
+    }
+    if (light.current) light.current.intensity = (reducedMotion ? 6 : 22) * intensity * flicker;
+  });
+  return (
+    <group position={[0, BEAKER_H * 0.5, 0]}>
+      <mesh ref={core} renderOrder={6}>
+        <sphereGeometry args={[1, 20, 14]} />
+        <meshBasicMaterial color={colour} transparent opacity={0.6} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <pointLight ref={light} color={colour} intensity={8 * intensity} distance={4} />
+    </group>
+  );
+}
+
+/** A new colour swirling down through the liquid from the surface, so a colour change is obvious. */
+function InkSwirl({ pulse, colour, top }: { pulse: number; colour: string; top: number }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const mat = useRef<THREE.MeshStandardMaterial>(null);
+  const n = 44;
+  const m = useMemo(() => new THREE.Object3D(), []);
+  const start = usePulseStart(pulse);
+  useFrame(({ clock }) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const t = (clock.elapsedTime - start.current) / 2.8;
+    mesh.visible = t >= 0 && t < 1;
+    if (!mesh.visible) return;
+    if (mat.current) mat.current.opacity = 0.8 * (1 - t);
+    for (let i = 0; i < n; i++) {
+      const a = i * 2.4 + t * 3.2;
+      const r = Math.min(LIQ_R * 0.9, 0.02 + (i % 5) * 0.012 + t * LIQ_R * (0.45 + (i % 7) * 0.07));
+      const y = Math.max(0.02, top - 0.01 - t * top * (0.35 + ((i * 0.37) % 1) * 0.65));
+      m.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
+      m.rotation.set(0, -a, 0);
+      const k = 0.03 + t * 0.06;
+      m.scale.set(k * 1.6, k * 0.7, k);
+      m.updateMatrix();
+      mesh.setMatrixAt(i, m.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, n]} renderOrder={2} visible={false}>
+      <sphereGeometry args={[1, 10, 8]} />
+      <meshStandardMaterial ref={mat} color={colour} emissive={colour} emissiveIntensity={0.3} transparent opacity={0} depthWrite={false} roughness={0.6} />
+    </instancedMesh>
+  );
+}
+
+/** A molten metal ball whizzing round the surface, fizzing behind it and shrinking as it reacts. */
+function Skater({ pulse, colour, durationMs, top, reducedMotion }: { pulse: number; colour: string; durationMs: number; top: number; reducedMotion: boolean }) {
+  const ball = useRef<THREE.Mesh>(null);
+  const trail = useRef<THREE.InstancedMesh>(null);
+  const n = 18;
+  const m = useMemo(() => new THREE.Object3D(), []);
+  const start = usePulseStart(pulse);
+  const path = (t: number, out: THREE.Vector3) => out.set(Math.sin(t * 2.3) * LIQ_R * 0.62, top + 0.022, Math.sin(t * 3.1 + 1) * LIQ_R * 0.55);
+  const p = useMemo(() => new THREE.Vector3(), []);
+  useFrame(({ clock }) => {
+    const age = clock.elapsedTime - start.current;
+    const dur = Math.max(1.5, durationMs / 1000);
+    const on = age >= 0 && age < dur;
+    const k = on ? 1 - age / dur : 0;
+    if (ball.current) {
+      ball.current.visible = on;
+      if (on) {
+        path(reducedMotion ? 0 : age, ball.current.position);
+        ball.current.scale.setScalar(0.045 * (0.35 + 0.65 * k));
+      }
+    }
+    const mesh = trail.current;
+    if (!mesh) return;
+    mesh.visible = on && !reducedMotion;
+    if (!mesh.visible) return;
+    for (let i = 0; i < n; i++) {
+      path(Math.max(0, age - i * 0.045), p);
+      m.position.set(p.x + Math.sin(i * 7.1 + age * 20) * 0.01, p.y + 0.004 + ((i * 0.37 + age * 3) % 1) * 0.03, p.z);
+      m.scale.setScalar(0.009 * (1 - i / n) + 0.003);
+      m.updateMatrix();
+      mesh.setMatrixAt(i, m.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+  return (
+    <>
+      <mesh ref={ball} visible={false} castShadow>
+        <sphereGeometry args={[1, 20, 14]} />
+        <meshStandardMaterial color={colour} metalness={1} roughness={0.15} emissive={colour} emissiveIntensity={0.15} />
+      </mesh>
+      <instancedMesh ref={trail} args={[undefined, undefined, n]} visible={false}>
+        <sphereGeometry args={[1, 8, 6]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.85} />
+      </instancedMesh>
+    </>
+  );
+}
+
+/** An immiscible layer (oil) floating on top of the water, with a visible boundary between them. */
+function OilLayer({ colour, fraction, height }: { colour: string; fraction: number; height: number }) {
+  const th = Math.max(0.02, height * fraction);
+  return (
+    <group position={[0, 0.012 + height - th / 2, 0]}>
+      <mesh renderOrder={2}>
+        <cylinderGeometry args={[LIQ_R * 1.002, LIQ_R * 1.002, th, 48]} />
+        <meshPhysicalMaterial color={colour} emissive={colour} emissiveIntensity={0.18} transparent opacity={0.72} roughness={0.05} clearcoat={1} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, -th / 2, 0]} rotation-x={-Math.PI / 2} renderOrder={2}>
+        <ringGeometry args={[LIQ_R * 0.2, LIQ_R * 1.004, 48]} />
+        <meshBasicMaterial color="#5c4a10" transparent opacity={0.35} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
+
+/** Crystals growing as a crust at the waterline and on the bottom of the beaker. */
+function CrystalGrowth({ colour, amount, pulse, durationMs, top, count, reducedMotion }: { colour: string; amount: number; pulse: number; durationMs: number; top: number; count: number; reducedMotion: boolean }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const m = useMemo(() => new THREE.Object3D(), []);
+  const seeds = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => {
+        const rim = i % 10 < 7;
+        const a = i * 2.39996;
+        return { rim, a, r: rim ? LIQ_R * (0.86 + ((i * 0.37) % 1) * 0.13) : Math.sqrt((i * 0.618) % 1) * LIQ_R * 0.8, dy: (((i * 0.53) % 1) - 0.35) * 0.035, s: 0.014 + ((i * 0.71) % 1) * 0.02, b: ((i * 0.29) % 1) * 0.6, rx: i * 0.9, rz: i * 1.7 };
+      }),
+    [count],
+  );
+  const start = usePulseStart(pulse);
+  useFrame(({ clock }) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const age = clock.elapsedTime - start.current;
+    const dur = Math.max(1, durationMs / 1000);
+    const live = Math.round(count * Math.min(1, 0.4 + amount * 0.6));
+    for (let i = 0; i < count; i++) {
+      const s = seeds[i]!;
+      const g = i >= live || age < 0 ? 0 : reducedMotion ? 1 : Math.pow(Math.min(1, Math.max(0, (age / dur - s.b * 0.5) / 0.6)), 0.6);
+      const size = s.s * (0.7 + amount * 0.5) * g;
+      m.position.set(Math.cos(s.a) * s.r, s.rim ? top + s.dy : 0.02 + size * 0.5, Math.sin(s.a) * s.r);
+      m.rotation.set(s.rx, s.a, s.rz);
+      m.scale.set(size, size * 1.45, size);
+      m.updateMatrix();
+      mesh.setMatrixAt(i, m.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, count]} renderOrder={2} castShadow>
+      <octahedronGeometry args={[1, 0]} />
+      <meshStandardMaterial color={colour} emissive={colour} emissiveIntensity={0.25} roughness={0.12} metalness={0.3} flatShading />
+    </instancedMesh>
+  );
+}
+
+/** A smell made visible: soft coloured puffs wafting up and out of the beaker towards you. */
+function SmellCloud({ colour, reducedMotion }: { colour: string; reducedMotion: boolean }) {
+  const ref = useRef<THREE.Group>(null);
+  const n = 12;
+  useFrame(({ clock }) => {
+    const g = ref.current;
+    if (!g) return;
+    g.children.forEach((c, i) => {
+      const t = reducedMotion ? (i + 0.5) / n : (clock.elapsedTime * 0.16 + i / n) % 1;
+      c.position.set(0.05 + t * 0.75 + Math.sin(t * 6 + i) * 0.06, BEAKER_H + 0.04 + t * 0.55 + Math.sin(t * 9 + i * 2) * 0.04, 0.05 + t * 0.45);
+      c.scale.setScalar(0.07 + t * 0.2);
+      ((c as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.3 * Math.sin(Math.PI * t);
+    });
+  });
+  return (
+    <group ref={ref}>
+      {Array.from({ length: n }, (_, i) => (
+        <mesh key={i} renderOrder={5}>
+          <sphereGeometry args={[1, 12, 10]} />
+          <meshStandardMaterial color={colour} emissive={colour} emissiveIntensity={0.25} transparent opacity={0} depthWrite={false} roughness={1} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/** A thermometer standing in the beaker with a live readout above it. */
+function Thermometer({ c, target, reducedMotion }: { c: number; target: number; reducedMotion: boolean }) {
+  const column = useRef<THREE.Mesh>(null);
+  const L = 1.12;
+  const shown = useRef(c);
+  useFrame((_, dt) => {
+    shown.current += (c - shown.current) * (reducedMotion ? 1 : 1 - Math.exp(-dt * 3));
+    if (column.current) {
+      const h = Math.max(0.01, L * 0.9 * Math.min(1, Math.max(0.02, (shown.current + 10) / 110)));
+      column.current.scale.set(1, h, 1);
+      column.current.position.y = 0.03 + h / 2;
+    }
+  });
+  const trend = target - c > 0.4 ? "up" : target - c < -0.4 ? "down" : null;
+  return (
+    <group position={[-BEAKER_R * 0.48, 0.02, -BEAKER_R * 0.4]} rotation-z={0.2}>
+      <mesh position={[0, L / 2, 0]} renderOrder={3}>
+        <cylinderGeometry args={[0.016, 0.016, L, 16]} />
+        <meshPhysicalMaterial color="#eef6ff" transparent opacity={0.35} roughness={0.05} clearcoat={1} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 0.03, 0]}>
+        <sphereGeometry args={[0.024, 16, 12]} />
+        <meshStandardMaterial color="#ff3b3b" emissive="#ff2a2a" emissiveIntensity={0.6} toneMapped={false} />
+      </mesh>
+      <mesh ref={column}>
+        <cylinderGeometry args={[0.0075, 0.0075, 1, 10]} />
+        <meshStandardMaterial color="#ff3b3b" emissive="#ff2a2a" emissiveIntensity={0.6} toneMapped={false} />
+      </mesh>
+      <Html position={[0, L + 0.06, 0]} center zIndexRange={[9, 0]} style={{ pointerEvents: "none" }}>
+        <div style={{ whiteSpace: "nowrap", padding: "3px 8px", borderRadius: 9, background: "rgba(8,16,40,.85)", border: `1px solid ${trend === "up" ? "#ff8a3d" : trend === "down" ? "#7cc4ff" : "rgba(140,180,255,.3)"}`, color: "#fff", font: "700 12px/1.2 Inter, system-ui, sans-serif", fontVariantNumeric: "tabular-nums" }} aria-label={`Liquid temperature ${c.toFixed(1)} degrees`}>
+          🌡 {c.toFixed(1)} °C{trend === "up" ? <span style={{ color: "#ffb36b" }}> ▲</span> : trend === "down" ? <span style={{ color: "#7cc4ff" }}> ▼</span> : null}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+/** Captions beside the beaker: what you are looking at, in words, while it happens. */
+function Captions({ captions, reducedMotion }: { captions: SceneCaption[]; reducedMotion: boolean }) {
+  return (
+    <Html position={[BEAKER_R + 0.12, PLATE_H + 0.05, 0.25]} zIndexRange={[9, 0]} style={{ pointerEvents: "none" }}>
+      <style>{"@keyframes lsCapIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}"}</style>
+      <div style={{ position: "absolute", bottom: 0, left: 0, display: "flex", flexDirection: "column", gap: 6, width: 210 }} role="status" aria-live="polite">
+        {captions.slice(-3).map((c) => (
+          <div
+            key={c.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "6px 9px",
+              borderRadius: 11,
+              background: c.tone === "bad" ? "rgba(70,8,18,.9)" : c.tone === "warn" ? "rgba(60,40,6,.9)" : "rgba(10,20,46,.88)",
+              border: `1px solid ${c.tone === "bad" ? "#ff4d5e" : c.tone === "warn" ? "#ffc23d" : "rgba(140,180,255,.35)"}`,
+              boxShadow: "0 6px 20px -8px rgba(0,0,0,.7)",
+              color: "#eef4ff",
+              font: "600 12.5px/1.3 Inter, system-ui, sans-serif",
+              animation: reducedMotion ? undefined : "lsCapIn .35s ease-out",
+            }}
+          >
+            {c.from && <Swatch colour={c.from} />}
+            {c.from && <span style={{ color: "#8fa6d1" }}>→</span>}
+            {c.colour && <Swatch colour={c.colour} />}
+            <span>{c.text}</span>
+          </div>
+        ))}
+      </div>
+    </Html>
+  );
+}
+
+function Swatch({ colour }: { colour: string }) {
+  return <span style={{ flex: "none", width: 14, height: 14, borderRadius: 4, background: colour, boxShadow: "inset 0 0 0 1px rgba(255,255,255,.35)" }} />;
 }
 
 /* ------------------------------------------------------------------ what is in hand */
