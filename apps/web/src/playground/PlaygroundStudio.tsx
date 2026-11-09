@@ -194,6 +194,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [smell, setSmell] = useState<{ text: string; colour: string } | null>(null);
   const [reactionPulse, setReactionPulse] = useState(0);
   const [sparkPulse, setSparkPulse] = useState(0);
+  /** The spark pulse the Spark button is still lit for (0 = not lit). */
+  const [sparkLit, setSparkLit] = useState(0);
   const [drawer, setDrawer] = useState<"shelf" | "table" | "journal">("shelf");
   /** What the engine says is worth trying next with this beaker (shelf items and bench tools). */
   const [hints, setHints] = useState<TryNextHint[]>([]);
@@ -717,7 +719,12 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const spark = () => {
     if (!tray.length) return;
     setIgnition(true);
-    setSparkPulse((n) => n + 1);
+    // The button lights up only while the splint is at the mouth. `ignition` itself stays set for this
+    // beaker (so stirring or heating afterwards doesn't undo the burn), but that is not a pressed button.
+    const n = sparkPulse + 1;
+    setSparkPulse(n);
+    setSparkLit(n);
+    later(2400, () => setSparkLit((v) => (v === n ? 0 : v)));
     sound.play("spark");
     addLog("Held a lit splint to the mouth");
     reResolve({ temp: plateC, stir: stirring, ign: true });
@@ -1191,7 +1198,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           <DockButton icon={<Wind />} label="Swirl" tone={swirling ? "on" : "default"} disabled={!tray.length} onPointerDown={() => setSwirling(true)} onPointerUp={() => setSwirling(false)} onPointerLeave={() => setSwirling(false)} title="Hold to swirl" />
           <DockSeparator />
           <HeatButton plateC={plateC} glow={needs.includes("heat")} onHeat={heatTo} />
-          <DockButton icon={<Zap />} label="Spark" kbd="F" title="Hold a flame to the beaker (F)" tone={ignition ? "hot" : needs.includes("spark") ? "on" : "default"} className={needs.includes("spark") && !ignition ? "animate-pulse" : ""} disabled={!tray.length} onClick={spark} />
+          <DockButton icon={<Zap />} label="Spark" kbd="F" title="Hold a flame to the beaker (F)" tone={sparkLit ? "hot" : needs.includes("spark") ? "on" : "default"} className={needs.includes("spark") && !ignition ? "animate-pulse" : ""} disabled={!tray.length} onClick={spark} />
           <DockButton icon={<Snowflake />} label="Ice bath" kbd="I" tone={iceBath ? "on" : "default"} onClick={toggleIce} />
           <DockSeparator />
           <DockButton icon={<Undo2 />} label={!adds.length && canRestore ? "Restore" : "Undo"} kbd="Z" title={!adds.length && canRestore ? "Bring the emptied beaker back (Z)" : "Undo the last addition (Z)"} disabled={(!adds.length && !canRestore) || busy} onClick={undo} />
