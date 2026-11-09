@@ -997,7 +997,7 @@ function BenchShelf({ items, glow, held, control }: { items: Item[]; glow: strin
           {r && r.hazards.length > 0 && <i className="absolute -right-1 -top-1 h-3 w-3 rotate-45 rounded-[2px] border-[1.6px] border-[#ff5b6b] bg-white" title={r.hazards.join(", ")} />}
         </span>
         <span className="min-w-0 flex-1">
-          <b className="block truncate text-[14px] font-semibold leading-tight text-white">{it.label}</b>
+          <b className="line-clamp-2 block text-[14px] font-semibold leading-tight text-white" title={it.label}>{it.label}</b>
           <span className="block truncate text-[13px] leading-tight text-[#a9bde4]">{sub}</span>
         </span>
         {held === it.id && <Hand className="h-4 w-4 shrink-0 text-[#6aa8ff]" />}
