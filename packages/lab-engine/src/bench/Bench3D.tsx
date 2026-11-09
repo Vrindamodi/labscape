@@ -15,7 +15,17 @@ export type Quality = "high" | "lite";
 
 export type PourAnim = { from: string; to: string | null; tiltDeg: number; rateMlPerS: number } | null;
 
+/** What the learner is holding: lifted off the bench, carried over `over` and tilted to pour. */
+export type HandState = { id: string; over: string | null; tiltDeg: number } | null;
+export type MixKind = "stir" | "swirl" | "shake";
+
 export type BenchProps = {
+  /** The item in the learner's hand (carried and tilted by direct manipulation). */
+  hand?: HandState;
+  /** The held item was dragged and released over another item. */
+  onDropOnto?: (heldId: string, targetId: string) => void;
+  /** A vessel being stirred, swirled or shaken (animation only; the engine gets the event). */
+  mixing?: { id: string; kind: MixKind } | null;
   state: LabState;
   cues: LiveCue[];
   selected: string | null;
@@ -36,7 +46,7 @@ export function Bench3D(props: BenchProps) {
   return (
     <Canvas
       shadows={props.quality === "high"}
-      dpr={props.quality === "high" ? [1, 2] : [1, 1.25]}
+      dpr={props.quality === "high" ? [1, 1.6] : [1, 1.15]}
       camera={{ position: [0, 4.4, 7.6], fov: 34, near: 0.1, far: 80 }}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
       onPointerMissed={props.onBackground}
@@ -85,6 +95,7 @@ function Scene(p: BenchProps) {
         <ItemNode key={it.id} item={it} {...p} />
       ))}
       <DragPlane {...p} />
+      <HandDragPlane {...p} />
       {p.children}
     </>
   );
@@ -163,39 +174,82 @@ function baseY(item: Item, _state: LabState): number {
   return SOCKET_HEIGHT[kind] ?? 0;
 }
 
-function ItemNode({ item, state, cues, selected, targets, onPick, pour, quality, reducedMotion }: BenchProps & { item: Item }) {
+/** Where a dragged held item currently is (scene units), shared between the drag plane and the item. */
+const handDrag: { active: boolean; x: number; z: number; begin: (() => void) | null } = { active: false, x: 0, z: 0, begin: null };
+
+function ItemNode({ item, state, cues, selected, targets, onPick, pour, hand, mixing, quality, reducedMotion }: BenchProps & { item: Item }) {
   const group = useRef<THREE.Group>(null);
   const isSel = selected === item.id;
   const isTarget = targets.includes(item.id);
-  const pouring = pour?.from === item.id;
-  const target = pouring && pour?.to ? state.items[pour.to] : null;
-  const pos = useMemo(() => new THREE.Vector3(item.x * U, baseY(item, state), item.z * U), [item, state]);
+  const held = hand?.id === item.id;
+  const pouring = pour?.from === item.id || (held && !!hand?.over);
+  const overId = pour?.from === item.id ? pour.to : held ? hand!.over : null;
+  const target = pouring && overId ? state.items[overId] : null;
+  const tiltDeg = pour?.from === item.id ? pour.tiltDeg : held ? hand!.tiltDeg : 0;
+  const mix = mixing?.id === item.id ? mixing.kind : null;
+  const bx = item.x * U, by = baseY(item, state), bz = item.z * U;
+  const want = useMemo(() => new THREE.Vector3(), []);
 
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
     const g = group.current;
     if (!g) return;
-    // Lift on selection; carry over the target while pouring; tilt with the pour.
-    const want = pos.clone();
+    // Rest on the bench; lift into the hand; follow a drag; carry over the target and tilt to pour.
+    want.set(bx, by, bz);
     let tilt = 0;
     if (pouring && target) {
+      // Pour from the side facing the camera's right, lip just above the target's rim.
       want.set(target.x * U + 0.42, baseY(target, state) + lipHeightMm(target.kind) * U + 0.55, target.z * U);
-      tilt = THREE.MathUtils.degToRad(pour!.tiltDeg);
+      tilt = THREE.MathUtils.degToRad(tiltDeg);
+    } else if (held && handDrag.active) {
+      want.set(handDrag.x, 0.55, handDrag.z);
+    } else if (held) {
+      want.set(bx, by + 0.38, bz + 0.25);
     } else if (isSel) want.y += 0.08;
-    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 10);
+    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 12);
     g.position.lerp(want, k);
     g.rotation.z += (tilt - g.rotation.z) * k;
+    // Mixing: swirl traces a small circle, shake rattles side to side, stir rocks gently.
+    if (mix && !reducedMotion) {
+      const t = clock.elapsedTime;
+      if (mix === "swirl") {
+        g.position.x += Math.cos(t * 9) * 0.035;
+        g.position.z += Math.sin(t * 9) * 0.035;
+      } else if (mix === "shake") {
+        g.position.x += Math.sin(t * 38) * 0.05;
+        g.rotation.z = Math.sin(t * 38) * 0.18;
+      } else {
+        g.rotation.y = t * 2.2;
+      }
+    } else if (!mix) g.rotation.y += (0 - g.rotation.y) * k;
   });
 
   const click = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    if (handDrag.active) return;
     onPick(item.id);
   };
 
   return (
-    <group ref={group} position={pos} onClick={click} onPointerOver={(e) => (e.stopPropagation(), (document.body.style.cursor = "pointer"))} onPointerOut={() => (document.body.style.cursor = "")}>
+    <group
+      ref={group}
+      position={[bx, by, bz]}
+      userData={{ itemId: item.id }}
+      onClick={click}
+      onPointerDown={(e) => {
+        // Grab the held item to drag it onto a target.
+        if (!held || hand?.over) return;
+        e.stopPropagation();
+        handDrag.begin?.();
+        handDrag.active = true;
+        handDrag.x = e.point.x;
+        handDrag.z = e.point.z;
+      }}
+      onPointerOver={(e) => (e.stopPropagation(), (document.body.style.cursor = held ? "grab" : "pointer"))}
+      onPointerOut={() => (document.body.style.cursor = "")}
+    >
       <Visual item={item} state={state} cues={cues} quality={quality} reducedMotion={reducedMotion} />
-      {(isSel || isTarget) && <SelectionRing radius={footprint(item.kind)} colour={isSel ? "#2f80ff" : "#22d3ee"} pulse={isTarget} />}
-      {(isSel || isTarget) && (
+      {(isSel || isTarget) && !held && <SelectionRing radius={footprint(item.kind)} colour={isSel ? "#2f80ff" : "#22d3ee"} pulse={isTarget} />}
+      {(isSel || isTarget) && !held && (
         <Html position={[0, Math.max(0.5, lipHeightMm(item.kind) * U + 0.25), 0]} center distanceFactor={9} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
           <div data-highlight-id={item.id} style={{ whiteSpace: "nowrap", padding: "4px 9px", borderRadius: 9, font: "600 12px Inter, sans-serif", color: "#fff", background: isSel ? "rgba(47,128,255,.92)" : "rgba(8,16,38,.85)", border: `1px solid ${isSel ? "#8cbcff" : "#22d3ee"}` }}>
             {item.label}
@@ -232,14 +286,20 @@ function SelectionRing({ radius, colour, pulse }: { radius: number; colour: stri
 
 /* ------------------------------------------------------------------ materials */
 
-function useGlass(quality: Quality) {
-  return useMemo(
-    () =>
-      quality === "high"
-        ? new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.04, transmission: 1, thickness: 0.05, ior: 1.5, clearcoat: 1, envMapIntensity: 1.3, transparent: true, side: THREE.DoubleSide, depthWrite: false })
-        : new THREE.MeshStandardMaterial({ color: "#dbe8ff", roughness: 0.1, metalness: 0, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }),
-    [quality],
-  );
+/** One glass material per quality level, shared by every vessel (a material per item was a big
+ *  part of the demo stutter: each transmission material costs shader work and GPU memory). */
+const GLASS: Partial<Record<Quality, THREE.Material>> = {};
+export function useGlass(quality: Quality) {
+  return (GLASS[quality] ??=
+    quality === "high"
+      ? new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.04, transmission: 1, thickness: 0.05, ior: 1.5, clearcoat: 1, envMapIntensity: 1.3, transparent: true, side: THREE.DoubleSide, depthWrite: false })
+      : new THREE.MeshStandardMaterial({ color: "#dbe8ff", roughness: 0.1, metalness: 0, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }));
+}
+
+/** Disposes a geometry built in render when it is replaced or unmounted. */
+function useDisposable<T extends { dispose: () => void } | null | undefined>(g: T): T {
+  useEffect(() => () => g?.dispose(), [g]);
+  return g;
 }
 
 function lathe(profile: [number, number][], scale = 1, segments = 48) {
@@ -474,6 +534,7 @@ function Vessel({ item, glass, quality, reducedMotion }: { item: Item; glass: TH
   const l = look(item);
   const vol = item.liquid?.volumeMl ?? 0;
   const liquid = useMemo(() => liquidGeometry(item.kind, vol), [item.kind, Math.round(vol * 50)]); // eslint-disable-line react-hooks/exhaustive-deps
+  useDisposable(liquid?.geom);
   const mat = useRef<THREE.MeshPhysicalMaterial>(null);
   const plumeMat = useRef<THREE.MeshStandardMaterial>(null);
   const target = useMemo(() => new THREE.Color(l ? oklabToHex(l.colour) : "#cfe6ff"), [l]);
@@ -722,7 +783,10 @@ export function PourStream({ state, pour }: { state: LabState; pour: PourAnim })
     const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
     const width = Math.min(0.03, 0.004 + Math.sqrt(pour.rateMlPerS) * 0.006);
     return new THREE.TubeGeometry(curve, 24, width, 8, false);
-  }, [from, to, pour, state]);
+    // Rebuild only when the stream visibly changes, not on every engine tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [from?.id, to?.id, pour?.rateMlPerS ? Math.round(pour.rateMlPerS * 4) : 0, to ? Math.round((to.liquid?.volumeMl ?? 0) * 2) : 0]);
+  useDisposable(geom);
   if (!geom) return null;
   return (
     <mesh geometry={geom} renderOrder={4}>
@@ -783,3 +847,81 @@ function DragPlane({ state, selected, draggable, onPlace }: BenchProps) {
     </>
   );
 }
+
+/* ------------------------------------------------------------------ carry the held item */
+
+/**
+ * While something is in hand and not yet over a target, pressing on it and dragging carries it
+ * across the bench; releasing near a valid target hands it to onDropOnto. Orbit is paused for the
+ * duration so the camera does not swing.
+ */
+function HandDragPlane({ hand, state, targets, onDropOnto }: BenchProps) {
+  const controls = useThree((s) => s.controls) as { enabled: boolean } | null;
+  const camera = useThree((s) => s.camera);
+  const dom = useThree((s) => s.gl.domElement);
+  const [, force] = useState(0);
+  const nearRef = useRef<string | null>(null);
+  const active = !!hand && !hand.over && !!onDropOnto;
+  const latest = useRef({ hand, targets, state, onDropOnto });
+  latest.current = { hand, targets, state, onDropOnto };
+
+  useEffect(() => {
+    if (!active) {
+      handDrag.active = false;
+      handDrag.begin = null;
+      return;
+    }
+    const ray = new THREE.Raycaster();
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const hit = new THREE.Vector3();
+    const nearest = (x: number, z: number) => {
+      let best: string | null = null;
+      let d0 = 0.55;
+      for (const id of latest.current.targets) {
+        const t = latest.current.state.items[id];
+        if (!t) continue;
+        const d = Math.hypot(t.x * U - x, t.z * U - z);
+        if (d < d0) {
+          d0 = d;
+          best = id;
+        }
+      }
+      return best;
+    };
+    const move = (e: PointerEvent) => {
+      if (!handDrag.active) return;
+      const r = dom.getBoundingClientRect();
+      ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+      if (!ray.ray.intersectPlane(plane, hit)) return;
+      handDrag.x = hit.x;
+      handDrag.z = hit.z;
+      nearRef.current = nearest(hit.x, hit.z);
+    };
+    const up = () => {
+      if (!handDrag.active) return;
+      handDrag.active = false;
+      if (controls) controls.enabled = true;
+      const near = nearRef.current;
+      nearRef.current = null;
+      const { hand: h, onDropOnto: drop } = latest.current;
+      if (h && near) drop?.(h.id, near);
+      force((n) => n + 1);
+    };
+    // Grabbing the held item pauses orbit straight away, before the camera can start to turn.
+    handDrag.begin = () => {
+      if (controls) controls.enabled = false;
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      if (controls) controls.enabled = true;
+    };
+  }, [active, camera, dom, controls]);
+  return null;
+}
+
+export { Backdrop, BenchTop, Bubbles, SmallFlame, lathe, U as SCENE_UNIT };
