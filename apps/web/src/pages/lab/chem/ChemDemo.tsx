@@ -72,8 +72,10 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
   const t = session.t;
 
   const visual = useMemo(() => content.golden.events.filter((e) => !isAnswer(e)), [content]);
-  const end = (visual[visual.length - 1]?.t ?? content.golden.durationS * 1000) + 2500;
   const beats = content.golden.captions;
+  // Ends after the last action and after the last caption: some captions narrate what happens
+  // while you wait (the slow reactions in metal displacement), long after the last action.
+  const end = Math.max((visual[visual.length - 1]?.t ?? content.golden.durationS * 1000) + 2500, (beats[beats.length - 1]?.t ?? 0) + 3000);
   let beatIdx = -1;
   for (let i = 0; i < beats.length; i++) if (beats[i]!.t <= t) beatIdx = i;
   const beat = beatIdx >= 0 ? beats[beatIdx] : undefined;
