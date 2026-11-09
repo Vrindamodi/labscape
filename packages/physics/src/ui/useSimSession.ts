@@ -1,6 +1,6 @@
 import type { LabEvent, LabEventPayloadMap, LabEventType } from "@labscape/contracts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SimEvaluator } from "../protocol/evaluator";
+import { effectiveEvents, isUndoMarker, lastUndoable, SimEvaluator, UNDO_KEY } from "../protocol/evaluator";
 import type { SimContent, SimFeedback, SimModel, SimNote, SimReport } from "../protocol/types";
 
 export type SimMode = "try" | "demo" | "sandbox";
@@ -26,7 +26,41 @@ export type SimSession<S = unknown> = {
   demo: { t: number; playing: boolean; setPlaying: (p: boolean) => void; seek: (t: number) => void; speed: number; setSpeed: (s: number) => void; duration: number; /** The next scripted event (display only: lets the bench animate toward it). */ upcoming: LabEvent | null };
   /** Restart from scratch (keeps nothing). */
   restart: () => void;
+  /** Try: takes back the last student action (logged as an undo marker). Returns what was undone. */
+  undo: () => LabEvent | null;
+  /** The action undo would take back, or null. */
+  undoable: LabEvent | null;
 };
+
+/** A few words for an action, for "Undone: ..." notes. */
+export function describeAction(e: LabEvent): string {
+  switch (e.type) {
+    case "param.set": {
+      const k = String(e.payload.key);
+      const v = e.payload.value;
+      if (k.startsWith("result:")) return `your answer for ${k.slice(7)} (${v})`;
+      if (k === "switch") return v ? "closing the switch" : "opening the switch";
+      if (typeof v === "boolean") return `${v ? "turning on" : "turning off"} ${k}`;
+      return `setting ${k.replace(/[-:]/g, " ")} to ${v}`;
+    }
+    case "measure.read":
+      return `your reading of ${e.payload.reading.value}${e.payload.reading.unit ? ` ${e.payload.reading.unit}` : ""}`;
+    case "equipment.connect":
+      return "that wire";
+    case "equipment.place":
+      return `placing ${e.payload.equipmentId}`;
+    case "equipment.pickup":
+      return `picking up ${e.payload.equipmentId}`;
+    case "sim.start":
+      return "the launch / release";
+    case "sim.reset":
+      return "the reset";
+    case "timer.mark":
+      return "that mark";
+    default:
+      return "your last action";
+  }
+}
 
 type Options = {
   mode: SimMode;
@@ -37,6 +71,10 @@ type Options = {
   onNote?: (n: SimNote) => void;
   /** Demo mode: play this script instead of the golden run (replays of a real attempt). */
   script?: { t: number; type: LabEventType; payload: unknown }[];
+  /** Demo: start playing at once (default) or wait for setPlaying(true). */
+  autoplay?: boolean;
+  /** Demo: starting playback speed (default 1). */
+  speed?: number;
 };
 
 let uidSeq = 1;
@@ -58,9 +96,20 @@ export function useSimSession<S>(content: SimContent, model: SimModel<S>, opts: 
   const [notes, setNotes] = useState<LiveSimNote[]>([]);
   const rerender = () => force((x) => x + 1);
 
+  /** Re-scores the log as it stands after undos (the evaluator only moves forward). */
+  const rebuild = useCallback(() => {
+    const ev = new SimEvaluator(content, model);
+    for (const e of effectiveEvents(eventsRef.current)) ev.push(e);
+    evalRef.current = ev;
+  }, [content, model]);
+
   const ingest = useCallback((e: LabEvent, live: boolean) => {
-    const r = evalRef.current.push(e);
     eventsRef.current.push(e);
+    if (isUndoMarker(e)) {
+      rebuild();
+      return;
+    }
+    const r = evalRef.current.push(e);
     if (live) {
       if (r.feedback.length) {
         setFeedback((f) => [...f, ...r.feedback]);
@@ -72,18 +121,17 @@ export function useSimSession<S>(content: SimContent, model: SimModel<S>, opts: 
         r.notes.forEach((n) => optsRef.current.onNote?.(n));
       }
     }
-  }, []);
+  }, [rebuild]);
 
   const reset = useCallback(
     (events: LabEvent[]) => {
-      evalRef.current = new SimEvaluator(content, model);
-      eventsRef.current = [];
-      for (const e of [...events].sort((a, b) => a.seq - b.seq)) ingest(e, false);
+      eventsRef.current = [...events].sort((a, b) => a.seq - b.seq);
+      rebuild();
       setFeedback([]);
       setNotes([]);
       rerender();
     },
-    [content, model, ingest],
+    [rebuild],
   );
 
   // Resume: replay the saved log silently and continue the clock after its last event.
@@ -131,8 +179,8 @@ export function useSimSession<S>(content: SimContent, model: SimModel<S>, opts: 
   );
   const duration = opts.script ? (opts.script[opts.script.length - 1]?.t ?? 0) + 3000 : content.golden.durationS * 1000;
   const [demoT, setDemoT] = useState(0);
-  const [playing, setPlaying] = useState(opts.mode === "demo");
-  const [speed, setSpeed] = useState(1);
+  const [playing, setPlaying] = useState(opts.mode === "demo" && opts.autoplay !== false);
+  const [speed, setSpeed] = useState(opts.speed ?? 1);
   const demoIdx = useRef(0);
   const demoTRef = useRef(0);
 
@@ -165,6 +213,16 @@ export function useSimSession<S>(content: SimContent, model: SimModel<S>, opts: 
     return () => cancelAnimationFrame(raf);
   }, [opts.mode, playing, speed, gold, duration, ingest, content.golden.captions]);
 
+  const undoable = opts.mode === "demo" || evalRef.current.stopped ? null : lastUndoable(eventsRef.current);
+  const undo = (): LabEvent | null => {
+    const target = undoable;
+    if (!target || !dispatch("param.set", { key: UNDO_KEY, value: target.seq })) return null;
+    // Mistakes made by that action are taken back too.
+    setFeedback((f) => f.filter((x) => !(x.kind === "deviation" && x.deviation.t === target.t)));
+    setNotes((n) => [...n.slice(-30), { text: `Undone: ${describeAction(target)}.`, tone: "info", uid: uidSeq++, at: performance.now() }]);
+    return target;
+  };
+
   const ev = evalRef.current;
   return {
     content,
@@ -173,7 +231,9 @@ export function useSimSession<S>(content: SimContent, model: SimModel<S>, opts: 
     state: ev.state,
     now: opts.mode === "demo" ? () => demoTRef.current : now,
     dispatch,
-    events: eventsRef.current,
+    events: effectiveEvents(eventsRef.current),
+    undo,
+    undoable,
     feedback,
     notes,
     report: () => ev.report(),

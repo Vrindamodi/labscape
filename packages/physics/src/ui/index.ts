@@ -9,6 +9,8 @@ import type { SimSession } from "./useSimSession";
 export * from "./kit";
 export * from "./interact";
 export * from "./useSimSession";
+export * from "./history";
+export * from "./explain";
 export { ScaleLens } from "./ArchimedesWorkspace";
 
 export type WorkspaceProps = { session: SimSession<any> }; // eslint-disable-line @typescript-eslint/no-explicit-any

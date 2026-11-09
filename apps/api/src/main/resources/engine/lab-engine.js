@@ -6623,14 +6623,18 @@ var LabEngine = (() => {
   function solve(componentsIn, wires) {
     let components = componentsIn.map((c) => ({ ...c }));
     const blown = componentsIn.filter((c) => c.kind === "fuse" && c.blown).map((c) => c.id);
+    const fuseTrip = {};
     for (let pass = 0; pass < 4; pass++) {
       const r = solveOnce(components, wires);
       const newlyBlown = components.filter((c) => c.kind === "fuse" && !c.blown && Math.abs(r.components[c.id]?.current ?? 0) > (c.value ?? 3));
-      if (!newlyBlown.length) return { ...r, blownFuses: blown };
-      newlyBlown.forEach((c) => blown.push(c.id));
+      if (!newlyBlown.length) return { ...r, blownFuses: blown, fuseTrip };
+      newlyBlown.forEach((c) => {
+        blown.push(c.id);
+        fuseTrip[c.id] = Math.abs(r.components[c.id].current);
+      });
       components = components.map((c) => newlyBlown.some((b) => b.id === c.id) ? { ...c, blown: true } : c);
     }
-    return { ...solveOnce(components, wires), blownFuses: blown };
+    return { ...solveOnce(components, wires), blownFuses: blown, fuseTrip };
   }
   function solveOnce(components, wires) {
     const dsu = new DSU();
@@ -6765,7 +6769,8 @@ var LabEngine = (() => {
       const parallel = components.some((o) => o.id !== c.id && o.kind !== "wire" && (nodeOf[`${o.id}.a`] === na && nodeOf[`${o.id}.b`] === nb || nodeOf[`${o.id}.a`] === nb && nodeOf[`${o.id}.b`] === na));
       return !parallel && (count.get(na) ?? 0) > 1 && (count.get(nb) ?? 0) > 1;
     }).map((c) => c.id);
-    return { nodeOf, voltages, components: results, shorted, shortPath, blownFuses: [], open: loads && !anyCurrent && !shorted.length, floating, ammeterAcross, voltmeterInSeries };
+    const bypassed = components.filter((c) => !isSource(c) && c.kind !== "wire" && nodeOf[`${c.id}.a`] === nodeOf[`${c.id}.b`]).map((c) => c.id);
+    return { nodeOf, voltages, components: results, shorted, shortPath, blownFuses: [], open: loads && !anyCurrent && !shorted.length, floating, ammeterAcross, voltmeterInSeries, bypassed };
   }
   var HEAT = { alpha: 4e-3, thermalOhmKPerW: 60, tauS: 25, roomC: 20 };
   function heatStep(tempC, powerW, dtS) {
@@ -10556,11 +10561,18 @@ var LabEngine = (() => {
       };
     }
   };
+  var UNDO_KEY = "__undo";
+  var isUndoMarker = (e) => e.type === "param.set" && e.payload.key === UNDO_KEY;
+  function effectiveEvents(events) {
+    const sorted = [...events].sort((a, b) => a.seq - b.seq);
+    const undone = new Set(sorted.filter(isUndoMarker).map((e) => Number(e.payload.value)));
+    return sorted.filter((e) => !isUndoMarker(e) && !undone.has(e.seq));
+  }
   function runSim(content, model, events) {
     const ev = new SimEvaluator(content, model);
     const feedback = [];
     const notes = [];
-    for (const e of [...events].sort((a, b) => a.seq - b.seq)) {
+    for (const e of effectiveEvents(events)) {
       const r = ev.push(e);
       feedback.push(...r.feedback);
       notes.push(...r.notes);

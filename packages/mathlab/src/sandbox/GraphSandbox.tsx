@@ -1,9 +1,10 @@
-import { Btn, Panel, ParamSlider, sf } from "@labscape/physics";
+import { Btn, GuideCard, Hint, Panel, ParamSlider, sf } from "@labscape/physics";
 import { Eye, EyeOff, Pause, Play, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { compile, parse, ParseError, toLatex, toText, variables, type Node } from "../core/expr";
+import { compile, parse, ParseError, toLatex, toText, typoHints, variables, type Node } from "../core/expr";
 import { slopeAt } from "../core/numeric";
 import { Plot, type Mapper, type View } from "../ui/Plot";
+import { describe, paramEffect } from "./graphExplain";
 
 export type GraphFn = { src: string; colour: string; hidden?: boolean };
 export type GraphBuild = { fns: GraphFn[]; params: Record<string, number>; view?: View };
@@ -102,7 +103,9 @@ export function GraphSandbox({ initial, onChange, renderTex }: { initial?: Graph
   const addFn = () => setB((x) => (x.fns.length >= MAX_FNS ? x : { ...x, fns: [...x.fns, { src: "", colour: COLOURS.find((c) => !x.fns.some((f) => f.colour === c)) ?? COLOURS[0]! }] }));
   const removeFn = (i: number) => setB((x) => ({ ...x, fns: x.fns.filter((_, j) => j !== i) }));
 
-  const visible = b.fns.map((f, i) => ({ f, fn: fns[i] })).filter((v): v is { f: GraphFn; fn: (x: number) => number } => !!v.fn && !v.f.hidden && v.f.src.trim() !== "");
+  const visible = b.fns.map((f, i) => ({ f, fn: fns[i], c: compiled[i]! })).filter((v): v is { f: GraphFn; fn: (x: number) => number; c: Extract<Compiled, { ok: true }> } => !!v.fn && v.c.ok && !v.f.hidden && v.f.src.trim() !== "");
+  /** Letters used by the other functions: the likely meaning of a glued-together typo. */
+  const knownFor = (i: number) => [...new Set(compiled.flatMap((c, j) => (j !== i && c.ok ? c.vars : [])))];
   const crossings = visible.length >= 2 ? rootsIn((x) => visible[0]!.fn(x) - visible[1]!.fn(x), view.x0, view.x1) : [];
 
   const overlay = (m: Mapper) => (
@@ -129,7 +132,18 @@ export function GraphSandbox({ initial, onChange, renderTex }: { initial?: Graph
           <Plot curves={visible.map(({ f, fn }) => ({ f: fn, colour: f.colour, width: 2.5 }))} view={view} onView={setView} height={460} ariaLabel={`Graph of ${visible.map((v) => `y = ${v.f.src}`).join(", ") || "nothing yet"}`} overlay={overlay} />
         </div>
         <ParamSlider label="Trace x" value={probe ?? 0} min={Math.round(view.x0)} max={Math.round(view.x1)} step={0.05} onChange={setProbe} onCommit={setProbe} />
+        <Hint>Trace x picks one x value (the dashed line). Each curve gets a dot there, and "What you're seeing" lists its y and its slope: how many it goes up for 1 step right at that exact point.</Hint>
         <p className="text-xs text-white/45">Drag to pan, scroll or pinch to zoom. Dots mark roots; white rings mark where the first two curves cross.</p>
+        <GuideCard
+          id="graphing"
+          items={[
+            { term: "The grid", text: "x goes across (left = negative, right = positive), y goes up. Every point on a curve is a pair (x, y) that makes the equation true." },
+            { term: "y = ...", text: "Type a rule for y. For each x, the computer works out y and joins the dots. Use * for times and ^ for powers: 2*x^2 means 2 × x²." },
+            { term: "Letters become sliders", text: "Any letter other than x (like m, c, a, b) gets a slider, so you can change it and watch the curve move. Each slider says what increasing it does." },
+            { term: "Dots and rings", text: "A coloured dot on the x-axis is a root: where y = 0. A white ring is where the first two curves meet: there both rules give the same y, which solves f(x) = g(x)." },
+            { term: "Try this", text: "In y = m*x + c, drag m (the steepness) and then c (where it crosses the y-axis). In y = a*x^2 + b*x + c, watch the vertex move as you drag b." },
+          ]}
+        />
       </div>
       <div className="space-y-3">
         <Panel title="Functions" right={<Btn tone="ghost" onClick={addFn} disabled={b.fns.length >= MAX_FNS} title="Add a function"><Plus className="h-4 w-4" /></Btn>}>
@@ -150,6 +164,25 @@ export function GraphSandbox({ initial, onChange, renderTex }: { initial?: Graph
                     </button>
                   </div>
                   {f.src.trim() !== "" && (c.ok ? (renderTex ? <div className="mt-1 overflow-x-auto pl-5 text-sm text-white/80" dangerouslySetInnerHTML={{ __html: renderTex(`y = ${toLatex(c.node)}`) }} /> : <p className="mt-1 pl-5 font-mono text-xs text-white/60">y = {toText(c.node)}</p>) : <p className="mt-1 pl-5 text-xs text-red-300">{c.error}</p>)}
+                  {c.ok &&
+                    typoHints(f.src, knownFor(i)).map((t) => (
+                      <div key={`${t.at}${t.word}`} role="note" className="mt-1.5 ml-5 rounded-lg bg-[#ffc23d]/10 px-2.5 py-1.5 text-xs text-[#ffe3a3] ring-1 ring-inset ring-[#ffc23d]/30">
+                        <p>
+                          Letters typed together are multiplied: <span className="font-mono font-semibold">{t.word}</span> is read as <span className="font-mono font-semibold">{t.parts.join(" × ")}</span>
+                          {t.parts.some((v) => !compiled.some((cc, j) => j !== i && cc.ok && cc.vars.includes(v))) ? ", and each new letter gets its own slider" : ""}.{t.suggestion ? <> Did you mean <span className="font-mono font-semibold">{t.suggestion}</span>?</> : null}
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {t.fixed && (
+                            <button type="button" onClick={() => setFn(i, { src: t.fixed! })} className="rounded-md bg-[#ffc23d]/20 px-2 py-1 font-semibold text-white hover:bg-[#ffc23d]/30">
+                              Use {t.suggestion}
+                            </button>
+                          )}
+                          <button type="button" onClick={() => setFn(i, { src: t.explicit })} className="rounded-md px-2 py-1 font-semibold text-[#ffe3a3] ring-1 ring-inset ring-[#ffc23d]/30 hover:bg-white/[0.06]">
+                            I meant {t.parts.join("×")}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                 </li>
               );
             })}
@@ -159,33 +192,57 @@ export function GraphSandbox({ initial, onChange, renderTex }: { initial?: Graph
           <Panel title="Sliders">
             <div className="space-y-3">
               {paramNames.map((p) => (
-                <div key={p} className="flex items-end gap-2">
-                  <div className="min-w-0 flex-1">
-                    <ParamSlider label={p} value={scope[p]!} min={Math.min(-5, Math.floor(-2 * Math.abs(scope[p]!)))} max={Math.max(5, Math.ceil(2 * Math.abs(scope[p]!)))} step={0.1} onChange={(v) => setB((x) => ({ ...x, params: { ...x.params, [p]: v } }))} onCommit={(v) => setB((x) => ({ ...x, params: { ...x.params, [p]: v } }))} />
+                <div key={p} className="space-y-1">
+                  <div className="flex items-end gap-2">
+                    <div className="min-w-0 flex-1">
+                      <ParamSlider label={p} value={scope[p]!} min={Math.min(-5, Math.floor(-2 * Math.abs(scope[p]!)))} max={Math.max(5, Math.ceil(2 * Math.abs(scope[p]!)))} step={0.1} onChange={(v) => setB((x) => ({ ...x, params: { ...x.params, [p]: v } }))} onCommit={(v) => setB((x) => ({ ...x, params: { ...x.params, [p]: v } }))} />
+                    </div>
+                    <Btn tone={sweep === p ? "primary" : "ghost"} pressed={sweep === p} title={`Sweep ${p}`} onClick={() => setSweep((s) => (s === p ? null : p))}>
+                      {sweep === p ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </Btn>
                   </div>
-                  <Btn tone={sweep === p ? "primary" : "ghost"} pressed={sweep === p} title={`Sweep ${p}`} onClick={() => setSweep((s) => (s === p ? null : p))}>
-                    {sweep === p ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Btn>
+                  {visible
+                    .filter((v) => v.c.vars.includes(p))
+                    .map((v) => (
+                      <p key={v.f.colour} className="flex gap-1.5 text-[11.5px] leading-snug text-white/55">
+                        <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: v.f.colour }} />
+                        {paramEffect(p, scope[p]!, (val) => (x) => v.c.f({ ...scope, [p]: val, x }), v.c.node)}
+                      </p>
+                    ))}
                 </div>
               ))}
             </div>
           </Panel>
         )}
-        <Panel title="Features on screen">
-          <ul className="space-y-1.5 text-sm">
-            {visible.map(({ f, fn }) => {
+        <Panel title="What you're seeing">
+          <ul className="space-y-2.5 text-[13px] leading-snug">
+            {visible.map(({ f, fn, c }) => {
               const roots = rootsIn(fn, view.x0, view.x1);
+              const d = describe(fn, c.node);
               return (
                 <li key={f.colour} className="text-white/75">
-                  <span className="mr-1.5 inline-block h-2 w-2 rounded-full" style={{ background: f.colour }} />
-                  y-intercept {sf(fn(0))}
-                  {roots.length ? `; roots ${roots.map((r) => sf(r)).join(", ")}` : "; no roots here"}
-                  {probe !== null && `; at x = ${sf(probe)}: y = ${sf(fn(probe))}, slope ${sf(slopeAt(fn, probe))}`}
+                  <div className="mb-0.5 flex items-center gap-1.5 font-mono text-xs text-white">
+                    <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: f.colour }} />y = {f.src}
+                  </div>
+                  {d.text.map((t, k) => (
+                    <p key={k}>{t}</p>
+                  ))}
+                  {d.kind !== "line" && d.kind !== "parabola" && d.kind !== "constant" && <p>{roots.length ? `On screen it crosses the x-axis (y = 0) at x = ${roots.map((r) => sf(r)).join(", ")}.` : "It does not cross the x-axis on screen."}</p>}
+                  {probe !== null && Number.isFinite(fn(probe)) && (
+                    <p className="text-[#bfe9ff]">
+                      At x = {sf(probe)}: y = {sf(fn(probe))}. Slope there = {sf(slopeAt(fn, probe))}, so it is {Math.abs(slopeAt(fn, probe)) < 1e-3 ? "flat at that point" : slopeAt(fn, probe) > 0 ? "going uphill" : "going downhill"}.
+                    </p>
+                  )}
                 </li>
               );
             })}
-            {crossings.length > 0 && <li className="text-white">First two curves cross at x = {crossings.map((x) => sf(x)).join(", ")}</li>}
-            {!visible.length && <li className="text-white/50">Type a function to start.</li>}
+            {crossings.length > 0 && (
+              <li className="text-white">
+                The first two curves meet at x = {crossings.map((x) => sf(x)).join(" and ")}. There both rules give the same y ({crossings.map((x) => sf(visible[0]!.fn(x))).join(" and ")}), so {crossings.length > 1 ? "these x values solve" : "this x solves"} {visible[0]!.f.src} = {visible[1]!.f.src}.
+              </li>
+            )}
+            {visible.length >= 2 && !crossings.length && <li className="text-white/60">The first two curves do not meet on screen: no x gives them the same y here.</li>}
+            {!visible.length && <li className="text-white/50">Type a function to start, for example 2*x + 1.</li>}
           </ul>
         </Panel>
       </div>

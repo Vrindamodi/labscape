@@ -126,11 +126,39 @@ export class SimEvaluator<S> {
   }
 }
 
+/**
+ * Undo in a Try stage is itself logged (the event log is append-only): a `param.set` with this key
+ * and the seq of the event it takes back. Replays skip both.
+ */
+export const UNDO_KEY = "__undo";
+
+export const isUndoMarker = (e: LabEvent): e is Extract<LabEvent, { type: "param.set" }> => e.type === "param.set" && e.payload.key === UNDO_KEY;
+
+/** Events that are not student actions and cannot be undone. */
+const NOT_UNDOABLE = new Set<LabEvent["type"]>(["hint.shown", "step.completed", "deviation", "outcome"]);
+
+/** The log as it stands after undos: in seq order, without markers or the events they took back. */
+export function effectiveEvents(events: LabEvent[]): LabEvent[] {
+  const sorted = [...events].sort((a, b) => a.seq - b.seq);
+  const undone = new Set(sorted.filter(isUndoMarker).map((e) => Number(e.payload.value)));
+  return sorted.filter((e) => !isUndoMarker(e) && !undone.has(e.seq));
+}
+
+/** The most recent student action that undo would take back, if any. */
+export function lastUndoable(events: LabEvent[]): LabEvent | null {
+  const eff = effectiveEvents(events);
+  for (let i = eff.length - 1; i >= 0; i--) {
+    const e = eff[i]!;
+    if (e.actor === "user" && !NOT_UNDOABLE.has(e.type) && !(e.type === "param.set" && String(e.payload.key).startsWith("answer:"))) return e;
+  }
+  return null;
+}
+
 export function runSim<S>(content: SimContent, model: SimModel<S>, events: LabEvent[]): SimRun<S> {
   const ev = new SimEvaluator(content, model);
   const feedback: SimFeedback[] = [];
   const notes: SimNote[] = [];
-  for (const e of [...events].sort((a, b) => a.seq - b.seq)) {
+  for (const e of effectiveEvents(events)) {
     const r = ev.push(e);
     feedback.push(...r.feedback);
     notes.push(...r.notes);
