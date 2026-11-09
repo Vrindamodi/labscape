@@ -233,7 +233,7 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
                 </radialGradient>
               </defs>
               <g clipPath="url(#li-clip)">
-                <motion.rect x="0" width="180" animate={{ y: 212 - fillPct * 230, height: fillPct * 230 + 10 }} transition={{ duration: 0.1 }} fill={dyed ? tint : "rgba(120,180,255,.35)"} />
+                <motion.rect x="0" width="180" initial={false} animate={{ y: 212 - fillPct * 230, height: fillPct * 230 + 10 }} transition={{ duration: 0.1 }} fill={dyed ? tint : "rgba(120,180,255,.35)"} />
                 {/* dye streaks before mixing */}
                 {drops.map((t, i) => (
                   <motion.ellipse
@@ -245,7 +245,7 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
                     fill="url(#li-dye)"
                   />
                 ))}
-                {level > 0 && <motion.ellipse cx="90" animate={{ cy: 212 - fillPct * 230 }} rx="66" ry="5" fill="rgba(255,255,255,.35)" />}
+                {level > 0 && <motion.ellipse cx="90" initial={false} animate={{ cy: 212 - fillPct * 230 }} rx="66" ry="5" fill="rgba(255,255,255,.35)" />}
               </g>
               <path d="M18 14 H162 M24 14 V196 Q24 212 40 212 H140 Q156 212 156 196 V14" fill="none" stroke="rgba(220,235,255,.8)" strokeWidth="3" strokeLinecap="round" />
               {[40, 80, 120, 160].map((y, i) => (
@@ -367,6 +367,7 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
                   <motion.rect
                     rx="16"
                     fill="black"
+                    initial={false}
                     animate={{ x: hole.x, y: hole.y, width: hole.w, height: hole.h }}
                     transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 160, damping: 24 }}
                   />
@@ -378,6 +379,7 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
                 fill="none"
                 stroke="#22d3ee"
                 strokeWidth="2"
+                initial={false}
                 animate={{ x: hole.x, y: hole.y, width: hole.w, height: hole.h }}
                 transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 160, damping: 24 }}
                 style={{ filter: "drop-shadow(0 0 8px #22d3ee)" }}
