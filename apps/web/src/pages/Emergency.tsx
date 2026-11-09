@@ -25,7 +25,7 @@ export default function Emergency() {
           <ShieldAlert className="h-4 w-4" /> Labs
         </p>
         <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Emergency simulator</h1>
-        <p className="mt-1 max-w-2xl text-sm text-white/65">Practise the first few minutes of real emergencies: spot the danger, decide fast, get help. Every scenario ends with a debrief and a short quiz.</p>
+        <p className="mt-1 max-w-2xl text-sm text-white/65">Step into the room and act it out: grab a wet towel, flip the MCB, reach for the eyewash. Spot the danger, do the right thing fast, and get help. Every scenario ends with a replay of what you did, a debrief and a short quiz.</p>
         <p className="mt-3 text-xs text-white/45">Training only, not a substitute for emergency services or certified training. In a real emergency in India, call 112.</p>
       </header>
       {q.isLoading && <Skeleton className="h-48 rounded-2xl" />}

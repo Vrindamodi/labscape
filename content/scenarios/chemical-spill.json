@@ -2,11 +2,31 @@
   "slug": "chemical-spill",
   "title": "Chemical spill in the lab",
   "kind": "spill",
-  "minutes": 5,
-  "summary": "A bottle of acid breaks on the bench and splashes a classmate. Act fast and safely.",
+  "minutes": 6,
+  "summary": "A bottle of acid smashes on the bench and splashes your partner's eye. Raise the alarm, rinse, gear up and contain the spill.",
   "sources": [
     "CLEAPSS Student Safety Sheets and school laboratory guidance",
-    "Standard school lab first-aid practice: rinse skin with running water"
+    "Standard school lab first aid: flush eyes with running water for at least 15 minutes",
+    "CBSE / NCERT laboratory safety rules"
+  ],
+  "tools": [
+    { "id": "point", "label": "Point it out", "hint": "Spot or check something" },
+    { "id": "hands", "label": "Your hands", "hint": "Touch, lead, tell" },
+    { "id": "ppe", "label": "Goggles + gloves", "hint": "Chemical-resistant" },
+    { "id": "spill-kit", "label": "Spill kit absorbent", "hint": "Sock and granules" },
+    { "id": "neutraliser", "label": "Neutraliser", "hint": "Sodium hydrogencarbonate" },
+    { "id": "naoh", "label": "Sodium hydroxide", "hint": "Strong alkali bottle" },
+    { "id": "paper-towels", "label": "Paper towels", "hint": "Roll from the bench" },
+    { "id": "water-bucket", "label": "Bucket of water", "hint": "Full bucket" }
+  ],
+  "hotspots": [
+    { "id": "partner", "label": "Your lab partner", "x": 10, "y": 100, "w": 82, "h": 200 },
+    { "id": "spill", "label": "Acid spill", "x": 170, "y": 182, "w": 150, "h": 40 },
+    { "id": "glass", "label": "Broken glass", "x": 322, "y": 166, "w": 70, "h": 40 },
+    { "id": "teacher", "label": "Your teacher, at the door", "x": 432, "y": 84, "w": 74, "h": 216 },
+    { "id": "eyewash", "label": "Eyewash station", "x": 512, "y": 70, "w": 124, "h": 104 },
+    { "id": "sink", "label": "Sink", "x": 512, "y": 180, "w": 124, "h": 60 },
+    { "id": "you", "label": "You", "x": 96, "y": 296, "w": 120, "h": 60 }
   ],
   "scenes": [
     {
@@ -15,121 +35,242 @@
       "timerS": 10,
       "growth": 1,
       "hazard": 20,
-      "narration": "Crash! A bottle of dilute sulfuric acid slips off the shelf. Acid spreads over the bench and drips onto the floor. Your lab partner shouts that some splashed on her hand.",
+      "narration": "Crash! A bottle of dilute sulfuric acid slips off the shelf and smashes. Acid spreads over the bench, and your lab partner cries out: some splashed in her eye.",
+      "prompt": "Raise the alarm.",
+      "props": ["spill", "glass", "teacher"],
       "choices": [
         {
           "id": "recognise",
-          "label": "It's a spill and someone is hurt: tell the teacher now",
+          "label": "Shout for the teacher: \"Acid spill, and it's in her eye!\"",
           "quality": "best",
-          "feedback": "Yes. A spill with a casualty: the teacher must know straight away.",
-          "next": "assess",
+          "feedback": "Yes. A spill with a casualty: the teacher must know straight away, and saying what it is helps them act fast.",
+          "next": "rinse",
           "hazardDelta": -15,
           "recognise": true,
-          "escalate": true
+          "escalate": true,
+          "action": { "tool": "hands", "target": "teacher" },
+          "anim": "alert"
         },
         {
           "id": "ignore",
           "label": "It's only dilute. Keep working.",
           "quality": "unsafe",
-          "feedback": "Even dilute acid irritates skin and eyes, and a spill can spread. It needs dealing with now.",
-          "next": "assess",
-          "hazardDelta": 25
+          "feedback": "Even dilute acid damages eyes and irritates skin, and a spill spreads. It needs dealing with now.",
+          "next": "rinse",
+          "hazardDelta": 25,
+          "action": { "tool": "point", "target": "spill" },
+          "anim": "spread"
         }
       ]
     },
     {
-      "id": "assess",
+      "id": "rinse",
       "stage": "assessment",
       "timerS": 15,
-      "growth": 1.2,
+      "growth": 1.3,
       "hazard": 30,
-      "narration": "The teacher is coming. Your partner's hand is stinging and red. Other students are crowding round.",
+      "narration": "Your partner is holding her eye and it's stinging badly. The teacher is on the way. The eyewash station is on the far wall.",
+      "prompt": "Help her eye.",
+      "props": ["spill", "glass", "teacher"],
       "choices": [
         {
-          "id": "rinse",
-          "label": "Help her rinse her hand under cold running water, and keep rinsing",
+          "id": "eyewash",
+          "label": "Lead her to the eyewash and flush the eye for at least 15 minutes, eyelid held open",
           "quality": "best",
-          "feedback": "Right. Rinse chemical splashes with lots of running water for at least 10 to 20 minutes.",
-          "next": "decide",
-          "hazardDelta": -15
+          "feedback": "Right. Flush a chemical splash in the eye with gently running water for at least 15 minutes, holding the eyelid open, even after it stops stinging.",
+          "next": "ppe",
+          "hazardDelta": -15,
+          "actions": [{ "tool": "hands", "target": "eyewash" }, { "tool": "hands", "target": "partner" }],
+          "anim": "eyewash"
         },
         {
-          "id": "wipe",
-          "label": "Wipe her hand with a paper towel",
+          "id": "splash",
+          "label": "Splash a little water from the sink in her eye",
           "quality": "poor",
-          "feedback": "Wiping can spread the acid. Running water washes it away.",
-          "next": "decide",
-          "hazardDelta": 10
+          "feedback": "A quick splash isn't enough. The eye needs a steady flow for at least 15 minutes. Use the eyewash station.",
+          "next": "ppe",
+          "hazardDelta": 10,
+          "action": { "tool": "hands", "target": "sink" },
+          "anim": "splash"
         },
         {
           "id": "neutralise",
-          "label": "Put some sodium hydroxide on it to neutralise it",
+          "label": "Dab some neutraliser on her eye",
           "quality": "unsafe",
-          "feedback": "Never put another chemical on skin. Alkali burns too, and the reaction releases heat. Use water only.",
-          "next": "decide",
-          "hazardDelta": 25
+          "feedback": "Never put any chemical in an eye or on skin. Water only, and lots of it.",
+          "next": "ppe",
+          "hazardDelta": 25,
+          "action": { "tool": "neutraliser", "target": "partner" },
+          "anim": "warn"
+        },
+        {
+          "id": "rub",
+          "label": "Tell her to rub her eye",
+          "quality": "unsafe",
+          "feedback": "Rubbing grinds the acid in. Hold the eye open under running water instead.",
+          "next": "ppe",
+          "hazardDelta": 25,
+          "action": { "tool": "point", "target": "partner" },
+          "anim": "warn"
         }
       ]
     },
     {
-      "id": "decide",
+      "id": "ppe",
       "stage": "decision",
       "timerS": 12,
       "growth": 1.4,
       "hazard": 35,
-      "narration": "Acid is still dripping from the bench. Students are stepping close to look.",
+      "narration": "Your partner is flushing her eye at the eyewash. Your teacher, at the door, checks on her and asks you to deal with the spill with the spill kit, as you've practised. Acid is creeping towards the edge of the bench.",
+      "prompt": "Before you touch anything...",
+      "props": ["spill", "glass", "eyewash-on"],
       "choices": [
         {
-          "id": "clear",
-          "label": "Ask everyone to step back and keep away from the spill",
+          "id": "gear",
+          "label": "Put on goggles and chemical-resistant gloves first",
           "quality": "best",
-          "feedback": "Yes. Keep people away so no one steps in it or gets splashed. Your teacher will deal with the spill.",
-          "next": "outcome",
+          "feedback": "Yes. Protect your eyes and hands before you go near a spill. That's how you avoid becoming the next casualty.",
+          "next": "contain",
           "hazardDelta": -15,
-          "escalate": true
+          "action": { "tool": "ppe", "target": "you" },
+          "anim": "ppe-on"
         },
         {
           "id": "mop",
-          "label": "Mop it up with paper towels in your bare hands",
+          "label": "Grab paper towels and mop it up bare-handed",
           "quality": "unsafe",
-          "feedback": "Never handle a chemical spill with bare hands. The teacher uses a spill kit and protective gloves.",
-          "next": "outcome",
-          "hazardDelta": 25
+          "feedback": "Never handle a chemical spill with bare hands or without goggles. Gear up first, then use the spill kit.",
+          "next": "contain",
+          "hazardDelta": 25,
+          "action": { "tool": "paper-towels", "target": "spill" },
+          "anim": "warn"
         },
         {
           "id": "glass",
-          "label": "Pick up the broken glass pieces",
+          "label": "Pick up the broken glass first",
           "quality": "unsafe",
-          "feedback": "Broken glass covered in acid can cut and burn you. Leave it for the teacher with the right equipment.",
-          "next": "outcome",
-          "hazardDelta": 25
+          "feedback": "Acid-covered glass can cut and burn you. Gear up, and use a dustpan and brush, never fingers.",
+          "next": "contain",
+          "hazardDelta": 25,
+          "action": { "tool": "hands", "target": "glass" },
+          "anim": "warn"
         }
       ]
     },
     {
-      "id": "outcome",
+      "id": "contain",
+      "stage": "decision",
+      "timerS": 12,
+      "growth": 1.6,
+      "hazard": 35,
+      "narration": "Goggles and gloves on. The acid is about to drip off the bench onto the floor.",
+      "prompt": "Stop it spreading.",
+      "props": ["spill", "glass", "eyewash-on", "ppe-on"],
+      "choices": [
+        {
+          "id": "ring",
+          "label": "Ring the spill with absorbent from the spill kit, working from the outside in",
+          "quality": "best",
+          "feedback": "Right. Surround the spill first so it can't spread, then cover it, working from the edges inward.",
+          "next": "neutralise",
+          "hazardDelta": -15,
+          "action": { "tool": "spill-kit", "target": "spill" },
+          "anim": "contain"
+        },
+        {
+          "id": "flood",
+          "label": "Wash it away with a bucket of water",
+          "quality": "poor",
+          "feedback": "Flooding spreads the acid over a bigger area and onto the floor. Contain it first with the spill kit.",
+          "next": "neutralise",
+          "hazardDelta": 10,
+          "action": { "tool": "water-bucket", "target": "spill" },
+          "anim": "spread"
+        },
+        {
+          "id": "towels",
+          "label": "Soak it up with paper towels",
+          "quality": "poor",
+          "feedback": "Paper towels fall apart and drip. The spill kit's absorbent is made for this. Ring the spill first.",
+          "next": "neutralise",
+          "hazardDelta": 10,
+          "action": { "tool": "paper-towels", "target": "spill" },
+          "anim": "spread"
+        }
+      ]
+    },
+    {
+      "id": "neutralise",
       "stage": "consequence",
       "timerS": 15,
-      "growth": 0.5,
-      "hazard": 25,
-      "narration": "The teacher arrives with the spill kit. Your partner is still rinsing her hand.",
+      "growth": 0.8,
+      "hazard": 30,
+      "narration": "The spill is ringed in. Your teacher calls over: \"Neutralise it as we practised.\"",
+      "prompt": "Make it safe.",
+      "props": ["spill", "glass", "eyewash-on", "ppe-on", "contained"],
+      "choices": [
+        {
+          "id": "bicarb",
+          "label": "Sprinkle sodium hydrogencarbonate over it until the fizzing stops",
+          "quality": "best",
+          "feedback": "Yes. A mild neutraliser from the spill kit, added slowly, makes acid safe to clear. Fizzing (carbon dioxide) stopping means it's done.",
+          "next": "report",
+          "hazardDelta": -15,
+          "action": { "tool": "neutraliser", "target": "spill" },
+          "anim": "neutralise"
+        },
+        {
+          "id": "naoh",
+          "label": "Pour sodium hydroxide on it to neutralise it faster",
+          "quality": "unsafe",
+          "feedback": "Strong alkali reacts violently with acid, getting hot and spattering, and is corrosive itself. Use the mild neutraliser from the kit.",
+          "next": "report",
+          "hazardDelta": 25,
+          "action": { "tool": "naoh", "target": "spill" },
+          "anim": "spatter"
+        },
+        {
+          "id": "glass",
+          "label": "Pick the glass out with your gloved fingers",
+          "quality": "poor",
+          "feedback": "Glass cuts through gloves. Neutralise first, then sweep glass up with a dustpan and brush into the broken-glass bin.",
+          "next": "report",
+          "hazardDelta": 10,
+          "action": { "tool": "hands", "target": "glass" },
+          "anim": "warn"
+        }
+      ]
+    },
+    {
+      "id": "report",
+      "stage": "consequence",
+      "timerS": 15,
+      "growth": 0.4,
+      "hazard": 20,
+      "narration": "The fizzing has stopped. Your partner is still flushing her eye at the eyewash.",
+      "prompt": "Finish up.",
+      "props": ["glass", "eyewash-on", "ppe-on", "contained", "neutralised"],
       "choices": [
         {
           "id": "report",
-          "label": "Tell the teacher what spilled, how much, and who was splashed",
+          "label": "Tell the teacher what spilled, roughly how much, and that it went in her eye",
           "quality": "best",
-          "feedback": "Good. Clear information helps the teacher treat the casualty and clean up correctly.",
+          "feedback": "Good. Clear information helps the teacher decide on medical care (any chemical in the eye needs checking by a doctor) and record the incident.",
           "next": "end-safe",
           "hazardDelta": -15,
-          "escalate": true
+          "escalate": true,
+          "action": { "tool": "hands", "target": "teacher" },
+          "anim": "call"
         },
         {
-          "id": "leave",
-          "label": "Go back to your own experiment",
+          "id": "sink",
+          "label": "Scoop the waste into the sink and go back to your experiment",
           "quality": "poor",
-          "feedback": "Stay and help: the teacher needs to know exactly what happened.",
+          "feedback": "Spill waste goes in a labelled bag for the teacher to dispose of, and the teacher needs to know exactly what happened.",
           "next": "end-safe",
-          "hazardDelta": 10
+          "hazardDelta": 10,
+          "action": { "tool": "hands", "target": "sink" },
+          "anim": "none"
         }
       ]
     }
@@ -137,7 +278,7 @@
   "endings": {
     "end-safe": {
       "outcome": "safe",
-      "text": "The teacher neutralises and clears the spill with the kit. Your partner's hand calms down after rinsing, and she is checked by the school nurse."
+      "text": "Your partner's eye is flushed for 15 minutes and she goes to the doctor to have it checked. The spill is cleared, bagged and labelled. Calm, quick action made the difference."
     },
     "end-unsafe": {
       "outcome": "unsafe",
@@ -145,13 +286,14 @@
     }
   },
   "learn": [
-    "Tell the teacher immediately about any spill or splash.",
-    "Rinse chemical splashes on skin with lots of running water; never use another chemical.",
-    "Keep everyone away from the spill and broken glass.",
-    "Only the teacher clears spills, using a spill kit and protective gloves."
+    "Tell the teacher immediately about any spill or splash, and say what it is.",
+    "Chemical in the eye: eyewash, eyelid held open, at least 15 minutes, then see a doctor. Never put another chemical on skin or eyes.",
+    "Goggles and gloves on before going near a spill.",
+    "Contain the spill with the spill kit from the outside in, then neutralise it with the mild neutraliser as your teacher instructs.",
+    "Never pick up broken glass with your fingers; use a dustpan and brush."
   ],
   "id": "emergency-chemical-spill",
-  "version": 1,
+  "version": 2,
   "reviewStatus": "draft",
   "disclaimer": "Training only. This is not a substitute for emergency services or certified first-aid and fire-safety training. In a real emergency in India, call 112.",
   "quizId": "quiz-emergency-chemical-spill"
