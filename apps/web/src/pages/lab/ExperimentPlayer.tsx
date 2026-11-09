@@ -399,6 +399,14 @@ function Results({ content, result, onAgain, attemptId }: { content: ExperimentC
     }
   }, [report, result, reduced, content.title]);
   const dims = Object.entries(report.byDimension).filter(([, v]) => v !== null) as [string, number][];
+  // Steps the learner had done for them in Try ("Do this step for me"); the server counts them as hints.
+  const assisted = useMemo(() => {
+    try {
+      return attemptId ? (JSON.parse(sessionStorage.getItem(`labscape.assisted.${attemptId}`) ?? "[]") as string[]) : [];
+    } catch {
+      return [];
+    }
+  }, [attemptId]);
 
   return (
     <div className="h-full overflow-y-auto px-4 py-8 sm:px-8">
@@ -430,7 +438,12 @@ function Results({ content, result, onAgain, attemptId }: { content: ExperimentC
               </div>
             </div>
           ))}
-          {report.hintsUsed > 0 && <p className="pt-1 text-xs text-white/45">{report.hintsUsed} hint{report.hintsUsed === 1 ? "" : "s"} used (−{Math.min(10, report.hintsUsed * 2)}% independence)</p>}
+          {report.hintsUsed > 0 && <p className="pt-1 text-[14px] text-white/55">{report.hintsUsed} hint{report.hintsUsed === 1 ? "" : "s"} used (−{Math.min(10, report.hintsUsed * 2)}% independence)</p>}
+          {assisted.length > 0 && (
+            <p className="text-[14px] text-white/55">
+              Assisted: {assisted.length} step{assisted.length === 1 ? " was" : "s were"} done for you with “Do this step for me” (counted as hints). Try {assisted.length === 1 ? "it" : "them"} yourself next time for full marks.
+            </p>
+          )}
         </div>
 
         {report.deviations.length > 0 && (

@@ -2,18 +2,28 @@ import { GhostButton, Glass, Kicker, PrimaryButton, useLabSession, Workbench, ty
 import { useMotion } from "@labscape/motion";
 import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Check, Eye, FlaskConical, Lightbulb, Pause, Play, RotateCcw, ShieldAlert } from "lucide-react";
+import { ArrowRight, Check, Crosshair, Eye, FlaskConical, Lightbulb, Pause, Play, RotateCcw, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 /**
- * The chemistry demo: a short "The idea" card, then the golden run played on the 3D bench with
- * the camera framed on each action and a concept panel that explains every beat (what is
- * happening, the science, the safety reason).
+ * The chemistry demo: a short "The idea" card, then the golden run played on the 3D bench with a
+ * concept panel that explains every beat (what is happening, the science, the safety reason).
  *
- * Pace: "1x" plays the recorded run twice as fast as real time, and waits between actions are
- * fast-forwarded once the current beat has had time to be read.
+ * Steady playback:
+ * - real time at the chosen speed (1.5x by default), no speed bursts;
+ * - one calm camera move per beat that fits everything the beat uses (never a closer zoom);
+ * - each caption stays until the next one, and the clock waits at a beat boundary until the
+ *   current caption has had time to be read;
+ * - a long wait with nothing to do (crystals forming, ten minutes for a coat) is shown as a
+ *   time-lapse with a "⏩ 10 minutes later" chip, at one steady speed.
+ * Once the learner orbits or zooms, the camera is theirs until they press Re-centre.
  */
-const PACE = 2;
+const SPEEDS = [0.5, 1, 1.5, 2] as const;
+const DEFAULT_SPEED = 1.5;
+/** Waits longer than this (simulation ms) with nothing happening become a time-lapse. */
+const LAPSE_MIN_MS = 8000;
+/** How long a time-lapse takes on screen. */
+const LAPSE_WALL_MS = 3500;
 
 type GoldenEvent = ExperimentContent["golden"]["events"][number];
 
@@ -36,6 +46,14 @@ function fmtTime(ms: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/** "40 seconds", "2 minutes", "10 minutes". */
+function fmtGap(ms: number) {
+  const s = ms / 1000;
+  if (s < 90) return `${Math.round(s / 5) * 5 || Math.round(s)} seconds`;
+  const m = Math.round(s / 60);
+  return `${m} minute${m === 1 ? "" : "s"}`;
+}
+
 /** The first two sentences of a paragraph (fallback for experiments without an "idea" card). */
 function firstSentences(text: string, n: number) {
   const parts = text.match(/[^.!?]+[.!?]+/g) ?? [text];
@@ -46,7 +64,10 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
   const { reduced } = useMotion();
   const session = useLabSession(content, { mode: "demo", startPaused: true });
   const [started, setStarted] = useState(false);
-  const [base, setBase] = useState(1);
+  const [userPaused, setUserPaused] = useState(false);
+  const [base, setBase] = useState<number>(DEFAULT_SPEED);
+  const [manualCam, setManualCam] = useState(false);
+  const [recentre, setRecentre] = useState(0);
   const { setSpeed, setPaused, seek } = session;
   const t = session.t;
 
@@ -58,80 +79,123 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
   const beat = beatIdx >= 0 ? beats[beatIdx] : undefined;
   const done = started && t >= end;
 
-  // How long the current beat has been on screen (wall clock), so it can be read before a skip.
+  // Wall clock, so a caption can be read before the next one replaces it.
+  const [now, setNow] = useState(() => performance.now());
+  useEffect(() => {
+    if (!started || userPaused || done) return;
+    const id = window.setInterval(() => setNow(performance.now()), 200);
+    return () => window.clearInterval(id);
+  }, [started, userPaused, done]);
   const shownAt = useRef(performance.now());
   useEffect(() => {
     shownAt.current = performance.now();
-  }, [beatIdx]);
+  }, [beatIdx, started]);
 
-  const slow = !!beat?.slow && t - beat.t < 6000;
-  const nextEvent = visual.find((e) => e.t > t)?.t ?? end;
+  const dwell = Math.min(8000, Math.max(3000, words(beat) * 230)) / base;
+  const read = now - shownAt.current >= dwell;
+  const nextBeatT = beats[beatIdx + 1]?.t ?? Infinity;
   const prevEvent = [...visual].reverse().find((e) => e.t <= t)?.t ?? 0;
-  const nextBeat = beats.find((b) => b.t > t)?.t ?? Infinity;
-  const gap = Math.min(nextEvent, nextBeat) - t;
-  const dwell = Math.min(7000, Math.max(2500, words(beat) * 200)) / base;
-  const read = performance.now() - shownAt.current >= dwell;
-  // Fast-forward empty stretches (gas collecting, a ten-minute wait) once the beat has been read.
-  let boost = 1;
-  if (!slow && read && gap > 2500 && t - prevEvent > 1500) boost = Math.min(64, 2 ** Math.floor(Math.log2(Math.max(1, gap / 1500))));
-  const speed = base * PACE * (slow ? 0.5 : boost);
+  const nextEvent = visual.find((e) => e.t > t)?.t ?? end;
+  const nextStop = Math.min(nextEvent, nextBeatT, end);
+
+  // Time-lapse over long empty waits, at one steady speed, once the caption has been read.
+  const lapse = useRef<{ until: number; speed: number; gap: number; to: number } | null>(null);
+  /** The stop the last time-lapse ran towards: the few seconds left before it play normally. */
+  const lapsedTo = useRef<number | null>(null);
+  if (lapse.current && (t >= lapse.current.until || !started)) lapse.current = null;
+  if (!lapse.current && started && !done && !userPaused && read && lapsedTo.current !== nextStop && nextStop - t > LAPSE_MIN_MS && t - prevEvent >= 1500) {
+    const gap = nextStop - t;
+    const lapseSpeed = Math.min(200, Math.max(3, gap / LAPSE_WALL_MS));
+    // It slows down as it nears the next action (one clock tick never overshoots it).
+    lapse.current = { until: nextStop - 1500, speed: lapseSpeed, gap, to: nextStop };
+    lapsedTo.current = nextStop;
+  }
+  const lapsing = lapse.current;
+
+  // Hold just before the next beat until the current caption has been read.
+  const hold = started && !done && !lapsing && !read && nextBeatT !== Infinity && t >= nextBeatT - 300;
+  const slow = !!beat?.slow && t - beat.t < 6000;
+  const speed = lapsing ? Math.max(base, Math.min(lapsing.speed, Math.round((lapsing.until - t) / 100))) : base * (slow ? 0.6 : 1);
   useEffect(() => setSpeed(speed), [speed, setSpeed]);
   useEffect(() => {
-    if (done) setPaused(true);
-  }, [done, setPaused]);
+    setPaused(!started || userPaused || hold || done);
+  }, [started, userPaused, hold, done, setPaused]);
 
-  // Camera: the whole bench before the start, then a close-up on the action just done or coming next.
-  const lastFrame = useRef<BenchFrame>({ key: "all", ids: content.bench.items.map((i) => i.id) });
+  // Camera: the whole bench before the start, then one calm move per beat that fits everything the
+  // beat uses (and what each item stands in, e.g. a thermometer's beaker).
+  const allIds = useMemo(() => content.bench.items.map((i) => i.id), [content]);
+  const lastFrame = useRef<BenchFrame>({ key: "all", ids: allIds });
   const frame = useMemo<BenchFrame>(() => {
-    if (!started) return (lastFrame.current = { key: "all", ids: content.bench.items.map((i) => i.id) });
-    let idx = -1;
-    for (let i = 0; i < visual.length; i++) if (visual[i]!.t <= t && t - visual[i]!.t < 2500) idx = i;
-    if (idx < 0) idx = visual.findIndex((e) => e.t > t);
-    const e = idx >= 0 ? visual[idx] : undefined;
-    const direct = e ? itemsOf(e).filter((id) => session.state.items[id] && session.state.items[id]!.socket !== "worn") : [];
-    // Keep what an item is snapped into in shot too (a thermometer is read in its beaker).
-    const ids = direct.flatMap((id) => {
-      const host = session.state.items[id]!.socket?.split(":")[1];
-      return host && session.state.items[host] ? [id, host] : [id];
-    });
-    if (ids.length) lastFrame.current = { key: `e${idx}`, ids: [...new Set(ids)] };
+    if (!started) return (lastFrame.current = { key: `all-${recentre}`, ids: allIds });
+    const from = beat?.t ?? 0;
+    const to = nextBeatT;
+    const inBeat = visual.filter((e) => e.t >= from && e.t < to);
+    const ids = new Set<string>();
+    for (const e of inBeat.length ? inBeat : visual.filter((e) => e.t >= from).slice(0, 1)) {
+      for (const id of itemsOf(e)) {
+        const it = session.state.items[id];
+        if (!it || it.socket === "worn") continue;
+        ids.add(id);
+        const host = it.socket?.split(":")[1];
+        if (host && session.state.items[host]) ids.add(host);
+      }
+    }
+    const tall = inBeat.some((e) => e.type === "liquid.pour" && session.state.items[String(e.payload.to)]?.kind === "burette_50");
+    if (ids.size) lastFrame.current = { key: `b${beatIdx}-${recentre}`, ids: [...ids], tall };
+    else lastFrame.current = { ...lastFrame.current, key: `${lastFrame.current.key.split("-")[0]}-${recentre}` };
     return lastFrame.current;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started, t, visual, content]);
+  }, [started, beatIdx, visual, allIds, recentre]);
 
   const start = () => {
     setStarted(true);
+    setUserPaused(false);
+    lapse.current = null;
+    lapsedTo.current = null;
     seek(0);
-    setPaused(false);
   };
   const replay = () => {
+    lapse.current = null;
+    lapsedTo.current = null;
     seek(0);
-    setPaused(false);
+    shownAt.current = performance.now();
+    setUserPaused(false);
+  };
+  const jump = (to: number) => {
+    if (!started) setStarted(true);
+    lapse.current = null;
+    lapsedTo.current = null;
+    seek(to);
+    shownAt.current = performance.now();
   };
   const idea = content.idea ?? { text: firstSentences(content.observations.why, 2), analogy: "" };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-1">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] min-[700px]:grid-cols-[minmax(0,1fr)_320px] min-[700px]:grid-rows-1 min-[1100px]:grid-cols-[minmax(0,1fr)_340px]">
         {/* bench */}
-        <div className="relative min-h-[220px] p-2 sm:p-3">
+        <div className="relative min-h-[240px] p-2 sm:p-3">
           <Workbench
             session={session}
             readOnly
-            frame={frame}
+            frame={manualCam ? null : frame}
+            onUserCamera={() => setManualCam(true)}
             overlay={
               <>
-                {slow && started && !done && (
-                  <div className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-[#ffc23d] px-3 py-1 text-xs font-bold text-[#2a1600]">
-                    <Eye className="h-3.5 w-3.5" />
-                    Watch closely
-                  </div>
-                )}
-                {boost > 1 && started && !done && (
-                  <div className="absolute right-3 top-3 z-10 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white/80" aria-hidden>
-                    Fast-forward ▸▸
-                  </div>
-                )}
+                {/* small status chips in the top-left corner, clear of the apparatus in the middle */}
+                <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5">
+                  {lapsing && started && !done && (
+                    <div className="rounded-full bg-[rgba(8,16,38,.9)] px-3 py-1.5 text-[14px] font-semibold text-white ring-1 ring-[#39d6ff]/50" role="status">
+                      ⏩ {fmtGap(lapsing.gap)} later
+                    </div>
+                  )}
+                  {slow && started && !done && !lapsing && (
+                    <div className="flex items-center gap-1.5 rounded-full bg-[#ffc23d] px-3 py-1.5 text-[14px] font-bold text-[#2a1600]">
+                      <Eye className="h-4 w-4" />
+                      Watch closely
+                    </div>
+                  )}
+                </div>
                 {/* "The idea" before the demo starts */}
                 <AnimatePresence>
                   {!started && (
@@ -143,9 +207,9 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
                             The idea
                           </Kicker>
                           <h2 className="mt-1 font-heading text-[22px] font-bold leading-tight sm:text-[26px]">{content.title}</h2>
-                          <p className="mt-2 text-[15px] leading-relaxed text-[#dbe7ff]">{idea.text}</p>
+                          <p className="mt-2 text-[16px] leading-relaxed text-[#dbe7ff]">{idea.text}</p>
                           {idea.analogy && (
-                            <div className="mt-3 rounded-[14px] border border-[rgba(167,123,255,.35)] bg-[linear-gradient(135deg,rgba(167,123,255,.18),rgba(57,214,255,.08))] p-3 text-[14px] leading-snug text-[#ece4ff]">
+                            <div className="mt-3 rounded-[14px] border border-[rgba(167,123,255,.35)] bg-[linear-gradient(135deg,rgba(167,123,255,.18),rgba(57,214,255,.08))] p-3 text-[15px] leading-snug text-[#ece4ff]">
                               <b className="mr-1 text-white">Picture it:</b>
                               {idea.analogy}
                             </div>
@@ -158,8 +222,8 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
                               Skip, I&apos;ll try it <ArrowRight className="h-4 w-4" />
                             </GhostButton>
                           </div>
-                          <p className="mt-3 text-[12px] text-[#8fa6d1]">
-                            About {Math.max(10, Math.round(estimateWallMs(content) / 1000))} seconds. Each step is explained as it happens.
+                          <p className="mt-3 text-[14px] text-[#a9bde4]">
+                            About {Math.max(1, Math.round(estimateWallMs(content, DEFAULT_SPEED) / 60000))} minute{Math.round(estimateWallMs(content, DEFAULT_SPEED) / 60000) > 1 ? "s" : ""}. Each step is explained as it happens; drag to look around.
                           </p>
                         </Glass>
                       </motion.div>
@@ -169,7 +233,7 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
                 {done && (
                   <div className="absolute inset-x-0 bottom-4 z-20 flex justify-center px-3">
                     <Glass radius="xl" className="flex flex-wrap items-center justify-center gap-2 p-2 pl-4">
-                      <span className="flex items-center gap-1.5 text-[14px] font-semibold text-[#3de8a8]">
+                      <span className="flex items-center gap-1.5 text-[15px] font-semibold text-[#3de8a8]">
                         <Check className="h-4 w-4" /> That&apos;s the whole method
                       </span>
                       <GhostButton onClick={replay}>
@@ -187,31 +251,31 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
         </div>
 
         {/* concept panel */}
-        <aside className={cx("min-h-0 overflow-y-auto px-2 pb-2 max-lg:max-h-[36vh] sm:px-3 lg:py-3 lg:pl-0", !started && "max-lg:hidden")} aria-label="What is happening and why">
+        <aside className={cx("min-h-0 overflow-y-auto px-2 pb-2 max-[699px]:max-h-[38vh] sm:px-3 min-[700px]:py-3 min-[700px]:pl-0", !started && "max-[699px]:hidden")} aria-label="What is happening and why">
           <Glass className="flex min-h-full flex-col gap-3 p-4">
             {beat && started ? (
               <AnimatePresence mode="wait">
-                <motion.div key={beatIdx} initial={reduced ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} aria-live="polite" className="space-y-3">
+                <motion.div key={beatIdx} initial={reduced ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} aria-live="polite" className="space-y-3">
                   <div>
                     <Kicker>
                       What&apos;s happening · {beatIdx + 1} of {beats.length}
                     </Kicker>
-                    <p className="mt-1 font-heading text-[18px] font-semibold leading-snug">{beat.text}</p>
+                    <p className="mt-1 font-heading text-[19px] font-semibold leading-snug">{beat.text}</p>
                   </div>
                   {beat.why && (
                     <div className="rounded-[14px] border border-[rgba(110,170,255,.35)] bg-[rgba(61,139,255,.12)] p-3">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#9fd8ff]">
-                        <FlaskConical className="h-3.5 w-3.5" /> The science
+                      <div className="flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-[0.06em] text-[#9fd8ff]">
+                        <FlaskConical className="h-4 w-4" /> The science
                       </div>
-                      <p className="mt-1 text-[14px] leading-snug text-[#e3edff]">{beat.why}</p>
+                      <p className="mt-1 text-[15px] leading-snug text-[#e3edff]">{beat.why}</p>
                     </div>
                   )}
                   {beat.safety && (
                     <div className="rounded-[14px] border border-[rgba(255,194,61,.4)] bg-[rgba(255,194,61,.10)] p-3">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#ffd77a]">
-                        <ShieldAlert className="h-3.5 w-3.5" /> Why it&apos;s done this way
+                      <div className="flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-[0.06em] text-[#ffd77a]">
+                        <ShieldAlert className="h-4 w-4" /> Why it&apos;s done this way
                       </div>
-                      <p className="mt-1 text-[14px] leading-snug text-[#fff1cf]">{beat.safety}</p>
+                      <p className="mt-1 text-[15px] leading-snug text-[#fff1cf]">{beat.safety}</p>
                     </div>
                   )}
                 </motion.div>
@@ -219,7 +283,7 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
             ) : (
               <div>
                 <Kicker>In this demo</Kicker>
-                <p className="mt-1 text-[14px] text-[#c8d6f3]">Watch the method once, with the reasons. Then it&apos;s your turn on the same bench.</p>
+                <p className="mt-1 text-[15px] text-[#c8d6f3]">Watch the method once, with the reasons. Then it&apos;s your turn on the same bench.</p>
               </div>
             )}
             {beats.length > 1 && (
@@ -227,15 +291,11 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
                 {beats.map((b, i) => (
                   <li key={b.t}>
                     <button
-                      onClick={() => {
-                        if (!started) setStarted(true);
-                        seek(b.t);
-                        setPaused(false);
-                      }}
-                      className={cx("flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left text-[13px] transition", started && i === beatIdx ? "bg-[rgba(61,139,255,.18)] text-white" : started && i < beatIdx ? "text-[#8fa6d1]" : "text-[#a9bde4] hover:bg-white/[0.04]")}
+                      onClick={() => jump(b.t)}
+                      className={cx("flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left text-[14px] leading-snug transition", started && i === beatIdx ? "bg-[rgba(61,139,255,.18)] text-white" : started && i < beatIdx ? "text-[#8fa6d1]" : "text-[#a9bde4] hover:bg-white/[0.04]")}
                     >
-                      <span className={cx("mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold", started && i < beatIdx ? "bg-[#3de8a8] text-[#06210f]" : started && i === beatIdx ? "bg-[#3d8bff] text-white" : "bg-white/10 text-white/60")}>
-                        {started && i < beatIdx ? <Check className="h-2.5 w-2.5" /> : i + 1}
+                      <span className={cx("mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold", started && i < beatIdx ? "bg-[#3de8a8] text-[#06210f]" : started && i === beatIdx ? "bg-[#3d8bff] text-white" : "bg-white/10 text-white/60")}>
+                        {started && i < beatIdx ? <Check className="h-3 w-3" /> : i + 1}
                       </span>
                       <span className="min-w-0 flex-1">{b.text}</span>
                     </button>
@@ -249,39 +309,40 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
 
       {/* controls */}
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-white/[0.07] px-3 py-2 sm:px-4">
-        <button onClick={replay} disabled={!started} className="grid h-9 w-9 place-items-center rounded-lg text-white/70 hover:bg-white/[0.06] hover:text-white disabled:opacity-40" aria-label="Replay from the start">
+        <button onClick={replay} disabled={!started} className="grid h-10 w-10 place-items-center rounded-lg text-white/70 hover:bg-white/[0.06] hover:text-white disabled:opacity-40" aria-label="Replay from the start" title="Replay from the start">
           <RotateCcw className="h-4 w-4" />
         </button>
         <button
-          onClick={() => (started ? (done ? replay() : setPaused(!session.paused)) : start())}
-          className="grid h-9 w-9 place-items-center rounded-lg bg-white/[0.08] text-white hover:bg-white/[0.14]"
-          aria-label={!started || session.paused || done ? "Play" : "Pause"}
+          onClick={() => (started ? (done ? replay() : setUserPaused(!userPaused)) : start())}
+          className="grid h-10 w-10 place-items-center rounded-lg bg-white/[0.08] text-white hover:bg-white/[0.14]"
+          aria-label={!started || userPaused || done ? "Play" : "Pause"}
         >
-          {!started || session.paused || done ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+          {!started || userPaused || done ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
         </button>
-        <input
-          type="range"
-          min={0}
-          max={end}
-          value={Math.min(t, end)}
-          onChange={(e) => {
-            if (!started) setStarted(true);
-            seek(Number(e.target.value));
-          }}
-          className="min-w-[120px] flex-1 accent-[#2f80ff]"
-          aria-label="Scrub the demo"
-        />
-        <span className="tabular w-[76px] text-center text-xs text-white/55">
-          {fmtTime(t)} / {fmtTime(end)}
+        <input type="range" min={0} max={end} value={Math.min(t, end)} onChange={(e) => jump(Number(e.target.value))} className="min-w-[120px] flex-1 accent-[#2f80ff]" aria-label="Scrub the demo" />
+        <span className="w-[84px] text-center text-[14px] tabular-nums text-white/65">
+          {fmtTime(Math.min(t, end))} / {fmtTime(end)}
         </span>
         <div className="flex rounded-lg bg-black/25 p-0.5" role="radiogroup" aria-label="Demo speed">
-          {[0.5, 1, 2].map((s) => (
-            <button key={s} role="radio" aria-checked={base === s} onClick={() => setBase(s)} className={cx("rounded-md px-2.5 py-1 text-xs font-semibold", base === s ? "bg-accent text-white" : "text-white/55")}>
+          {SPEEDS.map((s) => (
+            <button key={s} role="radio" aria-checked={base === s} onClick={() => setBase(s)} className={cx("rounded-md px-2.5 py-1 text-[13px] font-semibold", base === s ? "bg-accent text-white" : "text-white/60 hover:text-white")}>
               {s}×
             </button>
           ))}
         </div>
-        <PrimaryButton onClick={onTry} className="ml-auto h-9">
+        {manualCam && (
+          <button
+            onClick={() => {
+              setManualCam(false);
+              setRecentre((n) => n + 1);
+            }}
+            className="flex h-10 items-center gap-1.5 rounded-lg bg-white/[0.08] px-3 text-[14px] font-semibold text-white hover:bg-white/[0.14]"
+            title="Let the camera follow the demo again"
+          >
+            <Crosshair className="h-4 w-4" /> Re-centre
+          </button>
+        )}
+        <PrimaryButton onClick={onTry} className="ml-auto h-10">
           Try it yourself <ArrowRight className="h-4 w-4" />
         </PrimaryButton>
       </div>
@@ -289,15 +350,16 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
   );
 }
 
-/** Rough wall-clock length of the demo at 1x (actions at PACE, long waits fast-forwarded). */
-function estimateWallMs(content: ExperimentContent) {
+/** Rough wall-clock length of the demo (long waits become ~3.5 s time-lapses, plus reading time). */
+function estimateWallMs(content: ExperimentContent, speed: number) {
   const ev = content.golden.events.filter((e) => !isAnswer(e));
   let total = 0;
   let prev = 0;
   for (const e of ev) {
     const gap = e.t - prev;
-    total += gap > 4000 ? 4000 + Math.log2(gap / 4000) * 1500 : gap;
+    total += gap > LAPSE_MIN_MS ? 4000 * speed + LAPSE_WALL_MS * speed : gap;
     prev = e.t;
   }
-  return (total + 2500) / PACE;
+  const reading = content.golden.captions.reduce((a, b) => a + Math.min(8000, Math.max(3000, words(b) * 230)), 0);
+  return Math.max((total + 2500) / speed, reading);
 }

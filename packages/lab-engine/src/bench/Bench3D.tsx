@@ -1,6 +1,6 @@
-import { Html, OrbitControls, PerformanceMonitor } from "@react-three/drei";
+import { OrbitControls, PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { heightOf, KINDS, lipHeightMm, type EquipmentKind } from "../engine/equipment";
@@ -29,7 +29,15 @@ export type BenchProps = {
   state: LabState;
   cues: LiveCue[];
   selected: string | null;
+  /** Items that can take what is in hand (drop targets). */
   targets: string[];
+  /** Items with a glowing ring. Defaults to the selected item and the targets. */
+  rings?: string[];
+  /**
+   * Floating name tags. Defaults to the selected item and the ringed items. They are placed with
+   * collision avoidance and kept inside the canvas; the hovered item always gets one too.
+   */
+  labels?: BenchLabel[];
   onPick: (id: string) => void;
   onBackground: () => void;
   /** Drag-to-place: called when an item is dropped; the scene snaps to sockets within 24 px. */
@@ -41,31 +49,82 @@ export type BenchProps = {
   reducedMotion: boolean;
   children?: ReactNode;
   /**
-   * Camera framing: when the key changes the camera glides to fit these items (close-up on the
-   * action). The learner can still orbit and zoom; the next key change reframes. Optional.
+   * Camera framing: when the key changes the camera eases once to fit these items. The learner can
+   * still orbit and zoom (onUserCamera tells the page, which usually stops framing). Optional.
    */
   frame?: BenchFrame | null;
+  /** The learner orbited, panned or zoomed. */
+  onUserCamera?: () => void;
 };
 
-export type BenchFrame = { key: string; ids: string[] };
+/** Items to fit in view. `tall`: show tall apparatus (a clamped burette) to the top, e.g. while filling it; otherwise the view keeps to bench height so everything stays readable. */
+export type BenchFrame = { key: string; ids: string[]; tall?: boolean };
+/** A name tag over an item. "guide": the one thing to click next (arrow and pulse). */
+export type BenchLabel = { id: string; text?: string; tone: "held" | "guide" | "target" | "hover" };
+
+const LABEL_PRIORITY: Record<BenchLabel["tone"], number> = { held: 0, guide: 1, target: 2, hover: 3 };
 
 export function Bench3D(props: BenchProps) {
+  const overlay = useRef<HTMLDivElement>(null);
+  const els = useRef(new Map<string, HTMLDivElement>());
+  const [hovered, setHovered] = useState<string | null>(null);
+  const base: BenchLabel[] = props.labels ?? [
+    ...(props.selected ? [{ id: props.selected, tone: "held" as const }] : []),
+    ...(props.rings ?? props.targets).filter((id) => id !== props.selected).map((id) => ({ id, tone: "target" as const })),
+  ];
+  const labels = [...base];
+  if (hovered && !labels.some((l) => l.id === hovered) && props.state.items[hovered]) labels.push({ id: hovered, tone: "hover" });
+  const shown = labels.filter((l) => props.state.items[l.id] && props.state.items[l.id]!.socket !== "worn").sort((a, b) => LABEL_PRIORITY[a.tone] - LABEL_PRIORITY[b.tone]);
   return (
-    <Canvas
-      shadows={props.quality === "high"}
-      dpr={props.quality === "high" ? [1, 1.6] : [1, 1.15]}
-      camera={{ position: [0, 4.4, 7.6], fov: 34, near: 0.1, far: 80 }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
-      onPointerMissed={props.onBackground}
-      style={{ touchAction: "none" }}
-    >
-      <PerformanceMonitor onDecline={() => props.onQuality("lite")} flipflops={2} />
-      <Scene {...props} />
-    </Canvas>
+    <div className="relative h-full w-full">
+      <Canvas
+        shadows={props.quality === "high"}
+        dpr={props.quality === "high" ? [1, 1.6] : [1, 1.15]}
+        camera={{ position: [0, 4.4, 7.6], fov: 34, near: 0.1, far: 80 }}
+        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
+        onPointerMissed={props.onBackground}
+        style={{ touchAction: "none" }}
+      >
+        <PerformanceMonitor onDecline={() => props.onQuality("lite")} flipflops={2} />
+        <Scene {...props} onHover={setHovered} />
+        <LabelLayer labels={shown} overlay={overlay} els={els} state={props.state} />
+      </Canvas>
+      <div ref={overlay} className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        {shown.map((l) => {
+          const it = props.state.items[l.id]!;
+          const vol = it.liquid && it.liquid.volumeMl > 0.001 ? ` · ${fmtMl(it.liquid.volumeMl)}` : "";
+          return (
+            <div
+              key={l.id}
+              ref={(el) => {
+                if (el) els.current.set(l.id, el);
+                else els.current.delete(l.id);
+              }}
+              data-highlight-id={l.id}
+              data-label-tone={l.tone}
+              className={
+                "absolute left-0 top-0 flex items-center gap-1 whitespace-nowrap rounded-[10px] border px-2.5 py-1 font-sans text-[13px] font-semibold leading-tight text-white opacity-0 shadow-[0_6px_18px_-8px_rgba(0,0,0,.8)] " +
+                (l.tone === "held"
+                  ? "border-[#8cbcff] bg-[rgba(47,128,255,.94)]"
+                  : l.tone === "guide"
+                    ? "border-[#7ff0ff] bg-[rgba(6,60,80,.94)] text-[#e8fdff]"
+                    : l.tone === "target"
+                      ? "border-[#22d3ee] bg-[rgba(8,16,38,.9)]"
+                      : "border-white/25 bg-[rgba(8,16,38,.88)] text-[#dbe7ff]")
+              }
+              style={{ willChange: "transform" }}
+            >
+              {l.tone === "guide" && <span className="motion-safe:animate-bounce text-[#7ff0ff]">▼</span>}
+              {l.text ?? `${it.label}${vol}`}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
-function Scene(p: BenchProps) {
+function Scene(p: BenchProps & { onHover: (id: string | null) => void }) {
   const { scene, gl } = useThree();
   useEffect(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
@@ -82,16 +141,7 @@ function Scene(p: BenchProps) {
   const items = Object.values(p.state.items).filter((it) => it.socket !== "worn");
   return (
     <>
-      <OrbitControls
-        makeDefault
-        target={[0, 0.7, 0]}
-        enablePan
-        minDistance={p.frame ? 1.6 : 3}
-        maxDistance={12}
-        minPolarAngle={0.35}
-        maxPolarAngle={1.32}
-        enableDamping={!p.reducedMotion}
-      />
+      <OrbitControls makeDefault target={[0, 0.7, 0]} enablePan minDistance={2.4} maxDistance={16} minPolarAngle={0.35} maxPolarAngle={1.32} enableDamping={!p.reducedMotion} />
       <hemisphereLight args={["#bcd4ff", "#0b1020", 0.35]} />
       <directionalLight position={[3, 7, 4]} intensity={1.25} castShadow={p.quality === "high"} shadow-mapSize={[1024, 1024]} shadow-camera-left={-6} shadow-camera-right={6} shadow-camera-top={4} shadow-camera-bottom={-4} />
       <pointLight position={[-4.5, 4, -3]} intensity={10} color="#3a8cff" distance={12} decay={1.6} />
@@ -103,10 +153,67 @@ function Scene(p: BenchProps) {
       ))}
       <DragPlane {...p} />
       <HandDragPlane {...p} />
-      {p.frame && <CameraRig frame={p.frame} state={p.state} reducedMotion={p.reducedMotion} />}
+      {p.frame && <CameraRig frame={p.frame} state={p.state} reducedMotion={p.reducedMotion} onUserCamera={p.onUserCamera} />}
       {p.children}
     </>
   );
+}
+
+/** Item groups by id, so name tags can follow an item while it is carried. */
+const groups = new Map<string, THREE.Object3D>();
+
+/**
+ * Places the name tags every frame: projected above each item, kept inside the canvas, and pushed
+ * apart when they would overlap (higher-priority tags keep their place).
+ */
+function LabelLayer({ labels, overlay, els, state }: { labels: BenchLabel[]; overlay: RefObject<HTMLDivElement | null>; els: MutableRefObject<Map<string, HTMLDivElement>>; state: LabState }) {
+  const camera = useThree((s) => s.camera);
+  const v = useMemo(() => new THREE.Vector3(), []);
+  const latest = useRef({ labels, state });
+  latest.current = { labels, state };
+  useFrame(() => {
+    const box = overlay.current;
+    if (!box) return;
+    const W = box.clientWidth;
+    const H = box.clientHeight;
+    const placed: { x: number; y: number; w: number; h: number }[] = [];
+    const pad = 6;
+    for (const l of latest.current.labels) {
+      const el = els.current.get(l.id);
+      const g = groups.get(l.id);
+      const it = latest.current.state.items[l.id];
+      if (!el) continue;
+      if (!g || !it) {
+        el.style.opacity = "0";
+        continue;
+      }
+      g.getWorldPosition(v);
+      v.y += Math.max(0.3, Math.min(lipHeightMm(it.kind) * U, 3.2)) + 0.14;
+      v.project(camera);
+      if (v.z > 1 || v.z < -1) {
+        el.style.opacity = "0";
+        continue;
+      }
+      const sx = ((v.x + 1) / 2) * W;
+      const sy = ((1 - v.y) / 2) * H;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      let x = Math.max(pad, Math.min(W - w - pad, sx - w / 2));
+      let y = Math.max(pad, Math.min(H - h - pad, sy - h));
+      // Push down (or up, near the bottom) until it no longer overlaps a tag already placed.
+      for (let tries = 0; tries < 8; tries++) {
+        const hit = placed.find((r) => x < r.x + r.w + 4 && x + w + 4 > r.x && y < r.y + r.h + 3 && y + h + 3 > r.y);
+        if (!hit) break;
+        const below = hit.y + hit.h + 4;
+        y = below + h <= H - pad ? below : Math.max(pad, hit.y - h - 4);
+        if (tries > 3) x = Math.max(pad, Math.min(W - w - pad, hit.x + hit.w + 6));
+      }
+      placed.push({ x, y, w, h });
+      el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+      el.style.opacity = "1";
+    }
+  });
+  return null;
 }
 
 /* ------------------------------------------------------------------ room */
@@ -196,10 +303,17 @@ export function beginHandDrag(xMm: number, zMm: number) {
   handDrag.begin?.();
 }
 
-function ItemNode({ item, state, cues, selected, targets, onPick, pour, hand, mixing, quality, reducedMotion }: BenchProps & { item: Item }) {
+function ItemNode({ item, state, cues, selected, targets, rings, onPick, onHover, pour, hand, mixing, quality, reducedMotion }: BenchProps & { item: Item; onHover: (id: string | null) => void }) {
   const group = useRef<THREE.Group>(null);
+  useEffect(() => {
+    const g = group.current;
+    if (g) groups.set(item.id, g);
+    return () => {
+      if (groups.get(item.id) === g) groups.delete(item.id);
+    };
+  }, [item.id]);
   const isSel = selected === item.id;
-  const isTarget = targets.includes(item.id);
+  const isTarget = (rings ?? targets).includes(item.id);
   const held = hand?.id === item.id;
   const pouring = pour?.from === item.id || (held && !!hand?.over);
   const overId = pour?.from === item.id ? pour.to : held ? hand!.over : null;
@@ -263,19 +377,18 @@ function ItemNode({ item, state, cues, selected, targets, onPick, pour, hand, mi
         handDrag.x = e.point.x;
         handDrag.z = e.point.z;
       }}
-      onPointerOver={(e) => (e.stopPropagation(), (document.body.style.cursor = held ? "grab" : "pointer"))}
-      onPointerOut={() => (document.body.style.cursor = "")}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = held ? "grab" : "pointer";
+        onHover(item.id);
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = "";
+        onHover(null);
+      }}
     >
       <Visual item={item} state={state} cues={cues} quality={quality} reducedMotion={reducedMotion} />
       {(isSel || isTarget) && !held && <SelectionRing radius={footprint(item.kind)} colour={isSel ? "#2f80ff" : "#22d3ee"} pulse={isTarget} />}
-      {(isSel || isTarget) && !held && (
-        <Html position={[0, Math.max(0.5, lipHeightMm(item.kind) * U + 0.25), 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
-          <div data-highlight-id={item.id} style={{ whiteSpace: "nowrap", padding: "4px 9px", borderRadius: 9, font: "600 12px Inter, sans-serif", color: "#fff", background: isSel ? "rgba(47,128,255,.92)" : "rgba(8,16,38,.85)", border: `1px solid ${isSel ? "#8cbcff" : "#22d3ee"}` }}>
-            {item.label}
-            {item.liquid && item.liquid.volumeMl > 0.001 ? ` · ${fmtMl(item.liquid.volumeMl)}` : ""}
-          </div>
-        </Html>
-      )}
     </group>
   );
 }
@@ -570,8 +683,18 @@ function Vessel({ item, glass, quality, reducedMotion }: { item: Item; glass: TH
   const mat = useRef<THREE.MeshPhysicalMaterial>(null);
   const plumeMat = useRef<THREE.MeshStandardMaterial>(null);
   const target = useMemo(() => new THREE.Color(l ? oklabToHex(l.colour) : "#cfe6ff"), [l]);
+  // The level eases to its new height (no popping when liquid goes in or out).
+  const liqMesh = useRef<THREE.Mesh>(null);
+  const shownH = useRef<number>(liquid?.h ?? 0);
 
   useFrame((_, dt) => {
+    const m = liqMesh.current;
+    if (!liquid) shownH.current = 0;
+    else if (m) {
+      shownH.current = reducedMotion ? liquid.h : shownH.current + (liquid.h - shownH.current) * (1 - Math.exp(-dt * 5));
+      if (Math.abs(shownH.current - liquid.h) < 1e-4) shownH.current = liquid.h;
+      m.scale.y = liquid.h > 1e-6 ? Math.max(0.001, shownH.current / liquid.h) : 1;
+    }
     // Colour changes interpolate smoothly toward what the engine says (timing stays the engine's).
     if (mat.current) {
       mat.current.color.lerp(target, reducedMotion ? 1 : 1 - Math.exp(-dt * 3));
@@ -589,7 +712,7 @@ function Vessel({ item, glass, quality, reducedMotion }: { item: Item; glass: TH
   return (
     <group>
       {liquid && (
-        <mesh geometry={liquid.geom} renderOrder={1}>
+        <mesh ref={liqMesh} geometry={liquid.geom} renderOrder={1}>
           <meshPhysicalMaterial ref={mat} color={target} transparent opacity={0.5} roughness={0.08} clearcoat={0.6} depthWrite={false} side={THREE.DoubleSide} />
         </mesh>
       )}
@@ -875,10 +998,21 @@ export function PourStream({ state, pour }: { state: LabState; pour: PourAnim })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from?.id, to?.id, pour?.rateMlPerS ? Math.round(pour.rateMlPerS * 4) : 0, to ? Math.round((to.liquid?.volumeMl ?? 0) * 2) : 0]);
   useDisposable(geom);
+  // The stream falls from the lip into the vessel when a pour starts (drawn in over ~0.3 s).
+  const reveal = useRef(0);
+  const mat = useRef<THREE.MeshStandardMaterial>(null);
+  if (!geom) reveal.current = 0;
+  useFrame((_, dt) => {
+    if (!geom) return;
+    reveal.current = Math.min(1, reveal.current + dt / 0.3);
+    const count = geom.index ? geom.index.count : 0;
+    geom.setDrawRange(0, Math.ceil((count * reveal.current) / 6) * 6);
+    if (mat.current) mat.current.opacity = 0.35 + 0.45 * reveal.current;
+  });
   if (!geom) return null;
   return (
     <mesh geometry={geom} renderOrder={4}>
-      <meshStandardMaterial color={colour} transparent opacity={0.8} roughness={0.05} />
+      <meshStandardMaterial ref={mat} color={colour} transparent opacity={0.35} roughness={0.05} />
     </mesh>
   );
 }
@@ -1025,64 +1159,99 @@ function tallMm(kind: EquipmentKind): number {
 /** Viewing direction (from the target towards the camera): about 24 degrees above the bench. */
 const VIEW_DIR = new THREE.Vector3(0, 0.41, 0.91).normalize();
 
+/** Fits a set of items in view: the camera position and look-at point. Never closer than 3.2 units. */
+function fitItems(items: Item[], camera: THREE.PerspectiveCamera, width: number, height: number, tall = false) {
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, top = 0;
+  for (const it of items) {
+    const r = footprint(it.kind);
+    minX = Math.min(minX, it.x * U - r);
+    maxX = Math.max(maxX, it.x * U + r);
+    minZ = Math.min(minZ, it.z * U - r);
+    maxZ = Math.max(maxZ, it.z * U + r);
+    top = Math.max(top, Math.min(tall ? 9 : 3.6, tallMm(it.kind) * U + (it.socket?.startsWith("clamp") ? SOCKET_HEIGHT.clamp! : 0)));
+  }
+  const centre = new THREE.Vector3((minX + maxX) / 2, Math.min(tall ? 3.4 : 1.7, top * 0.45 + 0.1), (minZ + maxZ) / 2);
+  const aspect = Math.max(0.4, width / Math.max(1, height));
+  const vfov = THREE.MathUtils.degToRad(camera.fov);
+  const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
+  // Room either side for the hand to carry and tilt a vessel over its target, and for name tags.
+  const w = (maxX - minX + 1.3) * 1.12;
+  const h = Math.max(top + 0.9, (maxZ - minZ) * 0.45 + 0.9) * 1.12;
+  const dist = THREE.MathUtils.clamp(Math.max(w / 2 / Math.tan(hfov / 2), h / 2 / Math.tan(vfov / 2)), 3.2, tall ? 15 : 11);
+  return { pos: centre.clone().addScaledVector(VIEW_DIR, dist), target: centre };
+}
+
+const easeInOut = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+
 /**
- * Glides the camera to fit a set of items whenever the frame key changes, so the equipment in use
- * fills the view instead of sitting small in the middle of a wide bench. Orbiting cancels the glide.
+ * Eases the camera once to fit a set of items whenever the frame key changes (one calm move per
+ * beat or step, never continuous re-targeting). If the learner orbits, pans or zooms, the move
+ * stops and onUserCamera is called; the page then usually stops framing until "Re-centre".
  */
-function CameraRig({ frame, state, reducedMotion }: { frame: BenchFrame; state: LabState; reducedMotion: boolean }) {
+function CameraRig({ frame, state, reducedMotion, onUserCamera }: { frame: BenchFrame; state: LabState; reducedMotion: boolean; onUserCamera?: (() => void) | undefined }) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
-  const controls = useThree((s) => s.controls) as (THREE.EventDispatcher<{ start: object }> & { target: THREE.Vector3; update: () => void }) | null;
+  const controls = useThree((s) => s.controls) as (THREE.EventDispatcher<{ start: object; end: object; change: object }> & { target: THREE.Vector3; update: () => void }) | null;
   const size = useThree((s) => s.size);
-  const anim = useRef<{ until: number; pos: THREE.Vector3; target: THREE.Vector3 } | null>(null);
+  const anim = useRef<{ start: number; dur: number; fromPos: THREE.Vector3; fromTarget: THREE.Vector3; pos: THREE.Vector3; target: THREE.Vector3 } | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
+  const userCb = useRef(onUserCamera);
+  userCb.current = onUserCamera;
+  const lastSize = useRef({ w: 0, h: 0 });
 
   useEffect(() => {
     const items = frame.ids.map((id) => stateRef.current.items[id]).filter((it): it is Item => !!it && it.socket !== "worn");
-    if (!items.length) return;
-    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, top = 0;
-    for (const it of items) {
-      const r = footprint(it.kind);
-      minX = Math.min(minX, it.x * U - r);
-      maxX = Math.max(maxX, it.x * U + r);
-      minZ = Math.min(minZ, it.z * U - r);
-      maxZ = Math.max(maxZ, it.z * U + r);
-      top = Math.max(top, tallMm(it.kind) * U);
-    }
-    const centre = new THREE.Vector3((minX + maxX) / 2, Math.min(1.2, top * 0.45 + 0.1), (minZ + maxZ) / 2);
-    const aspect = Math.max(0.4, size.width / Math.max(1, size.height));
-    const vfov = THREE.MathUtils.degToRad(camera.fov);
-    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
-    // Room either side for the hand to carry and tilt a vessel over its target.
-    const width = maxX - minX + 1.1;
-    const height = Math.max(top + 0.7, (maxZ - minZ) * 0.45 + 0.8);
-    const dist = THREE.MathUtils.clamp(Math.max(width / 2 / Math.tan(hfov / 2), height / 2 / Math.tan(vfov / 2)), 2.2, 11);
-    const pos = centre.clone().addScaledVector(VIEW_DIR, dist);
+    if (!items.length || !controls) return;
+    const { pos, target } = fitItems(items, camera, size.width, size.height, !!frame.tall);
+    const resized = lastSize.current.w !== 0 && (lastSize.current.w !== size.width || lastSize.current.h !== size.height);
+    lastSize.current = { w: size.width, h: size.height };
     if (reducedMotion) {
       camera.position.copy(pos);
-      controls?.target.copy(centre);
-      controls?.update();
+      controls.target.copy(target);
+      controls.update();
       return;
     }
-    anim.current = { until: performance.now() + 1400, pos, target: centre };
+    // Skip a move too small to notice (no little nudges between beats).
+    if (camera.position.distanceTo(pos) < 0.12 && controls.target.distanceTo(target) < 0.08) return;
+    anim.current = { start: performance.now(), dur: resized ? 400 : 1100, fromPos: camera.position.clone(), fromTarget: controls.target.clone(), pos, target };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [frame.key, frame.ids.join("|"), size.width, size.height]);
+  }, [frame.key, frame.ids.join("|"), size.width, size.height, controls]);
 
   useEffect(() => {
     if (!controls) return;
-    const stop = () => (anim.current = null);
-    controls.addEventListener("start", stop);
-    return () => controls.removeEventListener("start", stop);
-  }, [controls]);
+    let interacting = false;
+    const from = new THREE.Vector3();
+    const start = () => {
+      interacting = true;
+      from.copy(camera.position);
+    };
+    const end = () => (interacting = false);
+    const change = () => {
+      // A click with a little jitter is not a camera move.
+      if (!interacting || camera.position.distanceTo(from) < 0.06) return;
+      interacting = false;
+      anim.current = null;
+      userCb.current?.();
+    };
+    controls.addEventListener("start", start);
+    controls.addEventListener("end", end);
+    controls.addEventListener("change", change);
+    return () => {
+      controls.removeEventListener("start", start);
+      controls.removeEventListener("end", end);
+      controls.removeEventListener("change", change);
+    };
+  }, [controls, camera]);
 
-  useFrame((_, dt) => {
+  useFrame(() => {
     const a = anim.current;
     if (!a || !controls) return;
-    const k = 1 - Math.exp(-dt * 4.5);
-    camera.position.lerp(a.pos, k);
-    controls.target.lerp(a.target, k);
+    const k = Math.min(1, (performance.now() - a.start) / a.dur);
+    const e = easeInOut(k);
+    camera.position.lerpVectors(a.fromPos, a.pos, e);
+    controls.target.lerpVectors(a.fromTarget, a.target, e);
     controls.update();
-    if (performance.now() > a.until) anim.current = null;
+    if (k >= 1) anim.current = null;
   });
   return null;
 }
