@@ -90,7 +90,7 @@ public class EmergencyController {
     }
 
     private boolean locked(UUID user, JsonNode s) {
-        return !s.path("free").asBoolean() && (user == null || !entitlements.bool(user, "emergency.all"));
+        return !s.path("free").asBoolean() && !entitlements.bool(user, "emergency.all");
     }
 
     @GetMapping("/v1/emergency/scenarios")

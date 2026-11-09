@@ -56,10 +56,10 @@ public class Billing {
 
     public static final List<Plan> PLANS = List.of(
             new Plan("free", "Free", 0, "forever", List.of(
-                    "Selected experiments in every subject",
+                    "Every experiment in the library",
                     "Unlimited playground sessions",
                     "AI assistant: 10 messages a day",
-                    "Starter emergency scenarios",
+                    "Every emergency scenario",
                     "Basic progress tracking"), null, false),
             new Plan("premium_monthly", "Premium Monthly", 14_900, "month", List.of(
                     "No ads, ever",

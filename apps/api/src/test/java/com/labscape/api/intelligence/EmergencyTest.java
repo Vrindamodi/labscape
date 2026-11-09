@@ -74,14 +74,14 @@ class EmergencyTest {
     }
 
     @Test
-    void premiumScenariosAreLockedOnTheFreePlanAndBadInputIsRefused() throws Exception {
+    void everyScenarioIsOpenOnTheFreePlanAndBadInputIsRefused() throws Exception {
         Cookie c = guest();
         JsonNode list = mapper.readTree(mvc.perform(get("/v1/emergency/scenarios").cookie(c)).andReturn().getResponse().getContentAsString());
         assertThat(list.size()).isEqualTo(4);
         assertThat(list.get(0).path("slug").asText()).isEqualTo("gas-fire");
         assertThat(list.get(0).path("locked").asBoolean()).isFalse();
-        assertThat(list.get(1).path("locked").asBoolean()).isTrue();
-        mvc.perform(post("/v1/emergency/scenarios/minor-burn/start").cookie(c).contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isPaymentRequired());
+        list.forEach(s -> assertThat(s.path("locked").asBoolean()).isFalse());
+        mvc.perform(post("/v1/emergency/scenarios/minor-burn/start").cookie(c).contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isOk());
 
         String id = send(c, "/v1/emergency/scenarios/gas-fire/start", Map.of()).path("attemptId").asText();
         mvc.perform(post("/v1/emergency/attempts/" + id + "/choose").cookie(c).contentType(MediaType.APPLICATION_JSON).content("{\"choiceId\":\"fly\",\"elapsedMs\":1}"))

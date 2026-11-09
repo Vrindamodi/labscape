@@ -61,7 +61,7 @@ public class LibraryController {
             @RequestParam(required = false) String completed,
             @RequestParam(required = false) Boolean featured) {
         UUID user = jwt == null ? null : UUID.fromString(jwt.getSubject());
-        boolean full = user != null && entitlements.bool(user, "library.full");
+        boolean full = entitlements.bool(user, "library.full");
         Set<String> done = completedIds(user);
 
         List<Card> all = catalogue.all().stream()
@@ -96,7 +96,7 @@ public class LibraryController {
         Experiment e = catalogue.bySlug(slug)
                 .orElseThrow(() -> ApiProblem.notFound("EXPERIMENT_NOT_FOUND", "We couldn't find that experiment."));
         UUID user = jwt == null ? null : UUID.fromString(jwt.getSubject());
-        boolean full = user != null && entitlements.bool(user, "library.full");
+        boolean full = entitlements.bool(user, "library.full");
         Set<String> done = completedIds(user);
         List<Card> related = catalogue.all().stream()
                 .filter(o -> !o.id().equals(e.id()) && o.subject().equals(e.subject()))

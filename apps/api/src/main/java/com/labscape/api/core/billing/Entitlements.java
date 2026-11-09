@@ -15,8 +15,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class Entitlements {
 
-    // Playground sessions are unlimited on every plan for now (null = no limit); set a number to bring the cap back.
-    public static final Map<String, Object> FREE = values(false, false, null, false, 10, false, false, false);
+    // Playground sessions, the full library and every emergency scenario are open on every plan for now (null = no limit); set a number to bring the cap back.
+    public static final Map<String, Object> FREE = values(false, true, null, true, 10, false, false, false);
     public static final Map<String, Object> PREMIUM = values(true, true, null, true, 200, true, true, true);
 
     public record View(String plan, Map<String, Object> values, Map<String, Object> usage,
