@@ -77,6 +77,7 @@ const TITLES: Record<string, string> = {
   "not-dropwise": "Drop by drop here",
   "portion-too-big": "Smaller portions",
   "wrong-equipment": "That's a different vessel",
+  "wrong-target": "Wrong container for this step",
   reading: "Check that reading",
 };
 
@@ -645,7 +646,7 @@ function BenchShelf({ items, glow, held, control }: { items: Item[]; glow: strin
         onPointerDown={(e) => onDown(e, it)}
         onClick={() => {
           if (drag.current?.moved || worn) return;
-          control.current?.pickUp(it.id);
+          control.current?.choose(it.id);
         }}
         aria-pressed={held === it.id}
         disabled={worn}

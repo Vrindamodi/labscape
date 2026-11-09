@@ -88,7 +88,12 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
     for (let i = 0; i < visual.length; i++) if (visual[i]!.t <= t && t - visual[i]!.t < 2500) idx = i;
     if (idx < 0) idx = visual.findIndex((e) => e.t > t);
     const e = idx >= 0 ? visual[idx] : undefined;
-    const ids = e ? itemsOf(e).filter((id) => session.state.items[id] && session.state.items[id]!.socket !== "worn") : [];
+    const direct = e ? itemsOf(e).filter((id) => session.state.items[id] && session.state.items[id]!.socket !== "worn") : [];
+    // Keep what an item is snapped into in shot too (a thermometer is read in its beaker).
+    const ids = direct.flatMap((id) => {
+      const host = session.state.items[id]!.socket?.split(":")[1];
+      return host && session.state.items[host] ? [id, host] : [id];
+    });
     if (ids.length) lastFrame.current = { key: `e${idx}`, ids: [...new Set(ids)] };
     return lastFrame.current;
     // eslint-disable-next-line react-hooks/exhaustive-deps

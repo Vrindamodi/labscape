@@ -452,4 +452,4 @@ export function EnergyBars({ bars, max }: { bars: { label: string; value: number
 }
 
 /** Formats a number to n significant figures without trailing noise. */
-export const sf = (x: number | null | undefined, n = 3) => (x == null || !Number.isFinite(x) ? "–" : String(Number(x.toPrecision(n))));
+export const sf = (x: number | null | undefined, n = 3) => (x == null || !Number.isFinite(x) ? "–" : Math.abs(x) < 1e-9 ? "0" : String(Number(x.toPrecision(n))));

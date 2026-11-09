@@ -120,7 +120,6 @@ function Player({ view }: { view: ExperimentView }) {
 
   return (
     <div className="flex h-screen flex-col bg-[radial-gradient(1200px_500px_at_50%_-10%,rgba(47,128,255,.18),transparent_60%),#0b1020] text-white">
-      {me && <AssistantLauncher />}
       {/* stage rail: one line, the current stage highlighted; each stage has its own primary button */}
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-white/[0.07] bg-[#0b1020]/80 px-2 backdrop-blur-xl sm:gap-3 sm:px-4">
         <button onClick={() => navigate(`/library/${content.slug}`)} className="grid h-10 w-10 shrink-0 place-items-center rounded-md text-white/60 hover:bg-white/[0.06] hover:text-white" aria-label="Leave the lab">
@@ -165,6 +164,7 @@ function Player({ view }: { view: ExperimentView }) {
             </>
           );
         })()}
+        {me && <AssistantLauncher />}
       </header>
 
       <div className="min-h-0 flex-1">

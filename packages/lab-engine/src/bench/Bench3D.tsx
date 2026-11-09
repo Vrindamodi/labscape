@@ -269,7 +269,7 @@ function ItemNode({ item, state, cues, selected, targets, onPick, pour, hand, mi
       <Visual item={item} state={state} cues={cues} quality={quality} reducedMotion={reducedMotion} />
       {(isSel || isTarget) && !held && <SelectionRing radius={footprint(item.kind)} colour={isSel ? "#2f80ff" : "#22d3ee"} pulse={isTarget} />}
       {(isSel || isTarget) && !held && (
-        <Html position={[0, Math.max(0.5, lipHeightMm(item.kind) * U + 0.25), 0]} center distanceFactor={9} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+        <Html position={[0, Math.max(0.5, lipHeightMm(item.kind) * U + 0.25), 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
           <div data-highlight-id={item.id} style={{ whiteSpace: "nowrap", padding: "4px 9px", borderRadius: 9, font: "600 12px Inter, sans-serif", color: "#fff", background: isSel ? "rgba(47,128,255,.92)" : "rgba(8,16,38,.85)", border: `1px solid ${isSel ? "#8cbcff" : "#22d3ee"}` }}>
             {item.label}
             {item.liquid && item.liquid.volumeMl > 0.001 ? ` · ${fmtMl(item.liquid.volumeMl)}` : ""}

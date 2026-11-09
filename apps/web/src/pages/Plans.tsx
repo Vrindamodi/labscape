@@ -158,8 +158,8 @@ export default function Plans() {
     <div className="mx-auto max-w-[1040px]">
       <div className="text-center">
         <Chip tone="gold"><Crown className="h-3 w-3" />LABscape Premium</Chip>
-        <h1 className="mt-4 font-heading text-4xl font-bold tracking-tight sm:text-5xl">Unlock the whole lab</h1>
-        <p className="mx-auto mt-3 max-w-xl text-white/60">Every experiment, every emergency scenario, unlimited playground time and no ads. Cancel any time.</p>
+        <h1 className="mt-4 font-heading text-4xl font-bold tracking-tight sm:text-5xl">Go Premium</h1>
+        <p className="mx-auto mt-3 max-w-xl text-white/60">Every experiment is free. Premium adds no ads, 200 AI messages a day, detailed analytics and report export. Cancel any time.</p>
         <div className="mt-6 inline-flex items-center gap-3">
           <Segmented label="Billing interval" value={interval} onChange={(v) => { sound.play("toggle"); setInterval(v); }} options={[{ value: "month", label: "Monthly" }, { value: "year", label: "Annual" }]} />
           <AnimatePresence>

@@ -194,7 +194,7 @@ function PremiumNudge() {
       <div className="flex items-center gap-2 text-sm font-semibold text-[#ffd77a]">
         <Crown className="h-4 w-4" /> Go Premium
       </div>
-      <p className="mt-1 text-xs text-white/60">Full library, every scenario, no ads.</p>
+      <p className="mt-1 text-xs text-white/60">No ads, more AI help, detailed reports.</p>
     </Link>
   );
 }

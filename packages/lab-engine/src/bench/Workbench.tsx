@@ -42,6 +42,8 @@ export type WorkbenchProps = {
 export type WorkbenchControl = {
   /** Pick this item up (or select it) as if it was clicked on the bench. */
   pickUp: (id: string) => void;
+  /** Click an item as if on the bench: uses it as the target of what is in hand when it is one, else picks it up. */
+  choose: (id: string) => void;
   /** Pick it up and start carrying it with the pointer: releasing it over a glowing vessel uses it. */
   dragFromShelf: (id: string) => void;
   putDown: () => void;
@@ -283,6 +285,7 @@ export function Workbench({ session, step, onLiveWarning, readOnly, overlay, cla
   if (control) {
     control.current = {
       pickUp,
+      choose: onPick,
       dragFromShelf: (id) => {
         const it = state.items[id];
         if (readOnly || !it || it.socket === "worn") return;

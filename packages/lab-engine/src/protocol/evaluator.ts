@@ -1,5 +1,5 @@
 import type { LabEvent, ScoreDimension } from "@labscape/contracts";
-import { lipHeightMm } from "../engine/equipment";
+import { KINDS, lipHeightMm, type EquipmentKind } from "../engine/equipment";
 import type { LabState } from "../engine/state";
 import { look } from "../engine/state";
 import type { Deviation, ExperimentContent, Feedback, Report, Severity, StepProgress, StepSpec } from "./types";
@@ -87,6 +87,18 @@ export class Evaluator {
       const to = target(e);
       const used = new Set(this.content.bench.items.map((i) => i.id));
       if (to && !used.has(to) && to !== "bench") this.flag(out, this.current()?.id ?? "-", "wrong-equipment", "minor", "That isn't the right piece of equipment for this step.", "equipment", e.t);
+      else if (to && to !== "bench") {
+        // A real vessel, just not the one this step uses: say which one it should have been.
+        const cur = this.current();
+        const from = (e.payload as Record<string, unknown>).from;
+        if (cur?.to && cur.to !== to && cur.from && cur.from === from && TRANSFERS.has(cur.action)) {
+          const name = (id: string) => {
+            const it = this.content.bench.items.find((i) => i.id === id);
+            return it?.label ?? (it ? KINDS[it.kind as EquipmentKind]?.label : undefined) ?? id;
+          };
+          this.flag(out, cur.id, "wrong-target", "minor", `This step goes into the ${lower(name(cur.to))}, not the ${lower(name(to))}.`, "equipment", e.t);
+        }
+      }
     }
 
     if (match) {
@@ -335,6 +347,8 @@ function fits(spec: StepSpec, e: LabEvent): boolean {
   if (e.type === "param.set" && String(p.key).startsWith("answer:")) return false;
   return true;
 }
+
+const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 
 function target(e: LabEvent): string | undefined {
   const p = e.payload as Record<string, unknown>;
