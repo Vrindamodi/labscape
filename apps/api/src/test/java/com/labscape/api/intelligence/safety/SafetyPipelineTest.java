@@ -120,6 +120,43 @@ class SafetyPipelineTest {
     }
 
     @Test
+    void ironSulfideAndAcidGiveToxicHydrogenSulfide() {
+        SimulationResult r = mix(in("hcl", 20), in("fes", 1));
+        assertThat(r.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(discoveries(r)).contains("acid-sulfide");
+        assertThat(r.cues()).anySatisfy(c -> {
+            assertThat(c.path("gas").asText()).isEqualTo("H2S");
+            assertThat(c.path("hazard").asText()).isEqualTo("toxic");
+            assertThat(c.path("smell").asText()).containsIgnoringCase("rotten eggs");
+        });
+        assertThat(r.equationLatex()).contains("FeS").contains("H_{2}S");
+    }
+
+    @Test
+    void ironSulfideAloneInWaterDoesNothing() {
+        assertThat(mix(in("water", 20), in("fes", 1)).outcome()).isEqualTo(Outcome.NO_REACTION);
+    }
+
+    @Test
+    void bakingSodaAndVinegarFizz() {
+        SimulationResult r = mix(in("vinegar", 40), in("baking-soda", 2));
+        assertThat(r.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(discoveries(r)).contains("acid-hydrogencarbonate");
+        assertThat(r.cues()).anySatisfy(c -> assertThat(c.path("gas").asText()).isEqualTo("CO2"));
+    }
+
+    @Test
+    void bleachAndVinegarAreBlocked() {
+        assertThat(mix(in("bleach", 10), in("vinegar", 10)).outcome()).isEqualTo(Outcome.PROHIBITED);
+    }
+
+    @Test
+    void hydrogenIsFlaggedFlammable() {
+        SimulationResult r = mix(in("hcl", 30), in("mg-ribbon", 0.2));
+        assertThat(r.cues()).anySatisfy(c -> assertThat(c.path("hazard").asText()).isEqualTo("flammable"));
+    }
+
+    @Test
     void copperDoesNotReactWithDiluteAcid() {
         SimulationResult r = mix(in("hcl", 20), in("cu-turnings", 1));
         assertThat(r.outcome()).isEqualTo(Outcome.NO_REACTION);

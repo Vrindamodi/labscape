@@ -1,5 +1,5 @@
 import type { SimulationResult } from "@labscape/contracts";
-import { DockButton, DockSeparator, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Readout, Segmented, SquareButton, TiltGauge, type HeldKind, type PlaygroundView } from "@labscape/lab-engine";
+import { DockButton, DockSeparator, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type HeldKind, type PlaygroundView } from "@labscape/lab-engine";
 import { useMotion } from "@labscape/motion";
 import { dispenseMode, fetchCatalogue, liquidMl, loadDiscoveries, ProblemError, resolveMix, saveDiscoveries, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem } from "@labscape/playground";
 import { cx } from "@labscape/ui";
@@ -16,9 +16,10 @@ type Speed = "drop" | "slow" | "steady" | "fast";
 const RATE: Record<Speed, number> = { drop: 0.3, slow: 1.5, steady: 4, fast: 9 };
 const TILT: Record<Speed, number> = { drop: 62, slow: 78, steady: 96, fast: 118 };
 type Tab = "live" | "molecules" | "notebook" | "facts";
-type Filter = "all" | "acid" | "alkali" | "salt" | "metal" | "indicator" | "solid" | "gas" | "element" | "other";
+type Filter = "all" | "household" | "acid" | "alkali" | "salt" | "metal" | "indicator" | "solid" | "gas" | "element" | "other";
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
+  { id: "household", label: "Household" },
   { id: "acid", label: "Acids" },
   { id: "alkali", label: "Bases" },
   { id: "salt", label: "Salts" },
@@ -29,7 +30,7 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "element", label: "Elements" },
   { id: "other", label: "Other" },
 ];
-const CAP_COLOUR: Record<string, string> = { acid: "#ef4444", alkali: "#3d8bff", salt: "#a855f7", indicator: "#ec4899", metal: "#94a3b8", solid: "#f59e0b", element: "#22c55e" };
+const CAP_COLOUR: Record<string, string> = { household: "#14b8a6", acid: "#ef4444", alkali: "#3d8bff", salt: "#a855f7", indicator: "#ec4899", metal: "#94a3b8", solid: "#f59e0b", element: "#22c55e" };
 
 const EMPTY_VIEW: Omit<PlaygroundView, "held" | "focus" | "plateC" | "stirring" | "swirling" | "levelMl" | "capacityMl" | "smell" | "liquidC" | "iceBath" | "reactionPulse" | "sparkPulse"> = {
   colour: "#cfe6ff",
@@ -62,7 +63,8 @@ function matchesFilter(it: ShelfItem, f: Filter) {
   if (f === "gas") return it.form === "gas";
   if (f === "element") return !!it.element;
   if (f === "metal") return it.category === "metal" || (!!it.element && ["alkali", "alkaline-earth", "transition", "post-transition"].includes(it.element.category));
-  if (f === "other") return ["solvent", "other", "household"].includes(it.category);
+  if (f === "household") return it.category === "household" || ["sugar", "ethanol", "vegetable-oil", "h2o2", "nacl", "nahco3"].includes(it.id);
+  if (f === "other") return ["solvent", "other"].includes(it.category);
   return it.category === f;
 }
 
@@ -106,7 +108,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [tab, setTab] = useState<Tab>("live");
   const [focus, setFocus] = useState(false);
   const [note, setNote] = useState<{ text: string; tone: "warn" | "bad" | "good" } | null>(null);
-  const [blocked, setBlocked] = useState<{ title: string; message: string; suggestions: string[] } | null>(null);
+  const [blocked, setBlocked] = useState<{ title: string; message: string; suggestions: string[]; tried: string[] } | null>(null);
+  const [hazard, setHazard] = useState<{ gas: string; name: string; level: "toxic" | "corrosive" | "flammable"; warning: string } | null>(null);
   const [glowTool, setGlowTool] = useState<string | null>(null);
   const [found, setFound] = useState<Record<string, FoundDiscovery>>(() => loadDiscoveries());
   const [missionIdx, setMissionIdx] = useState(0);
@@ -213,6 +216,13 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
               });
               addLog(`${c.gas} gas given off${c.smell ? ` · smell: ${c.smell}` : ""}`);
               if (c.smell && !/no smell/i.test(c.smell)) showSmell(c.smell, c.colour ? oklabToHex(c.colour) : "#c8f7a5");
+              if (c.hazard && c.warning) {
+                const name = p?.compounds.find((x) => x.formula === c.gas)?.name ?? c.gas;
+                setHazard({ gas: c.gas, name, level: c.hazard, warning: c.warning });
+                addLog(`${c.hazard === "toxic" ? "☠ Toxic" : c.hazard === "flammable" ? "🔥 Flammable" : "⚠ Corrosive"}: ${name}. ${c.warning}`, c.hazard === "toxic" ? "bad" : "warn");
+                if (c.hazard !== "flammable") sound.play("warn");
+                later(Math.max(9000, Math.min(16000, c.durationMs + 3000)), () => setHazard((h) => (h?.gas === c.gas ? null : h)));
+              }
               break;
             case "dissolve":
               later(Math.min(4000, c.durationMs), () => setVisual((v) => (v.solid ? { ...v, solid: (c.fraction ?? 1) >= 1 ? null : { ...v.solid, amount: v.solid.amount * (1 - (c.fraction ?? 1)) } } : v)));
@@ -281,7 +291,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         if (r.outcome === "prohibited") {
           revert();
           sound.play("deny");
-          setBlocked({ title: r.presentation?.title ?? "Not allowed", message: r.presentation?.message ?? "That combination is not allowed.", suggestions: r.presentation?.suggestions ?? [] });
+          setBlocked({ title: r.presentation?.title ?? "Not allowed", message: r.presentation?.message ?? "That combination is not allowed.", suggestions: r.presentation?.suggestions ?? [], tried: next.map((x) => x.item.name) });
           addLog("Blocked by the safety engine", "bad");
           return;
         }
@@ -451,6 +461,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setIgnition(false);
     setTargetC(plateC);
     setSmell(null);
+    setHazard(null);
     if (!silent) addLog("Emptied and rinsed the beaker");
     sound.play("pour");
   };
@@ -512,11 +523,37 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         <button onClick={() => navigate("/playground")} className="grid h-10 w-10 place-items-center rounded-xl text-[#a9bde4] hover:bg-white/[0.06] hover:text-white" aria-label="Back to the playground">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="min-w-0">
+        <div className="min-w-0 shrink-0">
           <div className="font-heading text-[16px] font-bold leading-tight">Open Playground</div>
           <div className="text-[12px] text-[#8fa6d1]">Chemistry · {cat?.substances.length ?? "…"} substances</div>
         </div>
+        {mission && !focus && (
+          <div className="ml-2 hidden min-w-0 max-w-[340px] flex-1 items-center gap-2.5 rounded-xl bg-white/[0.04] py-1 pl-1.5 pr-1 lg:flex">
+            <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(#ffc23d 0 ${(foundCount / Math.max(1, cat!.discoveries.length)) * 100}%, rgba(255,255,255,.1) 0)` }}>
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-[#0b1730] font-heading text-[10px] font-bold text-[#ffc23d]">{foundCount}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#8fa6d1]">
+                Mission {missionIdx + 1}/{cat!.discoveries.length} {found[mission.id] && <span className="text-[#3de8a8]">· done</span>}
+              </div>
+              <div className="truncate text-[12.5px] font-semibold" title={mission.clue}>{found[mission.id] ? mission.name : mission.clue}</div>
+            </div>
+            <button aria-label="Previous mission" onClick={() => setMissionIdx((i) => (i - 1 + cat!.discoveries.length) % cat!.discoveries.length)} className="rounded p-1 text-[#8fa6d1] hover:text-white">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button aria-label="Next mission" onClick={() => setMissionIdx((i) => (i + 1) % cat!.discoveries.length)} className="rounded p-1 text-[#8fa6d1] hover:text-white">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
         <span className="flex-1" />
+        {levelMl > 0 && (
+          <div className="hidden items-center gap-1.5 md:flex" aria-label="Readings">
+            <TopStat label="Temp" value={`${liquidC.toFixed(1)}°C`} tone={liquidC > 24 ? "hot" : liquidC < 20 ? "cold" : "plain"} />
+            {ph !== null && <TopStat label="pH" value={ph.toFixed(2)} tone={ph < 6.5 ? "hot" : ph > 7.5 ? "cold" : "ok"} hint={ph < 6.5 ? "acidic" : ph > 7.5 ? "alkaline" : "neutral"} />}
+            <TopStat label="Vol" value={`${fmt(levelMl + inFlight, "mL")} mL`} tone="plain" />
+          </div>
+        )}
         <span className={cx("hidden items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-semibold sm:flex", online === false ? "bg-[rgba(255,91,107,.14)] text-[#ff9b9b]" : "bg-[rgba(61,232,168,.12)] text-[#3de8a8]")} role="status">
           {online === false ? <ShieldAlert className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
           {online === false ? "Safety engine offline" : busy ? "Checking…" : "Safety engine on"}
@@ -525,31 +562,6 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           {focus ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />} {focus ? "Exit focus" : "Focus"}
         </button>
       </Glass>
-
-      {/* mission */}
-      {mission && !focus && (
-        <Glass className="absolute left-1/2 top-[84px] z-10 flex w-[min(380px,calc(100%-32px))] -translate-x-1/2 items-center gap-3 px-3.5 py-2.5 lg:left-[330px] lg:translate-x-0">
-          <div className="relative grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(#ffc23d 0 ${(foundCount / Math.max(1, cat!.discoveries.length)) * 100}%, rgba(255,255,255,.1) 0)` }}>
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-[#0b1730] font-heading text-[12px] font-bold text-[#ffc23d]">
-              {foundCount}/{cat!.discoveries.length}
-            </span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <Kicker>
-              Mission {missionIdx + 1} of {cat!.discoveries.length} {found[mission.id] && <span className="text-[#3de8a8]">· done</span>}
-            </Kicker>
-            <div className="truncate font-heading text-[14px] font-bold">{found[mission.id] ? mission.name : mission.clue}</div>
-          </div>
-          <div className="flex flex-col">
-            <button aria-label="Previous mission" onClick={() => setMissionIdx((i) => (i - 1 + cat!.discoveries.length) % cat!.discoveries.length)} className="rounded p-0.5 text-[#8fa6d1] hover:text-white">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button aria-label="Next mission" onClick={() => setMissionIdx((i) => (i + 1) % cat!.discoveries.length)} className="rounded p-0.5 text-[#8fa6d1] hover:text-white">
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </Glass>
-      )}
 
       {!focus && drawer === "shelf" && <Shelf cat={cat} held={held} onPick={pick} glow={glowTool === "catalyst" ? "mno2-powder" : glowTool === "acid" ? "h2so4" : null} onTable={() => setDrawer("table")} />}
       {!focus && drawer === "table" && cat && (
@@ -563,32 +575,48 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         />
       )}
 
-      {/* a smell, made visible */}
-      <AnimatePresence>
-        {smell && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="pointer-events-none absolute left-1/2 top-[230px] z-10 -translate-x-1/2 xl:left-[calc(50%+60px)]" role="status">
-            <Glass radius="md" className="max-w-xs px-3.5 py-2.5">
-              <Kicker>Smell</Kicker>
-              <div className="text-[13.5px] font-semibold">{smell.text}</div>
-              <div className="mt-0.5 text-[11.5px] text-[#ffd59a]">Waft it towards you with your hand. Never sniff a beaker directly.</div>
-            </Glass>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* readouts */}
-      {levelMl > 0 && (
-        <div className="pointer-events-none absolute bottom-[100px] left-1/2 z-10 flex -translate-x-1/2 gap-2 lg:left-[340px] lg:translate-x-0">
-          <Readout label="Temperature" value={liquidC.toFixed(1)} unit="°" delta={Math.abs(liquidC - 22) >= 0.5 ? `${liquidC > 22 ? "▲" : "▼"} ${Math.abs(liquidC - 22).toFixed(1)}` : null} tone={liquidC > 22 ? "up" : "down"} />
-          {ph !== null && <Readout label="pH" value={ph.toFixed(2)} delta={ph < 6.5 ? "acidic" : ph > 7.5 ? "alkaline" : "neutral"} tone={ph < 6.5 ? "up" : ph > 7.5 ? "down" : "ok"} />}
-          <Readout label="Volume" value={fmt(levelMl + inFlight, "mL")} unit="mL" />
-        </div>
-      )}
+      {/* hazards and smells, stacked at the right of the bench (never over the beaker) */}
+      <div className={cx("pointer-events-none absolute right-4 top-[84px] z-20 flex w-[min(300px,calc(100%-32px))] flex-col gap-2", !focus && "xl:right-[388px]")}>
+        <AnimatePresence>
+          {hazard && (
+            <motion.div key={hazard.gas} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} role="alert">
+              <div className={cx("rounded-2xl border-2 p-3 shadow-[0_10px_40px_-10px_rgba(0,0,0,.7)] backdrop-blur-md", hazard.level === "toxic" ? "border-[#ff4d5e] bg-[rgba(70,8,18,.88)]" : hazard.level === "flammable" ? "border-[#ff9a2e] bg-[rgba(70,30,6,.88)]" : "border-[#ffc23d] bg-[rgba(60,44,6,.88)]")}>
+                <div className="flex items-center gap-2.5">
+                  <HazardDiamond level={hazard.level} />
+                  <div className="min-w-0">
+                    <div className={cx("text-[11px] font-extrabold uppercase tracking-[0.12em]", hazard.level === "toxic" ? "text-[#ff8a96]" : "text-[#ffc46b]")}>
+                      {hazard.level === "toxic" ? "Toxic gas" : hazard.level === "flammable" ? "Flammable gas" : "Corrosive fumes"}
+                    </div>
+                    <div className="font-heading text-[15px] font-bold leading-tight">{hazard.name} given off</div>
+                  </div>
+                </div>
+                <p className="mt-2 text-[12.5px] leading-snug text-[#ffe1e4]">{hazard.warning}</p>
+              </div>
+            </motion.div>
+          )}
+          {smell && (
+            <motion.div key="smell" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} role="status">
+              <Glass radius="md" className="px-3.5 py-2.5">
+                <Kicker>Smell</Kicker>
+                <div className="text-[13.5px] font-semibold">{smell.text}</div>
+                <div className="mt-0.5 text-[11.5px] text-[#ffd59a]">Waft it towards you with your hand. Never sniff a beaker directly.</div>
+              </Glass>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* the card beside what is in hand */}
       <AnimatePresence>
         {held && (
-          <motion.div key={held.id} initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className={cx("absolute z-20 w-[268px]", focus ? "right-4 top-[84px]" : "left-4 top-[164px] lg:left-[330px]")}>
+          <motion.div
+            key={held.id}
+            initial={reduced ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className={cx("absolute z-20 w-[256px] overflow-y-auto rounded-[22px] [scrollbar-width:thin]", focus ? "right-4 top-[84px]" : "left-4 top-[136px] lg:left-[332px] lg:top-[84px]")}
+            style={{ maxHeight: "calc(100% - 190px)" }}
+          >
             <HoldCard
               item={held}
               mode={heldMode!}
@@ -630,7 +658,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       )}
 
       {/* dock */}
-      <div className="absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-24px)] -translate-x-1/2 overflow-x-auto">
+      <div className="absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-24px)] -translate-x-1/2 max-sm:overflow-x-auto">
         <Glass radius="xl" className="flex items-center gap-1 p-2" role="toolbar" aria-label="Bench tools">
           <DockButton
             icon={<RotateCw />}
@@ -679,22 +707,15 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
 
       {/* hints */}
       {!held && !tray.length && !focus && (
-        <div className="pointer-events-none absolute left-1/2 top-[172px] z-10 -translate-x-1/2 xl:left-[calc(50%+40px)]">
+        <div className="pointer-events-none absolute left-1/2 top-[84px] z-10 max-w-[calc(100%-32px)] -translate-x-1/2 max-lg:top-[136px] xl:left-[calc(50%-28px)]">
           <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold">
-            <Hand className="h-4 w-4 text-[#39d6ff]" /> Pick a chemical from the shelf to hold it over the beaker
-          </Glass>
-        </div>
-      )}
-      {held && heldMode === "pour" && !flowing && (
-        <div className="pointer-events-none absolute left-1/2 top-[172px] z-10 -translate-x-1/2 xl:left-[calc(50%+40px)]">
-          <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold">
-            <MoveDown className="h-4 w-4 text-[#39d6ff]" /> Press and hold on the bench to pour · drag down to tilt more
+            <Hand className="h-4 w-4 shrink-0 text-[#39d6ff]" /> Pick a chemical from the shelf to hold it over the beaker
           </Glass>
         </div>
       )}
       <AnimatePresence>
         {note && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute left-1/2 top-[150px] z-30 -translate-x-1/2" role="status">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute bottom-[100px] left-1/2 z-30 max-w-[calc(100%-32px)] -translate-x-1/2 xl:left-[calc(50%-28px)]" role="status">
             <Glass radius="md" className={cx("max-w-md px-3.5 py-2 text-[13px] font-semibold", note.tone === "bad" ? "text-[#ff9b9b]" : note.tone === "good" ? "text-[#3de8a8]" : "text-[#ffd59a]")}>
               {note.text}
             </Glass>
@@ -730,26 +751,105 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
 
       <AnimatePresence>
         {blocked && (
-          <motion.div className="absolute inset-0 z-40 grid place-items-center bg-black/55 p-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <Glass radius="xl" className="w-[min(440px,100%)] border-[rgba(255,91,107,.45)] p-6" role="alertdialog" aria-label={blocked.title}>
-              <ShieldAlert className="h-8 w-8 text-[#ff5b6b]" />
-              <h2 className="mt-2 font-heading text-[22px] font-bold">{blocked.title}</h2>
-              <p className="mt-2 text-[14px] text-[#c8d6f3]">{blocked.message}</p>
-              {blocked.suggestions.length > 0 && (
-                <ul className="mt-3 space-y-1 text-[13px] text-[#a9bde4]">
-                  {blocked.suggestions.map((s) => (
-                    <li key={s}>• {s}</li>
+          <motion.div
+            className="absolute inset-0 z-40 grid place-items-center overflow-y-auto p-4 backdrop-blur-sm"
+            style={{ background: "radial-gradient(ellipse at center, rgba(120,0,20,.55), rgba(10,0,4,.82))" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={reduced ? false : { scale: 0.9, x: 0 }}
+              animate={reduced ? {} : { scale: 1, x: [0, -14, 12, -8, 5, 0] }}
+              transition={{ duration: 0.55 }}
+              className="w-[min(460px,100%)] rounded-[26px] border-2 border-[#ff4d5e] bg-[rgba(30,6,14,.94)] p-6 text-center shadow-[0_0_80px_-10px_rgba(255,60,80,.6)]"
+              role="alertdialog"
+              aria-label="Not allowed"
+            >
+              <NoEntrySign />
+              <div className="mt-3 text-[12px] font-extrabold uppercase tracking-[0.2em] text-[#ff6b7a]">Not allowed</div>
+              <h2 className="mt-1 font-heading text-[24px] font-bold">{blocked.title}</h2>
+              {blocked.tried.length > 0 && (
+                <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+                  {blocked.tried.map((t, i) => (
+                    <span key={t} className="flex items-center gap-1.5 text-[12.5px] font-semibold">
+                      {i > 0 && <span className="text-[#ff6b7a]">+</span>}
+                      <span className="rounded-lg bg-white/[0.08] px-2 py-1">{t}</span>
+                    </span>
                   ))}
-                </ul>
+                </div>
+              )}
+              <p className="mt-3 text-left text-[14px] text-[#f1d6da]">{blocked.message}</p>
+              <p className="mt-2 text-left text-[12.5px] text-[#c7a3aa]">Nothing was added to the beaker. Mixes like this are blocked outright, and repeated attempts pause the playground for a while.</p>
+              {blocked.suggestions.length > 0 && (
+                <div className="mt-3 text-left">
+                  <Kicker>Try instead</Kicker>
+                  <ul className="mt-1 space-y-1 text-[13px] text-[#e3c2c8]">
+                    {blocked.suggestions.map((s) => (
+                      <li key={s}>• {s}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
               <PrimaryButton className="mt-5 w-full" onClick={() => setBlocked(null)}>
-                Got it
+                Understood
               </PrimaryButton>
-            </Glass>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ small pieces */
+
+function TopStat({ label, value, tone, hint }: { label: string; value: string; tone: "hot" | "cold" | "ok" | "plain"; hint?: string }) {
+  const c = tone === "hot" ? "text-[#ffb36b]" : tone === "cold" ? "text-[#7cc4ff]" : tone === "ok" ? "text-[#3de8a8]" : "text-white";
+  return (
+    <div className="flex h-10 flex-col justify-center rounded-xl bg-white/[0.05] px-2.5" title={hint}>
+      <span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#8fa6d1]">{label}</span>
+      <span className={cx("font-heading text-[14px] font-bold tabular-nums leading-tight", c)}>{value}</span>
+    </div>
+  );
+}
+
+/** GHS-style hazard pictogram: a red-bordered diamond with a skull, flame or corrosion mark. */
+function HazardDiamond({ level }: { level: "toxic" | "corrosive" | "flammable" }) {
+  return (
+    <svg viewBox="0 0 48 48" className="h-11 w-11 shrink-0" aria-label={`${level} hazard symbol`}>
+      <rect x="9" y="9" width="30" height="30" rx="2" transform="rotate(45 24 24)" fill="#fff" stroke="#e11d2e" strokeWidth="4" />
+      {level === "toxic" && (
+        <g fill="#111">
+          <ellipse cx="24" cy="21" rx="7" ry="6.5" />
+          <rect x="20" y="25" width="8" height="5" rx="1.2" />
+          <circle cx="21.2" cy="20.5" r="2" fill="#fff" />
+          <circle cx="26.8" cy="20.5" r="2" fill="#fff" />
+          <path d="M14 30 L34 35 M34 30 L14 35" stroke="#111" strokeWidth="2.4" strokeLinecap="round" />
+        </g>
+      )}
+      {level === "flammable" && <path d="M24 13c2 5 7 7 7 14a7 7 0 0 1-14 0c0-4 2-6 3-8 0 3 1 4 2 4 0-4 0-7 2-10z" fill="#111" />}
+      {level === "corrosive" && (
+        <g fill="#111">
+          <path d="M15 19h8l-2 3h-6z M27 19h8l-2 3h-6z" />
+          <path d="M18 24v3 M30 24v4" stroke="#111" strokeWidth="2" />
+          <rect x="13" y="31" width="22" height="3" rx="1" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
+/** A big animated prohibition sign. */
+function NoEntrySign() {
+  const { reduced } = useMotion();
+  return (
+    <motion.svg viewBox="0 0 120 120" className="mx-auto h-24 w-24" initial={reduced ? false : { scale: 0.4, rotate: -30, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 14 }} aria-hidden>
+      <circle cx="60" cy="60" r="52" fill="rgba(255,60,80,.12)" />
+      <circle cx="60" cy="60" r="44" fill="none" stroke="#ff3d55" strokeWidth="11" />
+      <line x1="29" y1="91" x2="91" y2="29" stroke="#ff3d55" strokeWidth="11" strokeLinecap="round" />
+      <FlaskConical x={42} y={42} width={36} height={36} color="#ffd7dc" strokeWidth={1.8} />
+    </motion.svg>
   );
 }
 
@@ -761,7 +861,7 @@ function Shelf({ cat, held, onPick, glow, onTable }: { cat: CatalogueResponse | 
   const [open, setOpen] = useState(false);
   const list = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return (cat?.substances ?? []).filter((it) => matchesFilter(it, f) && (!s || it.name.toLowerCase().includes(s) || it.formula.toLowerCase().includes(s) || it.element?.symbol.toLowerCase() === s));
+    return (cat?.substances ?? []).filter((it) => matchesFilter(it, f) && (!s || it.name.toLowerCase().includes(s) || it.formula.toLowerCase().includes(s) || it.element?.symbol.toLowerCase() === s || (s.length >= 4 && it.description.toLowerCase().includes(s))));
   }, [cat, q, f]);
   return (
     <>
@@ -957,6 +1057,11 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
           </GhostButton>
         )}
       </div>
+      {p.mode === "pour" && (
+        <p className="flex items-start gap-1.5 text-[11.5px] leading-snug text-[#8fa6d1]">
+          <MoveDown className="mt-px h-3.5 w-3.5 shrink-0 text-[#39d6ff]" /> Or press and hold on the bench to pour by hand · drag down to tilt more
+        </p>
+      )}
       <GhostButton className="w-full" onClick={p.onPutDown}>
         <Hand className="h-4 w-4" /> Put down
       </GhostButton>

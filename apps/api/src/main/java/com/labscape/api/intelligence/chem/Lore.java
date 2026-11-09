@@ -33,6 +33,28 @@ public final class Lore {
             Map.entry("NO2", new Gas("Nitrogen dioxide", "#b5521f", "Sharp and biting")),
             Map.entry("H2O", new Gas("Steam", "#ffffff", "No smell - just warm, damp air")));
 
+    /** Gases that need a real-lab warning: "toxic", "corrosive" or "flammable". */
+    public static final Map<String, String> GAS_HAZARD = Map.ofEntries(
+            Map.entry("H2S", "toxic"), Map.entry("Cl2", "toxic"), Map.entry("SO2", "toxic"), Map.entry("NO2", "toxic"),
+            Map.entry("Br2", "toxic"), Map.entry("CO", "toxic"), Map.entry("HF", "toxic"), Map.entry("F2", "toxic"),
+            Map.entry("HCl", "corrosive"), Map.entry("HBr", "corrosive"), Map.entry("HI", "corrosive"), Map.entry("NH3", "corrosive"),
+            Map.entry("H2", "flammable"));
+
+    public static final Map<String, String> GAS_WARNING = Map.ofEntries(
+            Map.entry("H2S", "Hydrogen sulfide is toxic even in small amounts, and it numbs your sense of smell. Fume cupboard only."),
+            Map.entry("Cl2", "Chlorine is a toxic gas that damages the lungs. Fume cupboard only."),
+            Map.entry("SO2", "Sulfur dioxide is toxic and can trigger asthma. Fume cupboard only."),
+            Map.entry("NO2", "Nitrogen dioxide is a toxic brown gas. Fume cupboard only."),
+            Map.entry("Br2", "Bromine vapour is toxic and burns skin and lungs. Fume cupboard only."),
+            Map.entry("CO", "Carbon monoxide is toxic and has no smell at all. Never breathe it."),
+            Map.entry("HF", "Hydrogen fluoride is extremely toxic and corrosive."),
+            Map.entry("F2", "Fluorine is extremely toxic and reactive."),
+            Map.entry("HCl", "Hydrogen chloride fumes are corrosive to eyes and lungs. Use a fume cupboard."),
+            Map.entry("HBr", "Hydrogen bromide fumes are corrosive to eyes and lungs."),
+            Map.entry("HI", "Hydrogen iodide fumes are corrosive to eyes and lungs."),
+            Map.entry("NH3", "Ammonia stings the eyes and lungs. Waft, never sniff."),
+            Map.entry("H2", "Hydrogen is highly flammable - keep flames away until you mean to test it."));
+
     private static final Map<String, String> NAMES = new ConcurrentHashMap<>(Map.ofEntries(
             Map.entry("H2O", "Water"), Map.entry("H2", "Hydrogen gas"), Map.entry("O2", "Oxygen gas"),
             Map.entry("CO2", "Carbon dioxide"), Map.entry("CO", "Carbon monoxide"), Map.entry("SO2", "Sulfur dioxide"),
@@ -51,7 +73,7 @@ public final class Lore {
             Map.entry("PbSO4", "Lead(II) sulfate"), Map.entry("Pb(OH)2", "Lead(II) hydroxide"), Map.entry("Al(OH)3", "Aluminium hydroxide"),
             Map.entry("Ni(OH)2", "Nickel(II) hydroxide"), Map.entry("Co(OH)2", "Cobalt(II) hydroxide"), Map.entry("Mn(OH)2", "Manganese(II) hydroxide"),
             Map.entry("Cr(OH)3", "Chromium(III) hydroxide"), Map.entry("HCl", "Hydrogen chloride"), Map.entry("HBr", "Hydrogen bromide"),
-            Map.entry("HI", "Hydrogen iodide"), Map.entry("HF", "Hydrogen fluoride"), Map.entry("H2S", "Hydrogen sulfide"),
+            Map.entry("HI", "Hydrogen iodide"), Map.entry("HF", "Hydrogen fluoride"), Map.entry("H2S", "Hydrogen sulfide"), Map.entry("FeS", "Iron(II) sulfide"),
             Map.entry("P4O10", "Phosphorus(V) oxide"), Map.entry("PCl3", "Phosphorus trichloride"), Map.entry("I2", "Iodine"),
             Map.entry("Br2", "Bromine"), Map.entry("Cl2", "Chlorine"), Map.entry("NaOCl", "Sodium hypochlorite (bleach)")));
 
@@ -69,6 +91,7 @@ public final class Lore {
             Map.entry("neutralisation-ammonia", "Ammonium salts made this way are among the most-used fertilisers in the world."),
             Map.entry("acid-carbonate", "Limestone buildings and statues slowly dissolve in acid rain by this same reaction."),
             Map.entry("acid-hydrogencarbonate", "Baking powder makes cakes rise by releasing carbon dioxide bubbles in the batter."),
+            Map.entry("acid-sulfide", "Hydrogen sulfide is what makes rotten eggs and stink bombs smell - and volcanoes too."),
             Map.entry("acid-metal", "Hydrogen made like this filled the first hydrogen balloons in 1783."),
             Map.entry("acid-oxide", "Metal oxides are 'basic': they neutralise acids just like alkalis do."),
             Map.entry("thiosulfate-acid", "Chemists time how long a cross under the flask takes to disappear to measure reaction rate."),

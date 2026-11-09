@@ -207,7 +207,22 @@ function HotPlate({ plateC, stirring }: { plateC: number; stirring: boolean }) {
         <ringGeometry args={[BEAKER_R + 0.06, BEAKER_R + 0.085, 64]} />
         <meshStandardMaterial ref={ring} color="#0b1020" emissive="#2f80ff" emissiveIntensity={0.7} toneMapped={false} />
       </mesh>
-      {heat > 0 && <pointLight position={[0, PLATE_H + 0.15, 0]} color="#ff7a3d" intensity={2.5 * heat} distance={1.6} />}
+      {/* the hot zone around the beaker: dark when off, glowing red-orange as it heats */}
+      <mesh position={[0, PLATE_H + 0.002, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[BEAKER_R + 0.1, 0.5, 64]} />
+        <meshStandardMaterial color="#120806" emissive="#ff4a12" emissiveIntensity={heat * 2.6} toneMapped={false} transparent opacity={0.92} />
+      </mesh>
+      {heat > 0 && <HeatHaze heat={heat} />}
+      {heat > 0 && <pointLight position={[0, PLATE_H + 0.25, 0]} color="#ff7a3d" intensity={2 + 9 * heat} distance={2.6} />}
+      {/* status bar on the front: blue when off, filling orange with heat */}
+      <mesh position={[0, PLATE_H * 0.55, 0.526]}>
+        <boxGeometry args={[0.5, 0.035, 0.004]} />
+        <meshStandardMaterial color="#0b1020" />
+      </mesh>
+      <mesh position={[-0.25 + 0.25 * Math.max(0.04, heat), PLATE_H * 0.55, 0.529]}>
+        <boxGeometry args={[0.5 * Math.max(0.04, heat), 0.03, 0.004]} />
+        <meshBasicMaterial color={heat > 0 ? "#ff8a3d" : cold ? "#7cc4ff" : "#2f80ff"} toneMapped={false} />
+      </mesh>
       {[-0.42, 0.42].map((x, i) => (
         <mesh key={x} position={[x, PLATE_H * 0.55, 0.53]} rotation-x={Math.PI / 2}>
           <cylinderGeometry args={[0.07, 0.07, 0.05, 24]} />
@@ -218,14 +233,39 @@ function HotPlate({ plateC, stirring }: { plateC: number; stirring: boolean }) {
   );
 }
 
+/** Shimmering columns of hot air above the plate. */
+function HeatHaze({ heat }: { heat: number }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    ref.current?.children.forEach((c, i) => {
+      const t = (clock.elapsedTime * (0.35 + heat * 0.4) + i / 6) % 1;
+      c.position.y = PLATE_H + 0.05 + t * 0.55;
+      c.scale.set(0.9 + t * 0.6, 1, 1);
+      ((c as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = 0.16 * heat * Math.sin(Math.PI * t);
+    });
+  });
+  return (
+    <group ref={ref}>
+      {Array.from({ length: 6 }, (_, i) => {
+        const a = (i / 6) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 0.44, PLATE_H, Math.sin(a) * 0.36]} rotation-y={-a}>
+            <planeGeometry args={[0.16, 0.22]} />
+            <meshBasicMaterial color="#ff9a5a" transparent opacity={0} depthWrite={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} toneMapped={false} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
 function IceBath({ reducedMotion }: { reducedMotion: boolean }) {
-  const glass = useGlass("lite");
   const cubes = useMemo(
     () =>
-      Array.from({ length: 16 }, (_, i) => {
-        const a = (i / 16) * Math.PI * 2 + (i % 2) * 0.2;
-        const r = BEAKER_R + 0.12 + (i % 3) * 0.03;
-        return { x: Math.cos(a) * r, z: Math.sin(a) * r, y: 0.06 + (i % 4) * 0.05, rx: i * 0.7, ry: i * 1.3, s: 0.07 + (i % 3) * 0.015 };
+      Array.from({ length: 30 }, (_, i) => {
+        const a = (i / 30) * Math.PI * 2 * 2 + (i % 2) * 0.25;
+        const r = BEAKER_R + 0.1 + (i % 3) * 0.055;
+        return { x: Math.cos(a) * r, z: Math.sin(a) * r, y: 0.05 + (i % 5) * 0.045, rx: i * 0.7, ry: i * 1.3, s: 0.07 + (i % 3) * 0.02 };
       }),
     [],
   );
@@ -233,36 +273,46 @@ function IceBath({ reducedMotion }: { reducedMotion: boolean }) {
   useFrame(({ clock }) => {
     if (!mist.current || reducedMotion) return;
     mist.current.children.forEach((c, i) => {
-      const t = (clock.elapsedTime * 0.12 + i / 8) % 1;
-      c.position.y = PLATE_H + 0.05 + t * 0.12;
-      c.scale.setScalar(0.25 + t * 0.35);
-      ((c as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.18 * (1 - t);
+      const t = (clock.elapsedTime * 0.16 + i / 14) % 1;
+      const a = i * 0.45 + t * 0.6;
+      // Cold mist spills over the rim and rolls down onto the bench.
+      const r = BEAKER_R + 0.3 + t * 0.25;
+      c.position.set(Math.cos(a) * r, 0.36 - t * 0.32, Math.sin(a) * r);
+      c.scale.setScalar(0.09 + t * 0.16);
+      ((c as THREE.Mesh).material as THREE.MeshStandardMaterial).opacity = 0.42 * Math.sin(Math.PI * t);
     });
   });
   return (
     <group position={[0, PLATE_H, 0]}>
-      {/* the bowl */}
-      <mesh position={[0, 0.17, 0]} material={glass}>
-        <cylinderGeometry args={[BEAKER_R + 0.26, BEAKER_R + 0.2, 0.34, 48, 1, true]} />
+      {/* the bowl: frosted blue plastic so it reads clearly */}
+      <mesh position={[0, 0.17, 0]}>
+        <cylinderGeometry args={[BEAKER_R + 0.3, BEAKER_R + 0.22, 0.34, 48, 1, true]} />
+        <meshPhysicalMaterial color="#8fd0ff" transparent opacity={0.38} roughness={0.35} side={THREE.DoubleSide} depthWrite={false} emissive="#2a7fd0" emissiveIntensity={0.25} />
       </mesh>
-      <mesh position={[0, 0.12, 0]}>
-        <cylinderGeometry args={[BEAKER_R + 0.24, BEAKER_R + 0.19, 0.22, 48, 1, true]} />
-        <meshPhysicalMaterial color="#bfe6ff" transparent opacity={0.35} roughness={0.05} transmission={0.4} side={THREE.DoubleSide} depthWrite={false} />
+      <mesh position={[0, 0.34, 0]} rotation-x={Math.PI / 2}>
+        <torusGeometry args={[BEAKER_R + 0.3, 0.012, 8, 64]} />
+        <meshStandardMaterial color="#cfeaff" emissive="#7cc4ff" emissiveIntensity={0.6} toneMapped={false} />
+      </mesh>
+      {/* icy water */}
+      <mesh position={[0, 0.13, 0]}>
+        <cylinderGeometry args={[BEAKER_R + 0.28, BEAKER_R + 0.22, 0.24, 48]} />
+        <meshStandardMaterial color="#5fb4ff" transparent opacity={0.3} roughness={0.1} depthWrite={false} />
       </mesh>
       {cubes.map((c, i) => (
-        <mesh key={i} position={[c.x, c.y, c.z]} rotation={[c.rx, c.ry, 0]} castShadow>
-          <boxGeometry args={[c.s, c.s, c.s]} />
-          <meshPhysicalMaterial color="#e8f6ff" roughness={0.12} transmission={0.6} thickness={0.2} ior={1.31} clearcoat={1} />
+        <mesh key={i} position={[c.x, c.y + 0.02, c.z]} rotation={[c.rx, c.ry, 0]} castShadow>
+          <boxGeometry args={[c.s, c.s * 0.85, c.s]} />
+          <meshStandardMaterial color="#eaf7ff" emissive="#8fd3ff" emissiveIntensity={0.35} roughness={0.15} transparent opacity={0.9} />
         </mesh>
       ))}
       <group ref={mist}>
-        {Array.from({ length: 8 }, (_, i) => (
-          <mesh key={i} position={[Math.cos(i) * (BEAKER_R + 0.16), 0.1, Math.sin(i) * (BEAKER_R + 0.16)]}>
+        {Array.from({ length: 14 }, (_, i) => (
+          <mesh key={i}>
             <sphereGeometry args={[1, 12, 10]} />
-            <meshStandardMaterial color="#e6f4ff" transparent opacity={0} depthWrite={false} />
+            <meshStandardMaterial color="#f0f8ff" transparent opacity={0} depthWrite={false} roughness={1} />
           </mesh>
         ))}
       </group>
+      <pointLight position={[0, 0.5, 0.3]} color="#7cc4ff" intensity={3} distance={2} />
     </group>
   );
 }
@@ -334,7 +384,7 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
     if (liquidMat.current) {
       liquidMat.current.color.lerp(colour, k);
       liquidMat.current.attenuationColor.lerp(colour, k);
-      liquidMat.current.opacity += (Math.min(0.96, 0.32 + view.opacity * 0.64) - liquidMat.current.opacity) * k;
+      liquidMat.current.opacity += (Math.min(0.96, 0.2 + view.opacity * 0.76) - liquidMat.current.opacity) * k;
       // Strongly coloured liquids glow a little under bloom.
       liquidMat.current.emissive.lerp(colour, k);
       liquidMat.current.emissiveIntensity = 0.08 + view.opacity * 0.12;
@@ -342,7 +392,7 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
     if (surfaceMat.current) surfaceMat.current.color.lerp(colour.clone().lerp(new THREE.Color("#ffffff"), 0.55), k);
     if (glow.current) glow.current.intensity += ((view.levelMl > 1 ? 0.6 + view.opacity * 1.2 : 0) - glow.current.intensity) * k;
     if (glow.current) glow.current.color.lerp(colour, k);
-    if (frost.current) frost.current.opacity += ((view.iceBath ? 0.32 : view.liquidC < 10 ? 0.22 : 0) - frost.current.opacity) * (1 - Math.exp(-dt * 0.6));
+    if (frost.current) frost.current.opacity += ((view.iceBath ? 0.5 : view.liquidC < 12 ? 0.3 : 0) - frost.current.opacity) * (1 - Math.exp(-dt * 0.6));
     if (group.current && view.swirling && !reducedMotion) {
       group.current.position.x = Math.cos(t * 9) * 0.025;
       group.current.position.z = Math.sin(t * 9) * 0.025;
@@ -350,7 +400,9 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
   });
 
   const h = fillH(view);
-  const boiling = view.liquidC > 92 && view.levelMl > 1;
+  // The bath tops out at 90 °C, so "boiling" here means a hard simmer: it starts gently from 55 °C.
+  const simmer = view.levelMl > 1 ? Math.max(0, Math.min(1, (view.liquidC - 55) / 30)) : 0;
+  const boiling = simmer > 0.75;
   return (
     <group ref={group}>
       <pointLight ref={glow} position={[0, 0.25, 0]} intensity={0} distance={1.4} decay={2} />
@@ -364,11 +416,12 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
       </mesh>
       {view.precipitate && view.levelMl > 1 && <Precipitate p={view.precipitate} height={h} quality={quality} reducedMotion={reducedMotion} />}
       {view.solid && view.solid.amount > 0.01 && <SolidLumps colour={view.solid.colour} amount={view.solid.amount} reducedMotion={reducedMotion} />}
-      {((view.gas > 0.01 && view.levelMl > 1) || boiling) && <Bubbles radius={LIQ_R * 0.85} height={h} rate={Math.max(view.gas, boiling ? 0.9 : 0)} big={boiling} count={quality === "high" ? 140 : 50} reducedMotion={reducedMotion} />}
+      {((view.gas > 0.01 && view.levelMl > 1) || simmer > 0) && <Bubbles radius={LIQ_R * 0.85} height={h} rate={Math.max(view.gas, simmer * 0.9)} big={boiling && view.gas < 0.2} count={quality === "high" ? 160 : 60} reducedMotion={reducedMotion} />}
+      {view.precipitate && view.levelMl > 1 && <Cloudiness p={view.precipitate} height={h} reducedMotion={reducedMotion} />}
       {view.gas > 0.01 && view.levelMl > 1 && <Fizz top={h} intensity={view.gas} reducedMotion={reducedMotion} />}
       {view.gasColour && view.gas > 0.01 && <Plume colour={view.gasColour} top={h} intensity={view.gas} reducedMotion={reducedMotion} />}
       {view.smell && <SmellWisps colour={view.smell.colour} reducedMotion={reducedMotion} />}
-      {view.liquidC > 50 && view.levelMl > 1 && <Steam top={h} intensity={Math.min(1, (view.liquidC - 50) / 45)} reducedMotion={reducedMotion} />}
+      {view.liquidC > 38 && view.levelMl > 1 && <Steam top={h} intensity={Math.min(1, (view.liquidC - 38) / 45)} reducedMotion={reducedMotion} />}
       {view.flame && view.flame.intensity > 0.02 && <Flame colour={view.flame.colour} intensity={view.flame.intensity} reducedMotion={reducedMotion} />}
       {view.light && view.light.intensity > 0.02 && <pointLight position={[0, BEAKER_H * 0.5, 0]} color={view.light.colour} intensity={8 * view.light.intensity} distance={3} />}
       {view.smoke && view.smoke.density > 0.02 && <Smoke colour={view.smoke.colour} density={view.smoke.density} reducedMotion={reducedMotion} />}
@@ -454,6 +507,39 @@ function Fizz({ top, intensity, reducedMotion }: { top: number; intensity: numbe
   );
 }
 
+/**
+ * What a precipitate really looks like: the whole liquid goes milky (or coloured) at once, then
+ * clears from the top down as the solid settles.
+ */
+function Cloudiness({ p, height, reducedMotion }: { p: NonNullable<PlaygroundView["precipitate"]>; height: number; reducedMotion: boolean }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const mat = useRef<THREE.MeshStandardMaterial>(null);
+  const settle = useRef(0);
+  const appear = useRef(0);
+  const col = useMemo(() => new THREE.Color(), []);
+  useFrame((_, dt) => {
+    settle.current += (p.settled - settle.current) * (reducedMotion ? 1 : 1 - Math.exp(-dt * 0.35));
+    appear.current += (1 - appear.current) * (reducedMotion ? 1 : 1 - Math.exp(-dt * 1.6));
+    col.setStyle(p.colour);
+    if (mat.current) {
+      mat.current.color.lerp(col, 0.15);
+      mat.current.emissive.lerp(col, 0.15);
+      mat.current.opacity = appear.current * Math.min(0.9, 0.3 + p.turbidity * 0.75) * (1 - settle.current * 0.8);
+    }
+    if (ref.current) {
+      const top = Math.max(0.01, height * (1 - settle.current * 0.85) - 0.004);
+      ref.current.scale.set(1, top, 1);
+      ref.current.position.y = 0.014 + top / 2;
+    }
+  });
+  return (
+    <mesh ref={ref} renderOrder={1}>
+      <cylinderGeometry args={[LIQ_R * 0.985, LIQ_R * 0.985, 1, 48]} />
+      <meshStandardMaterial ref={mat} color={p.colour} emissive={p.colour} emissiveIntensity={0.18} roughness={1} transparent opacity={0} depthWrite={false} />
+    </mesh>
+  );
+}
+
 /** Precipitate: a swirl of particles that drifts down and piles up as it settles. */
 function Precipitate({ p, height, quality, reducedMotion }: { p: NonNullable<PlaygroundView["precipitate"]>; height: number; quality: Quality; reducedMotion: boolean }) {
   const ref = useRef<THREE.InstancedMesh>(null);
@@ -461,7 +547,7 @@ function Precipitate({ p, height, quality, reducedMotion }: { p: NonNullable<Pla
   const layer = useRef<THREE.Mesh>(null);
   const layerMat = useRef<THREE.MeshStandardMaterial>(null);
   const n = quality === "high" ? 420 : 160;
-  const seeds = useMemo(() => Array.from({ length: n }, () => ({ a: Math.random() * Math.PI * 2, r: Math.sqrt(Math.random()) * LIQ_R * 0.92, y: Math.random(), sp: 0.4 + Math.random() * 0.8, s: 0.004 + Math.random() * 0.006 })), [n]);
+  const seeds = useMemo(() => Array.from({ length: n }, () => ({ a: Math.random() * Math.PI * 2, r: Math.sqrt(Math.random()) * LIQ_R * 0.92, y: Math.random(), sp: 0.4 + Math.random() * 0.8, s: 0.006 + Math.random() * 0.009 })), [n]);
   const m = useMemo(() => new THREE.Object3D(), []);
   const settle = useRef(0);
   const col = useMemo(() => new THREE.Color(), []);
@@ -474,7 +560,7 @@ function Precipitate({ p, height, quality, reducedMotion }: { p: NonNullable<Pla
       layerMat.current.opacity = Math.min(0.95, 0.25 + settle.current * 0.7);
     }
     if (layer.current) {
-      const lh = 0.008 + settle.current * Math.min(0.05, p.turbidity * 0.06);
+      const lh = 0.01 + settle.current * Math.min(0.08, 0.025 + p.turbidity * 0.08);
       layer.current.scale.set(1, lh, 1);
       layer.current.position.y = 0.012 + lh / 2;
     }
@@ -537,7 +623,7 @@ function Plume({ colour, top, intensity, reducedMotion }: { colour: string; top:
 }
 
 function Steam({ top, intensity, reducedMotion }: { top: number; intensity: number; reducedMotion: boolean }) {
-  return <Puffs colour="#f2f7ff" y0={top + 0.04} rise={1.1} spread={0.18} count={12} opacity={0.38 * intensity} speed={0.22 + intensity * 0.2} size={0.14} reducedMotion={reducedMotion} />;
+  return <Puffs colour="#f2f7ff" y0={top + 0.04} rise={1.2} spread={0.22} count={18} opacity={0.2 + 0.45 * intensity} speed={0.2 + intensity * 0.22} size={0.15} reducedMotion={reducedMotion} />;
 }
 
 function Smoke({ colour, density, reducedMotion }: { colour: string; density: number; reducedMotion: boolean }) {
@@ -748,37 +834,79 @@ function Shockwave({ pulse, top, colour, reducedMotion }: { pulse: number; top: 
   );
 }
 
-/** Igniter: a burst of bright sparks at the mouth. */
+/** Igniter: a lit wooden splint swings in over the mouth, flickers and throws sparks, then leaves. */
+const SPLINT_S = 2.6;
 function SparkBurst({ pulse, reducedMotion }: { pulse: number; reducedMotion: boolean }) {
-  const ref = useRef<THREE.InstancedMesh>(null);
+  const splint = useRef<THREE.Group>(null);
+  const flame = useRef<THREE.Group>(null);
+  const sparks = useRef<THREE.InstancedMesh>(null);
+  const light = useRef<THREE.PointLight>(null);
   const start = useRef(-10);
   const { clock } = useThree();
-  const n = 60;
-  const dirs = useMemo(() => Array.from({ length: n }, () => new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.9 + 0.2, Math.random() - 0.5).normalize().multiplyScalar(0.4 + Math.random() * 0.6)), []);
+  const n = 90;
+  const dirs = useMemo(() => Array.from({ length: n }, () => ({ d: new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.9 + 0.3, Math.random() - 0.5).normalize().multiplyScalar(0.35 + Math.random() * 0.7), o: Math.random() })), []);
   const m = useMemo(() => new THREE.Object3D(), []);
   useEffect(() => {
     if (pulse) start.current = clock.elapsedTime;
   }, [pulse, clock]);
   useFrame(({ clock: c }) => {
-    const mesh = ref.current;
-    if (!mesh) return;
     const age = c.elapsedTime - start.current;
-    const on = age >= 0 && age < 0.9 && !reducedMotion;
-    mesh.visible = on;
-    if (!on) return;
-    dirs.forEach((d, i) => {
-      m.position.set(d.x * age, BEAKER_H + 0.08 + d.y * age - 1.2 * age * age, d.z * age);
-      m.scale.setScalar(0.009 * (1 - age / 0.9));
+    const on = age >= 0 && age < SPLINT_S;
+    const tip = new THREE.Vector3(0.06, BEAKER_H + 0.1, 0.04);
+    if (splint.current) {
+      splint.current.visible = on;
+      if (on) {
+        // In over 0.35 s, hold, out over the last 0.4 s.
+        const inT = Math.min(1, age / 0.35);
+        const outT = Math.max(0, (age - (SPLINT_S - 0.4)) / 0.4);
+        const k = reducedMotion ? 1 : (1 - Math.pow(1 - inT, 3)) * (1 - outT);
+        splint.current.position.set(tip.x + (1 - k) * 0.9, tip.y + (1 - k) * 0.35, tip.z);
+      }
+    }
+    if (flame.current && on && !reducedMotion) {
+      flame.current.scale.set(1 + Math.sin(age * 31) * 0.1, 1 + Math.sin(age * 23) * 0.2 + Math.sin(age * 47) * 0.1, 1);
+    }
+    if (light.current) light.current.intensity = on ? 5 + (reducedMotion ? 0 : Math.sin(age * 37) * 1.5) : 0;
+    const mesh = sparks.current;
+    if (!mesh) return;
+    mesh.visible = on && !reducedMotion;
+    if (!mesh.visible) return;
+    dirs.forEach(({ d, o }, i) => {
+      const ph = (age * 1.6 + o) % 1;
+      m.position.set(tip.x + d.x * ph * 0.5, tip.y + d.y * ph * 0.45 - 0.5 * ph * ph, tip.z + d.z * ph * 0.5);
+      m.scale.setScalar(0.014 * (1 - ph));
       m.updateMatrix();
       mesh.setMatrixAt(i, m.matrix);
     });
     mesh.instanceMatrix.needsUpdate = true;
   });
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, n]} visible={false}>
-      <sphereGeometry args={[1, 6, 4]} />
-      <meshBasicMaterial color="#ffe08a" toneMapped={false} />
-    </instancedMesh>
+    <>
+      <group ref={splint} visible={false}>
+        {/* the splint: a thin wooden stick reaching in from the right, charred at the end */}
+        <mesh position={[0.32, 0.06, 0]} rotation-z={Math.PI / 2 - 0.35}>
+          <cylinderGeometry args={[0.012, 0.012, 0.7, 8]} />
+          <meshStandardMaterial color="#c9955a" roughness={0.8} />
+        </mesh>
+        <mesh position={[0.01, -0.005, 0]}>
+          <sphereGeometry args={[0.018, 10, 8]} />
+          <meshStandardMaterial color="#2a1408" emissive="#ff6a1a" emissiveIntensity={2} toneMapped={false} />
+        </mesh>
+        <group ref={flame} position={[0, 0.02, 0]}>
+          {[1, 0.6].map((s, i) => (
+            <mesh key={s} position={[0, 0.06 * s, 0]}>
+              <coneGeometry args={[0.035 * s, 0.13 * s, 16, 1, true]} />
+              <meshBasicMaterial color={i ? "#fff3c4" : "#ff9a2e"} transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+            </mesh>
+          ))}
+        </group>
+        <pointLight ref={light} color="#ffb04a" intensity={0} distance={2.2} position={[0, 0.06, 0]} />
+      </group>
+      <instancedMesh ref={sparks} args={[undefined, undefined, n]} visible={false}>
+        <sphereGeometry args={[1, 6, 4]} />
+        <meshBasicMaterial color="#ffd36a" toneMapped={false} />
+      </instancedMesh>
+    </>
   );
 }
 

@@ -1534,6 +1534,186 @@
         "fuel"
       ],
       "description": "Table sugar. Dissolves in water without reacting."
+    },
+    {
+      "id": "fes",
+      "name": "Iron(II) sulfide",
+      "formula": "FeS",
+      "category": "solid",
+      "form": "solid",
+      "solidForm": "lumps",
+      "aqueous": false,
+      "colour": "#2a2622",
+      "opacity": 1,
+      "hazards": [
+        "irritant",
+        "environmental"
+      ],
+      "limits": {
+        "min": 0.5,
+        "max": 5,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 87.91,
+      "species": {
+        "FeS(s)": 1
+      },
+      "tags": [
+        "sulfide"
+      ],
+      "description": "Dark grey-black lumps. With acid it gives off hydrogen sulfide - the toxic rotten-egg gas. Fume cupboard only."
+    },
+    {
+      "id": "vinegar",
+      "name": "Vinegar (white)",
+      "formula": "CH3COOH",
+      "concentrationM": 0.85,
+      "category": "household",
+      "form": "solution",
+      "aqueous": true,
+      "colour": "#fbf6e6",
+      "opacity": 0.08,
+      "hazards": [],
+      "limits": {
+        "min": 1,
+        "max": 100,
+        "unit": "mL"
+      },
+      "model": "full",
+      "species": {
+        "CH3COOH": 0.85
+      },
+      "acid": {
+        "protons": 1,
+        "anion": "CH3COO",
+        "anionCharge": 1,
+        "poly": true,
+        "strong": false
+      },
+      "tags": [
+        "acid",
+        "weak_acid"
+      ],
+      "description": "Kitchen vinegar: about 5% ethanoic (acetic) acid in water. A weak acid."
+    },
+    {
+      "id": "baking-soda",
+      "name": "Baking soda",
+      "formula": "NaHCO3",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#fbfbf8",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.5,
+        "max": 10,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 84.01,
+      "species": {
+        "NaHCO3(s)": 1
+      },
+      "carbonate": {
+        "cation": "Na",
+        "cationCharge": 1,
+        "cationCount": 1,
+        "unitProtons": 1
+      },
+      "tags": [
+        "carbonate"
+      ],
+      "description": "Sodium hydrogencarbonate powder. Dissolves in water and fizzes with any acid."
+    },
+    {
+      "id": "washing-soda",
+      "name": "Washing soda",
+      "formula": "Na2CO3",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#f7f7f4",
+      "opacity": 1,
+      "hazards": [
+        "irritant"
+      ],
+      "limits": {
+        "min": 0.5,
+        "max": 10,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 105.99,
+      "species": {
+        "Na2CO3(s)": 1
+      },
+      "carbonate": {
+        "cation": "Na",
+        "cationCharge": 1,
+        "cationCount": 2,
+        "unitProtons": 2
+      },
+      "tags": [
+        "carbonate"
+      ],
+      "description": "Sodium carbonate crystals. Dissolves to make an alkaline solution; fizzes with acid."
+    },
+    {
+      "id": "table-salt",
+      "name": "Table salt",
+      "formula": "NaCl",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#ffffff",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.5,
+        "max": 20,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 58.44,
+      "species": {
+        "NaCl(s)": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Sodium chloride crystals. Dissolves in water - a physical change."
+    },
+    {
+      "id": "epsom-salt",
+      "name": "Epsom salt",
+      "formula": "MgSO4",
+      "category": "household",
+      "form": "solid",
+      "solidForm": "powder",
+      "aqueous": false,
+      "colour": "#fbfdff",
+      "opacity": 1,
+      "hazards": [],
+      "limits": {
+        "min": 0.5,
+        "max": 10,
+        "unit": "g"
+      },
+      "model": "full",
+      "molarMass": 120.37,
+      "species": {
+        "MgSO4(s)": 1
+      },
+      "tags": [
+        "salt"
+      ],
+      "description": "Magnesium sulfate crystals, used in bath salts. Dissolves in water."
     }
   ],
   "gaps": [
@@ -1704,6 +1884,78 @@
     [
       "fe2o3-powder",
       "h2o2"
+    ],
+    [
+      "iodine-solution",
+      "washing-soda"
+    ],
+    [
+      "iodine-solution",
+      "baking-soda"
+    ],
+    [
+      "baking-soda",
+      "cuso4"
+    ],
+    [
+      "baking-soda",
+      "cuso4-crystals"
+    ],
+    [
+      "baking-soda",
+      "feso4"
+    ],
+    [
+      "baking-soda",
+      "fecl3"
+    ],
+    [
+      "baking-soda",
+      "agno3"
+    ],
+    [
+      "baking-soda",
+      "znso4"
+    ],
+    [
+      "washing-soda",
+      "fecl3"
+    ],
+    [
+      "fes",
+      "kmno4"
+    ],
+    [
+      "fes",
+      "kmno4-crystals"
+    ],
+    [
+      "fes",
+      "h2o2"
+    ],
+    [
+      "fes",
+      "bleach"
+    ],
+    [
+      "fes",
+      "agno3"
+    ],
+    [
+      "fes",
+      "iodine-solution"
+    ],
+    [
+      "fes",
+      "kno3"
+    ],
+    [
+      "fes",
+      "nh4no3"
+    ],
+    [
+      "fes",
+      "fecl3"
     ]
   ]
 }

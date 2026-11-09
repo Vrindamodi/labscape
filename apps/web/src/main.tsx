@@ -12,6 +12,12 @@ import { SessionProvider, useSession } from "./lib/session";
 import { SettingsProvider, useSettings } from "./lib/settings";
 import "./index.css";
 
+// Dev only: background/hidden previews get no animation frames; ?raf=timer drives them with a timer.
+if (import.meta.env.DEV && new URLSearchParams(location.search).get("raf") === "timer") {
+  window.requestAnimationFrame = (cb) => window.setTimeout(() => cb(performance.now()), 16);
+  window.cancelAnimationFrame = (id) => window.clearTimeout(id);
+}
+
 const root = document.getElementById("root");
 if (!root) throw new Error("#root element missing");
 

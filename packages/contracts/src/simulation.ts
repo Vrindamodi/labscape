@@ -81,6 +81,10 @@ export type ObservationCue =
       colour?: Oklab;
       /** What it smells like. Never sniff directly - waft. */
       smell?: string;
+      /** Real-lab hazard of the gas, when it has one. */
+      hazard?: "toxic" | "corrosive" | "flammable";
+      /** One-line safety warning to show with the hazard. */
+      warning?: string;
     })
   | (CueBase & {
       kind: "precipitate";

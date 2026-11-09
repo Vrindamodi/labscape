@@ -229,6 +229,11 @@ public class ChemistryEngine {
                 if (info.colourHex() != null) c.put("colour", Colour.hex(info.colourHex(), 0.7).toJson());
                 c.put("smell", info.smell());
             }
+            String hazard = Lore.GAS_HAZARD.get(gas);
+            if (hazard != null) {
+                c.put("hazard", hazard);
+                c.put("warning", Lore.GAS_WARNING.get(gas));
+            }
         }
 
         @Override
@@ -294,6 +299,7 @@ public class ChemistryEngine {
             neutralise();
             carbonates();
             metalsWithAcid();
+            sulfideWithAcid();
             oxideWithAcid();
             thiosulfateWithAcid();
             permanganate();
@@ -365,7 +371,25 @@ public class ChemistryEngine {
 
         // ---------------------------------------------------------------- physical changes
 
+        /** Household solids that simply dissolve into their ions: key -> {ion: count}. */
+        static final Map<String, Map<String, Double>> SOLUBLE_SOLIDS = Map.of(
+                "NaHCO3(s)", Map.of("Na+", 1.0, "HCO3-", 1.0),
+                "Na2CO3(s)", Map.of("Na+", 2.0, "CO3^2-", 1.0),
+                "NaCl(s)", Map.of("Na+", 1.0, "Cl-", 1.0),
+                "MgSO4(s)", Map.of("Mg^2+", 1.0, "SO4^2-", 1.0));
+
         void physical() {
+            if (aqMl > 0) {
+                for (Map.Entry<String, Map<String, Double>> e : SOLUBLE_SOLIDS.entrySet()) {
+                    if (!has(e.getKey())) continue;
+                    double n = take(e.getKey(), get(e.getKey()));
+                    e.getValue().forEach((ion, k) -> add(ion, k * n));
+                    dissolveSolid(e.getKey(), 0, 2200);
+                    if (acidAvailable() <= EPS || !e.getKey().contains("CO3")) {
+                        observations.add("The white crystals dissolve and disappear into the water - a physical change.");
+                    }
+                }
+            }
             if (aqMl > 0 && has("CuSO4·5H2O(s)")) {
                 double n = take("CuSO4·5H2O(s)", get("CuSO4·5H2O(s)"));
                 add("Cu^2+", n);
@@ -606,7 +630,7 @@ public class ChemistryEngine {
                 product("H2O", b1, "l");
             }
             if (a1 + b1 > EPS) {
-                Portion carbP = mainPortion(s -> s.carbonate() != null && !s.isSolid());
+                Portion carbP = mainPortion(s -> s.carbonate() != null && !"caco3-chips".equals(s.id()));
                 Substance carb = carbP == null ? null : carbP.substance();
                 boolean hydrogen = carb != null && carb.carbonate().unitProtons() == 1;
                 String eq = acid != null && carb != null ? carbonateEquation(acid, carb)
@@ -719,6 +743,49 @@ public class ChemistryEngine {
                 observations.add(s.name() + " " + speed + " as hydrogen is released (a lit splint would go 'pop').");
                 if (has(key)) observations.add("The acid runs out before all the " + s.name().toLowerCase(Locale.ROOT) + " is used up.");
                 if ("Fe".equals(m.symbol())) observations.add("The solution turns pale green: iron(II) ions.");
+            }
+        }
+
+        /** Iron(II) sulfide + acid gives hydrogen sulfide: the toxic rotten-egg gas. */
+        void sulfideWithAcid() {
+            if (!has("FeS(s)") || acidAvailable() <= EPS) {
+                if (has("FeS(s)") && aqMl > 0 && !hadAcid) reasons.add("Iron(II) sulfide is insoluble in water - it needs an acid to react.");
+                return;
+            }
+            Substance acid = mainAcid();
+            double e = Math.min(get("FeS(s)"), acidAvailable() / 2);
+            double[] t = consumeAcid(2 * e);
+            take("FeS(s)", e);
+            add("Fe^2+", e);
+            heatJ += 12_000 * e;
+            long start = nextStart();
+            double k = t[0] >= t[1] ? 1.3 : 0.35;
+            gas("H2S", e, solidTarget.get("FeS(s)"), k, "medium", start);
+            dissolveSolid("FeS(s)", start, (long) clamp(9000 / (k * tf), 2500, 14000));
+            String eq;
+            if (acid != null) {
+                Substance.AcidInfo a = acid.acid();
+                Latex.Salt salt = Latex.salt("Fe", 2, false, a.anion(), a.anionCharge(), a.poly());
+                int acidCoef = Math.max(1, 2 / a.protons());
+                Lore.register(salt.formula(), Lore.saltName("Iron", 2, true, a.anion()), null);
+                product(salt.formula(), e, "aq");
+                eq = Latex.equation(List.of(Term.of(1, "FeS", "s"), Term.of(acidCoef, acid.formula(), "aq")),
+                        List.of(Term.of(1, salt.formula(), "aq"), Term.of(1, "H2S", "g")), null);
+            } else {
+                eq = Latex.equation(List.of(Term.of(1, "FeS", "s"), Term.ion(2, "H", "+")),
+                        List.of(Term.ion(1, "Fe", "2+"), Term.of(1, "H2S", "g")), null);
+            }
+            reaction("acid-sulfide", "Iron sulfide and acid", "gas", eq, "acid-sulfide", e);
+            observations.add("The black lumps fizz and a smell of rotten eggs fills the air: hydrogen sulfide, a toxic gas.");
+            observations.add("The solution turns pale green as iron(II) ions form.");
+            // Hydrogen sulfide meeting copper or lead ions gives a black metal sulfide.
+            for (String[] m : new String[][] {{"Cu^2+", "CuS", "Copper(II) sulfide"}, {"Pb^2+", "PbS", "Lead(II) sulfide"}}) {
+                double x = Math.min(get(m[0]), e * 0.6);
+                if (x <= EPS) continue;
+                take(m[0], x);
+                Lore.register(m[1], m[2], "#151515");
+                precipitate(m[1], x, "#151515", start + 600, 2600);
+                observations.add("Hydrogen sulfide meets the metal ions and a black precipitate of " + m[2].toLowerCase(Locale.ROOT) + " forms.");
             }
         }
 

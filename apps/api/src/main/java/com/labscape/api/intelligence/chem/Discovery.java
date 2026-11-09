@@ -16,6 +16,8 @@ public record Discovery(String id, String name, String type, String clue) {
                     "Baking soda fizzes with acid... and the beaker gets colder."),
             new Discovery("acid-metal", "Metal meets acid", "gas",
                     "A shiny metal disappears in a stream of tiny bubbles."),
+            new Discovery("acid-sulfide", "Rotten eggs", "gas",
+                    "Black lumps meet an acid, and the room suddenly needs a fume cupboard."),
             new Discovery("acid-oxide", "Dissolving an oxide", "neutralisation",
                     "A black powder turns an acid blue - but only if you warm it."),
             new Discovery("magnesium-water", "Magnesium in hot water", "gas",
