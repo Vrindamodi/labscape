@@ -122,7 +122,7 @@ function needsOf(r: SimulationResult | null): Need[] {
  * Friendly, actionable copy for a mix that is waiting for something ("Needs heat - try Heat") or
  * that the engine has no checked model for. Never shows the engine's internal wording.
  */
-function friendlyOutcome(r: SimulationResult | null, nameOf: (id: string) => string | undefined = () => undefined): { title: string; line: string; detail: string | null } | null {
+function friendlyOutcome(r: SimulationResult | null, nameOf: (id: string) => string | undefined = () => undefined): { title: string; line: string; detail: string | null; heatC?: number } | null {
   if (!r) return null;
   const needs = needsOf(r);
   const msg = r.presentation?.message ?? "";
@@ -130,8 +130,11 @@ function friendlyOutcome(r: SimulationResult | null, nameOf: (id: string) => str
     const concentrated = /concentrated/i.test(msg);
     const focus = r.presentation?.focusRef ? nameOf(r.presentation.focusRef) : undefined;
     const words: Record<Need, string> = { heat: "heat", catalyst: "a catalyst", acid: concentrated ? "a catalyst" : "an acid", alkali: "an alkali", spark: "a flame" };
+    // the temperature the engine asks for ("warm ... to about 70 °C"), else a gentle 60 °C
+    const asked = Number(/(?:about|to|at)\s*(\d{2,3})\s*°C/i.exec(msg)?.[1] ?? NaN);
+    const heatC = Number.isFinite(asked) ? Math.min(90, Math.max(30, Math.round(asked / 5) * 5)) : 60;
     const acts: Record<Need, string> = {
-      heat: "Heat (about 60 °C)",
+      heat: `Heat (about ${heatC} °C)`,
       catalyst: focus ? `add a few drops of ${focus.charAt(0).toLowerCase()}${focus.slice(1)}` : "add a pinch of manganese(IV) oxide",
       alkali: focus ? `add ${focus.charAt(0).toLowerCase()}${focus.slice(1)}` : "add some sodium hydroxide solution",
       acid: concentrated ? "add a few drops of concentrated sulfuric acid" : "add a few drops of dilute sulfuric acid",
@@ -142,7 +145,7 @@ function friendlyOutcome(r: SimulationResult | null, nameOf: (id: string) => str
     const order = [...needs].sort((a, b) => Number(b === "heat" || b === "spark") - Number(a === "heat" || a === "spark"));
     const lead = order[0] === "heat" || order[0] === "spark" ? "try " : "";
     const line = `${title} - ${lead}${order.map((n) => acts[n]).join(" and ")}`;
-    return { title, line, detail: msg || null };
+    return { title, line, detail: msg || null, ...(needs.includes("heat") ? { heatC } : {}) };
   }
   if (r.outcome === "unsupported")
     return {
@@ -939,7 +942,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
             className={cx("absolute z-10 flex", wide ? "bottom-[96px] right-4 top-[84px] w-[300px] xl:w-[344px]" : "inset-x-2 top-[76px] z-30 max-h-[calc(100%-168px)]")}
             {...(reduced ? {} : { initial: { opacity: 0, x: 16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 16 }, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } })}
           >
-            <SidePanel tab={tab} setTab={setTab} result={result} friendly={friendly} log={log} tray={tray} online={online} busy={busy} onClose={wide ? null : () => setInfoOpen(false)} />
+            <SidePanel tab={tab} setTab={setTab} result={result} friendly={friendly} onHeat={heatTo} plateC={plateC} log={log} tray={tray} online={online} busy={busy} onClose={wide ? null : () => setInfoOpen(false)} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1453,7 +1456,7 @@ function HeatButton({ plateC, glow, onHeat }: { plateC: number; glow: boolean; o
 
 /* ------------------------------------------------------------------ right panel */
 
-function SidePanel({ tab, setTab, result, friendly, log, tray, online, busy, onClose }: { tab: Tab; setTab: (t: Tab) => void; result: SimulationResult | null; friendly: ReturnType<typeof friendlyOutcome>; log: LogLine[]; tray: TrayItem[]; online: boolean | null; busy: boolean; onClose: (() => void) | null }) {
+function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, online, busy, onClose }: { tab: Tab; setTab: (t: Tab) => void; result: SimulationResult | null; friendly: ReturnType<typeof friendlyOutcome>; onHeat: (c: number) => void; plateC: number; log: LogLine[]; tray: TrayItem[]; online: boolean | null; busy: boolean; onClose: (() => void) | null }) {
   const p = result?.presentation;
   const reacting = result?.outcome === "reaction";
   const waiting = !!friendly;
@@ -1501,6 +1504,11 @@ function SidePanel({ tab, setTab, result, friendly, log, tray, online, busy, onC
                       {title}
                     </h3>
                     {seeLine && !busy && <p className={cx("mt-1.5 text-[16px] font-semibold leading-snug", waiting ? "text-[#ffd59a]" : "text-white")}>{seeLine}</p>}
+                    {friendly?.heatC && !busy && plateC < friendly.heatC && (
+                      <button type="button" onClick={() => onHeat(friendly.heatC!)} className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-lg bg-[rgba(255,138,61,.22)] px-3 text-[14px] font-semibold text-[#ffd59a] ring-1 ring-inset ring-[rgba(255,160,90,.5)] hover:bg-[rgba(255,138,61,.32)]">
+                        Heat to {friendly.heatC} °C
+                      </button>
+                    )}
                     {detail && !busy && <p className="mt-2 text-[15px] leading-relaxed text-[#c8d6f3]">{detail}</p>}
                     {moreObs.length > 0 && (
                       <ul className="mt-2 space-y-1 text-[15px] leading-snug text-[#dbe7ff]">
