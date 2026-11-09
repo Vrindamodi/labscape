@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import katex from "katex";
-import { Check, Copy, ExternalLink, FunctionSquare, Mic, MicOff, Send, Sparkles, Square, ThumbsDown, ThumbsUp, Volume2, VolumeX } from "lucide-react";
+import { Check, Copy, ExternalLink, FunctionSquare, Mic, MicOff, Send, Sparkles, Square, ThumbsDown, ThumbsUp, Volume2, VolumeX, X } from "lucide-react";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChatError, streamChat, type AiAction, type AiMeta, type AiSource, type ChatBody } from "./stream";
 
@@ -20,6 +20,17 @@ export type AssistantPanelProps = {
   suggestions?: string[];
   compact?: boolean;
   placeholder?: string;
+  /** Header and empty-state wording (defaults suit the lab bench). */
+  title?: string;
+  subtitle?: string;
+  intro?: string;
+  /** Called after each question is sent (its context already captured). */
+  onSend?: (question: string) => void;
+  /** Offered under an error ("Use a hint instead"), so a learner is never left stuck when the assistant is down. */
+  fallback?: { label: string; onClick: () => void };
+  /** Shows a close button in the header (for sheets that host the panel). */
+  onClose?: () => void;
+  closeLabel?: string;
 };
 
 const DEFAULT_CHIPS = ["Why did it change colour?", "What should I do next?", "Explain it more simply"];
@@ -39,7 +50,25 @@ const speakable = (t: string) => t.replace(/\$\$?([^$]+)\$\$?/g, "").replace(/\*
  * <AssistantPanel> (build plan 4.4): streamed, grounded answers about whatever is on the bench,
  * with KaTeX, sources, "Show me", rating, copy, push-to-talk and read-aloud.
  */
-export function AssistantPanel({ endpoint, getContext, onAction, rate, onSave, level, guideText, suggestions = DEFAULT_CHIPS, compact, placeholder = "Ask about this experiment…" }: AssistantPanelProps) {
+export function AssistantPanel({
+  endpoint,
+  getContext,
+  onAction,
+  rate,
+  onSave,
+  level,
+  guideText,
+  suggestions = DEFAULT_CHIPS,
+  compact,
+  placeholder = "Ask about this experiment…",
+  title = "Science assistant",
+  subtitle = "Answers from LABscape's lessons and engine",
+  intro = "I can see what's on your bench. Ask why something happened, what to do next, or about any element, formula or piece of equipment.",
+  onSend,
+  fallback,
+  onClose,
+  closeLabel = "Close",
+}: AssistantPanelProps) {
   const reduced = useReducedMotion();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -80,6 +109,7 @@ export function AssistantPanel({ endpoint, getContext, onAction, rate, onSave, l
     let full = "";
     try {
       const body: ChatBody = { message: q, context: getContext() ?? undefined, history, ...(conversation.current ? { conversationId: conversation.current } : {}), ...(level ? { level } : {}) };
+      onSend?.(q);
       await streamChat(
         endpoint,
         body,
@@ -142,30 +172,40 @@ export function AssistantPanel({ endpoint, getContext, onAction, rate, onSave, l
       <div className="flex items-center gap-2.5 pb-3">
         <Orb state={orb} reduced={!!reduced} />
         <div className="min-w-0 flex-1">
-          <div className="font-heading text-sm font-semibold text-white">Science assistant</div>
-          <div className="truncate text-[11px] text-white/50">Answers from LABscape's lessons and engine</div>
+          <div className="font-heading text-sm font-semibold text-white">{title}</div>
+          <div className="truncate text-[11px] text-white/50">{subtitle}</div>
         </div>
         {ttsAvailable && (
           <button onClick={() => setSpeak((s) => !s)} aria-pressed={speak} className={`grid h-8 w-8 place-items-center rounded-md ${speak ? "text-[#c4b1ff]" : "text-white/40"} hover:bg-white/[0.06]`} aria-label={speak ? "Stop reading answers aloud" : "Read answers aloud"} title="Read answers aloud">
             {speak ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           </button>
         )}
+        {onClose && (
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-white/60 hover:bg-white/[0.08] hover:text-white" aria-label={closeLabel}>
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div ref={scroller} className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1" aria-live="polite">
         {msgs.length === 0 && (
-          <div className="rounded-xl bg-[linear-gradient(160deg,rgba(139,92,246,.16),rgba(232,121,249,.05))] p-4 text-sm text-white/70 ring-1 ring-inset ring-ai-violet/25">
-            I can see what's on your bench. Ask why something happened, what to do next, or about any element, formula or piece of equipment.
+          <div className="rounded-xl bg-[linear-gradient(160deg,rgba(139,92,246,.16),rgba(232,121,249,.05))] p-4 text-[15px] text-white/70 ring-1 ring-inset ring-ai-violet/25">
+            {intro}
           </div>
         )}
         {msgs.map((m) =>
           m.role === "user" ? (
-            <div key={m.id} className="ml-8 rounded-xl rounded-br-sm bg-accent/25 px-3 py-2 text-sm text-white">
+            <div key={m.id} className="ml-8 rounded-xl rounded-br-sm bg-accent/25 px-3 py-2 text-[15px] text-white">
               {m.text}
             </div>
           ) : (
-            <div key={m.id} className={`mr-2 rounded-xl rounded-bl-sm px-3 py-2.5 text-sm ring-1 ring-inset ${m.error ? "bg-red-500/10 text-red-100 ring-red-400/30" : m.meta?.flagged ? "bg-amber-400/10 text-amber-50 ring-amber-300/30" : "bg-white/[0.045] text-white/90 ring-white/10"}`}>
+            <div key={m.id} className={`mr-2 rounded-xl rounded-bl-sm px-3 py-2.5 text-[15px] ring-1 ring-inset ${m.error ? "bg-red-500/10 text-red-100 ring-red-400/30" : m.meta?.flagged ? "bg-amber-400/10 text-amber-50 ring-amber-300/30" : "bg-white/[0.045] text-white/90 ring-white/10"}`}>
               {m.text ? <Rich text={m.text} streaming={!!m.streaming} /> : <Thinking reduced={!!reduced} />}
+              {m.error && fallback && (
+                <button onClick={fallback.onClick} className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-300/15 px-2.5 py-1 text-xs font-semibold text-amber-100 ring-1 ring-inset ring-amber-300/40 hover:bg-amber-300/25">
+                  {fallback.label}
+                </button>
+              )}
               {!m.streaming && m.meta && <Extras m={m} onAction={onAction} onSave={onSave} onRate={rate ? async (r) => {
                 if (!m.messageId) return;
                 await rate(m.messageId, r).catch(() => {});
@@ -203,7 +243,7 @@ export function AssistantPanel({ endpoint, getContext, onAction, rate, onSave, l
             rows={1}
             placeholder={listening ? "Listening…" : placeholder}
             aria-label="Ask the assistant"
-            className="max-h-28 min-h-[40px] flex-1 resize-none rounded-lg bg-black/30 px-3 py-2.5 text-sm text-white ring-1 ring-inset ring-white/15 placeholder:text-white/30 focus:outline-none focus:ring-ai-violet"
+            className="max-h-28 min-h-[40px] flex-1 resize-none rounded-lg bg-black/30 px-3 py-2.5 text-[15px] text-white ring-1 ring-inset ring-white/15 placeholder:text-white/30 focus:outline-none focus:ring-ai-violet"
           />
           {voiceAvailable && (
             <button type="button" onClick={ptt} aria-pressed={listening} className={`grid h-10 w-10 place-items-center rounded-lg ring-1 ring-inset ${listening ? "bg-red-500/80 text-white ring-red-400" : "text-white/70 ring-white/15 hover:bg-white/[0.06]"}`} aria-label={listening ? "Stop listening" : "Ask by voice"}>

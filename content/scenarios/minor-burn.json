@@ -36,6 +36,11 @@
       "hazard": 20,
       "narration": "Your friend grabs a beaker that has just come off the tripod and yelps. Two fingertips are red and stinging.",
       "prompt": "Spot the problem. Pick \"Point it out\" and tap it.",
+      "hints": [
+        { "text": "Your friend yelped and is holding her hand. What exactly got hurt?" },
+        { "text": "Look at her fingertips.", "target": "burn" },
+        { "text": "Pick \"Point it out\" and use it on her burned fingertips.", "tool": "point", "target": "burn" }
+      ],
       "props": ["ring"],
       "choices": [
         {
@@ -79,6 +84,11 @@
       "hazard": 25,
       "narration": "The red area is smaller than her palm and the skin isn't broken. She isn't feeling faint.",
       "prompt": "How serious is it?",
+      "hints": [
+        { "text": "Smaller than her palm, skin not broken, not feeling faint: does that sound like a small burn or a serious one?" },
+        { "text": "Look at your teacher: they need to know about any injury in the lab.", "target": "teacher" },
+        { "text": "Use your hands on your teacher: it's a minor burn, so tell them and start first aid.", "tool": "hands", "target": "teacher" }
+      ],
       "props": ["ring"],
       "choices": [
         {
@@ -113,6 +123,11 @@
       "hazard": 30,
       "narration": "What first aid do you give?",
       "prompt": "Cool the burn: drag something onto it.",
+      "hints": [
+        { "text": "Heat keeps damaging skin until it's cooled. What cools it gently, and for how long? (Ice is too harsh.)" },
+        { "text": "Look at the cold tap over the sink.", "target": "tap" },
+        { "text": "Use your hands on the cold tap: hold her fingers under cool running water for 20 minutes.", "tool": "hands", "target": "tap" }
+      ],
       "props": ["ring"],
       "choices": [
         {
@@ -165,6 +180,11 @@
       "hazard": 20,
       "narration": "Her fingers are cooling under the tap. You notice she's wearing a ring on the burned hand.",
       "prompt": "Anything else before it swells?",
+      "hints": [
+        { "text": "Burned skin swells. What could get stuck on a swollen finger?" },
+        { "text": "Look at the ring on her burned hand.", "target": "ring" },
+        { "text": "Use your hands on the ring: slip it off gently before the finger swells.", "tool": "hands", "target": "ring" }
+      ],
       "props": ["ring", "water-on"],
       "choices": [
         {
@@ -197,6 +217,11 @@
       "hazard": 15,
       "narration": "After 20 minutes the stinging has eased. A small blister is forming on one fingertip.",
       "prompt": "Protect the burn.",
+      "hints": [
+        { "text": "A blister is the body's own clean dressing. What would protect it without sticking to it or leaving fibres?" },
+        { "text": "Look at the burn.", "target": "burn" },
+        { "text": "Lay the cling film loosely over the burn. Don't wrap it tight.", "tool": "cling-film", "target": "burn" }
+      ],
       "props": ["blister"],
       "choices": [
         {
@@ -239,6 +264,11 @@
       "hazard": 15,
       "narration": "The burn is covered. The blister is about the size of a coin.",
       "prompt": "Does she need more help?",
+      "hints": [
+        { "text": "It has blistered. Should someone trained take a look?" },
+        { "text": "Look at your teacher.", "target": "teacher" },
+        { "text": "Use your hands on your teacher: tell them it has blistered so the school nurse or a doctor can check it.", "tool": "hands", "target": "teacher" }
+      ],
       "props": ["blister", "cling-on"],
       "choices": [
         {

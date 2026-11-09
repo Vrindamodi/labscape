@@ -24,6 +24,7 @@ export function ToolTray({
   onDrag,
   drag,
   focusRoom,
+  glow = null,
 }: {
   tools: Tool[];
   selected: string | null;
@@ -34,6 +35,8 @@ export function ToolTray({
   drag: Drag | null;
   /** Move keyboard focus into the room (after picking a tool with the keyboard). */
   focusRoom: () => void;
+  /** A tool to point out (the last rung of a hint). */
+  glow?: string | null;
 }) {
   const start = useRef<{ x: number; y: number; tool: string } | null>(null);
   const dragged = useRef(false);
@@ -85,6 +88,7 @@ export function ToolTray({
       <div className="grid grid-cols-4 gap-1.5" role="toolbar" aria-label="Tools: pick one, then choose where to use it">
         {tools.map((t) => {
           const on = selected === t.id;
+          const lit = glow === t.id && !on;
           return (
             <button
               key={t.id}
@@ -99,8 +103,9 @@ export function ToolTray({
               onClick={(e) => click(e, t.id)}
               style={{ touchAction: "none" }}
               className={`group flex min-h-[64px] flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1.5 text-center outline-none ring-1 ring-inset transition focus-visible:ring-2 focus-visible:ring-sky-300 disabled:opacity-40 ${
-                on ? "bg-amber-300/20 ring-2 ring-amber-300" : "bg-white/[0.05] ring-white/12 hover:bg-white/[0.1]"
+                on ? "bg-amber-300/20 ring-2 ring-amber-300" : lit ? "motion-safe:animate-pulse bg-amber-300/10 ring-2 ring-amber-300/90" : "bg-white/[0.05] ring-white/12 hover:bg-white/[0.1]"
               } ${drag?.tool === t.id ? "opacity-40" : ""}`}
+              data-hint-glow={lit || undefined}
             >
               <span className="pointer-events-none select-none">
                 <ToolIcon id={t.id} size={34} />
@@ -132,6 +137,8 @@ export function Hotspots({
   disabled,
   onHit,
   textScale = 1,
+  glow = null,
+  reduced = false,
 }: {
   hotspots: Hotspot[];
   /** Enlarges hotspot labels when the room is drawn small. */
@@ -141,6 +148,9 @@ export function Hotspots({
   drag: Drag | null;
   disabled: boolean;
   onHit: (target: string) => void;
+  /** A spot to point out (a hint, or the assistant's "Show me where"): pulses, with its label showing. */
+  glow?: string | null;
+  reduced?: boolean;
 }) {
   const [focus, setFocus] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
@@ -189,7 +199,12 @@ export function Hotspots({
               strokeDasharray={lit ? undefined : "6 5"}
             />
             {!armed && !disabled && <circle className="ls-pulse" cx={h.x + h.w / 2} cy={h.y + h.h / 2} r={4} fill="#fff" opacity={0.6} pointerEvents="none" />}
-            {lit && (
+            {glow === h.id && (
+              <rect data-hint-spot={h.id} x={h.x - 4} y={h.y - 4} width={h.w + 8} height={h.h + 8} rx={13} fill="rgba(255,212,59,0.12)" stroke="#ffd43b" strokeWidth={4} pointerEvents="none">
+                {!reduced && <animate attributeName="opacity" values="1;0.35;1" dur="1.1s" repeatCount="indefinite" />}
+              </rect>
+            )}
+            {(lit || glow === h.id) && (
               <g pointerEvents="none">
                 <rect x={lx} y={ly} width={lw} height={lh} rx={6} fill="#0b0f1a" opacity={0.85} />
                 <text x={lx + lw / 2} y={ly + 14 * k} textAnchor="middle" fontSize={11.5 * k} fontWeight={700} fill="#fff">

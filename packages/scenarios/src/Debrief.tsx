@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Check, Play, ShieldCheck, X } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Lightbulb, Play, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 import { ANIMS, SceneArt } from "./SceneArt";
 import { ToolIcon } from "./ToolIcon";
@@ -36,6 +36,11 @@ export function Debrief({ r, kind, tools, hotspots, onQuiz, onExit, reduced }: {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50">Safety score</p>
             <h2 className="font-heading text-2xl font-bold text-white">{r.ending.outcome === "safe" ? "Everyone is safe" : "That could have gone badly"}</h2>
             <p className="mt-1 text-sm text-white/70">{r.ending.text}</p>
+            {(r.hintsUsed ?? 0) > 0 && (
+              <p className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-amber-200">
+                <Lightbulb className="h-4 w-4" /> {r.hintsUsed} hint{r.hintsUsed === 1 ? "" : "s"} used: −{r.hintPenalty ?? 0} points
+              </p>
+            )}
             {r.badgeEligible && (
               <motion.p initial={reduced ? false : { scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.8 }} className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-sm font-semibold text-emerald-200">
                 <ShieldCheck className="h-4 w-4" /> Safety award: 80+
@@ -145,6 +150,11 @@ function StepCard({ i, s, kind, tools, hotspots, reduced }: { i: number; s: Step
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">{s.stage}</span>
           <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${q.cls}`}>{q.label}</span>
+          {(s.hints ?? 0) > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-300/15 px-2 py-0.5 text-[11px] font-bold text-amber-200">
+              <Lightbulb className="h-3 w-3" /> You used {s.hints} hint{s.hints === 1 ? "" : "s"} here
+            </span>
+          )}
         </div>
         <p className="mt-1 font-medium text-white">{s.label}</p>
         {tool && spot && (

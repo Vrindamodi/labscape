@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.labscape.api.intelligence.emergency.EmergencyController;
+import com.labscape.api.intelligence.emergency.Scenarios;
 import jakarta.servlet.http.Cookie;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,6 +30,7 @@ class EmergencyTest {
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
+    @Autowired Scenarios library;
 
     @Test
     void theSafePathScoresTopMarksAndEarnsXp() throws Exception {
@@ -141,6 +144,94 @@ class EmergencyTest {
             }
             JsonNode result = send(c, "/v1/emergency/attempts/" + id + "/finish", Map.of());
             assertThat(result.path("score").asInt()).as(slug).isEqualTo(100);
+        }
+    }
+
+    @Test
+    void hintsClimbALadderCostFivePointsARungAndShowInTheDebrief() throws Exception {
+        Cookie c = guest();
+        JsonNode started = send(c, "/v1/emergency/scenarios/gas-fire/start", Map.of());
+        // hints are served one rung at a time, never with the scene
+        assertThat(started.toString()).doesNotContain("hints").doesNotContain("Where exactly is the flame");
+        String id = started.path("attemptId").asText();
+        String hint = "/v1/emergency/attempts/" + id + "/hint";
+
+        JsonNode r1 = send(c, hint, Map.of());
+        assertThat(r1.path("rung").asInt()).isEqualTo(1);
+        assertThat(r1.path("rungs").asInt()).isEqualTo(3);
+        assertThat(r1.path("text").asText()).isNotBlank();
+        assertThat(r1.path("tool").asText(null)).isNull();
+        assertThat(r1.path("cost").asInt()).isEqualTo(EmergencyController.HINT_COST);
+        // rungs can't be skipped
+        JsonNode r2 = send(c, hint, Map.of("rung", 3));
+        assertThat(r2.path("rung").asInt()).isEqualTo(2);
+        assertThat(r2.path("target").asText()).isEqualTo("regulator");
+        // seeing a rung again is free
+        JsonNode again = send(c, hint, Map.of("rung", 1));
+        assertThat(again.path("cost").asInt()).isZero();
+        assertThat(again.path("penalty").asInt()).isEqualTo(10);
+
+        send(c, "/v1/emergency/attempts/" + id + "/choose", Map.of("choiceId", "recognise", "elapsedMs", 1500));
+        send(c, hint, Map.of());
+        JsonNode r3 = send(c, hint, Map.of());
+        JsonNode top = send(c, hint, Map.of());
+        assertThat(top.path("rung").asInt()).isEqualTo(3);
+        assertThat(top.path("tool").asText()).isEqualTo("hands");
+        assertThat(top.path("target").asText()).isEqualTo("brother");
+        assertThat(r3.path("sceneRungs").asInt()).isEqualTo(2);
+        assertThat(top.path("penalty").asInt()).isEqualTo(25);
+
+        for (String choice : new String[] {"alert", "towel", "knob", "windows", "call"})
+            send(c, "/v1/emergency/attempts/" + id + "/choose", Map.of("choiceId", choice, "elapsedMs", 1500));
+        mvc.perform(post(hint).cookie(c).contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isConflict());
+        JsonNode result = send(c, "/v1/emergency/attempts/" + id + "/finish", Map.of());
+        assertThat(result.path("hintsUsed").asInt()).isEqualTo(5);
+        assertThat(result.path("hintPenalty").asInt()).isEqualTo(25);
+        assertThat(result.path("score").asInt()).isEqualTo(75);
+        assertThat(result.path("badgeEligible").asBoolean()).isFalse();
+        assertThat(result.path("steps").get(0).path("hints").asInt()).isEqualTo(2);
+        assertThat(result.path("steps").get(1).path("hints").asInt()).isEqualTo(3);
+        assertThat(result.path("steps").get(2).path("hints").asInt()).isZero();
+
+        // every hint in every scene: the cost is capped, so a safe run still passes
+        String id2 = send(c, "/v1/emergency/scenarios/gas-fire/start", Map.of()).path("attemptId").asText();
+        JsonNode last = null;
+        for (String choice : new String[] {"recognise", "alert", "towel", "knob", "windows", "call"}) {
+            for (int i = 0; i < 3; i++) last = send(c, "/v1/emergency/attempts/" + id2 + "/hint", Map.of());
+            send(c, "/v1/emergency/attempts/" + id2 + "/choose", Map.of("choiceId", choice, "elapsedMs", 1500));
+        }
+        assertThat(last.path("penalty").asInt()).isEqualTo(EmergencyController.HINT_CAP);
+        assertThat(last.path("cost").asInt()).isZero();
+        JsonNode capped = send(c, "/v1/emergency/attempts/" + id2 + "/finish", Map.of());
+        assertThat(capped.path("hintsUsed").asInt()).isEqualTo(18);
+        assertThat(capped.path("hintPenalty").asInt()).isEqualTo(40);
+        assertThat(capped.path("score").asInt()).isEqualTo(60);
+    }
+
+    @Test
+    void everySceneHasAThreeRungHintLadderThatLeadsToTheBestChoice() {
+        assertThat(library.all()).hasSize(4);
+        for (JsonNode s : library.all()) {
+            Set<String> tools = new HashSet<>();
+            s.path("tools").forEach(t -> tools.add(t.path("id").asText()));
+            Set<String> spots = new HashSet<>();
+            s.path("hotspots").forEach(h -> spots.add(h.path("id").asText()));
+            for (JsonNode sc : s.path("scenes")) {
+                String where = s.path("slug").asText() + "/" + sc.path("id").asText();
+                JsonNode h = sc.path("hints");
+                assertThat(h.size()).as(where).isEqualTo(3);
+                h.forEach(x -> assertThat(x.path("text").asText()).as(where).hasSizeGreaterThan(15));
+                assertThat(spots).as(where + " rung 2 target").contains(h.get(1).path("target").asText());
+                String tool = h.get(2).path("tool").asText();
+                String target = h.get(2).path("target").asText();
+                assertThat(tools).as(where).contains(tool);
+                // rung 3 is exactly a best choice's action, so "Show me" plays the right thing
+                boolean leadsToBest = false;
+                for (JsonNode ch : sc.path("choices"))
+                    if (ch.path("quality").asText().equals("best"))
+                        for (JsonNode a : Scenarios.actionsOf(ch)) leadsToBest |= a.path("tool").asText().equals(tool) && a.path("target").asText().equals(target);
+                assertThat(leadsToBest).as(where + " rung 3 " + tool + "@" + target).isTrue();
+            }
         }
     }
 

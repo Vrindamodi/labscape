@@ -48,6 +48,54 @@ export type Step = {
   props: string[];
   tool?: string | null;
   target?: string | null;
+  /** Hint rungs taken in that scene. */
+  hints?: number;
+};
+
+/** One rung of a scene's hint ladder (1 nudge, 2 where to look, 3 what to do). */
+export type HintRung = {
+  scene: string;
+  rung: number;
+  rungs: number;
+  text: string;
+  tool?: string | null;
+  target?: string | null;
+  /** Points this rung cost (0 when seen before). */
+  cost: number;
+  sceneRungs: number;
+  /** The run's total hint cost so far. */
+  penalty: number;
+};
+
+/**
+ * What the assistant sees of the scenario (LabContext, surface "emergency"). The server answers from the reviewed
+ * scenario looked up by `scenarioSlug` + `sceneId`; the free text here only helps a language model phrase it.
+ */
+export type EmergencyAiContext = {
+  surface: "emergency";
+  attemptId: string;
+  userLevel: "school";
+  scenarioSlug: string;
+  scenarioTitle: string;
+  sceneId: string;
+  stage: string;
+  narration: string;
+  prompt: string;
+  hazard: number;
+  /** Questions already asked to the assistant in this scene: the coach nudges first, then gives the safe move. */
+  askedBefore: number;
+  hintRung: number;
+  tools: string[];
+  places: string[];
+  /** What the student has done so far in the run. */
+  done: { scene: string; did: string; quality: Chosen["quality"] }[];
+  completedStepIds: string[];
+  hintsShown: string[];
+  highlightableIds: string[];
+  bench: never[];
+  recentEvents: never[];
+  readings: never[];
+  deviations: never[];
 };
 
 export type ScenarioResult = {
@@ -62,4 +110,6 @@ export type ScenarioResult = {
   badgeEligible: boolean;
   reward?: unknown;
   steps?: Step[] | null;
+  hintsUsed?: number;
+  hintPenalty?: number;
 };

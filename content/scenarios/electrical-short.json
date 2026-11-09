@@ -37,6 +37,11 @@
       "hazard": 20,
       "narration": "You're charging a laptop from an extension board crowded with plugs. There's a burning-plastic smell, a crackle, and sparks jump from the board.",
       "prompt": "Spot the danger. Pick \"Point it out\" and tap where it is.",
+      "hints": [
+        { "text": "A burning smell, a crackle and sparks: where is it coming from? And should anyone touch it?" },
+        { "text": "Look at the crowded extension board.", "target": "board" },
+        { "text": "Pick \"Point it out\" and use it on the extension board, then keep away from it.", "tool": "point", "target": "board" }
+      ],
       "props": ["sparks"],
       "choices": [
         {
@@ -80,6 +85,11 @@
       "hazard": 35,
       "narration": "Your cousin grabs the charger cable to yank it out. The insulation has melted and she freezes, unable to let go: she's being shocked. The MCB box is on the wall by the door.",
       "prompt": "Help her without becoming a second casualty.",
+      "hints": [
+        { "text": "If you touch someone who is being shocked, the current can flow through you too. What stops the current at its source?" },
+        { "text": "Look at the wall by the door: the MCB box.", "target": "mcb" },
+        { "text": "Use your hands on the MCB box: switch the main power off. Don't touch your cousin until it's off.", "tool": "hands", "target": "mcb" }
+      ],
       "props": ["sparks", "shock"],
       "choices": [
         {
@@ -132,6 +142,11 @@
       "hazard": 40,
       "narration": "The power is off and your cousin has let go. But the melted board has set the bottom of the curtain alight: small flames, for now. There's a CO₂ and a dry powder extinguisher by the door.",
       "prompt": "Deal with the fire.",
+      "hints": [
+        { "text": "The power is off, but there's a fire. Water and electrics don't mix. Which extinguisher is safe here, or is getting out the right call?" },
+        { "text": "Look at the burning curtain, and keep the door behind you.", "target": "curtain" },
+        { "text": "Aim the CO₂ extinguisher at the base of the curtain fire. If it grows, get out, close the door and call 112.", "tool": "co2", "target": "curtain" }
+      ],
       "props": ["power-off", "cousin-free", "fire-curtain"],
       "choices": [
         {
@@ -195,6 +210,11 @@
       "hazard": 25,
       "narration": "The fire is out and the smoke is clearing. Your cousin says she feels fine, but there's a small mark on her palm where she held the cable.",
       "prompt": "What now?",
+      "hints": [
+        { "text": "An electric shock can hurt the inside of the body even when the person feels fine. Who should check her?" },
+        { "text": "Look at your cousin and the mark on her palm.", "target": "cousin" },
+        { "text": "Use the phone on your cousin: call 112 or get her checked by a doctor today.", "tool": "phone", "target": "cousin" }
+      ],
       "props": ["power-off", "cousin-free", "burnt-curtain"],
       "choices": [
         {

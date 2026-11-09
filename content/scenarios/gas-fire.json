@@ -39,6 +39,11 @@
       "hazard": 15,
       "narration": "You're making tea. There's a strong smell of gas, then a hiss, and a small flame flickers where the regulator meets the cylinder.",
       "prompt": "Spot the danger. Pick \"Point it out\" and tap where it is.",
+      "hints": [
+        { "text": "A smell of gas plus a flame is never normal. Where exactly is the flame: on the burner, or somewhere it shouldn't be?" },
+        { "text": "Look where the cylinder meets the regulator, not at the stove burner.", "target": "regulator" },
+        { "text": "Pick \"Point it out\" and use it on the cylinder regulator, then shout \"Fire!\" so everyone hears.", "tool": "point", "target": "regulator" }
+      ],
       "props": ["kettle", "gas", "fire"],
       "choices": [
         {
@@ -82,6 +87,11 @@
       "hazard": 30,
       "narration": "The flame is small, about the size of your palm, and isn't touching the cylinder body. Your little brother is watching TV in the next room. The door to outside is behind you.",
       "prompt": "Who or what comes first?",
+      "hints": [
+        { "text": "In any emergency, people come before things. Is anyone else in the house who could get hurt?" },
+        { "text": "Look at the next room: your little brother is watching TV.", "target": "brother" },
+        { "text": "Use your hands on your brother: tell him to go outside now, and make sure your own way out is clear.", "tool": "hands", "target": "brother" }
+      ],
       "props": ["kettle", "gas", "fire"],
       "choices": [
         {
@@ -124,6 +134,11 @@
       "hazard": 40,
       "narration": "Your brother is outside. The flame at the regulator is still small. A thick towel is soaking in the sink, and there's a bucket of water by the door.",
       "prompt": "Put the fire out safely: drag a tool onto it.",
+      "hints": [
+        { "text": "Think about what keeps a fire burning: fuel, heat and air. You can't reach the gas yet, so what could cut off the air? (Water won't stop burning gas.)" },
+        { "text": "The flame is at the regulator. Something thick and wet laid over it would starve it of air.", "target": "regulator" },
+        { "text": "Throw the thick wet towel over the regulator (the fire blanket works too). Only while the flame is small and your exit is clear.", "tool": "wet-towel", "target": "regulator" }
+      ],
       "props": ["kettle", "gas", "fire", "brother-gone"],
       "choices": [
         {
@@ -186,6 +201,11 @@
       "hazard": 30,
       "narration": "The flame is out under the cloth, but gas is still hissing out of the regulator.",
       "prompt": "Stop the gas.",
+      "hints": [
+        { "text": "The flame is out, but gas is still hissing. Where is the gas actually coming from?" },
+        { "text": "Look at the regulator on top of the cylinder. The stove knobs won't stop a leak there.", "target": "regulator" },
+        { "text": "Use your hands on the regulator: turn its knob to OFF and leave the cloth in place.", "tool": "hands", "target": "regulator" }
+      ],
       "props": ["kettle", "gas", "towel-on", "brother-gone"],
       "choices": [
         {
@@ -228,6 +248,11 @@
       "hazard": 30,
       "narration": "The gas is off, but the kitchen still smells strongly of LPG.",
       "prompt": "Clear the gas safely.",
+      "hints": [
+        { "text": "The room is full of gas. How can you let it out without making a single spark? (Switches and motors spark.)" },
+        { "text": "Look at the kitchen window and the door. Leave the fan and the switches alone.", "target": "window" },
+        { "text": "Use your hands on the window (or the door) to open it wide.", "tool": "hands", "target": "window" }
+      ],
       "props": ["kettle", "gas", "towel-on", "knob-off", "brother-gone"],
       "choices": [
         {
@@ -270,6 +295,11 @@
       "hazard": 25,
       "narration": "The fire is out, but the regulator is damaged and the cylinder must be checked before anyone uses the gas again.",
       "prompt": "Get help.",
+      "hints": [
+        { "text": "The cylinder is damaged. Who needs to check it before anyone uses gas again, and where is the safest place to phone from?" },
+        { "text": "Look at the door: step outside, away from any gas still in the air.", "target": "door" },
+        { "text": "Use the phone at the door: from outside, call 112 and the LPG emergency helpline 1906.", "tool": "phone", "target": "door" }
+      ],
       "props": ["kettle", "towel-on", "knob-off", "window-open", "door-open", "brother-gone"],
       "choices": [
         {

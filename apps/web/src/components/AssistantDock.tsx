@@ -1,4 +1,4 @@
-import { AssistantPanel, type AiAction } from "@labscape/assistant";
+import { AssistantPanel, type AiAction, type AssistantPanelProps } from "@labscape/assistant";
 import { useMotion } from "@labscape/motion";
 import { useShell } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,8 +12,13 @@ import { useSession } from "../lib/session";
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
-/** The assistant wired to the app: endpoint, live LabContext, actions, rating and level. */
-export function AssistantDock({ compact }: { compact?: boolean }) {
+/** Suggestion chips inside the emergency simulator. */
+export const EMERGENCY_CHIPS = ["I don't know what to do", "What is the safest first step?", "Why not water?"];
+
+type PanelOverrides = Partial<Pick<AssistantPanelProps, "getContext" | "suggestions" | "title" | "subtitle" | "intro" | "placeholder" | "onSend" | "fallback" | "onClose" | "closeLabel">>;
+
+/** The assistant wired to the app: endpoint, live LabContext, actions, rating and level. `panel` overrides suit other surfaces (the emergency coach). */
+export function AssistantDock({ compact, panel }: { compact?: boolean; panel?: PanelOverrides }) {
   const navigate = useNavigate();
   const { me } = useSession();
   const ctx = useLabContext();
@@ -25,7 +30,9 @@ export function AssistantDock({ compact }: { compact?: boolean }) {
     else if (a.target.startsWith("/")) navigate(a.target);
   };
   const chips =
-    ctx?.surface === "experiment"
+    ctx?.surface === "emergency"
+      ? EMERGENCY_CHIPS
+      : ctx?.surface === "experiment"
       ? [
           "Why did it change colour?",
           "What should I do next?",
@@ -44,7 +51,8 @@ export function AssistantDock({ compact }: { compact?: boolean }) {
       getContext={getLabContext}
       onAction={onAction}
       onSave={(text) => {
-        const attemptId = getLabContext()?.attemptId;
+        const c = getLabContext();
+        const attemptId = c?.surface === "emergency" ? undefined : c?.attemptId;
         void post("/v1/notebook/clips", {
           text,
           source: "assistant",
@@ -55,9 +63,10 @@ export function AssistantDock({ compact }: { compact?: boolean }) {
       }}
       rate={(id, rating) => post(`/v1/ai/messages/${id}/rate`, { rating }).then(() => {})}
       {...(me?.profile.learningLevel ? { level: me.profile.learningLevel } : {})}
-      guideText={ctx?.currentStepText ?? null}
+      {...(ctx?.surface === "emergency" ? {} : { guideText: ctx?.currentStepText ?? null })}
       suggestions={chips}
       {...(compact ? { compact } : {})}
+      {...panel}
     />
   );
 }
