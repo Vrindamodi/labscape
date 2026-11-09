@@ -10,7 +10,6 @@ import com.labscape.api.contracts.RewardResult;
 import com.labscape.api.core.billing.Entitlements;
 import com.labscape.api.core.rewards.Rewards;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -19,8 +18,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -64,14 +61,36 @@ public class EmergencyController {
 
     public record Mistake(String stage, String choice, String feedback) {}
 
-    /** One step of the run for the debrief replay: what was done, how it rated, and the safer alternative when it wasn't the best. */
+    /**
+     * One step of the run for the debrief replay: what was done, how it rated, the safer alternative when it wasn't the best,
+     * and how many hint rungs were taken in that scene.
+     */
     public record Step(String scene, String stage, String choice, String label, String quality, String feedback, String better, double hazard, String anim,
-            List<String> props, String tool, String target) {}
+            List<String> props, String tool, String target, int hints) {}
 
+    /** {@code hintsUsed} is the number of hint rungs taken over the run; {@code hintPenalty} the points they cost. */
     public record Result(int score, List<Dimension> breakdown, List<Mistake> mistakes, List<String> learn, List<String> sources, Map<String, String> ending,
-            String disclaimer, String quizId, boolean badgeEligible, RewardResult reward, List<Step> steps) {}
+            String disclaimer, String quizId, boolean badgeEligible, RewardResult reward, List<Step> steps, int hintsUsed, int hintPenalty) {}
+
+    public record HintRequest(Integer rung) {}
+
+    /**
+     * One rung of a scene's hint ladder: 1 a nudge about what matters, 2 where to look ({@code target}), 3 what to do
+     * ({@code tool} on {@code target}). {@code sceneRungs} is how many rungs this scene has used, {@code penalty} the run's total cost so far.
+     */
+    public record Hint(String scene, int rung, int rungs, String text, String tool, String target, int cost, int sceneRungs, int penalty) {}
 
     static final Map<String, Double> QUALITY = Map.of("best", 1.0, "ok", 0.7, "poor", 0.3, "unsafe", 0.0);
+
+    /** Points each hint rung costs at the end of the run (it's training: a small nudge, not a punishment). */
+    public static final int HINT_COST = 5;
+
+    /** Hints can cost at most this much in a run: a learner who needed every hint but kept everyone safe still passes. */
+    public static final int HINT_CAP = 40;
+
+    static int hintPenalty(int rungs) {
+        return Math.min(HINT_CAP, rungs * HINT_COST);
+    }
 
     private final Map<String, JsonNode> scenarios = new LinkedHashMap<>();
     private final JdbcClient db;
@@ -79,23 +98,12 @@ public class EmergencyController {
     private final Rewards rewards;
     private final Entitlements entitlements;
 
-    public EmergencyController(JdbcClient db, ObjectMapper mapper, Rewards rewards, Entitlements entitlements) {
+    public EmergencyController(JdbcClient db, ObjectMapper mapper, Rewards rewards, Entitlements entitlements, Scenarios library) {
         this.db = db;
         this.mapper = mapper;
         this.rewards = rewards;
         this.entitlements = entitlements;
-        try {
-            Resource[] files = new PathMatchingResourcePatternResolver().getResources("classpath:content/scenarios/*.json");
-            List<JsonNode> list = new ArrayList<>();
-            for (Resource r : files) try (InputStream in = r.getInputStream()) {
-                list.add(mapper.readTree(in));
-            }
-            // free scenario first, then by title
-            list.sort((a, b) -> a.path("free").asBoolean() != b.path("free").asBoolean() ? (a.path("free").asBoolean() ? -1 : 1) : a.path("title").asText().compareTo(b.path("title").asText()));
-            list.forEach(s -> scenarios.put(s.path("slug").asText(), s));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Could not load scenarios", e);
-        }
+        library.all().forEach(s -> scenarios.put(s.path("slug").asText(), s));
     }
 
     private static UUID user(Jwt jwt) {
@@ -124,11 +132,10 @@ public class EmergencyController {
     }
 
     private static JsonNode scene(JsonNode s, String id) {
-        for (JsonNode sc : s.path("scenes")) if (sc.path("id").asText().equals(id)) return sc;
-        return null;
+        return Scenarios.scene(s, id);
     }
 
-    /** What the client may see of a scene: no qualities, feedback, animations or destinations. */
+    /** What the client may see of a scene: no qualities, feedback, animations, destinations or hints. */
     private static SceneView view(JsonNode sc, double hazard) {
         List<Map<String, String>> choices = new ArrayList<>();
         List<Action> actions = new ArrayList<>();
@@ -142,10 +149,7 @@ public class EmergencyController {
 
     /** A choice's hands-on actions: {@code "action": {...}} or {@code "actions": [...]}. */
     private static List<JsonNode> actionsOf(JsonNode choice) {
-        List<JsonNode> out = new ArrayList<>();
-        if (choice.path("action").isObject()) out.add(choice.path("action"));
-        choice.path("actions").forEach(out::add);
-        return out;
+        return Scenarios.actionsOf(choice);
     }
 
     private static List<String> strings(JsonNode array) {
@@ -171,8 +175,8 @@ public class EmergencyController {
     @Transactional
     public Chosen choose(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody ChooseRequest req) {
         UUID u = user(jwt);
-        var row = db.sql("SELECT scenario, scene, hazard, status FROM emergency_attempts WHERE id = ? AND user_id = ? FOR UPDATE").params(id, u)
-                .query((rs, i) -> new Object[] {rs.getString(1), rs.getString(2), rs.getDouble(3), rs.getString(4)})
+        var row = db.sql("SELECT scenario, scene, hazard, status, hints::text FROM emergency_attempts WHERE id = ? AND user_id = ? FOR UPDATE").params(id, u)
+                .query((rs, i) -> new Object[] {rs.getString(1), rs.getString(2), rs.getDouble(3), rs.getString(4), rs.getString(5)})
                 .optional().orElseThrow(() -> ApiProblem.notFound("ATTEMPT_NOT_FOUND", "That scenario run doesn't exist."));
         if (!"in_progress".equals(row[3]) || row[1] == null) throw new ApiProblem(HttpStatus.CONFLICT, "SCENARIO_OVER", "This scenario has ended.");
         JsonNode s = scenario((String) row[0]);
@@ -188,7 +192,8 @@ public class EmergencyController {
         record.put("scene", sc.path("id").asText()).put("stage", sc.path("stage").asText()).put("choice", choice.path("id").asText()).put("label", choice.path("label").asText())
                 .put("quality", choice.path("quality").asText()).put("feedback", choice.path("feedback").asText()).put("elapsedMs", req.elapsedMs())
                 .put("timerS", sc.path("timerS").asInt(15)).put("recognise", choice.path("recognise").asBoolean()).put("escalate", choice.path("escalate").asBoolean())
-                .put("anim", choice.path("anim").asText("none")).put("hazard", hazard);
+                .put("anim", choice.path("anim").asText("none")).put("hazard", hazard)
+                .put("hints", read((String) row[4], JsonNode.class).path(sc.path("id").asText()).asInt(0));
         record.set("props", sc.path("props").isArray() ? sc.path("props").deepCopy() : mapper.createArrayNode());
         List<JsonNode> acts = actionsOf(choice);
         if (!acts.isEmpty()) record.put("tool", acts.get(0).path("tool").asText()).put("target", acts.get(0).path("target").asText());
@@ -211,12 +216,44 @@ public class EmergencyController {
         return new Chosen(q, !q.equals("unsafe"), choice.path("feedback").asText(), hazard, nextView, ending, choice.path("anim").asText("none"));
     }
 
+    /**
+     * The next rung of the current scene's hint ladder (or a rung already taken, which is free to see again). Rungs can't be
+     * skipped. The timer is the client's business (it pauses while a hint is open); the cost is recorded here.
+     */
+    @PostMapping("/v1/emergency/attempts/{id}/hint")
+    @Transactional
+    public Hint hint(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id, @RequestBody(required = false) HintRequest req) {
+        UUID u = user(jwt);
+        var row = db.sql("SELECT scenario, scene, status, hints::text FROM emergency_attempts WHERE id = ? AND user_id = ? FOR UPDATE").params(id, u)
+                .query((rs, i) -> new String[] {rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4)})
+                .optional().orElseThrow(() -> ApiProblem.notFound("ATTEMPT_NOT_FOUND", "That scenario run doesn't exist."));
+        if (!"in_progress".equals(row[2]) || row[1] == null) throw new ApiProblem(HttpStatus.CONFLICT, "SCENARIO_OVER", "This scenario has ended.");
+        JsonNode sc = scene(scenario(row[0]), row[1]);
+        JsonNode ladder = sc.path("hints");
+        if (!ladder.isArray() || ladder.isEmpty()) throw ApiProblem.notFound("NO_HINTS", "There are no hints for this part.");
+        JsonNode taken = read(row[3], JsonNode.class);
+        int had = taken.path(row[1]).asInt(0);
+        int want = req == null || req.rung() == null ? had + 1 : req.rung();
+        int rung = Math.max(1, Math.min(Math.min(had + 1, ladder.size()), want));
+        if (rung > had) db.sql("UPDATE emergency_attempts SET hints = hints || jsonb_build_object(?::text, ?::int) WHERE id = ?").params(row[1], rung, id).update();
+        int total = 0;
+        for (var it = taken.fields(); it.hasNext(); ) {
+            var e = it.next();
+            if (!e.getKey().equals(row[1])) total += e.getValue().asInt();
+        }
+        int sceneRungs = Math.max(had, rung);
+        total += sceneRungs;
+        JsonNode h = ladder.get(rung - 1);
+        return new Hint(row[1], rung, ladder.size(), h.path("text").asText(), h.path("tool").asText(null), h.path("target").asText(null), rung > had && hintPenalty(total) > hintPenalty(total - 1) ? HINT_COST : 0,
+                sceneRungs, hintPenalty(total));
+    }
+
     @PostMapping("/v1/emergency/attempts/{id}/finish")
     @Transactional
     public Result finish(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
         UUID u = user(jwt);
-        var row = db.sql("SELECT scenario, choices::text, ending, status, result::text FROM emergency_attempts WHERE id = ? AND user_id = ? FOR UPDATE").params(id, u)
-                .query((rs, i) -> new String[] {rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5)})
+        var row = db.sql("SELECT scenario, choices::text, ending, status, result::text, hints::text FROM emergency_attempts WHERE id = ? AND user_id = ? FOR UPDATE").params(id, u)
+                .query((rs, i) -> new String[] {rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getString(6)})
                 .optional().orElseThrow(() -> ApiProblem.notFound("ATTEMPT_NOT_FOUND", "That scenario run doesn't exist."));
         if ("completed".equals(row[3])) return read(row[4], Result.class);
         if (row[2] == null) throw new ApiProblem(HttpStatus.CONFLICT, "SCENARIO_NOT_OVER", "Finish the scenario first.");
@@ -240,7 +277,8 @@ public class EmergencyController {
                 break;
             }
             steps.add(new Step(c.path("scene").asText(), c.path("stage").asText(), c.path("choice").asText(), c.path("label").asText(), q, c.path("feedback").asText(), better,
-                    c.path("hazard").asDouble(), c.path("anim").asText("none"), strings(c.path("props")), c.path("tool").asText(null), c.path("target").asText(null)));
+                    c.path("hazard").asDouble(), c.path("anim").asText("none"), strings(c.path("props")), c.path("tool").asText(null), c.path("target").asText(null),
+                    c.path("hints").asInt(0)));
             decisions += QUALITY.getOrDefault(q, 0.0);
             if (q.equals("unsafe")) unsafe++;
             if (!q.equals("best")) mistakes.add(new Mistake(c.path("stage").asText(), c.path("label").asText(), c.path("feedback").asText()));
@@ -260,7 +298,11 @@ public class EmergencyController {
                 new Dimension("awareness", "Safety awareness", pct(awareness), 20),
                 new Dimension("escalation", "Calling for help", pct(escalation), 15),
                 new Dimension("outcome", "Final outcome", pct(result), 20));
-        int score = (int) Math.round(dims.stream().mapToDouble(d -> d.score() * d.weight()).sum() / 100.0);
+        // every hint rung taken costs a few points (recorded per scene when it was taken)
+        int hintsUsed = 0;
+        for (JsonNode n : read(row[5], JsonNode.class)) hintsUsed += n.asInt();
+        int hintPenalty = hintPenalty(hintsUsed);
+        int score = Math.max(0, (int) Math.round(dims.stream().mapToDouble(d -> d.score() * d.weight()).sum() / 100.0) - hintPenalty);
 
         RewardResult reward = rewards.awardVerified(u, new ProgressEvent("scenario:" + id, "scenario.completed", Instant.now(), "safety", s.path("id").asText(), id.toString(), score));
         List<String> learn = new ArrayList<>();
@@ -268,7 +310,7 @@ public class EmergencyController {
         List<String> sources = new ArrayList<>();
         s.path("sources").forEach(n -> sources.add(n.asText()));
         Result r = new Result(score, dims, mistakes, learn, sources, Map.of("id", row[2], "outcome", outcome, "text", endingNode.path("text").asText()),
-                s.path("disclaimer").asText(), s.path("quizId").asText(), score >= 80, reward, steps);
+                s.path("disclaimer").asText(), s.path("quizId").asText(), score >= 80, reward, steps, hintsUsed, hintPenalty);
         try {
             db.sql("UPDATE emergency_attempts SET status = 'completed', score = ?, result = ?::jsonb, finished_at = now() WHERE id = ?").params(score, mapper.writeValueAsString(r), id).update();
         } catch (IOException e) {

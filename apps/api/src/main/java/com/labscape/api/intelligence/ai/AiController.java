@@ -204,7 +204,8 @@ public class AiController {
     /** Keeps the structural parts of the context and drops free text where instructions could hide. */
     private JsonNode stripFreeText(JsonNode ctx) {
         ObjectNode o = mapper.createObjectNode();
-        for (String k : List.of("surface", "subject", "attemptId", "experimentId", "experimentVersion", "stage", "currentStepId", "completedStepIds", "userLevel", "highlightableIds"))
+        for (String k : List.of("surface", "subject", "attemptId", "experimentId", "experimentVersion", "stage", "currentStepId", "completedStepIds", "userLevel", "highlightableIds",
+                "scenarioSlug", "sceneId", "askedBefore", "hintRung", "hazard"))
             if (ctx.has(k)) o.set(k, ctx.get(k));
         List<String> dropped = new ArrayList<>();
         ctx.fieldNames().forEachRemaining(f -> {

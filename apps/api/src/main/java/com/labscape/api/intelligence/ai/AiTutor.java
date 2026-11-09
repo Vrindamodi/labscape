@@ -58,9 +58,11 @@ public class AiTutor {
     private final LibraryCatalogue catalogue;
     private final LabEngineRuntime engine;
     private final SafetyPipeline safety;
+    private final EmergencyCoach coach;
     private final Catalogue substances = Catalogue.load();
 
-    public AiTutor(Retrieval retrieval, LibraryCatalogue catalogue, LabEngineRuntime engine, SafetyPipeline safety) {
+    public AiTutor(Retrieval retrieval, LibraryCatalogue catalogue, LabEngineRuntime engine, SafetyPipeline safety, EmergencyCoach coach) {
+        this.coach = coach;
         this.retrieval = retrieval;
         this.catalogue = catalogue;
         this.engine = engine;
@@ -112,6 +114,8 @@ public class AiTutor {
 
     public Facts analyse(String message, JsonNode context, String explicitLevel, String previousUserMessage, UUID user) {
         String level = level(context, explicitLevel);
+        // inside the emergency simulator the assistant is a safety coach, grounded in the scenario
+        if (coach.handles(context)) return coach.facts(message, context, level);
         Intent intent = intent(message);
         if (intent == Intent.SIMPLER && previousUserMessage != null && !previousUserMessage.isBlank()) {
             Facts f = analyse(previousUserMessage, context, "beginner", null, user);

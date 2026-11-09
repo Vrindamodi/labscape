@@ -37,6 +37,11 @@
       "hazard": 20,
       "narration": "Crash! A bottle of dilute sulfuric acid slips off the shelf and smashes. Acid spreads over the bench, and your lab partner cries out: some splashed in her eye.",
       "prompt": "Raise the alarm.",
+      "hints": [
+        { "text": "Someone is hurt and there's acid everywhere. Who in the room is in charge and needs to know right now?" },
+        { "text": "Look at the door: your teacher is there.", "target": "teacher" },
+        { "text": "Use your hands on your teacher: shout \"Acid spill, and it's in her eye!\"", "tool": "hands", "target": "teacher" }
+      ],
       "props": ["spill", "glass", "teacher"],
       "choices": [
         {
@@ -71,6 +76,11 @@
       "hazard": 30,
       "narration": "Your partner is holding her eye and it's stinging badly. The teacher is on the way. The eyewash station is on the far wall.",
       "prompt": "Help her eye.",
+      "hints": [
+        { "text": "Acid keeps burning until it's washed away. What washes an eye properly, and for how long?" },
+        { "text": "Look at the far wall: there's a station made just for eyes.", "target": "eyewash" },
+        { "text": "Use your hands on the eyewash station: lead her there and flush her eye for at least 15 minutes, eyelid held open.", "tool": "hands", "target": "eyewash" }
+      ],
       "props": ["spill", "glass", "teacher"],
       "choices": [
         {
@@ -123,6 +133,11 @@
       "hazard": 35,
       "narration": "Your partner is flushing her eye at the eyewash. Your teacher, at the door, checks on her and asks you to deal with the spill with the spill kit, as you've practised. Acid is creeping towards the edge of the bench.",
       "prompt": "Before you touch anything...",
+      "hints": [
+        { "text": "Before you touch any chemical, what protects you?" },
+        { "text": "Look at yourself: are your eyes and hands protected?", "target": "you" },
+        { "text": "Use \"Goggles + gloves\" on You before touching anything.", "tool": "ppe", "target": "you" }
+      ],
       "props": ["spill", "glass", "eyewash-on"],
       "choices": [
         {
@@ -165,6 +180,11 @@
       "hazard": 35,
       "narration": "Goggles and gloves on. The acid is about to drip off the bench onto the floor.",
       "prompt": "Stop it spreading.",
+      "hints": [
+        { "text": "The spill is spreading. Would you stop a puddle by adding more liquid, or by building a wall around it?" },
+        { "text": "Look at the acid spill, and work from the outside edge in.", "target": "spill" },
+        { "text": "Use the spill kit absorbent on the acid spill to ring it in.", "tool": "spill-kit", "target": "spill" }
+      ],
       "props": ["spill", "glass", "eyewash-on", "ppe-on"],
       "choices": [
         {
@@ -207,6 +227,11 @@
       "hazard": 30,
       "narration": "The spill is ringed in. Your teacher calls over: \"Neutralise it as we practised.\"",
       "prompt": "Make it safe.",
+      "hints": [
+        { "text": "An acid is neutralised by a base, but a gentle one. A strong alkali reacts violently and burns skin too." },
+        { "text": "Look at the ringed-in spill.", "target": "spill" },
+        { "text": "Use the neutraliser (sodium hydrogencarbonate) on the spill until the fizzing stops.", "tool": "neutraliser", "target": "spill" }
+      ],
       "props": ["spill", "glass", "eyewash-on", "ppe-on", "contained"],
       "choices": [
         {
@@ -249,6 +274,11 @@
       "hazard": 20,
       "narration": "The fizzing has stopped. Your partner is still flushing her eye at the eyewash.",
       "prompt": "Finish up.",
+      "hints": [
+        { "text": "Someone was injured. Who needs the full story so she gets checked and it's written up?" },
+        { "text": "Look at your teacher.", "target": "teacher" },
+        { "text": "Use your hands on your teacher: say what spilled, roughly how much, and that it went in her eye.", "tool": "hands", "target": "teacher" }
+      ],
       "props": ["glass", "eyewash-on", "ppe-on", "contained", "neutralised"],
       "choices": [
         {

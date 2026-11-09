@@ -1,12 +1,14 @@
 import type { RewardResult } from "@labscape/contracts";
 import { sound } from "@labscape/audio";
-import { ScenarioPlayer, type Chosen, type ScenarioResult, type Started } from "@labscape/scenarios";
+import { ScenarioPlayer, type Chosen, type HintRung, type ScenarioResult, type Started } from "@labscape/scenarios";
 import { cx, ErrorState, FullscreenLab, Skeleton } from "@labscape/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Crown, Droplets, Flame, Hand, Lock, ShieldAlert, Zap } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AssistantDock, EMERGENCY_CHIPS } from "../components/AssistantDock";
 import { QuizStage } from "../components/QuizStage";
 import { api, post } from "../lib/api";
+import { setLabContext, type PublishedContext } from "../lib/labContext";
 import { emitReward, useSession } from "../lib/session";
 
 type Card = { slug: string; title: string; summary: string; kind: "fire" | "spill" | "electric" | "burn"; minutes: number; free: boolean; locked: boolean; bestScore: number | null; reviewStatus: string };
@@ -88,6 +90,26 @@ export function EmergencyRun() {
             start={() => post<Started>(`/v1/emergency/scenarios/${slug}/start`, {})}
             choose={(id, choiceId, elapsedMs) => post<Chosen>(`/v1/emergency/attempts/${id}/choose`, { choiceId, elapsedMs })}
             finish={(id) => post<ScenarioResult>(`/v1/emergency/attempts/${id}/finish`, {})}
+            hint={(id) => post<HintRung>(`/v1/emergency/attempts/${id}/hint`, {})}
+            slug={slug}
+            onContext={(ctx) => setLabContext(ctx as unknown as PublishedContext | null)}
+            renderHelper={(h) => (
+              <AssistantDock
+                compact
+                panel={{
+                  getContext: h.getContext,
+                  onSend: h.onAsk,
+                  suggestions: EMERGENCY_CHIPS,
+                  title: "Safety coach",
+                  subtitle: "Talks you through it; the clock is paused",
+                  intro: "Stuck? Tell me what you're unsure about. I'll help you think it through first, and if you're still stuck, I'll tell you the safe move. Real emergency in India: call 112.",
+                  placeholder: "Ask about this emergency…",
+                  fallback: { label: "Use a hint instead", onClick: h.fallBackToHints },
+                  onClose: h.onClose,
+                  closeLabel: "Close the safety coach",
+                }}
+              />
+            )}
             onResult={(r) => {
               const reward = r.reward as RewardResult | undefined;
               if (reward && !reward.duplicate) emitReward({ result: reward, origin: { x: window.innerWidth / 2, y: window.innerHeight / 3 }, label: "Emergency scenario" });
