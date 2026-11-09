@@ -42,20 +42,34 @@ public class EmergencyController {
 
     public record Card(String slug, String title, String summary, String kind, int minutes, boolean free, boolean locked, Integer bestScore, String reviewStatus) {}
 
-    public record SceneView(String id, String stage, int timerS, double growth, double hazard, String narration, List<Map<String, String>> choices) {}
+    /** A hands-on way to make a choice: use {@code tool} on the {@code target} hotspot of the scene. */
+    public record Action(String choiceId, String tool, String target) {}
 
-    public record Started(String attemptId, String title, String kind, String disclaimer, SceneView scene) {}
+    /**
+     * What the client may see of a scene. {@code props} is the persistent state of the illustrated room (towel on the
+     * regulator, power off...), {@code actions} map (tool, target) pairs to choices. Neither reveals which choice is right.
+     */
+    public record SceneView(String id, String stage, int timerS, double growth, double hazard, String narration, String prompt, List<String> props,
+            List<Map<String, String>> choices, List<Action> actions) {}
+
+    /** {@code tools} (the tray) and {@code hotspots} (targets in the 640x360 room) are the scenario's interaction layout. */
+    public record Started(String attemptId, String title, String kind, String disclaimer, SceneView scene, JsonNode tools, JsonNode hotspots) {}
 
     public record ChooseRequest(String choiceId, long elapsedMs) {}
 
-    public record Chosen(String quality, boolean safe, String feedback, double hazard, SceneView next, Map<String, String> ending) {}
+    /** {@code anim} is the consequence animation the scene plays for this choice (only revealed once chosen). */
+    public record Chosen(String quality, boolean safe, String feedback, double hazard, SceneView next, Map<String, String> ending, String anim) {}
 
     public record Dimension(String id, String label, int score, int weight) {}
 
     public record Mistake(String stage, String choice, String feedback) {}
 
+    /** One step of the run for the debrief replay: what was done, how it rated, and the safer alternative when it wasn't the best. */
+    public record Step(String scene, String stage, String choice, String label, String quality, String feedback, String better, double hazard, String anim,
+            List<String> props, String tool, String target) {}
+
     public record Result(int score, List<Dimension> breakdown, List<Mistake> mistakes, List<String> learn, List<String> sources, Map<String, String> ending,
-            String disclaimer, String quizId, boolean badgeEligible, RewardResult reward) {}
+            String disclaimer, String quizId, boolean badgeEligible, RewardResult reward, List<Step> steps) {}
 
     static final Map<String, Double> QUALITY = Map.of("best", 1.0, "ok", 0.7, "poor", 0.3, "unsafe", 0.0);
 
@@ -114,11 +128,30 @@ public class EmergencyController {
         return null;
     }
 
-    /** What the client may see of a scene: no qualities, feedback or destinations. */
+    /** What the client may see of a scene: no qualities, feedback, animations or destinations. */
     private static SceneView view(JsonNode sc, double hazard) {
         List<Map<String, String>> choices = new ArrayList<>();
-        sc.path("choices").forEach(c -> choices.add(Map.of("id", c.path("id").asText(), "label", c.path("label").asText())));
-        return new SceneView(sc.path("id").asText(), sc.path("stage").asText(), sc.path("timerS").asInt(15), sc.path("growth").asDouble(1), hazard, sc.path("narration").asText(), choices);
+        List<Action> actions = new ArrayList<>();
+        sc.path("choices").forEach(c -> {
+            choices.add(Map.of("id", c.path("id").asText(), "label", c.path("label").asText()));
+            actionsOf(c).forEach(a -> actions.add(new Action(c.path("id").asText(), a.path("tool").asText(), a.path("target").asText())));
+        });
+        return new SceneView(sc.path("id").asText(), sc.path("stage").asText(), sc.path("timerS").asInt(15), sc.path("growth").asDouble(1), hazard,
+                sc.path("narration").asText(), sc.path("prompt").asText(""), strings(sc.path("props")), choices, actions);
+    }
+
+    /** A choice's hands-on actions: {@code "action": {...}} or {@code "actions": [...]}. */
+    private static List<JsonNode> actionsOf(JsonNode choice) {
+        List<JsonNode> out = new ArrayList<>();
+        if (choice.path("action").isObject()) out.add(choice.path("action"));
+        choice.path("actions").forEach(out::add);
+        return out;
+    }
+
+    private static List<String> strings(JsonNode array) {
+        List<String> out = new ArrayList<>();
+        array.forEach(n -> out.add(n.asText()));
+        return out;
     }
 
     @PostMapping("/v1/emergency/scenarios/{slug}/start")
@@ -131,7 +164,7 @@ public class EmergencyController {
         UUID id = UUID.randomUUID();
         double hazard = first.path("hazard").asDouble();
         db.sql("INSERT INTO emergency_attempts (id, user_id, scenario, scene, hazard) VALUES (?, ?, ?, ?, ?)").params(id, u, slug, first.path("id").asText(), hazard).update();
-        return new Started(id.toString(), s.path("title").asText(), s.path("kind").asText(), s.path("disclaimer").asText(), view(first, hazard));
+        return new Started(id.toString(), s.path("title").asText(), s.path("kind").asText(), s.path("disclaimer").asText(), view(first, hazard), s.path("tools"), s.path("hotspots"));
     }
 
     @PostMapping("/v1/emergency/attempts/{id}/choose")
@@ -154,7 +187,11 @@ public class EmergencyController {
         ObjectNode record = mapper.createObjectNode();
         record.put("scene", sc.path("id").asText()).put("stage", sc.path("stage").asText()).put("choice", choice.path("id").asText()).put("label", choice.path("label").asText())
                 .put("quality", choice.path("quality").asText()).put("feedback", choice.path("feedback").asText()).put("elapsedMs", req.elapsedMs())
-                .put("timerS", sc.path("timerS").asInt(15)).put("recognise", choice.path("recognise").asBoolean()).put("escalate", choice.path("escalate").asBoolean());
+                .put("timerS", sc.path("timerS").asInt(15)).put("recognise", choice.path("recognise").asBoolean()).put("escalate", choice.path("escalate").asBoolean())
+                .put("anim", choice.path("anim").asText("none")).put("hazard", hazard);
+        record.set("props", sc.path("props").isArray() ? sc.path("props").deepCopy() : mapper.createArrayNode());
+        List<JsonNode> acts = actionsOf(choice);
+        if (!acts.isEmpty()) record.put("tool", acts.get(0).path("tool").asText()).put("target", acts.get(0).path("target").asText());
 
         String next = choice.path("next").asText();
         JsonNode nextScene = scene(s, next);
@@ -171,7 +208,7 @@ public class EmergencyController {
         db.sql("UPDATE emergency_attempts SET scene = ?, hazard = ?, ending = ?, choices = choices || ?::jsonb WHERE id = ?")
                 .params(nextScene == null ? null : next, hazard, nextScene == null ? next : null, mapper.createArrayNode().add(record).toString(), id).update();
         String q = choice.path("quality").asText();
-        return new Chosen(q, !q.equals("unsafe"), choice.path("feedback").asText(), hazard, nextView, ending);
+        return new Chosen(q, !q.equals("unsafe"), choice.path("feedback").asText(), hazard, nextView, ending, choice.path("anim").asText("none"));
     }
 
     @PostMapping("/v1/emergency/attempts/{id}/finish")
@@ -193,8 +230,17 @@ public class EmergencyController {
         int unsafe = 0;
         double escalation = 0;
         List<Mistake> mistakes = new ArrayList<>();
+        List<Step> steps = new ArrayList<>();
         for (JsonNode c : choices) {
             String q = c.path("quality").asText();
+            String better = null;
+            JsonNode sc = scene(s, c.path("scene").asText());
+            if (!q.equals("best") && sc != null) for (JsonNode alt : sc.path("choices")) if (alt.path("quality").asText().equals("best")) {
+                better = alt.path("label").asText();
+                break;
+            }
+            steps.add(new Step(c.path("scene").asText(), c.path("stage").asText(), c.path("choice").asText(), c.path("label").asText(), q, c.path("feedback").asText(), better,
+                    c.path("hazard").asDouble(), c.path("anim").asText("none"), strings(c.path("props")), c.path("tool").asText(null), c.path("target").asText(null)));
             decisions += QUALITY.getOrDefault(q, 0.0);
             if (q.equals("unsafe")) unsafe++;
             if (!q.equals("best")) mistakes.add(new Mistake(c.path("stage").asText(), c.path("label").asText(), c.path("feedback").asText()));
@@ -222,7 +268,7 @@ public class EmergencyController {
         List<String> sources = new ArrayList<>();
         s.path("sources").forEach(n -> sources.add(n.asText()));
         Result r = new Result(score, dims, mistakes, learn, sources, Map.of("id", row[2], "outcome", outcome, "text", endingNode.path("text").asText()),
-                s.path("disclaimer").asText(), s.path("quizId").asText(), score >= 80, reward);
+                s.path("disclaimer").asText(), s.path("quizId").asText(), score >= 80, reward, steps);
         try {
             db.sql("UPDATE emergency_attempts SET status = 'completed', score = ?, result = ?::jsonb, finished_at = now() WHERE id = ?").params(score, mapper.writeValueAsString(r), id).update();
         } catch (IOException e) {

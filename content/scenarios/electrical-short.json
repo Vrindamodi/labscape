@@ -2,11 +2,31 @@
   "slug": "electrical-short",
   "title": "Electrical short circuit",
   "kind": "electric",
-  "minutes": 4,
-  "summary": "An overloaded extension board sparks and starts to smoke. Stay safe around electricity.",
+  "minutes": 5,
+  "summary": "An overloaded extension board sparks, your cousin grabs the cable, and a curtain starts to burn. Cut the power and stay safe.",
   "sources": [
     "National Disaster Management Authority (India): fire safety guidance",
-    "Standard electrical safety advice: isolate the supply, never use water on electrical fires"
+    "Bureau of Indian Standards / electricity board consumer safety advice: isolate at the MCB or main switch",
+    "St John Ambulance / Indian Red Cross Society first aid: electric shock",
+    "112 India: national emergency number"
+  ],
+  "tools": [
+    { "id": "point", "label": "Point it out", "hint": "Spot or check something" },
+    { "id": "hands", "label": "Your hands", "hint": "Touch, switch, tell" },
+    { "id": "wooden-stick", "label": "Dry wooden broom", "hint": "Long wooden handle" },
+    { "id": "water-bucket", "label": "Bucket of water", "hint": "Full bucket" },
+    { "id": "co2", "label": "CO₂ extinguisher", "hint": "Black band" },
+    { "id": "powder", "label": "Dry powder extinguisher", "hint": "ABC powder" },
+    { "id": "towel", "label": "Bath towel", "hint": "Dry towel" },
+    { "id": "phone", "label": "Phone", "hint": "Call 112" }
+  ],
+  "hotspots": [
+    { "id": "door", "label": "Door out of the room", "x": 4, "y": 88, "w": 82, "h": 216 },
+    { "id": "mcb", "label": "MCB box (main switch)", "x": 92, "y": 50, "w": 66, "h": 82 },
+    { "id": "laptop", "label": "Laptop and charger", "x": 116, "y": 180, "w": 128, "h": 70 },
+    { "id": "cousin", "label": "Your cousin", "x": 252, "y": 150, "w": 78, "h": 146 },
+    { "id": "board", "label": "Extension board", "x": 334, "y": 242, "w": 112, "h": 50 },
+    { "id": "curtain", "label": "Curtain and window", "x": 448, "y": 40, "w": 160, "h": 200 }
   ],
   "scenes": [
     {
@@ -15,24 +35,40 @@
       "timerS": 10,
       "growth": 1.3,
       "hazard": 20,
-      "narration": "You're charging a laptop on an extension board crowded with plugs. There's a burning-plastic smell, a crackle, and sparks from the board.",
+      "narration": "You're charging a laptop from an extension board crowded with plugs. There's a burning-plastic smell, a crackle, and sparks jump from the board.",
+      "prompt": "Spot the danger. Pick \"Point it out\" and tap where it is.",
+      "props": ["sparks"],
       "choices": [
         {
           "id": "recognise",
-          "label": "That's an electrical fault: danger",
+          "label": "Point at the board: that's an electrical fault, keep away from it",
           "quality": "best",
-          "feedback": "Right. Sparks, crackling and a burning smell mean an electrical fault that can start a fire.",
+          "feedback": "Right. Sparks, crackling and a burning smell mean an electrical fault that can start a fire. Keep your hands off it.",
           "next": "assess",
           "hazardDelta": -15,
-          "recognise": true
+          "recognise": true,
+          "action": { "tool": "point", "target": "board" },
+          "anim": "alert"
         },
         {
           "id": "ignore",
-          "label": "It always does that. Ignore it.",
+          "label": "It's just the laptop charger getting warm. Ignore it.",
           "quality": "unsafe",
           "feedback": "Sparks and burning smells are never normal. Overloaded boards cause many house fires.",
           "next": "assess",
-          "hazardDelta": 25
+          "hazardDelta": 25,
+          "action": { "tool": "point", "target": "laptop" },
+          "anim": "flame-grow"
+        },
+        {
+          "id": "wiggle",
+          "label": "Wiggle the plugs to stop the crackling",
+          "quality": "unsafe",
+          "feedback": "Don't touch a sparking board: you could get a shock or a burn. Cut the power at the MCB instead.",
+          "next": "assess",
+          "hazardDelta": 25,
+          "action": { "tool": "hands", "target": "board" },
+          "anim": "shock-warn"
         }
       ]
     },
@@ -40,33 +76,51 @@
       "id": "assess",
       "stage": "assessment",
       "timerS": 12,
-      "growth": 1.6,
+      "growth": 1.8,
       "hazard": 35,
-      "narration": "A thin line of smoke rises from the board. The plastic is starting to melt.",
+      "narration": "Your cousin grabs the charger cable to yank it out. The insulation has melted and she freezes, unable to let go: she's being shocked. The MCB box is on the wall by the door.",
+      "prompt": "Help her without becoming a second casualty.",
+      "props": ["sparks", "shock"],
       "choices": [
         {
-          "id": "mains",
-          "label": "Switch off the power at the main switch (MCB) if you can reach it safely",
+          "id": "mcb",
+          "label": "Switch off the power at the MCB / main switch",
           "quality": "best",
-          "feedback": "Yes. Cutting the supply at the mains stops the fault feeding the fire.",
+          "feedback": "Yes. Cutting the supply at the MCB or main switch stops the current, and then she can be helped safely.",
           "next": "decide",
-          "hazardDelta": -15
+          "hazardDelta": -15,
+          "action": { "tool": "hands", "target": "mcb" },
+          "anim": "mcb-off"
         },
         {
-          "id": "unplug",
-          "label": "Pull out the plugs from the smoking board",
-          "quality": "unsafe",
-          "feedback": "Don't touch a sparking, melting board: you could get a shock or burn. Isolate at the mains instead.",
+          "id": "stick",
+          "label": "Stand on something dry and push the cable away with a dry wooden broom handle",
+          "quality": "ok",
+          "feedback": "That's what to do if you can't reach the power switch. Here the MCB was close, and switching it off is safer and quicker.",
           "next": "decide",
-          "hazardDelta": 25
+          "hazardDelta": -5,
+          "action": { "tool": "wooden-stick", "target": "cousin" },
+          "anim": "stick-push"
+        },
+        {
+          "id": "pull",
+          "label": "Grab her arm and pull her away",
+          "quality": "unsafe",
+          "feedback": "Never touch someone who is being shocked: the current can pass into you too. Cut the power first, or use a dry wooden object. (Your uncle runs in and switches off the MCB.)",
+          "next": "decide",
+          "hazardDelta": 25,
+          "action": { "tool": "hands", "target": "cousin" },
+          "anim": "shock-warn"
         },
         {
           "id": "water",
-          "label": "Throw water on it",
+          "label": "Throw water on the sparking board",
           "quality": "unsafe",
-          "feedback": "Never put water on an electrical fire: water conducts electricity and can electrocute you.",
+          "feedback": "Water conducts electricity: it can spread the shock to you and everyone standing in it. (Your uncle runs in and switches off the MCB.)",
           "next": "decide",
-          "hazardDelta": 25
+          "hazardDelta": 25,
+          "action": { "tool": "water-bucket", "target": "board" },
+          "anim": "water-spark"
         }
       ]
     },
@@ -74,35 +128,105 @@
       "id": "decide",
       "stage": "decision",
       "timerS": 12,
-      "growth": 1.5,
+      "growth": 1.6,
       "hazard": 40,
-      "narration": "The power is off, but small flames have caught the curtain next to the board.",
+      "narration": "The power is off and your cousin has let go. But the melted board has set the bottom of the curtain alight: small flames, for now. There's a CO₂ and a dry powder extinguisher by the door.",
+      "prompt": "Deal with the fire.",
+      "props": ["power-off", "cousin-free", "fire-curtain"],
       "choices": [
+        {
+          "id": "co2",
+          "label": "Aim the CO₂ extinguisher at the base of the small fire, with the door behind you",
+          "quality": "best",
+          "feedback": "Right. CO₂ (or dry powder) is safe on electrical fires. Aim at the base and sweep. Only tackle a small fire with a clear way out behind you.",
+          "next": "aftermath",
+          "hazardDelta": -20,
+          "action": { "tool": "co2", "target": "curtain" },
+          "anim": "co2-cloud"
+        },
+        {
+          "id": "powder",
+          "label": "Use the dry powder extinguisher on the base of the fire",
+          "quality": "best",
+          "feedback": "Yes. A dry powder (ABC) extinguisher works on electrical and fabric fires. Aim at the base, sweep side to side, and keep your exit behind you.",
+          "next": "aftermath",
+          "hazardDelta": -20,
+          "action": { "tool": "powder", "target": "curtain" },
+          "anim": "powder-cloud"
+        },
         {
           "id": "evacuate",
           "label": "Get everyone out, close the door, and call 112",
           "quality": "best",
-          "feedback": "Right. Once it spreads to furnishings, get out and call the fire service.",
+          "feedback": "Always a safe choice. Once a fire spreads to furnishings, getting out and closing the door is right. Firefighters put it out.",
+          "next": "aftermath",
+          "hazardDelta": -15,
+          "escalate": true,
+          "action": { "tool": "phone", "target": "door" },
+          "anim": "evacuate"
+        },
+        {
+          "id": "water",
+          "label": "Throw the bucket of water at the curtain and board",
+          "quality": "unsafe",
+          "feedback": "Even with the MCB off, an inverter, UPS or wrong circuit can keep things live. Water conducts. Use CO₂ or dry powder, never water, near electrics.",
+          "next": "aftermath",
+          "hazardDelta": 25,
+          "action": { "tool": "water-bucket", "target": "curtain" },
+          "anim": "water-spark"
+        },
+        {
+          "id": "beat",
+          "label": "Beat the curtain flames with a towel",
+          "quality": "poor",
+          "feedback": "Beating flames fans them and sends burning bits flying. Use an extinguisher on a small fire, or get out and close the door.",
+          "next": "aftermath",
+          "hazardDelta": 10,
+          "action": { "tool": "towel", "target": "curtain" },
+          "anim": "flame-grow"
+        }
+      ]
+    },
+    {
+      "id": "aftermath",
+      "stage": "consequence",
+      "timerS": 15,
+      "growth": 0.5,
+      "hazard": 25,
+      "narration": "The fire is out and the smoke is clearing. Your cousin says she feels fine, but there's a small mark on her palm where she held the cable.",
+      "prompt": "What now?",
+      "props": ["power-off", "cousin-free", "burnt-curtain"],
+      "choices": [
+        {
+          "id": "doctor",
+          "label": "Call 112 / get her checked by a doctor, even though she feels fine",
+          "quality": "best",
+          "feedback": "Right. Anyone who has had an electric shock needs a medical check: it can affect the heartbeat, and burns can be deeper than they look.",
           "next": "end-safe",
           "hazardDelta": -15,
-          "escalate": true
+          "escalate": true,
+          "action": { "tool": "phone", "target": "cousin" },
+          "anim": "call"
         },
         {
-          "id": "fight",
-          "label": "Try to beat out the curtain flames with a towel",
-          "quality": "unsafe",
-          "feedback": "Spreading fires grow fast. Unless you're trained and the fire is tiny, get out and call for help.",
-          "next": "end-unsafe",
-          "hazardDelta": 25
-        },
-        {
-          "id": "extinguisher",
-          "label": "Use a CO₂ extinguisher only if you've been trained and have a clear way out",
-          "quality": "ok",
-          "feedback": "That can be right for a trained person on a very small fire, with the power off and an exit behind you. If in doubt, get out.",
+          "id": "fine",
+          "label": "She says she's fine, so carry on",
+          "quality": "poor",
+          "feedback": "After an electric shock, always get a medical check, even if the person feels fine.",
           "next": "end-safe",
-          "hazardDelta": 0,
-          "escalate": false
+          "hazardDelta": 10,
+          "action": { "tool": "point", "target": "cousin" },
+          "anim": "none"
+        },
+        {
+          "id": "power-on",
+          "label": "Switch the MCB back on to see if the board still works",
+          "quality": "unsafe",
+          "feedback": "Never restore power to a burnt circuit. Unplug the damaged board and get an electrician to check the wiring first.",
+          "next": "end-unsafe",
+          "hazardDelta": 25,
+          "action": { "tool": "hands", "target": "mcb" },
+          "anim": "power-on-spark"
         }
       ]
     }
@@ -110,22 +234,22 @@
   "endings": {
     "end-safe": {
       "outcome": "safe",
-      "text": "The fire service makes the room safe. Everyone is fine. The electrician later finds the board was badly overloaded."
+      "text": "The doctor checks your cousin's heart and dresses the small burn. An electrician finds the board was badly overloaded and replaces it."
     },
     "end-unsafe": {
       "outcome": "unsafe",
-      "text": "The curtain fire spread while you fought it. You escape, but with smoke in your lungs. Get out early."
+      "text": "Switching the power back on made the burnt board arc again and the room filled with smoke. Never restore power until an electrician has checked it."
     }
   },
   "learn": [
-    "Sparks, crackles and burning smells mean an electrical fault.",
-    "Switch off at the main switch (MCB) if you can do it safely; don't touch the faulty item.",
-    "Never use water on an electrical fire.",
-    "If the fire spreads, get out, close the door and call 112.",
-    "Don't overload extension boards."
+    "Sparks, crackles and burning smells mean an electrical fault: don't touch it.",
+    "Switch off at the MCB or main switch first. Never touch someone being shocked.",
+    "If you can't reach the switch, stand on something dry and push them clear with a dry wooden object.",
+    "Never use water on or near electrics. Use a CO₂ or dry powder extinguisher on a small fire, or get out and call 112.",
+    "Anyone who has had an electric shock needs a medical check. Don't overload extension boards."
   ],
   "id": "emergency-electrical-short",
-  "version": 1,
+  "version": 2,
   "reviewStatus": "draft",
   "disclaimer": "Training only. This is not a substitute for emergency services or certified first-aid and fire-safety training. In a real emergency in India, call 112.",
   "quizId": "quiz-emergency-electrical-short"
