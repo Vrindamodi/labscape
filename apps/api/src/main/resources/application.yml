@@ -49,11 +49,18 @@ labscape:
     admin-bootstrap-emails: ${ADMIN_BOOTSTRAP_EMAILS:}
   billing:
     # sandbox = no money moves; a test sheet confirms payment through the same webhook path.
-    # razorpay = real Razorpay Subscriptions (needs key id/secret and the webhook secret).
+    # razorpay = real Razorpay Subscriptions (needs key id/secret, the webhook secret and plan ids;
+    # startup fails with a clear message if any is missing). See docs/payments.md.
     mode: ${BILLING_MODE:sandbox}
     razorpay-key-id: ${RAZORPAY_KEY_ID:}
     razorpay-key-secret: ${RAZORPAY_KEY_SECRET:}
     webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:dev-webhook-secret}
+    razorpay-base-url: ${RAZORPAY_BASE_URL:https://api.razorpay.com/v1}
+    razorpay-timeout-seconds: ${RAZORPAY_TIMEOUT_SECONDS:15}
+    # Razorpay plan ids (plan_...) created in the dashboard, one per LABscape paid plan.
+    razorpay-plans:
+      premium_monthly: ${RAZORPAY_PLAN_PREMIUM_MONTHLY:}
+      premium_annual: ${RAZORPAY_PLAN_PREMIUM_ANNUAL:}
   rewards:
     daily-soft-cap: 1500
     max-events-per-minute: 30
