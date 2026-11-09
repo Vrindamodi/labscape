@@ -1,0 +1,567 @@
+{
+  "id": "chem-disappearing-cross",
+  "slug": "disappearing-cross",
+  "version": 1,
+  "subject": "chemistry",
+  "title": "The disappearing cross: concentration and rate",
+  "fidelity": "approximate",
+  "reviewStatus": "draft",
+  "bench": {
+    "items": [
+      {
+        "id": "thio",
+        "kind": "reagent_bottle",
+        "label": "Sodium thiosulfate 0.15 M",
+        "x": -340,
+        "z": -70,
+        "fill": {
+          "reagentId": "thio-0.15",
+          "volumeMl": 200
+        }
+      },
+      {
+        "id": "water",
+        "kind": "reagent_bottle",
+        "label": "Distilled water",
+        "x": -250,
+        "z": -70,
+        "fill": {
+          "reagentId": "water",
+          "volumeMl": 200
+        }
+      },
+      {
+        "id": "acid",
+        "kind": "reagent_bottle",
+        "label": "Hydrochloric acid 1 M",
+        "x": -160,
+        "z": -70,
+        "fill": {
+          "reagentId": "hcl-1",
+          "volumeMl": 60
+        }
+      },
+      {
+        "id": "tile",
+        "kind": "white_tile",
+        "label": "Paper with a black cross",
+        "x": 40,
+        "z": 40
+      },
+      {
+        "id": "fA",
+        "kind": "conical_flask_100",
+        "label": "Flask A (full strength)",
+        "x": 0,
+        "z": 40,
+        "socket": "tile:tile"
+      },
+      {
+        "id": "fB",
+        "kind": "conical_flask_100",
+        "label": "Flask B (half strength)",
+        "x": 90,
+        "z": 40,
+        "socket": "tile:tile"
+      },
+      {
+        "id": "goggles",
+        "kind": "goggles",
+        "x": 300,
+        "z": 110
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "goggles",
+      "title": "Put on goggles",
+      "instruction": "Hydrochloric acid is corrosive and the reaction gives off a little sulfur dioxide. Goggles on, room ventilated.",
+      "action": "equipment.place",
+      "from": "goggles",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "safe-1",
+        "safe-2",
+        "safe-3"
+      ],
+      "whatIf": {
+        "no_ppe": "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+      }
+    },
+    {
+      "id": "thio-a",
+      "title": "50 mL thiosulfate into flask A",
+      "instruction": "Pour 50 mL of sodium thiosulfate solution into flask A, which sits on the paper cross.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "thio",
+      "to": "fA",
+      "quantity": {
+        "target": 50,
+        "plusMinus": 2,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "pour",
+        "maxRateMlPerS": 10
+      },
+      "hints": [
+        "thio-1",
+        "thio-2",
+        "thio-3"
+      ]
+    },
+    {
+      "id": "acid-a",
+      "title": "Add 5 mL acid and start the clock",
+      "instruction": "Add 5 mL of hydrochloric acid. The clock starts the moment it goes in.",
+      "requires": [
+        "thio-a"
+      ],
+      "action": "liquid.pour",
+      "from": "acid",
+      "to": "fA",
+      "quantity": {
+        "target": 5,
+        "plusMinus": 0.5,
+        "unit": "mL"
+      },
+      "hints": [
+        "acid-1",
+        "acid-2",
+        "acid-3"
+      ],
+      "whatIf": {
+        "wrong_amount": "Changing the acid volume changes two things at once, so the test is no longer fair.",
+        "too_fast": "Splashing acid onto the paper or your hands burns; pour steadily."
+      }
+    },
+    {
+      "id": "swirl-a",
+      "title": "Swirl once",
+      "instruction": "Swirl the flask once to mix, then put it straight back on the cross.",
+      "requires": [
+        "acid-a"
+      ],
+      "action": "mix.swirl",
+      "to": "fA",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "swirl-1",
+        "swirl-2",
+        "swirl-3"
+      ]
+    },
+    {
+      "id": "cross-a",
+      "title": "Wait for the cross to vanish",
+      "instruction": "Look down through the flask. Stop the clock when you can no longer see the cross. Note the time.",
+      "requires": [
+        "swirl-a"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "seen:cross-gone:fA"
+      },
+      "hints": [
+        "wait-1",
+        "wait-2",
+        "wait-3"
+      ]
+    },
+    {
+      "id": "thio-b",
+      "title": "25 mL thiosulfate into flask B",
+      "instruction": "Now half the concentration: pour 25 mL of thiosulfate into flask B...",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "thio",
+      "to": "fB",
+      "quantity": {
+        "target": 25,
+        "plusMinus": 1.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "pour",
+        "maxRateMlPerS": 10
+      },
+      "hints": [
+        "dilute-1",
+        "dilute-2",
+        "dilute-3"
+      ]
+    },
+    {
+      "id": "water-b",
+      "title": "...and 25 mL water",
+      "instruction": "...and 25 mL of water, so the total volume is still 50 mL (a fair test).",
+      "requires": [
+        "thio-b"
+      ],
+      "action": "liquid.pour",
+      "from": "water",
+      "to": "fB",
+      "quantity": {
+        "target": 25,
+        "plusMinus": 1.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "pour",
+        "maxRateMlPerS": 10
+      },
+      "hints": [
+        "dilute-1",
+        "dilute-2",
+        "dilute-3"
+      ],
+      "whatIf": {
+        "wrong_amount": "A different total volume changes how deep you look through the liquid, so the times are not comparable."
+      }
+    },
+    {
+      "id": "acid-b",
+      "title": "Add 5 mL acid and time it",
+      "instruction": "Add 5 mL of acid to flask B and start timing again.",
+      "requires": [
+        "water-b",
+        "cross-a"
+      ],
+      "action": "liquid.pour",
+      "from": "acid",
+      "to": "fB",
+      "quantity": {
+        "target": 5,
+        "plusMinus": 0.5,
+        "unit": "mL"
+      },
+      "hints": [
+        "acid-1",
+        "acid-2",
+        "acid-3"
+      ]
+    },
+    {
+      "id": "swirl-b",
+      "title": "Swirl once",
+      "instruction": "Swirl once and put it back on the cross.",
+      "requires": [
+        "acid-b"
+      ],
+      "action": "mix.swirl",
+      "to": "fB",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "swirl-1",
+        "swirl-2",
+        "swirl-3"
+      ]
+    },
+    {
+      "id": "cross-b",
+      "title": "Wait for the cross again",
+      "instruction": "Stop the clock when the cross disappears. Compare the two times.",
+      "requires": [
+        "swirl-b"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "seen:cross-gone:fB"
+      },
+      "hints": [
+        "wait-1",
+        "wait-2",
+        "wait-3"
+      ]
+    }
+  ],
+  "hints": {
+    "safe-1": {
+      "rung": 1,
+      "text": "What protects your eyes?"
+    },
+    "safe-2": {
+      "rung": 2,
+      "text": "Pick up the goggles and put them on before you touch any bottle."
+    },
+    "safe-3": {
+      "rung": 3,
+      "text": "Watch the goggles go on."
+    },
+    "thio-1": {
+      "rung": 1,
+      "text": "The flask goes on the cross first, then the thiosulfate."
+    },
+    "thio-2": {
+      "rung": 2,
+      "text": "Pick up the thiosulfate bottle and pour 50 mL into flask A."
+    },
+    "thio-3": {
+      "rung": 3,
+      "text": "Watch a 50 mL pour."
+    },
+    "acid-1": {
+      "rung": 1,
+      "text": "The acid starts the reaction."
+    },
+    "acid-2": {
+      "rung": 2,
+      "text": "Pour 5 mL of hydrochloric acid into the flask."
+    },
+    "acid-3": {
+      "rung": 3,
+      "text": "Watch the acid go in."
+    },
+    "swirl-1": {
+      "rung": 1,
+      "text": "Mix it so the reaction starts evenly."
+    },
+    "swirl-2": {
+      "rung": 2,
+      "text": "Choose Swirl in the mixing controls with the flask selected."
+    },
+    "swirl-3": {
+      "rung": 3,
+      "text": "Watch one swirl."
+    },
+    "wait-1": {
+      "rung": 1,
+      "text": "Look straight down through the liquid at the cross."
+    },
+    "wait-2": {
+      "rung": 2,
+      "text": "Wait (or speed up time) until the note says the cross has gone."
+    },
+    "wait-3": {
+      "rung": 3,
+      "text": "Watch the cloudiness grow."
+    },
+    "dilute-1": {
+      "rung": 1,
+      "text": "Same total volume, half as much thiosulfate."
+    },
+    "dilute-2": {
+      "rung": 2,
+      "text": "25 mL thiosulfate then 25 mL water into flask B."
+    },
+    "dilute-3": {
+      "rung": 3,
+      "text": "Watch the two pours."
+    }
+  },
+  "observations": {
+    "whatHappened": "After the acid went in, the liquid slowly turned cloudy pale yellow until the cross could not be seen. In flask A (full strength) the cross vanished in about 24 s; in flask B (half strength) it took about twice as long.",
+    "why": "Thiosulfate ions react with acid to make tiny particles of solid sulfur, which make the liquid cloudy. The reaction only happens when particles collide with enough energy. In the more concentrated solution there are more thiosulfate particles in the same volume, so collisions happen more often and the reaction is faster. Rate is about 1 ÷ time, so halving the concentration roughly halves the rate (doubles the time). Heating would also speed it up because particles move faster and collide harder.",
+    "equationLatex": "\\mathrm{Na_2S_2O_3(aq) + 2HCl(aq) \\longrightarrow 2NaCl(aq) + S(s) + SO_2(g) + H_2O(l)}",
+    "realWorld": [
+      "Why food lasts longer in a fridge",
+      "Concentrated cleaning products work faster",
+      "Collision theory in industry"
+    ],
+    "prompts": [
+      {
+        "id": "q-faster",
+        "question": "In which flask did the cross disappear first?",
+        "choices": [
+          "Flask A (more concentrated)",
+          "Flask B (more dilute)",
+          "At the same time",
+          "Neither"
+        ],
+        "answer": 0,
+        "explain": "More particles in the same volume collide more often, so the reaction is faster."
+      },
+      {
+        "id": "q-rate",
+        "question": "Flask A took 24 s. Roughly what is its rate (1/time)?",
+        "choices": [
+          "0.0042 s⁻¹",
+          "0.042 s⁻¹",
+          "0.42 s⁻¹",
+          "24 s⁻¹"
+        ],
+        "answer": 1,
+        "explain": "Rate ≈ 1 ÷ 24 = 0.042 s⁻¹. The shorter the time, the faster the rate."
+      },
+      {
+        "id": "q-fair",
+        "question": "Why add 25 mL of water to flask B?",
+        "choices": [
+          "To cool it down",
+          "To keep the total volume the same, so only concentration changes",
+          "To make more sulfur",
+          "Water is a catalyst"
+        ],
+        "answer": 1,
+        "explain": "A fair test changes only one variable. The same total volume also keeps the depth you look through the same."
+      }
+    ]
+  },
+  "safety": [],
+  "golden": {
+    "durationS": 112,
+    "captions": [
+      {
+        "t": 0,
+        "text": "Sodium thiosulfate solution in a flask on a paper cross."
+      },
+      {
+        "t": 15000,
+        "text": "Acid in, start the clock. Thiosulfate + acid makes tiny grains of solid sulfur."
+      },
+      {
+        "t": 25000,
+        "text": "The sulfur particles scatter light, so the liquid clouds over...",
+        "slow": true
+      },
+      {
+        "t": 40000,
+        "text": "Cross gone in about 24 s. Rate ≈ 1/time."
+      },
+      {
+        "t": 44000,
+        "text": "Now half the thiosulfate, topped up with water so the volume is the same: a fair test."
+      },
+      {
+        "t": 70000,
+        "text": "Fewer particles in the same space collide less often, so the cloud builds more slowly."
+      },
+      {
+        "t": 105000,
+        "text": "About twice as long. Half the concentration, half the rate."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "goggles",
+          "x": 0,
+          "y": 0,
+          "socket": "worn"
+        }
+      },
+      {
+        "t": 4000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "thio",
+          "to": "fA",
+          "volumeMl": 50,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 6,
+          "peakRateMlPerS": 8,
+          "durationMs": 8333
+        }
+      },
+      {
+        "t": 15000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "acid",
+          "to": "fA",
+          "volumeMl": 5,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 3,
+          "peakRateMlPerS": 4,
+          "durationMs": 1667
+        }
+      },
+      {
+        "t": 16500,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "fA",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 44000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "thio",
+          "to": "fB",
+          "volumeMl": 25,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 6,
+          "peakRateMlPerS": 8,
+          "durationMs": 4167
+        }
+      },
+      {
+        "t": 50000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "water",
+          "to": "fB",
+          "volumeMl": 25,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 6,
+          "peakRateMlPerS": 8,
+          "durationMs": 4167
+        }
+      },
+      {
+        "t": 56000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "acid",
+          "to": "fB",
+          "volumeMl": 5,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 3,
+          "peakRateMlPerS": 4,
+          "durationMs": 1667
+        }
+      },
+      {
+        "t": 57500,
+        "type": "mix.swirl",
+        "payload": {
+          "target": "fB",
+          "durationMs": 2000
+        }
+      },
+      {
+        "t": 108000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-faster",
+          "value": 0
+        }
+      },
+      {
+        "t": 109000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-rate",
+          "value": 1
+        }
+      },
+      {
+        "t": 110000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-fair",
+          "value": 1
+        }
+      }
+    ]
+  }
+}

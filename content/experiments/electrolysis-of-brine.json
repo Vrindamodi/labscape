@@ -1,0 +1,613 @@
+{
+  "id": "chem-electrolysis-of-brine",
+  "slug": "electrolysis-of-brine",
+  "version": 1,
+  "subject": "chemistry",
+  "title": "Electrolysis of brine",
+  "fidelity": "approximate",
+  "reviewStatus": "draft",
+  "bench": {
+    "items": [
+      {
+        "id": "brine",
+        "kind": "reagent_bottle",
+        "label": "Brine (sodium chloride solution)",
+        "x": -340,
+        "z": -70,
+        "fill": {
+          "reagentId": "brine",
+          "volumeMl": 150
+        }
+      },
+      {
+        "id": "univ",
+        "kind": "dropper_bottle",
+        "label": "Universal indicator",
+        "x": -240,
+        "z": 60,
+        "fill": {
+          "reagentId": "univ",
+          "volumeMl": 20
+        }
+      },
+      {
+        "id": "cell",
+        "kind": "beaker_100",
+        "label": "Electrolysis cell (carbon electrodes, 6 V d.c.)",
+        "x": -40,
+        "z": 20,
+        "electrodes": true
+      },
+      {
+        "id": "rack",
+        "kind": "test_tube_rack",
+        "x": 120,
+        "z": -60
+      },
+      {
+        "id": "tube",
+        "kind": "test_tube",
+        "label": "Collection tube",
+        "x": 100,
+        "z": -60,
+        "socket": "rack:rack"
+      },
+      {
+        "id": "litmus",
+        "kind": "litmus_paper",
+        "x": 120,
+        "z": 90
+      },
+      {
+        "id": "bunsen",
+        "kind": "bunsen",
+        "x": 260,
+        "z": -40
+      },
+      {
+        "id": "splint",
+        "kind": "splint",
+        "x": 240,
+        "z": 100
+      },
+      {
+        "id": "goggles",
+        "kind": "goggles",
+        "x": 330,
+        "z": 120
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "goggles",
+      "title": "Put on goggles",
+      "instruction": "Electrolysis makes chlorine, a toxic gas, and sodium hydroxide, which is corrosive. Goggles on, room ventilated, low voltage only.",
+      "action": "equipment.place",
+      "from": "goggles",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "safe-1",
+        "safe-2",
+        "safe-3"
+      ],
+      "whatIf": {
+        "no_ppe": "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+      }
+    },
+    {
+      "id": "brine-in",
+      "title": "50 mL brine into the cell",
+      "instruction": "Pour about 50 mL of brine into the cell so both carbon electrodes are covered.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "brine",
+      "to": "cell",
+      "quantity": {
+        "target": 50,
+        "plusMinus": 5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "pour",
+        "maxRateMlPerS": 10
+      },
+      "hints": [
+        "brine-1",
+        "brine-2",
+        "brine-3"
+      ]
+    },
+    {
+      "id": "indicator",
+      "title": "A few drops of universal indicator",
+      "instruction": "Add 3 to 5 drops of universal indicator. It starts green: neutral.",
+      "requires": [
+        "brine-in"
+      ],
+      "action": "liquid.drop",
+      "from": "univ",
+      "to": "cell",
+      "quantity": {
+        "target": 0.2,
+        "plusMinus": 0.06,
+        "unit": "mL"
+      },
+      "hints": [
+        "ind-1",
+        "ind-2",
+        "ind-3"
+      ]
+    },
+    {
+      "id": "collect",
+      "title": "Tube over the cathode",
+      "instruction": "Hold the collection tube upside down over the negative electrode (cathode) to catch its gas.",
+      "requires": [
+        "brine-in"
+      ],
+      "action": "equipment.connect",
+      "from": "cell",
+      "to": "tube",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "collect-1",
+        "collect-2",
+        "collect-3"
+      ]
+    },
+    {
+      "id": "power-on",
+      "title": "Switch on",
+      "instruction": "Switch the power pack on (6 V d.c.).",
+      "requires": [
+        "indicator",
+        "collect"
+      ],
+      "action": "param.set",
+      "from": "cell",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "power-1",
+        "power-2",
+        "power-3"
+      ],
+      "whatIf": {
+        "wrong_amount": "A higher voltage makes chlorine much faster, which quickly becomes dangerous in a closed room."
+      }
+    },
+    {
+      "id": "gas",
+      "title": "Collect the hydrogen",
+      "instruction": "Watch bubbles at both electrodes and wait until a little gas has collected.",
+      "requires": [
+        "power-on"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "gas-collected:tube:H2:2&ph-above:cell:10"
+      },
+      "hints": [
+        "gas-1",
+        "gas-2",
+        "gas-3"
+      ]
+    },
+    {
+      "id": "litmus",
+      "title": "Test the anode gas",
+      "instruction": "Hold damp blue litmus paper near the positive electrode (anode). Do not sniff the gas.",
+      "requires": [
+        "gas"
+      ],
+      "action": "equipment.connect",
+      "from": "litmus",
+      "to": "cell",
+      "complete": {
+        "predicate": "seen:bleach:Cl2"
+      },
+      "hints": [
+        "litmus-1",
+        "litmus-2",
+        "litmus-3"
+      ],
+      "whatIf": {
+        "no_ppe": "Chlorine attacks the lining of the nose, throat and lungs even in small amounts."
+      }
+    },
+    {
+      "id": "power-off",
+      "title": "Switch off",
+      "instruction": "Switch the power pack off before testing the hydrogen.",
+      "requires": [
+        "litmus"
+      ],
+      "action": "param.set",
+      "from": "cell",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "power-1",
+        "power-2",
+        "power-3"
+      ]
+    },
+    {
+      "id": "light-burner",
+      "title": "Light the Bunsen",
+      "instruction": "Light the Bunsen burner so you can light a splint.",
+      "requires": [
+        "power-off"
+      ],
+      "action": "heat.set",
+      "from": "bunsen",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "burn-1",
+        "burn-2",
+        "burn-3"
+      ]
+    },
+    {
+      "id": "light-splint",
+      "title": "Light a splint",
+      "instruction": "Hold the splint in the flame until it catches.",
+      "requires": [
+        "light-burner"
+      ],
+      "action": "equipment.connect",
+      "from": "splint",
+      "to": "bunsen",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "burn-1",
+        "burn-2",
+        "burn-3"
+      ]
+    },
+    {
+      "id": "pop",
+      "title": "The pop test",
+      "instruction": "Bring the lit splint to the mouth of the collection tube.",
+      "requires": [
+        "light-splint",
+        "gas"
+      ],
+      "action": "equipment.connect",
+      "from": "splint",
+      "to": "tube",
+      "complete": {
+        "predicate": "seen:pop-test"
+      },
+      "hints": [
+        "pop-1",
+        "pop-2",
+        "pop-3"
+      ]
+    }
+  ],
+  "hints": {
+    "safe-1": {
+      "rung": 1,
+      "text": "What protects your eyes?"
+    },
+    "safe-2": {
+      "rung": 2,
+      "text": "Pick up the goggles and put them on before you touch any bottle."
+    },
+    "safe-3": {
+      "rung": 3,
+      "text": "Watch the goggles go on."
+    },
+    "brine-1": {
+      "rung": 1,
+      "text": "The electrodes need to be in the solution."
+    },
+    "brine-2": {
+      "rung": 2,
+      "text": "Pick up the brine bottle and pour about 50 mL into the cell."
+    },
+    "brine-3": {
+      "rung": 3,
+      "text": "Watch the pour."
+    },
+    "ind-1": {
+      "rung": 1,
+      "text": "An indicator will show any change in pH."
+    },
+    "ind-2": {
+      "rung": 2,
+      "text": "Add a few drops of universal indicator to the cell."
+    },
+    "ind-3": {
+      "rung": 3,
+      "text": "Watch the drops go in."
+    },
+    "collect-1": {
+      "rung": 1,
+      "text": "The gas from the negative electrode is worth collecting."
+    },
+    "collect-2": {
+      "rung": 2,
+      "text": "Pick up the empty tube and choose Hold over, then the cell."
+    },
+    "collect-3": {
+      "rung": 3,
+      "text": "Watch the tube go over the cathode."
+    },
+    "power-1": {
+      "rung": 1,
+      "text": "Electrolysis needs a d.c. supply."
+    },
+    "power-2": {
+      "rung": 2,
+      "text": "Select the cell and choose the power button."
+    },
+    "power-3": {
+      "rung": 3,
+      "text": "Watch the power go on."
+    },
+    "gas-1": {
+      "rung": 1,
+      "text": "Look at both electrodes."
+    },
+    "gas-2": {
+      "rung": 2,
+      "text": "Wait (or speed up time) until about 2 mL of gas has collected."
+    },
+    "gas-3": {
+      "rung": 3,
+      "text": "Watch the bubbles."
+    },
+    "litmus-1": {
+      "rung": 1,
+      "text": "Which gas bleaches damp litmus?"
+    },
+    "litmus-2": {
+      "rung": 2,
+      "text": "Pick up the litmus paper and choose Hold near, then the cell."
+    },
+    "litmus-3": {
+      "rung": 3,
+      "text": "Watch the litmus change."
+    },
+    "burn-1": {
+      "rung": 1,
+      "text": "You need a flame to light the splint."
+    },
+    "burn-2": {
+      "rung": 2,
+      "text": "Light the Bunsen, then hold the splint in the flame."
+    },
+    "burn-3": {
+      "rung": 3,
+      "text": "Watch the burner light and the splint catch."
+    },
+    "pop-1": {
+      "rung": 1,
+      "text": "Which gas burns with a squeaky pop?"
+    },
+    "pop-2": {
+      "rung": 2,
+      "text": "Bring the lit splint to the collection tube's mouth."
+    },
+    "pop-3": {
+      "rung": 3,
+      "text": "Watch for the pop."
+    }
+  },
+  "observations": {
+    "whatHappened": "Bubbles streamed off both electrodes. The gas from the cathode burned with a squeaky pop. The gas at the anode turned damp litmus red and then bleached it white, and smelled of swimming pools. The indicator turned from green to purple.",
+    "why": "Brine contains Na⁺, Cl⁻, H⁺ and OH⁻ ions. At the negative cathode, hydrogen ions (from water) gain electrons more easily than sodium ions, so hydrogen gas forms. At the positive anode, chloride ions lose electrons to form chlorine gas, which bleaches damp litmus. Sodium and hydroxide ions are left behind, so the solution becomes sodium hydroxide: alkaline, and the indicator turns purple.",
+    "equationLatex": "\\mathrm{2NaCl(aq) + 2H_2O(l) \\longrightarrow 2NaOH(aq) + H_2(g) + Cl_2(g)}",
+    "realWorld": [
+      "The chlor-alkali industry makes chlorine, hydrogen and sodium hydroxide",
+      "Chlorine for clean drinking water and bleach",
+      "Sodium hydroxide for soap and paper"
+    ],
+    "prompts": [
+      {
+        "id": "q-cathode",
+        "question": "Which gas forms at the negative electrode (cathode)?",
+        "choices": [
+          "Chlorine",
+          "Oxygen",
+          "Hydrogen",
+          "Sodium"
+        ],
+        "answer": 2,
+        "explain": "H⁺ ions gain electrons: 2H⁺ + 2e⁻ → H₂. It burns with a squeaky pop."
+      },
+      {
+        "id": "q-anode",
+        "question": "How do you know the anode gas is chlorine?",
+        "choices": [
+          "It relights a glowing splint",
+          "It bleaches damp litmus paper",
+          "It gives a squeaky pop",
+          "It turns limewater milky"
+        ],
+        "answer": 1,
+        "explain": "Chlorine bleaches damp litmus (often turning it red first)."
+      },
+      {
+        "id": "q-left",
+        "question": "Why did the indicator turn purple?",
+        "choices": [
+          "Chlorine is purple",
+          "Sodium hydroxide is left in the solution, making it alkaline",
+          "The electrodes dissolved",
+          "Hydrogen is acidic"
+        ],
+        "answer": 1,
+        "explain": "Removing H⁺ and Cl⁻ leaves Na⁺ and OH⁻: sodium hydroxide solution."
+      }
+    ]
+  },
+  "safety": [],
+  "golden": {
+    "durationS": 58,
+    "captions": [
+      {
+        "t": 0,
+        "text": "Goggles on. Brine is sodium chloride dissolved in water."
+      },
+      {
+        "t": 9000,
+        "text": "Universal indicator: green, so the brine starts neutral."
+      },
+      {
+        "t": 14000,
+        "text": "Power on. Ions move: positive ions to the cathode (−), negative ions to the anode (+)."
+      },
+      {
+        "t": 20000,
+        "text": "Hydrogen at the cathode, chlorine at the anode. Purple indicator: sodium hydroxide is being left behind.",
+        "slow": true
+      },
+      {
+        "t": 37000,
+        "text": "Damp litmus near the anode: red, then bleached. That's chlorine."
+      },
+      {
+        "t": 47000,
+        "text": "Squeaky pop: the cathode gas is hydrogen."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "goggles",
+          "x": 0,
+          "y": 0,
+          "socket": "worn"
+        }
+      },
+      {
+        "t": 4000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "brine",
+          "to": "cell",
+          "volumeMl": 50,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 6,
+          "peakRateMlPerS": 8,
+          "durationMs": 8333
+        }
+      },
+      {
+        "t": 9000,
+        "type": "liquid.drop",
+        "payload": {
+          "from": "univ",
+          "to": "cell",
+          "drops": 4,
+          "volumeMl": 0.2
+        }
+      },
+      {
+        "t": 12000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "cell",
+          "to": "tube",
+          "port": "collect"
+        }
+      },
+      {
+        "t": 14000,
+        "type": "param.set",
+        "payload": {
+          "key": "power:cell",
+          "value": 6
+        }
+      },
+      {
+        "t": 38000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "litmus",
+          "to": "cell",
+          "port": "test"
+        }
+      },
+      {
+        "t": 41000,
+        "type": "param.set",
+        "payload": {
+          "key": "power:cell",
+          "value": 0
+        }
+      },
+      {
+        "t": 43000,
+        "type": "heat.set",
+        "payload": {
+          "target": "bunsen",
+          "powerPct": 100
+        }
+      },
+      {
+        "t": 45000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "splint",
+          "to": "bunsen",
+          "port": "flame"
+        }
+      },
+      {
+        "t": 48000,
+        "type": "equipment.connect",
+        "payload": {
+          "from": "splint",
+          "to": "tube",
+          "port": "mouth"
+        }
+      },
+      {
+        "t": 51000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-cathode",
+          "value": 2
+        }
+      },
+      {
+        "t": 52000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-anode",
+          "value": 1
+        }
+      },
+      {
+        "t": 53000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-left",
+          "value": 1
+        }
+      }
+    ]
+  }
+}

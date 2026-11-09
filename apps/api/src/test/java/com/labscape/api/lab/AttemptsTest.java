@@ -48,7 +48,7 @@ class AttemptsTest {
             assertThat(result.path("report").path("score").asInt()).as(e.getKey()).isEqualTo(e.getValue().path("score").asInt());
             checked++;
         }
-        assertThat(checked).isEqualTo(19); // 7 chemistry + 6 physics + 6 maths
+        assertThat(checked).isEqualTo(28); // 13 chemistry + 8 physics + 7 maths
     }
 
     @Test

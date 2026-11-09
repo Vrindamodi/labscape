@@ -54,7 +54,8 @@ var LabEngine = (() => {
     "SO4^2-": -2,
     "NO3-": -1,
     "I-": -1,
-    "Br-": -1
+    "Br-": -1,
+    "S2O3^2-": -2
   };
   var HYDROLYSIS_KA = { "Cu2+": Math.pow(10, -7.5), "Zn2+": Math.pow(10, -9), "Fe2+": Math.pow(10, -9.5), "Pb2+": Math.pow(10, -7.7), "Mg2+": Math.pow(10, -11.4) };
   var KA_ACETIC = 175e-7;
@@ -69,7 +70,10 @@ var LabEngine = (() => {
     BaSO4: { cation: "Ba2+", anion: "SO4^2-", nCat: 1, nAn: 1, ksp: 11e-11, colour: { L: 0.98, a: 0, b: 0 }, name: "barium sulfate" },
     AgCl: { cation: "Ag+", anion: "Cl-", nCat: 1, nAn: 1, ksp: 18e-11, colour: { L: 0.97, a: 0, b: 0.01 }, name: "silver chloride" },
     PbI2: { cation: "Pb2+", anion: "I-", nCat: 1, nAn: 2, ksp: 98e-10, colour: { L: 0.86, a: 0.01, b: 0.17 }, name: "lead(II) iodide" },
-    CaSO4: { cation: "Ca2+", anion: "SO4^2-", nCat: 1, nAn: 1, ksp: 49e-6, colour: { L: 0.98, a: 0, b: 0 }, name: "calcium sulfate" }
+    CaSO4: { cation: "Ca2+", anion: "SO4^2-", nCat: 1, nAn: 1, ksp: 49e-6, colour: { L: 0.98, a: 0, b: 0 }, name: "calcium sulfate" },
+    S: { cation: "S2O3^2-", anion: "Cl-", nCat: 1, nAn: 0, ksp: 0, colour: { L: 0.93, a: -0.01, b: 0.09 }, name: "sulfur", kinetic: true, turbidityPerM: 210 },
+    CuO: { cation: "Cu2+", anion: "OH-", nCat: 1, nAn: 0, ksp: 0, colour: { L: 0.22, a: 0, b: 0 }, name: "copper(II) oxide", kinetic: true, turbidityPerM: 12 },
+    "CuSO4.5H2O": { cation: "Cu2+", anion: "SO4^2-", nCat: 1, nAn: 1, ksp: 0, colour: { L: 0.6, a: -0.07, b: -0.17 }, name: "hydrated copper(II) sulfate", kinetic: true, turbidityPerM: 8 }
   };
   function residual(h, c, litres) {
     let pos = h;
@@ -112,6 +116,7 @@ var LabEngine = (() => {
     const litres = volumeMl / 1e3;
     const active = Object.keys(PRECIPITATES).filter((k) => {
       const d = PRECIPITATES[k];
+      if (d.kinetic) return false;
       return (solids[k] ?? 0) > 0 || (dissolved[d.cation] ?? 0) > 0 && (d.anion === "OH-" || (dissolved[d.anion] ?? 0) > 0);
     });
     if (!active.length) return { ph: solvePh(dissolved, volumeMl) };
@@ -232,7 +237,7 @@ var LabEngine = (() => {
     for (const k of Object.keys(solids)) {
       const mol = solids[k] ?? 0;
       if (mol <= 0) continue;
-      turbidity = Math.min(1, turbidity + mol / litres * 60);
+      turbidity = Math.min(1, turbidity + mol / litres * (PRECIPITATES[k].turbidityPerM ?? 60));
       if (mol > sedMol) {
         sedMol = mol;
         sediment = PRECIPITATES[k].colour;
@@ -283,7 +288,9 @@ var LabEngine = (() => {
     glass_rod: { label: "Glass rod", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 4, category: "tool" },
     funnel: { label: "Filter funnel", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 20, category: "tool" },
     watch_glass: { label: "Watch glass", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 15, category: "tool" },
-    goggles: { label: "Safety goggles", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 0, category: "safety" }
+    goggles: { label: "Safety goggles", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 0, category: "safety" },
+    evaporating_basin: { label: "Evaporating basin", capacityMl: 60, profile: P([[14, 0], [30, 8], [38, 18], [41, 26], [43, 28]]), neckMm: 40, pours: true, fits: ["bench", "tripod"], heatCapacityJK: 60, category: "vessel", lossWPerK: 1.4 },
+    litmus_paper: { label: "Damp blue litmus paper", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 0, category: "tool" }
   };
   function lipHeightMm(kind) {
     const p = KINDS[kind].profile;
@@ -318,7 +325,23 @@ var LabEngine = (() => {
       sol("cucl2", "Copper(II) chloride solution", "CuCl\u2082", { "Cu2+": 0.5, "Cl-": 1 }, "#39a0d8", ["harmful"]),
       sol("h2so4-conc", "Concentrated sulfuric acid", "H\u2082SO\u2084", { "SO4^2-": 18 }, "#f3f1ea", ["corrosive"], { corrosive: true, concAcidPerMl: 0.018, densityGPerMl: 1.84 }),
       { id: "mg-ribbon", name: "Magnesium ribbon", formula: "Mg", metal: { symbol: "Mg", molarMass: 24.31, area: 1 }, densityGPerMl: 1.74, hazards: ["flammable"], hex: "#c9ccd2" },
-      { id: "iron-nail", name: "Iron nail (cleaned)", formula: "Fe", metal: { symbol: "Fe", molarMass: 55.85, area: 0.12 }, densityGPerMl: 7.87, hazards: [], hex: "#8a8f99" }
+      { id: "iron-nail", name: "Iron nail (cleaned)", formula: "Fe", metal: { symbol: "Fe", molarMass: 55.85, area: 0.12 }, densityGPerMl: 7.87, hazards: [], hex: "#8a8f99" },
+      // Part 5: the rest of the library.
+      { id: "zn-foil", name: "Zinc foil strip", formula: "Zn", metal: { symbol: "Zn", molarMass: 65.38, area: 0.6 }, densityGPerMl: 7.14, hazards: [], hex: "#a9b1bb" },
+      { id: "iron-filings", name: "Iron filings", formula: "Fe", metal: { symbol: "Fe", molarMass: 55.85, area: 1 }, densityGPerMl: 7.87, hazards: [], hex: "#6f7680" },
+      { id: "cu-foil", name: "Copper foil strip", formula: "Cu", metal: { symbol: "Cu", molarMass: 63.55, area: 0.6 }, densityGPerMl: 8.96, hazards: [], hex: "#c27a4a" },
+      { id: "cuo", name: "Copper(II) oxide powder", formula: "CuO", oxide: { molarMass: 79.55 }, densityGPerMl: 6.3, hazards: ["harmful", "environment"], hex: "#1b1b1d" },
+      sol("znso4-0.5", "Zinc sulfate 0.50 M", "ZnSO\u2084", { "Zn2+": 0.5, "SO4^2-": 0.5 }, "#eef6ff", ["irritant"]),
+      sol("feso4-0.5", "Iron(II) sulfate 0.50 M", "FeSO\u2084", { "Fe2+": 0.5, "SO4^2-": 0.5 }, "#dcefd2", ["harmful"]),
+      sol("mgso4-0.5", "Magnesium sulfate 0.50 M", "MgSO\u2084", { "Mg2+": 0.5, "SO4^2-": 0.5 }, "#eef6ff"),
+      sol("h2o2-6", "Hydrogen peroxide 6% (20 vol)", "H\u2082O\u2082", { H2O2: 1.76 }, "#eef6ff", ["irritant", "oxidiser"]),
+      sol("ki-1", "Potassium iodide solution 1.0 M", "KI", { "K+": 1, "I-": 1 }, "#f2f4ff"),
+      sol("detergent", "Washing-up liquid", "detergent", { soap: 0.2 }, "#9fe3a8"),
+      sol("thio-0.15", "Sodium thiosulfate 0.15 M", "Na\u2082S\u2082O\u2083", { "Na+": 0.3, "S2O3^2-": 0.15 }, "#eef6ff"),
+      sol("h2so4-1", "Dilute sulfuric acid 1.0 M", "H\u2082SO\u2084", { "SO4^2-": 1 }, "#eef6ff", ["irritant"]),
+      sol("ethanol", "Ethanol", "C\u2082H\u2085OH", { EtOH: 17.1 }, "#f6f8ff", ["flammable"], { densityGPerMl: 0.79, odour: "sharp, like surgical spirit" }),
+      sol("ethanoic-glacial", "Glacial ethanoic acid", "CH\u2083COOH", { CH3COOH_T: 17.4 }, "#f6f8ff", ["corrosive", "flammable"], { corrosive: true, densityGPerMl: 1.05, odour: "strong vinegar" }),
+      sol("brine", "Sodium chloride solution (brine) 3 M", "NaCl", { "Na+": 3, "Cl-": 3 }, "#eef6ff")
     ].map((r) => [r.id, r])
   );
   function reagent(id) {
@@ -350,7 +373,7 @@ var LabEngine = (() => {
         x: s.x ?? 0,
         z: s.z ?? 0,
         socket: s.socket ?? null,
-        liquid: def.capacityMl > 0 ? s.fill ? liquidOf(s.fill.reagentId, s.fill.volumeMl) : emptyLiquid() : null,
+        liquid: def.capacityMl > 0 ? s.fill ? liquidOf(s.fill.reagentId, s.fill.volumeMl, s.fill.tempC ?? ROOM_C) : emptyLiquid() : null,
         metals: [],
         depositMol: 0,
         stoppered: false,
@@ -381,6 +404,13 @@ var LabEngine = (() => {
         item.gasMl = {};
         item.gasTo = null;
       }
+      if (s.electrodes) {
+        item.electrodes = true;
+        item.volts = 0;
+        item.gasMl = item.gasMl ?? {};
+        item.gasTo = item.gasTo ?? null;
+      }
+      if (s.kind === "litmus_paper") item.litmus = "blue";
       items[s.id] = item;
     }
     return { t: 0, items, spills: [], roomC: ROOM_C, setup, seq: 0, seen: {} };
@@ -447,6 +477,14 @@ var LabEngine = (() => {
         const { from, to, massG } = e.payload;
         const target2 = s.items[to];
         const r = reagent(from);
+        if (target2?.liquid && r.oxide) {
+          const before = look(target2);
+          target2.liquid.solids.CuO = (target2.liquid.solids.CuO ?? 0) + massG / r.oxide.molarMass;
+          note(out, `A spatula of ${r.name.toLowerCase()} goes into the ${target2.label.toLowerCase()}.`, "info", to);
+          cue(out, { kind: "sound", target: to, soundId: "clink" });
+          settle(out, target2, before, "sigmoid");
+          break;
+        }
         if (!target2?.liquid || !r.metal) break;
         const mol = massG / r.metal.molarMass;
         target2.metals.push({ symbol: r.metal.symbol, mol, initialMol: mol, area: r.metal.area });
@@ -471,6 +509,7 @@ var LabEngine = (() => {
         if (it?.kind === "bunsen") {
           const was = it.gasOn;
           it.gasOn = e.payload.powerPct > 0;
+          if (!it.gasOn && it.heats) it.heats = null;
           if (it.gasOn && !was) {
             note(out, `Bunsen lit with the air hole ${it.airHoleOpen ? "open: a hot blue roaring flame" : "closed: a yellow, cooler, sooty flame"}.`, "info", it.id);
             cue(out, { kind: "flame", target: it.id, colour: it.airHoleOpen ? BLUE_FLAME : YELLOW_FLAME, intensity: it.airHoleOpen ? 1 : 0.6, durationMs: 0 });
@@ -632,7 +671,7 @@ var LabEngine = (() => {
     return solvePh(local, l.plume.volumeMl + bulkVol * share);
   }
   function netCharge(x) {
-    const z = { "Na+": 1, "K+": 1, "Li+": 1, "Ca2+": 2, "Mg2+": 2, "Ba2+": 2, "Cu2+": 2, "Fe2+": 2, "Zn2+": 2, "Ag+": 1, "Pb2+": 2, "Cl-": -1, "SO4^2-": -2, "NO3-": -1, "I-": -1, "Br-": -1 };
+    const z = { "Na+": 1, "K+": 1, "Li+": 1, "Ca2+": 2, "Mg2+": 2, "Ba2+": 2, "Cu2+": 2, "Fe2+": 2, "Zn2+": 2, "Ag+": 1, "Pb2+": 2, "Cl-": -1, "SO4^2-": -2, "NO3-": -1, "I-": -1, "Br-": -1, "S2O3^2-": -2 };
     let c = 0;
     for (const k in x) c += (z[k] ?? 0) * (x[k] ?? 0);
     return c;
@@ -672,12 +711,12 @@ var LabEngine = (() => {
       if (now - was > 1e-7) {
         out.state.seen[`precipitate:${k}`] = (out.state.seen[`precipitate:${k}`] ?? 0) + 1;
         cue(out, { kind: "precipitate", target: it.id, id: k, colour: after.sedimentColour ?? c1, turbidity: after.turbidity, settleMs: 9e3 });
-        if ((out.state.seen[`precipitate:${k}`] ?? 0) === 1) note(out, `A ${precipitateWords(k)} precipitate forms.`, "success", it.id, `ppt-${k}`);
+        if ((out.state.seen[`precipitate:${k}`] ?? 0) === 1 && !PRECIPITATES[k].kinetic) note(out, `A ${precipitateWords(k)} precipitate forms.`, "success", it.id, `ppt-${k}`);
       }
     }
   }
   function precipitateWords(k) {
-    return { "Cu(OH)2": "pale blue copper(II) hydroxide", BaSO4: "white barium sulfate", "Mg(OH)2": "white magnesium hydroxide", "Fe(OH)2": "green iron(II) hydroxide", AgCl: "white silver chloride", PbI2: "bright yellow lead(II) iodide", CaSO4: "white calcium sulfate", "Zn(OH)2": "white zinc hydroxide" }[k] ?? k;
+    return { "Cu(OH)2": "pale blue copper(II) hydroxide", BaSO4: "white barium sulfate", "Mg(OH)2": "white magnesium hydroxide", "Fe(OH)2": "green iron(II) hydroxide", AgCl: "white silver chloride", PbI2: "bright yellow lead(II) iodide", CaSO4: "white calcium sulfate", "Zn(OH)2": "white zinc hydroxide", S: "pale yellow sulfur", CuO: "black copper(II) oxide", "CuSO4.5H2O": "blue copper(II) sulfate crystal" }[k] ?? k;
   }
   function spill(out, from, volumeMl, onto, hazardOverride = false) {
     if (volumeMl <= 0) return;
@@ -726,6 +765,7 @@ var LabEngine = (() => {
           flameColour(out, from, bunsen);
         } else if (from.kind === "splint" && bunsen?.kind === "bunsen" && bunsen.gasOn) {
           from.lit = true;
+          if (from.glowing) from.glowing = false;
           note(out, "The splint catches light.", "info", fromId);
         }
         break;
@@ -742,6 +782,49 @@ var LabEngine = (() => {
           from.lit = false;
         } else if (from.lit) {
           note(out, "The splint keeps burning quietly: not enough hydrogen collected yet.", "info", toId);
+        } else if (from.glowing && (to.gasMl?.["O2"] ?? 0) >= 3) {
+          from.glowing = false;
+          from.lit = true;
+          s.seen["relight"] = (s.seen["relight"] ?? 0) + 1;
+          cue(out, { kind: "light", target: toId, colour: { L: 0.88, a: 0.06, b: 0.16 }, intensity: 1, durationMs: 400 });
+          cue(out, { kind: "sound", target: toId, soundId: "burner-soft" });
+          note(out, "The glowing splint bursts back into flame: the gas is oxygen.", "success", toId, "relight");
+        } else if (from.glowing) {
+          note(out, "The splint just keeps glowing: there is not enough oxygen here.", "info", toId);
+        }
+        break;
+      }
+      case "filter": {
+        const src = from.liquid;
+        if (!src || !to?.liquid || src.volumeMl <= 0) break;
+        const portion = take(src, src.volumeMl * 0.96);
+        const residue = Object.keys(portion.solids).length > 0;
+        portion.solids = {};
+        if (residue) {
+          s.seen[`residue:${fromId}`] = 1;
+          note(out, "The filter paper holds back the solid; a clear filtrate drips through.", "success", toId, "filtrate");
+        }
+        cue(out, { kind: "sound", target: toId, soundId: "pour" });
+        addInto(out, to, portion, false);
+        break;
+      }
+      case "bath": {
+        from.inBath = to?.liquid ? toId : null;
+        if (to?.liquid) note(out, `The ${from.label.toLowerCase()} stands in the hot water bath (${round(to.liquid.tempC, 0)} \xB0C).`, "info", fromId);
+        break;
+      }
+      case "test": {
+        if (from.kind !== "litmus_paper" || !to) break;
+        const cl2 = s.seen[`cl2-ml:${toId}`] ?? 0;
+        if (to.electrodes && (to.volts ?? 0) > 0 && cl2 > 0.5) {
+          from.litmus = "bleached";
+          s.seen["bleach:Cl2"] = (s.seen["bleach:Cl2"] ?? 0) + 1;
+          cue(out, { kind: "colour", target: fromId, from: { L: 0.5, a: -0.02, b: -0.14 }, to: { L: 0.97, a: 0, b: 0 }, startMs: 0, durationMs: 1800, curve: "sigmoid" });
+          note(out, "The damp litmus paper turns red, then bleaches white: the gas at the anode is chlorine.", "success", toId, "bleach");
+        } else if (to.liquid && to.liquid.volumeMl > 0) {
+          const ph = to.liquid.ph;
+          from.litmus = ph < 5 ? "red" : from.litmus === "bleached" ? "bleached" : "blue";
+          note(out, ph < 5 ? "The litmus paper turns red: acidic." : "The litmus paper stays blue.", "info", toId);
         }
         break;
       }
@@ -774,9 +857,48 @@ var LabEngine = (() => {
       case "clear-bubble":
         if (it.kind === "burette_50") it.tipBubble = false;
         break;
+      case "glow":
+        if (it.kind === "splint" && it.lit) {
+          it.lit = false;
+          it.glowing = true;
+          note(out, "You blow the flame out. The tip of the splint glows red.", "info", it.id);
+        }
+        break;
+      case "power": {
+        if (!it.electrodes) break;
+        const v = Math.max(0, Math.min(12, Number(value)));
+        it.volts = v;
+        if (!v) it.bubbling = false;
+        note(out, v ? `Power pack on: ${v} V d.c. across the carbon electrodes.` : "Power pack off.", "info", it.id);
+        cue(out, { kind: "sound", target: it.id, soundId: "clink" });
+        break;
+      }
+      case "waft":
+        waft(out, it);
+        break;
       default:
         break;
     }
+  }
+  function waft(out, it) {
+    const l = it.liquid;
+    if (!l || l.volumeMl <= 0) {
+      note(out, "There is nothing in it to smell.", "info", it.id);
+      return;
+    }
+    const litres = l.volumeMl / 1e3;
+    const ester = (l.ions.EtOAc ?? 0) / litres;
+    let smell;
+    if (ester >= 0.3) {
+      smell = "a sweet, fruity smell, like pear drops or nail-varnish remover: an ester has formed";
+      out.state.seen["smell:ester"] = (out.state.seen["smell:ester"] ?? 0) + 1;
+    } else if ((l.ions.CH3COOH_T ?? 0) > 0) smell = "a sharp smell of vinegar (ethanoic acid)";
+    else if ((l.ions.EtOH ?? 0) > 0) smell = "the sharp smell of ethanol";
+    else if ((l.solids.S ?? 0) > 0) smell = "a sharp, choking smell of sulfur dioxide";
+    else smell = "no strong smell";
+    out.state.seen["wafted"] = (out.state.seen["wafted"] ?? 0) + 1;
+    cue(out, { kind: "odour", target: it.id, description: smell });
+    note(out, `You waft the vapour towards you: ${smell}.`, ester >= 0.3 ? "success" : "info", it.id, ester >= 0.3 ? "ester-smell" : void 0);
   }
   var BLUE_FLAME = { L: 0.62, a: -0.02, b: -0.2 };
   var YELLOW_FLAME = { L: 0.85, a: 0.05, b: 0.17 };
@@ -822,6 +944,7 @@ var LabEngine = (() => {
         }
         if (it.metals.length && l.volumeMl > 0) reactMetals(out, it, dt);
         heat(out, it, dt);
+        if (l.volumeMl > 0) react5(out, it, dt);
       }
       if (it.kind === "thermometer") {
         const v = it.inVessel ? s.items[it.inVessel]?.liquid : null;
@@ -846,25 +969,28 @@ var LabEngine = (() => {
       if (m.symbol === "Mg") {
         const rate = Math.min(m.mol / dt, 6e-5 * surface * h * arrhenius * Math.max(m.initialMol / 2e-3, 0.4));
         const n = Math.min(m.mol, rate * dt);
-        if (n <= 0) continue;
-        m.mol -= n;
-        l.ions["Mg2+"] = (l.ions["Mg2+"] ?? 0) + n;
-        l.tempC += 467e3 * n / Math.max(l.volumeMl * WATER_HEAT, 0.5);
-        gas(out, it, "H2", n * MOLAR_GAS_ML, n / dt);
+        if (n > 0) {
+          m.mol -= n;
+          l.ions["Mg2+"] = (l.ions["Mg2+"] ?? 0) + n;
+          l.tempC += 467e3 * n / Math.max(l.volumeMl * WATER_HEAT, 0.5);
+          gas(out, it, "H2", n * MOLAR_GAS_ML, n / dt);
+        }
       } else if (m.symbol === "Fe") {
         const cu = (l.ions["Cu2+"] ?? 0) / litres;
         const n = Math.min(m.mol, l.ions["Cu2+"] ?? 0, 25e-7 * surface * cu * arrhenius * dt * 60);
-        if (n <= 0) continue;
-        m.mol -= n;
-        l.ions["Cu2+"] = (l.ions["Cu2+"] ?? 0) - n;
-        l.ions["Fe2+"] = (l.ions["Fe2+"] ?? 0) + n;
-        it.depositMol += n;
-        if ((out.state.seen["deposit:Cu"] ?? 0) === 0 && it.depositMol > 1e-4) {
-          out.state.seen["deposit:Cu"] = 1;
-          cue(out, { kind: "deposit", target: `solid:${m.symbol}`, colour: { L: 0.6, a: 0.09, b: 0.09 }, durationMs: 6e4 });
-          note(out, "A pinky-brown coat of copper starts to form on the nail.", "success", it.id, "deposit");
+        if (n > 0) {
+          m.mol -= n;
+          l.ions["Cu2+"] = (l.ions["Cu2+"] ?? 0) - n;
+          l.ions["Fe2+"] = (l.ions["Fe2+"] ?? 0) + n;
+          it.depositMol += n;
+          if ((out.state.seen["deposit:Cu"] ?? 0) === 0 && it.depositMol > 1e-4) {
+            out.state.seen["deposit:Cu"] = 1;
+            cue(out, { kind: "deposit", target: `solid:${m.symbol}`, colour: { L: 0.6, a: 0.09, b: 0.09 }, durationMs: 6e4 });
+            note(out, "A pinky-brown coat of copper starts to form on the iron.", "success", it.id, "deposit");
+          }
         }
       }
+      displace(out, it, m, surface, arrhenius, dt);
     }
     const before = look(it);
     l.ph = equilibrate(l.ions, l.solids, l.volumeMl).ph;
@@ -873,17 +999,17 @@ var LabEngine = (() => {
       cue(out, { kind: "colour", target: it.id, from: before.colour, to: after.colour, startMs: 0, durationMs: 1e3, curve: "linear" });
     }
   }
-  function gas(out, it, gasName, ml, molPerS) {
+  function gas(out, it, gasName, ml, molPerS, opts = {}) {
     const s = out.state;
     const key2 = `gas:${gasName}:${it.id}`;
     const prevRate = s.seen[key2] ?? 0;
     const ratePerS = molPerS * MOLAR_GAS_ML;
     if (prevRate === 0 || Math.abs(ratePerS - prevRate) / Math.max(prevRate, 1e-6) > 0.5) {
-      cue(out, { kind: "gas", target: it.id, ratePerS: round(ratePerS, 3), bubble: ratePerS > 1 ? "coarse" : ratePerS > 0.2 ? "medium" : "fine", gas: gasName, durationMs: 2e3 });
-      if (prevRate === 0) note(out, "Fizzing! Bubbles of gas stream off the metal.", "success", it.id, "fizz");
+      cue(out, { kind: "gas", target: it.id, ratePerS: round(ratePerS, 3), bubble: ratePerS > 1 ? "coarse" : ratePerS > 0.2 ? "medium" : "fine", gas: gasName, durationMs: 2e3, ...opts.extra ?? {} });
+      if (prevRate === 0) note(out, opts.text ?? "Fizzing! Bubbles of gas stream off the metal.", "success", it.id, opts.key ?? "fizz");
       s.seen[key2] = ratePerS;
     }
-    const dest = it.gasTo ? s.items[it.gasTo] : null;
+    const dest = it.gasTo && opts.collect !== false ? s.items[it.gasTo] : null;
     const holder = dest ?? it;
     holder.gasMl = holder.gasMl ?? {};
     holder.gasMl[gasName] = (holder.gasMl[gasName] ?? 0) + ml * (dest ? 0.9 : 0.05);
@@ -897,7 +1023,7 @@ var LabEngine = (() => {
       if (b.kind === "bunsen" && b.gasOn && b.heats === it.id) power += b.airHoleOpen ? 320 : 140;
     }
     const mass = l.volumeMl + KINDS[it.kind].heatCapacityJK / WATER_HEAT;
-    const loss = 0.9 * (l.tempC - s.roomC);
+    const loss = (KINDS[it.kind].lossWPerK ?? 0.9) * (l.tempC - s.roomC);
     const ice = it.inIceBath ? 6 * (l.tempC - 0) : 0;
     let dT = (power - loss - ice) * dt / (mass * WATER_HEAT);
     const t0 = l.tempC;
@@ -912,10 +1038,214 @@ var LabEngine = (() => {
       }
     }
     l.tempC += dT;
+    if (power > 0 && l.volumeMl < 4 && (l.ions["Cu2+"] ?? 0) > 0 && !s.seen[`boil-dry:${it.id}`]) {
+      s.seen[`boil-dry:${it.id}`] = 1;
+      cue(out, { kind: "sound", target: it.id, soundId: "spatter" });
+      note(out, "The last of the solution spits hot crystals out of the basin and the blue solid turns white. Never heat it to dryness.", "danger", it.id);
+    }
     if (Math.floor(t0 / 5) !== Math.floor(l.tempC / 5) && Math.abs(l.tempC - s.roomC) > 3) {
       cue(out, { kind: "temperature", target: it.id, deltaC: round(l.tempC - t0, 2), tauMs: 1e3 });
     }
   }
+  var FARADAY = 96485;
+  var E0 = { Mg: -2.37, Zn: -0.76, Fe: -0.44, Cu: 0.34 };
+  var ION_OF = { Mg: "Mg2+", Zn: "Zn2+", Fe: "Fe2+", Cu: "Cu2+" };
+  var DEPOSIT_COLOUR = { Cu: { L: 0.6, a: 0.09, b: 0.09 }, Zn: { L: 0.55, a: 0, b: 0 }, Fe: { L: 0.35, a: 0, b: 0.01 }, Mg: { L: 0.8, a: 0, b: 0 } };
+  var DEPOSIT_WORDS = { Cu: "pinky-brown copper", Zn: "dark grey zinc", Fe: "black iron", Mg: "grey magnesium" };
+  function displace(out, it, m, surface, arrhenius, dt) {
+    const l = it.liquid;
+    if (m.mol <= 1e-9) return;
+    const litres = l.volumeMl / 1e3;
+    for (const x of ["Zn", "Fe", "Cu"]) {
+      if (E0[x] <= E0[m.symbol] || m.symbol === "Fe" && x === "Cu") continue;
+      const ion = ION_OF[x];
+      const have = l.ions[ion] ?? 0;
+      if (have <= 1e-9) continue;
+      const gap = E0[x] - E0[m.symbol];
+      const n = Math.min(m.mol, have, 14e-6 * surface * (have / litres) * arrhenius * Math.min(3, 0.6 + gap) * dt);
+      if (n <= 0) continue;
+      m.mol -= n;
+      l.ions[ion] = have - n;
+      l.ions[ION_OF[m.symbol]] = (l.ions[ION_OF[m.symbol]] ?? 0) + n;
+      it.depositMol += n;
+      it.depositOf = x;
+      l.tempC += 2 * FARADAY * gap * n / Math.max(l.volumeMl * WATER_HEAT + KINDS[it.kind].heatCapacityJK, 1);
+      const key2 = `deposit:${x}:${it.id}`;
+      if (!out.state.seen[key2] && it.depositMol > 1e-4) {
+        out.state.seen[key2] = 1;
+        cue(out, { kind: "deposit", target: `solid:${m.symbol}`, colour: DEPOSIT_COLOUR[x], durationMs: 3e4 });
+        note(out, `A ${DEPOSIT_WORDS[x]} coating forms on the ${m.symbol === "Mg" ? "magnesium" : m.symbol === "Zn" ? "zinc" : "iron"}: ${m.symbol} is more reactive than ${x}.`, "success", it.id, key2);
+      }
+    }
+  }
+  function react5(out, it, dt) {
+    const s = out.state;
+    const l = it.liquid;
+    const litres = l.volumeMl / 1e3;
+    const arr = (ea = 6e3) => Math.exp(-ea * (1 / (l.tempC + 273.15) - 1 / 295.15));
+    const i = l.ions;
+    const supersaturated = (l.solids["CuSO4.5H2O"] ?? 0) > 0 || Math.min(i["Cu2+"] ?? 0, i["SO4^2-"] ?? 0) / litres > 1.25;
+    if (!i.H2O2 && !it.foamMl && !it.bubbling && !i["S2O3^2-"] && !l.solids.CuO && !supersaturated && !i.EtOH && !it.inBath && !it.electrodes) return;
+    let changed = false;
+    const before = look(it);
+    const h2o2 = l.ions.H2O2 ?? 0;
+    const iodide = l.ions["I-"] ?? 0;
+    if (h2o2 > 1e-7 && iodide > 0) {
+      const n = Math.min(h2o2, 1.2 * (h2o2 / litres) * (iodide / litres) * arr(5e3) * litres * dt);
+      l.ions.H2O2 = h2o2 - n;
+      l.tempC += 98e3 * n / Math.max(l.volumeMl * WATER_HEAT + KINDS[it.kind].heatCapacityJK, 1);
+      const o2Ml = n / 2 * MOLAR_GAS_ML;
+      gas(out, it, "O2", o2Ml, n / 2 / dt, { text: "The catalyst goes in and oxygen pours out of the peroxide.", key: "o2" });
+      const soapy = (l.ions.soap ?? 0) > 0;
+      it.foamMl = (it.foamMl ?? 0) + o2Ml * (soapy ? 0.4 : 0.01);
+      it.bubbling = n / dt > 1e-5;
+      if (soapy && (it.foamMl ?? 0) > 60 && !s.seen[`foam:${it.id}`]) {
+        s.seen[`foam:${it.id}`] = 1;
+        cue(out, { kind: "smoke", target: it.id, colour: { L: 0.97, a: 0, b: 0.03 }, density: 1, durationMs: 6e3, label: "foam" });
+        cue(out, { kind: "sound", target: it.id, soundId: "fizz" });
+        note(out, "A huge column of warm foam surges up out of the cylinder! The detergent traps the oxygen in bubbles.", "success", it.id, "foam");
+      }
+    } else if (it.bubbling && h2o2 <= 1e-7 && (it.volts ?? 0) === 0) {
+      it.bubbling = false;
+    }
+    if ((it.foamMl ?? 0) > 0) {
+      it.foamMl = (it.foamMl ?? 0) * Math.exp(-dt / 120);
+      if ((it.foamMl ?? 0) < 0.5) it.foamMl = 0;
+    }
+    const thio = l.ions["S2O3^2-"] ?? 0;
+    if (thio > 1e-7 && l.ph < 5) {
+      const h = Math.pow(10, -l.ph);
+      const n = Math.min(thio, 11e-4 * (thio / litres) * (h / (h + 0.02)) * arr(6e3) * litres * dt);
+      if (n > 0) {
+        const startKey = `thio-start:${it.id}`;
+        if (!s.seen[startKey]) {
+          s.seen[startKey] = s.t + 1;
+          cue(out, { kind: "odour", target: it.id, description: "sharp, choking sulfur dioxide" });
+          note(out, "The acid is in: start the clock! A faint sharp smell of sulfur dioxide - keep the room ventilated.", "info", it.id, "thio-start");
+        }
+        l.ions["S2O3^2-"] = thio - n;
+        l.solids.S = (l.solids.S ?? 0) + n;
+        changed = true;
+        const conc = (l.solids.S ?? 0) / litres;
+        const goneKey = `cross-gone:${it.id}`;
+        if (conc >= 3e-3 && !s.seen[goneKey]) {
+          const secs = Math.max(1, Math.round((s.t + 1 - (s.seen[startKey] ?? s.t)) / 1e3));
+          s.seen[goneKey] = secs;
+          cue(out, { kind: "precipitate", target: it.id, id: "S", colour: PRECIPITATES.S.colour, turbidity: 0.65, settleMs: 0 });
+          note(out, `The cross has disappeared: ${secs} s after the acid went in. Rate is about 1/${secs} = ${(1e3 / secs).toFixed(1)} \xD7 10\u207B\xB3 s\u207B\xB9.`, "success", it.id, goneKey);
+        }
+      }
+    }
+    const cuo = l.solids.CuO ?? 0;
+    if (cuo > 1e-9) {
+      const h = Math.pow(10, -l.ph);
+      const n = Math.min(cuo, 0.2 * cuo * Math.min(h, 2) * arr(6e3) * dt);
+      if (n > 1e-12) {
+        l.solids.CuO = cuo - n;
+        l.ions["Cu2+"] = (l.ions["Cu2+"] ?? 0) + n;
+        changed = true;
+      }
+      const excessKey = `excess:CuO:${it.id}`;
+      if ((l.solids.CuO ?? 0) > 4e-4 && l.ph > 2 && !s.seen[excessKey]) {
+        s.seen[excessKey] = 1;
+        note(out, "Black powder stays at the bottom however long you stir: the acid is used up and the copper(II) oxide is in excess.", "success", it.id, excessKey);
+      }
+    }
+    const cu = l.ions["Cu2+"] ?? 0;
+    const so4 = l.ions["SO4^2-"] ?? 0;
+    const crystals = l.solids["CuSO4.5H2O"] ?? 0;
+    if (cu > 0 && so4 > 0 && (crystals > 0 || Math.min(cu, so4) / litres > 1.25)) {
+      const sat = 1.3 * Math.exp(0.0165 * (l.tempC - 20));
+      const dissolved = Math.min(cu, so4);
+      const excess = dissolved - sat * litres;
+      const f = 1 - Math.exp(-dt / 6);
+      let n = 0;
+      if (excess > 0) n = excess * f;
+      else if (crystals > 0) n = -Math.min(crystals, -excess * f);
+      if (Math.abs(n) > 1e-12) {
+        l.ions["Cu2+"] = cu - n;
+        l.ions["SO4^2-"] = so4 - n;
+        l.solids["CuSO4.5H2O"] = Math.max(0, crystals + n);
+        if ((l.solids["CuSO4.5H2O"] ?? 0) <= 1e-12) delete l.solids["CuSO4.5H2O"];
+        changed = true;
+      }
+      const grown = l.solids["CuSO4.5H2O"] ?? 0;
+      if (grown > 2e-4 && !s.seen[`crystal-point:${it.id}`]) {
+        s.seen[`crystal-point:${it.id}`] = 1;
+        note(out, "Tiny crystals appear at the edge: the solution is saturated (the point of crystallisation).", "info", it.id, "crystal-point");
+      }
+      if (grown > 1e-3 && l.tempC < 50 && !s.seen[`crystals:${it.id}`]) {
+        s.seen[`crystals:${it.id}`] = 1;
+        cue(out, { kind: "precipitate", target: it.id, id: "CuSO4.5H2O", colour: PRECIPITATES["CuSO4.5H2O"].colour, turbidity: 0.2, settleMs: 4e3 });
+        note(out, "Bright blue crystals of hydrated copper(II) sulfate grow as the solution cools.", "success", it.id, "crystals");
+      }
+    }
+    const etoh = l.ions.EtOH ?? 0;
+    const acid = l.ions.CH3COOH_T ?? 0;
+    if (etoh > 1e-7 && acid > 1e-7) {
+      const cat = Math.min(1, so4 / litres / 0.2);
+      if (cat > 0) {
+        const E = etoh / litres;
+        const A = acid / litres;
+        const X = (l.ions.EtOAc ?? 0) / litres;
+        const rateM = 26e-6 * cat * arr(6e3) * (E * A - X * X / 4);
+        const n = Math.max(-(l.ions.EtOAc ?? 0), Math.min(etoh, acid, rateM * litres * dt));
+        l.ions.EtOH = etoh - n;
+        l.ions.CH3COOH_T = acid - n;
+        l.ions.EtOAc = (l.ions.EtOAc ?? 0) + n;
+        if ((l.ions.EtOAc ?? 0) / litres >= 0.3 && !s.seen[`ester:${it.id}`]) {
+          s.seen[`ester:${it.id}`] = 1;
+          cue(out, { kind: "odour", target: it.id, description: "sweet and fruity, like pear drops" });
+          note(out, "A thin oily layer forms on top and a sweet fruity smell drifts up: ethyl ethanoate, an ester.", "success", it.id, "ester");
+        }
+        changed = true;
+      }
+    }
+    if (it.inBath) {
+      const bath = s.items[it.inBath]?.liquid;
+      if (bath && bath.volumeMl > 0) l.tempC += (bath.tempC - l.tempC) * (1 - Math.exp(-dt / 15));
+    }
+    if (it.electrodes && (it.volts ?? 0) > 0) {
+      let ionic = 0;
+      for (const k in l.ions) ionic += Math.abs(CHARGE_OF[k] ?? 0) * (l.ions[k] ?? 0);
+      ionic /= Math.max(litres, 1e-6);
+      const amps = Math.max(0, (it.volts ?? 0) - 2.2) / (3 + 6 / Math.max(ionic, 0.05));
+      const n = amps / (2 * FARADAY) * dt;
+      if (n > 0) {
+        const cl = l.ions["Cl-"] ?? 0;
+        const nCl = Math.min(n, cl / 2);
+        l.ions["Cl-"] = cl - 2 * nCl;
+        it.bubbling = true;
+        gas(out, it, "H2", n * MOLAR_GAS_ML, n / dt, { text: "Bubbles stream off both electrodes: hydrogen at the negative cathode, chlorine at the positive anode.", key: "electrolysis" });
+        if (nCl > 0) {
+          s.seen[`cl2-ml:${it.id}`] = (s.seen[`cl2-ml:${it.id}`] ?? 0) + nCl * MOLAR_GAS_ML;
+          gas(out, it, "Cl2", nCl * MOLAR_GAS_ML, nCl / dt, { collect: false, text: "A pale green gas with a swimming-pool smell comes off the anode: chlorine.", key: "cl2", extra: { colour: { L: 0.9, a: -0.05, b: 0.12 }, smell: "swimming pools (bleach)", hazard: "toxic", warning: "Chlorine is toxic: low voltage, short runs, a ventilated room and never sniff it." } });
+        }
+        changed = true;
+        if (l.ph > 10 && !s.seen[`alkaline:${it.id}`]) {
+          s.seen[`alkaline:${it.id}`] = 1;
+          note(out, "The indicator turns purple: hydroxide ions left behind at the cathode make the solution alkaline (sodium hydroxide).", "success", it.id, "alkaline");
+        }
+      }
+    }
+    if (etoh > 0 && !s.seen["flame-near-ethanol"]) {
+      for (const b of Object.values(s.items)) {
+        if (b.kind === "bunsen" && b.gasOn) {
+          s.seen["flame-near-ethanol"] = 1;
+          note(out, "A naked flame near ethanol! Ethanol vapour catches fire very easily. Turn the gas off: use a hot water bath instead.", "danger", b.id);
+          break;
+        }
+      }
+    }
+    if (changed) {
+      l.ph = equilibrate(l.ions, l.solids, l.volumeMl).ph;
+      const after = look(it);
+      if (before && after && Math.hypot(after.colour.L - before.colour.L, after.colour.a - before.colour.a, after.colour.b - before.colour.b) > 0.02) {
+        cue(out, { kind: "colour", target: it.id, from: before.colour, to: after.colour, startMs: 0, durationMs: 1e3, curve: "linear" });
+      }
+    }
+  }
+  var CHARGE_OF = { "Na+": 1, "K+": 1, "Li+": 1, "Ca2+": 2, "Mg2+": 2, "Ba2+": 2, "Cu2+": 2, "Fe2+": 2, "Zn2+": 2, "Ag+": 1, "Pb2+": 2, "Cl-": -1, "SO4^2-": -2, "NO3-": -1, "I-": -1, "Br-": -1, "S2O3^2-": -2 };
   function cue(out, c) {
     out.cues.push(c);
   }
@@ -2395,6 +2725,1743 @@ var LabEngine = (() => {
     }
   };
 
+  // ../../content/experiments/disappearing-cross.json
+  var disappearing_cross_default = {
+    id: "chem-disappearing-cross",
+    slug: "disappearing-cross",
+    version: 1,
+    subject: "chemistry",
+    title: "The disappearing cross: concentration and rate",
+    fidelity: "approximate",
+    reviewStatus: "draft",
+    bench: {
+      items: [
+        {
+          id: "thio",
+          kind: "reagent_bottle",
+          label: "Sodium thiosulfate 0.15 M",
+          x: -340,
+          z: -70,
+          fill: {
+            reagentId: "thio-0.15",
+            volumeMl: 200
+          }
+        },
+        {
+          id: "water",
+          kind: "reagent_bottle",
+          label: "Distilled water",
+          x: -250,
+          z: -70,
+          fill: {
+            reagentId: "water",
+            volumeMl: 200
+          }
+        },
+        {
+          id: "acid",
+          kind: "reagent_bottle",
+          label: "Hydrochloric acid 1 M",
+          x: -160,
+          z: -70,
+          fill: {
+            reagentId: "hcl-1",
+            volumeMl: 60
+          }
+        },
+        {
+          id: "tile",
+          kind: "white_tile",
+          label: "Paper with a black cross",
+          x: 40,
+          z: 40
+        },
+        {
+          id: "fA",
+          kind: "conical_flask_100",
+          label: "Flask A (full strength)",
+          x: 0,
+          z: 40,
+          socket: "tile:tile"
+        },
+        {
+          id: "fB",
+          kind: "conical_flask_100",
+          label: "Flask B (half strength)",
+          x: 90,
+          z: 40,
+          socket: "tile:tile"
+        },
+        {
+          id: "goggles",
+          kind: "goggles",
+          x: 300,
+          z: 110
+        }
+      ]
+    },
+    steps: [
+      {
+        id: "goggles",
+        title: "Put on goggles",
+        instruction: "Hydrochloric acid is corrosive and the reaction gives off a little sulfur dioxide. Goggles on, room ventilated.",
+        action: "equipment.place",
+        from: "goggles",
+        complete: {
+          onEvent: true
+        },
+        scoring: {
+          equipment: 1
+        },
+        hints: [
+          "safe-1",
+          "safe-2",
+          "safe-3"
+        ],
+        whatIf: {
+          no_ppe: "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+        }
+      },
+      {
+        id: "thio-a",
+        title: "50 mL thiosulfate into flask A",
+        instruction: "Pour 50 mL of sodium thiosulfate solution into flask A, which sits on the paper cross.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "thio",
+        to: "fA",
+        quantity: {
+          target: 50,
+          plusMinus: 2,
+          unit: "mL"
+        },
+        technique: {
+          kind: "pour",
+          maxRateMlPerS: 10
+        },
+        hints: [
+          "thio-1",
+          "thio-2",
+          "thio-3"
+        ]
+      },
+      {
+        id: "acid-a",
+        title: "Add 5 mL acid and start the clock",
+        instruction: "Add 5 mL of hydrochloric acid. The clock starts the moment it goes in.",
+        requires: [
+          "thio-a"
+        ],
+        action: "liquid.pour",
+        from: "acid",
+        to: "fA",
+        quantity: {
+          target: 5,
+          plusMinus: 0.5,
+          unit: "mL"
+        },
+        hints: [
+          "acid-1",
+          "acid-2",
+          "acid-3"
+        ],
+        whatIf: {
+          wrong_amount: "Changing the acid volume changes two things at once, so the test is no longer fair.",
+          too_fast: "Splashing acid onto the paper or your hands burns; pour steadily."
+        }
+      },
+      {
+        id: "swirl-a",
+        title: "Swirl once",
+        instruction: "Swirl the flask once to mix, then put it straight back on the cross.",
+        requires: [
+          "acid-a"
+        ],
+        action: "mix.swirl",
+        to: "fA",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "swirl-1",
+          "swirl-2",
+          "swirl-3"
+        ]
+      },
+      {
+        id: "cross-a",
+        title: "Wait for the cross to vanish",
+        instruction: "Look down through the flask. Stop the clock when you can no longer see the cross. Note the time.",
+        requires: [
+          "swirl-a"
+        ],
+        action: "timer.mark",
+        complete: {
+          predicate: "seen:cross-gone:fA"
+        },
+        hints: [
+          "wait-1",
+          "wait-2",
+          "wait-3"
+        ]
+      },
+      {
+        id: "thio-b",
+        title: "25 mL thiosulfate into flask B",
+        instruction: "Now half the concentration: pour 25 mL of thiosulfate into flask B...",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "thio",
+        to: "fB",
+        quantity: {
+          target: 25,
+          plusMinus: 1.5,
+          unit: "mL"
+        },
+        technique: {
+          kind: "pour",
+          maxRateMlPerS: 10
+        },
+        hints: [
+          "dilute-1",
+          "dilute-2",
+          "dilute-3"
+        ]
+      },
+      {
+        id: "water-b",
+        title: "...and 25 mL water",
+        instruction: "...and 25 mL of water, so the total volume is still 50 mL (a fair test).",
+        requires: [
+          "thio-b"
+        ],
+        action: "liquid.pour",
+        from: "water",
+        to: "fB",
+        quantity: {
+          target: 25,
+          plusMinus: 1.5,
+          unit: "mL"
+        },
+        technique: {
+          kind: "pour",
+          maxRateMlPerS: 10
+        },
+        hints: [
+          "dilute-1",
+          "dilute-2",
+          "dilute-3"
+        ],
+        whatIf: {
+          wrong_amount: "A different total volume changes how deep you look through the liquid, so the times are not comparable."
+        }
+      },
+      {
+        id: "acid-b",
+        title: "Add 5 mL acid and time it",
+        instruction: "Add 5 mL of acid to flask B and start timing again.",
+        requires: [
+          "water-b",
+          "cross-a"
+        ],
+        action: "liquid.pour",
+        from: "acid",
+        to: "fB",
+        quantity: {
+          target: 5,
+          plusMinus: 0.5,
+          unit: "mL"
+        },
+        hints: [
+          "acid-1",
+          "acid-2",
+          "acid-3"
+        ]
+      },
+      {
+        id: "swirl-b",
+        title: "Swirl once",
+        instruction: "Swirl once and put it back on the cross.",
+        requires: [
+          "acid-b"
+        ],
+        action: "mix.swirl",
+        to: "fB",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "swirl-1",
+          "swirl-2",
+          "swirl-3"
+        ]
+      },
+      {
+        id: "cross-b",
+        title: "Wait for the cross again",
+        instruction: "Stop the clock when the cross disappears. Compare the two times.",
+        requires: [
+          "swirl-b"
+        ],
+        action: "timer.mark",
+        complete: {
+          predicate: "seen:cross-gone:fB"
+        },
+        hints: [
+          "wait-1",
+          "wait-2",
+          "wait-3"
+        ]
+      }
+    ],
+    hints: {
+      "safe-1": {
+        rung: 1,
+        text: "What protects your eyes?"
+      },
+      "safe-2": {
+        rung: 2,
+        text: "Pick up the goggles and put them on before you touch any bottle."
+      },
+      "safe-3": {
+        rung: 3,
+        text: "Watch the goggles go on."
+      },
+      "thio-1": {
+        rung: 1,
+        text: "The flask goes on the cross first, then the thiosulfate."
+      },
+      "thio-2": {
+        rung: 2,
+        text: "Pick up the thiosulfate bottle and pour 50 mL into flask A."
+      },
+      "thio-3": {
+        rung: 3,
+        text: "Watch a 50 mL pour."
+      },
+      "acid-1": {
+        rung: 1,
+        text: "The acid starts the reaction."
+      },
+      "acid-2": {
+        rung: 2,
+        text: "Pour 5 mL of hydrochloric acid into the flask."
+      },
+      "acid-3": {
+        rung: 3,
+        text: "Watch the acid go in."
+      },
+      "swirl-1": {
+        rung: 1,
+        text: "Mix it so the reaction starts evenly."
+      },
+      "swirl-2": {
+        rung: 2,
+        text: "Choose Swirl in the mixing controls with the flask selected."
+      },
+      "swirl-3": {
+        rung: 3,
+        text: "Watch one swirl."
+      },
+      "wait-1": {
+        rung: 1,
+        text: "Look straight down through the liquid at the cross."
+      },
+      "wait-2": {
+        rung: 2,
+        text: "Wait (or speed up time) until the note says the cross has gone."
+      },
+      "wait-3": {
+        rung: 3,
+        text: "Watch the cloudiness grow."
+      },
+      "dilute-1": {
+        rung: 1,
+        text: "Same total volume, half as much thiosulfate."
+      },
+      "dilute-2": {
+        rung: 2,
+        text: "25 mL thiosulfate then 25 mL water into flask B."
+      },
+      "dilute-3": {
+        rung: 3,
+        text: "Watch the two pours."
+      }
+    },
+    observations: {
+      whatHappened: "After the acid went in, the liquid slowly turned cloudy pale yellow until the cross could not be seen. In flask A (full strength) the cross vanished in about 24 s; in flask B (half strength) it took about twice as long.",
+      why: "Thiosulfate ions react with acid to make tiny particles of solid sulfur, which make the liquid cloudy. The reaction only happens when particles collide with enough energy. In the more concentrated solution there are more thiosulfate particles in the same volume, so collisions happen more often and the reaction is faster. Rate is about 1 \xF7 time, so halving the concentration roughly halves the rate (doubles the time). Heating would also speed it up because particles move faster and collide harder.",
+      equationLatex: "\\mathrm{Na_2S_2O_3(aq) + 2HCl(aq) \\longrightarrow 2NaCl(aq) + S(s) + SO_2(g) + H_2O(l)}",
+      realWorld: [
+        "Why food lasts longer in a fridge",
+        "Concentrated cleaning products work faster",
+        "Collision theory in industry"
+      ],
+      prompts: [
+        {
+          id: "q-faster",
+          question: "In which flask did the cross disappear first?",
+          choices: [
+            "Flask A (more concentrated)",
+            "Flask B (more dilute)",
+            "At the same time",
+            "Neither"
+          ],
+          answer: 0,
+          explain: "More particles in the same volume collide more often, so the reaction is faster."
+        },
+        {
+          id: "q-rate",
+          question: "Flask A took 24 s. Roughly what is its rate (1/time)?",
+          choices: [
+            "0.0042 s\u207B\xB9",
+            "0.042 s\u207B\xB9",
+            "0.42 s\u207B\xB9",
+            "24 s\u207B\xB9"
+          ],
+          answer: 1,
+          explain: "Rate \u2248 1 \xF7 24 = 0.042 s\u207B\xB9. The shorter the time, the faster the rate."
+        },
+        {
+          id: "q-fair",
+          question: "Why add 25 mL of water to flask B?",
+          choices: [
+            "To cool it down",
+            "To keep the total volume the same, so only concentration changes",
+            "To make more sulfur",
+            "Water is a catalyst"
+          ],
+          answer: 1,
+          explain: "A fair test changes only one variable. The same total volume also keeps the depth you look through the same."
+        }
+      ]
+    },
+    safety: [],
+    golden: {
+      durationS: 112,
+      captions: [
+        {
+          t: 0,
+          text: "Sodium thiosulfate solution in a flask on a paper cross."
+        },
+        {
+          t: 15e3,
+          text: "Acid in, start the clock. Thiosulfate + acid makes tiny grains of solid sulfur."
+        },
+        {
+          t: 25e3,
+          text: "The sulfur particles scatter light, so the liquid clouds over...",
+          slow: true
+        },
+        {
+          t: 4e4,
+          text: "Cross gone in about 24 s. Rate \u2248 1/time."
+        },
+        {
+          t: 44e3,
+          text: "Now half the thiosulfate, topped up with water so the volume is the same: a fair test."
+        },
+        {
+          t: 7e4,
+          text: "Fewer particles in the same space collide less often, so the cloud builds more slowly."
+        },
+        {
+          t: 105e3,
+          text: "About twice as long. Half the concentration, half the rate."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "goggles",
+            x: 0,
+            y: 0,
+            socket: "worn"
+          }
+        },
+        {
+          t: 4e3,
+          type: "liquid.pour",
+          payload: {
+            from: "thio",
+            to: "fA",
+            volumeMl: 50,
+            tiltDegMax: 55,
+            meanRateMlPerS: 6,
+            peakRateMlPerS: 8,
+            durationMs: 8333
+          }
+        },
+        {
+          t: 15e3,
+          type: "liquid.pour",
+          payload: {
+            from: "acid",
+            to: "fA",
+            volumeMl: 5,
+            tiltDegMax: 55,
+            meanRateMlPerS: 3,
+            peakRateMlPerS: 4,
+            durationMs: 1667
+          }
+        },
+        {
+          t: 16500,
+          type: "mix.swirl",
+          payload: {
+            target: "fA",
+            durationMs: 2e3
+          }
+        },
+        {
+          t: 44e3,
+          type: "liquid.pour",
+          payload: {
+            from: "thio",
+            to: "fB",
+            volumeMl: 25,
+            tiltDegMax: 55,
+            meanRateMlPerS: 6,
+            peakRateMlPerS: 8,
+            durationMs: 4167
+          }
+        },
+        {
+          t: 5e4,
+          type: "liquid.pour",
+          payload: {
+            from: "water",
+            to: "fB",
+            volumeMl: 25,
+            tiltDegMax: 55,
+            meanRateMlPerS: 6,
+            peakRateMlPerS: 8,
+            durationMs: 4167
+          }
+        },
+        {
+          t: 56e3,
+          type: "liquid.pour",
+          payload: {
+            from: "acid",
+            to: "fB",
+            volumeMl: 5,
+            tiltDegMax: 55,
+            meanRateMlPerS: 3,
+            peakRateMlPerS: 4,
+            durationMs: 1667
+          }
+        },
+        {
+          t: 57500,
+          type: "mix.swirl",
+          payload: {
+            target: "fB",
+            durationMs: 2e3
+          }
+        },
+        {
+          t: 108e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-faster",
+            value: 0
+          }
+        },
+        {
+          t: 109e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-rate",
+            value: 1
+          }
+        },
+        {
+          t: 11e4,
+          type: "param.set",
+          payload: {
+            key: "answer:q-fair",
+            value: 1
+          }
+        }
+      ]
+    }
+  };
+
+  // ../../content/experiments/electrolysis-of-brine.json
+  var electrolysis_of_brine_default = {
+    id: "chem-electrolysis-of-brine",
+    slug: "electrolysis-of-brine",
+    version: 1,
+    subject: "chemistry",
+    title: "Electrolysis of brine",
+    fidelity: "approximate",
+    reviewStatus: "draft",
+    bench: {
+      items: [
+        {
+          id: "brine",
+          kind: "reagent_bottle",
+          label: "Brine (sodium chloride solution)",
+          x: -340,
+          z: -70,
+          fill: {
+            reagentId: "brine",
+            volumeMl: 150
+          }
+        },
+        {
+          id: "univ",
+          kind: "dropper_bottle",
+          label: "Universal indicator",
+          x: -240,
+          z: 60,
+          fill: {
+            reagentId: "univ",
+            volumeMl: 20
+          }
+        },
+        {
+          id: "cell",
+          kind: "beaker_100",
+          label: "Electrolysis cell (carbon electrodes, 6 V d.c.)",
+          x: -40,
+          z: 20,
+          electrodes: true
+        },
+        {
+          id: "rack",
+          kind: "test_tube_rack",
+          x: 120,
+          z: -60
+        },
+        {
+          id: "tube",
+          kind: "test_tube",
+          label: "Collection tube",
+          x: 100,
+          z: -60,
+          socket: "rack:rack"
+        },
+        {
+          id: "litmus",
+          kind: "litmus_paper",
+          x: 120,
+          z: 90
+        },
+        {
+          id: "bunsen",
+          kind: "bunsen",
+          x: 260,
+          z: -40
+        },
+        {
+          id: "splint",
+          kind: "splint",
+          x: 240,
+          z: 100
+        },
+        {
+          id: "goggles",
+          kind: "goggles",
+          x: 330,
+          z: 120
+        }
+      ]
+    },
+    steps: [
+      {
+        id: "goggles",
+        title: "Put on goggles",
+        instruction: "Electrolysis makes chlorine, a toxic gas, and sodium hydroxide, which is corrosive. Goggles on, room ventilated, low voltage only.",
+        action: "equipment.place",
+        from: "goggles",
+        complete: {
+          onEvent: true
+        },
+        scoring: {
+          equipment: 1
+        },
+        hints: [
+          "safe-1",
+          "safe-2",
+          "safe-3"
+        ],
+        whatIf: {
+          no_ppe: "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+        }
+      },
+      {
+        id: "brine-in",
+        title: "50 mL brine into the cell",
+        instruction: "Pour about 50 mL of brine into the cell so both carbon electrodes are covered.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "brine",
+        to: "cell",
+        quantity: {
+          target: 50,
+          plusMinus: 5,
+          unit: "mL"
+        },
+        technique: {
+          kind: "pour",
+          maxRateMlPerS: 10
+        },
+        hints: [
+          "brine-1",
+          "brine-2",
+          "brine-3"
+        ]
+      },
+      {
+        id: "indicator",
+        title: "A few drops of universal indicator",
+        instruction: "Add 3 to 5 drops of universal indicator. It starts green: neutral.",
+        requires: [
+          "brine-in"
+        ],
+        action: "liquid.drop",
+        from: "univ",
+        to: "cell",
+        quantity: {
+          target: 0.2,
+          plusMinus: 0.06,
+          unit: "mL"
+        },
+        hints: [
+          "ind-1",
+          "ind-2",
+          "ind-3"
+        ]
+      },
+      {
+        id: "collect",
+        title: "Tube over the cathode",
+        instruction: "Hold the collection tube upside down over the negative electrode (cathode) to catch its gas.",
+        requires: [
+          "brine-in"
+        ],
+        action: "equipment.connect",
+        from: "cell",
+        to: "tube",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "collect-1",
+          "collect-2",
+          "collect-3"
+        ]
+      },
+      {
+        id: "power-on",
+        title: "Switch on",
+        instruction: "Switch the power pack on (6 V d.c.).",
+        requires: [
+          "indicator",
+          "collect"
+        ],
+        action: "param.set",
+        from: "cell",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "power-1",
+          "power-2",
+          "power-3"
+        ],
+        whatIf: {
+          wrong_amount: "A higher voltage makes chlorine much faster, which quickly becomes dangerous in a closed room."
+        }
+      },
+      {
+        id: "gas",
+        title: "Collect the hydrogen",
+        instruction: "Watch bubbles at both electrodes and wait until a little gas has collected.",
+        requires: [
+          "power-on"
+        ],
+        action: "timer.mark",
+        complete: {
+          predicate: "gas-collected:tube:H2:2&ph-above:cell:10"
+        },
+        hints: [
+          "gas-1",
+          "gas-2",
+          "gas-3"
+        ]
+      },
+      {
+        id: "litmus",
+        title: "Test the anode gas",
+        instruction: "Hold damp blue litmus paper near the positive electrode (anode). Do not sniff the gas.",
+        requires: [
+          "gas"
+        ],
+        action: "equipment.connect",
+        from: "litmus",
+        to: "cell",
+        complete: {
+          predicate: "seen:bleach:Cl2"
+        },
+        hints: [
+          "litmus-1",
+          "litmus-2",
+          "litmus-3"
+        ],
+        whatIf: {
+          no_ppe: "Chlorine attacks the lining of the nose, throat and lungs even in small amounts."
+        }
+      },
+      {
+        id: "power-off",
+        title: "Switch off",
+        instruction: "Switch the power pack off before testing the hydrogen.",
+        requires: [
+          "litmus"
+        ],
+        action: "param.set",
+        from: "cell",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "power-1",
+          "power-2",
+          "power-3"
+        ]
+      },
+      {
+        id: "light-burner",
+        title: "Light the Bunsen",
+        instruction: "Light the Bunsen burner so you can light a splint.",
+        requires: [
+          "power-off"
+        ],
+        action: "heat.set",
+        from: "bunsen",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "burn-1",
+          "burn-2",
+          "burn-3"
+        ]
+      },
+      {
+        id: "light-splint",
+        title: "Light a splint",
+        instruction: "Hold the splint in the flame until it catches.",
+        requires: [
+          "light-burner"
+        ],
+        action: "equipment.connect",
+        from: "splint",
+        to: "bunsen",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "burn-1",
+          "burn-2",
+          "burn-3"
+        ]
+      },
+      {
+        id: "pop",
+        title: "The pop test",
+        instruction: "Bring the lit splint to the mouth of the collection tube.",
+        requires: [
+          "light-splint",
+          "gas"
+        ],
+        action: "equipment.connect",
+        from: "splint",
+        to: "tube",
+        complete: {
+          predicate: "seen:pop-test"
+        },
+        hints: [
+          "pop-1",
+          "pop-2",
+          "pop-3"
+        ]
+      }
+    ],
+    hints: {
+      "safe-1": {
+        rung: 1,
+        text: "What protects your eyes?"
+      },
+      "safe-2": {
+        rung: 2,
+        text: "Pick up the goggles and put them on before you touch any bottle."
+      },
+      "safe-3": {
+        rung: 3,
+        text: "Watch the goggles go on."
+      },
+      "brine-1": {
+        rung: 1,
+        text: "The electrodes need to be in the solution."
+      },
+      "brine-2": {
+        rung: 2,
+        text: "Pick up the brine bottle and pour about 50 mL into the cell."
+      },
+      "brine-3": {
+        rung: 3,
+        text: "Watch the pour."
+      },
+      "ind-1": {
+        rung: 1,
+        text: "An indicator will show any change in pH."
+      },
+      "ind-2": {
+        rung: 2,
+        text: "Add a few drops of universal indicator to the cell."
+      },
+      "ind-3": {
+        rung: 3,
+        text: "Watch the drops go in."
+      },
+      "collect-1": {
+        rung: 1,
+        text: "The gas from the negative electrode is worth collecting."
+      },
+      "collect-2": {
+        rung: 2,
+        text: "Pick up the empty tube and choose Hold over, then the cell."
+      },
+      "collect-3": {
+        rung: 3,
+        text: "Watch the tube go over the cathode."
+      },
+      "power-1": {
+        rung: 1,
+        text: "Electrolysis needs a d.c. supply."
+      },
+      "power-2": {
+        rung: 2,
+        text: "Select the cell and choose the power button."
+      },
+      "power-3": {
+        rung: 3,
+        text: "Watch the power go on."
+      },
+      "gas-1": {
+        rung: 1,
+        text: "Look at both electrodes."
+      },
+      "gas-2": {
+        rung: 2,
+        text: "Wait (or speed up time) until about 2 mL of gas has collected."
+      },
+      "gas-3": {
+        rung: 3,
+        text: "Watch the bubbles."
+      },
+      "litmus-1": {
+        rung: 1,
+        text: "Which gas bleaches damp litmus?"
+      },
+      "litmus-2": {
+        rung: 2,
+        text: "Pick up the litmus paper and choose Hold near, then the cell."
+      },
+      "litmus-3": {
+        rung: 3,
+        text: "Watch the litmus change."
+      },
+      "burn-1": {
+        rung: 1,
+        text: "You need a flame to light the splint."
+      },
+      "burn-2": {
+        rung: 2,
+        text: "Light the Bunsen, then hold the splint in the flame."
+      },
+      "burn-3": {
+        rung: 3,
+        text: "Watch the burner light and the splint catch."
+      },
+      "pop-1": {
+        rung: 1,
+        text: "Which gas burns with a squeaky pop?"
+      },
+      "pop-2": {
+        rung: 2,
+        text: "Bring the lit splint to the collection tube's mouth."
+      },
+      "pop-3": {
+        rung: 3,
+        text: "Watch for the pop."
+      }
+    },
+    observations: {
+      whatHappened: "Bubbles streamed off both electrodes. The gas from the cathode burned with a squeaky pop. The gas at the anode turned damp litmus red and then bleached it white, and smelled of swimming pools. The indicator turned from green to purple.",
+      why: "Brine contains Na\u207A, Cl\u207B, H\u207A and OH\u207B ions. At the negative cathode, hydrogen ions (from water) gain electrons more easily than sodium ions, so hydrogen gas forms. At the positive anode, chloride ions lose electrons to form chlorine gas, which bleaches damp litmus. Sodium and hydroxide ions are left behind, so the solution becomes sodium hydroxide: alkaline, and the indicator turns purple.",
+      equationLatex: "\\mathrm{2NaCl(aq) + 2H_2O(l) \\longrightarrow 2NaOH(aq) + H_2(g) + Cl_2(g)}",
+      realWorld: [
+        "The chlor-alkali industry makes chlorine, hydrogen and sodium hydroxide",
+        "Chlorine for clean drinking water and bleach",
+        "Sodium hydroxide for soap and paper"
+      ],
+      prompts: [
+        {
+          id: "q-cathode",
+          question: "Which gas forms at the negative electrode (cathode)?",
+          choices: [
+            "Chlorine",
+            "Oxygen",
+            "Hydrogen",
+            "Sodium"
+          ],
+          answer: 2,
+          explain: "H\u207A ions gain electrons: 2H\u207A + 2e\u207B \u2192 H\u2082. It burns with a squeaky pop."
+        },
+        {
+          id: "q-anode",
+          question: "How do you know the anode gas is chlorine?",
+          choices: [
+            "It relights a glowing splint",
+            "It bleaches damp litmus paper",
+            "It gives a squeaky pop",
+            "It turns limewater milky"
+          ],
+          answer: 1,
+          explain: "Chlorine bleaches damp litmus (often turning it red first)."
+        },
+        {
+          id: "q-left",
+          question: "Why did the indicator turn purple?",
+          choices: [
+            "Chlorine is purple",
+            "Sodium hydroxide is left in the solution, making it alkaline",
+            "The electrodes dissolved",
+            "Hydrogen is acidic"
+          ],
+          answer: 1,
+          explain: "Removing H\u207A and Cl\u207B leaves Na\u207A and OH\u207B: sodium hydroxide solution."
+        }
+      ]
+    },
+    safety: [],
+    golden: {
+      durationS: 58,
+      captions: [
+        {
+          t: 0,
+          text: "Goggles on. Brine is sodium chloride dissolved in water."
+        },
+        {
+          t: 9e3,
+          text: "Universal indicator: green, so the brine starts neutral."
+        },
+        {
+          t: 14e3,
+          text: "Power on. Ions move: positive ions to the cathode (\u2212), negative ions to the anode (+)."
+        },
+        {
+          t: 2e4,
+          text: "Hydrogen at the cathode, chlorine at the anode. Purple indicator: sodium hydroxide is being left behind.",
+          slow: true
+        },
+        {
+          t: 37e3,
+          text: "Damp litmus near the anode: red, then bleached. That's chlorine."
+        },
+        {
+          t: 47e3,
+          text: "Squeaky pop: the cathode gas is hydrogen."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "goggles",
+            x: 0,
+            y: 0,
+            socket: "worn"
+          }
+        },
+        {
+          t: 4e3,
+          type: "liquid.pour",
+          payload: {
+            from: "brine",
+            to: "cell",
+            volumeMl: 50,
+            tiltDegMax: 55,
+            meanRateMlPerS: 6,
+            peakRateMlPerS: 8,
+            durationMs: 8333
+          }
+        },
+        {
+          t: 9e3,
+          type: "liquid.drop",
+          payload: {
+            from: "univ",
+            to: "cell",
+            drops: 4,
+            volumeMl: 0.2
+          }
+        },
+        {
+          t: 12e3,
+          type: "equipment.connect",
+          payload: {
+            from: "cell",
+            to: "tube",
+            port: "collect"
+          }
+        },
+        {
+          t: 14e3,
+          type: "param.set",
+          payload: {
+            key: "power:cell",
+            value: 6
+          }
+        },
+        {
+          t: 38e3,
+          type: "equipment.connect",
+          payload: {
+            from: "litmus",
+            to: "cell",
+            port: "test"
+          }
+        },
+        {
+          t: 41e3,
+          type: "param.set",
+          payload: {
+            key: "power:cell",
+            value: 0
+          }
+        },
+        {
+          t: 43e3,
+          type: "heat.set",
+          payload: {
+            target: "bunsen",
+            powerPct: 100
+          }
+        },
+        {
+          t: 45e3,
+          type: "equipment.connect",
+          payload: {
+            from: "splint",
+            to: "bunsen",
+            port: "flame"
+          }
+        },
+        {
+          t: 48e3,
+          type: "equipment.connect",
+          payload: {
+            from: "splint",
+            to: "tube",
+            port: "mouth"
+          }
+        },
+        {
+          t: 51e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-cathode",
+            value: 2
+          }
+        },
+        {
+          t: 52e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-anode",
+            value: 1
+          }
+        },
+        {
+          t: 53e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-left",
+            value: 1
+          }
+        }
+      ]
+    }
+  };
+
+  // ../../content/experiments/elephant-toothpaste.json
+  var elephant_toothpaste_default = {
+    id: "chem-elephant-toothpaste",
+    slug: "elephant-toothpaste",
+    version: 1,
+    subject: "chemistry",
+    title: "Elephant toothpaste: a catalyst at work",
+    fidelity: "approximate",
+    reviewStatus: "draft",
+    bench: {
+      items: [
+        {
+          id: "h2o2",
+          kind: "reagent_bottle",
+          label: "Hydrogen peroxide 6%",
+          x: -320,
+          z: -60,
+          fill: {
+            reagentId: "h2o2-6",
+            volumeMl: 150
+          }
+        },
+        {
+          id: "soap",
+          kind: "dropper_bottle",
+          label: "Washing-up liquid",
+          x: -220,
+          z: 60,
+          fill: {
+            reagentId: "detergent",
+            volumeMl: 30
+          }
+        },
+        {
+          id: "ki",
+          kind: "reagent_bottle",
+          label: "Potassium iodide (catalyst)",
+          x: -140,
+          z: -70,
+          fill: {
+            reagentId: "ki-1",
+            volumeMl: 80
+          }
+        },
+        {
+          id: "cyl",
+          kind: "measuring_cylinder_50",
+          label: "Measuring cylinder in a tray",
+          x: 20,
+          z: 20
+        },
+        {
+          id: "bunsen",
+          kind: "bunsen",
+          x: 220,
+          z: -40
+        },
+        {
+          id: "splint",
+          kind: "splint",
+          x: 220,
+          z: 100
+        },
+        {
+          id: "goggles",
+          kind: "goggles",
+          x: 320,
+          z: 110
+        }
+      ]
+    },
+    steps: [
+      {
+        id: "goggles",
+        title: "Put on goggles",
+        instruction: "Hydrogen peroxide irritates skin and eyes and the foam comes out hot. Goggles on (and gloves in a real lab).",
+        action: "equipment.place",
+        from: "goggles",
+        complete: {
+          onEvent: true
+        },
+        scoring: {
+          equipment: 1
+        },
+        hints: [
+          "safe-1",
+          "safe-2",
+          "safe-3"
+        ],
+        whatIf: {
+          no_ppe: "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+        }
+      },
+      {
+        id: "peroxide",
+        title: "20 mL hydrogen peroxide",
+        instruction: "Pour 20 mL of 6% hydrogen peroxide into the measuring cylinder. It stands in a tray to catch the foam.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "h2o2",
+        to: "cyl",
+        quantity: {
+          target: 20,
+          plusMinus: 2,
+          unit: "mL"
+        },
+        technique: {
+          kind: "slow_pour",
+          maxRateMlPerS: 6
+        },
+        hints: [
+          "vol-1",
+          "vol-2",
+          "vol-3"
+        ],
+        whatIf: {
+          too_fast: "Fast pouring splashes peroxide, which bleaches and stings skin.",
+          wrong_amount: "More peroxide makes a bigger, hotter foam that can overflow the tray."
+        }
+      },
+      {
+        id: "detergent",
+        title: "5 drops of washing-up liquid",
+        instruction: "Add about 5 drops of washing-up liquid. It will trap the gas as bubbles.",
+        requires: [
+          "peroxide"
+        ],
+        action: "liquid.drop",
+        from: "soap",
+        to: "cyl",
+        quantity: {
+          target: 0.25,
+          plusMinus: 0.1,
+          unit: "mL"
+        },
+        hints: [
+          "soap-1",
+          "soap-2",
+          "soap-3"
+        ],
+        whatIf: {
+          wrong_order: "Without detergent already in, the gas just escapes and you see fizzing, not foam."
+        }
+      },
+      {
+        id: "light-burner",
+        title: "Light the Bunsen",
+        instruction: "Light the Bunsen burner: you need a glowing splint ready before the catalyst goes in.",
+        requires: [
+          "goggles"
+        ],
+        action: "heat.set",
+        from: "bunsen",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "burn-1",
+          "burn-2",
+          "burn-3"
+        ]
+      },
+      {
+        id: "light-splint",
+        title: "Light a splint",
+        instruction: "Hold the wooden splint in the flame until it catches.",
+        requires: [
+          "light-burner"
+        ],
+        action: "equipment.connect",
+        from: "splint",
+        to: "bunsen",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "burn-1",
+          "burn-2",
+          "burn-3"
+        ]
+      },
+      {
+        id: "blow-out",
+        title: "Blow it out so it glows",
+        instruction: "Blow the flame out. The tip should keep glowing red: this is a glowing splint.",
+        requires: [
+          "light-splint"
+        ],
+        action: "param.set",
+        from: "splint",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "glow-1",
+          "glow-2",
+          "glow-3"
+        ]
+      },
+      {
+        id: "catalyst",
+        title: "Add the catalyst",
+        instruction: "Pour in 5 mL of potassium iodide solution in one go, then step back.",
+        requires: [
+          "detergent",
+          "blow-out"
+        ],
+        action: "liquid.pour",
+        from: "ki",
+        to: "cyl",
+        quantity: {
+          target: 5,
+          plusMinus: 1,
+          unit: "mL"
+        },
+        hints: [
+          "cat-1",
+          "cat-2",
+          "cat-3"
+        ],
+        whatIf: {
+          no_ppe: "The foam is hot and contains peroxide and iodine, which stain and irritate skin and eyes.",
+          wrong_amount: "More catalyst only makes the foam come faster: the catalyst is not used up, so it does not make more oxygen."
+        }
+      },
+      {
+        id: "foam",
+        title: "Watch the foam",
+        instruction: "Watch the foam surge out of the cylinder. Feel how warm the cylinder is (the temperature readout).",
+        requires: [
+          "catalyst"
+        ],
+        action: "timer.mark",
+        complete: {
+          predicate: "seen:foam:cyl"
+        },
+        hints: [
+          "foam-1",
+          "foam-2",
+          "foam-3"
+        ]
+      },
+      {
+        id: "relight",
+        title: "Test the gas",
+        instruction: "Hold the glowing splint at the mouth of the cylinder, just above the foam.",
+        requires: [
+          "foam",
+          "blow-out"
+        ],
+        action: "equipment.connect",
+        from: "splint",
+        to: "cyl",
+        complete: {
+          predicate: "seen:relight"
+        },
+        hints: [
+          "test-1",
+          "test-2",
+          "test-3"
+        ],
+        whatIf: {
+          wrong_order: "A splint that is still burning just burns a bit brighter; only a glowing splint relighting is a clear test for oxygen."
+        }
+      }
+    ],
+    hints: {
+      "safe-1": {
+        rung: 1,
+        text: "What protects your eyes?"
+      },
+      "safe-2": {
+        rung: 2,
+        text: "Pick up the goggles and put them on before you touch any bottle."
+      },
+      "safe-3": {
+        rung: 3,
+        text: "Watch the goggles go on."
+      },
+      "vol-1": {
+        rung: 1,
+        text: "Measure the peroxide into the cylinder."
+      },
+      "vol-2": {
+        rung: 2,
+        text: "Pick up the peroxide bottle and pour 20 mL into the cylinder."
+      },
+      "vol-3": {
+        rung: 3,
+        text: "Watch a careful 20 mL pour."
+      },
+      "soap-1": {
+        rung: 1,
+        text: "Something has to trap the gas in bubbles."
+      },
+      "soap-2": {
+        rung: 2,
+        text: "Add drops from the washing-up liquid bottle to the cylinder."
+      },
+      "soap-3": {
+        rung: 3,
+        text: "Watch five drops go in."
+      },
+      "burn-1": {
+        rung: 1,
+        text: "You need a flame to light the splint."
+      },
+      "burn-2": {
+        rung: 2,
+        text: "Light the Bunsen, then hold the splint in the flame."
+      },
+      "burn-3": {
+        rung: 3,
+        text: "Watch the burner light and the splint catch."
+      },
+      "glow-1": {
+        rung: 1,
+        text: "The oxygen test uses a splint that glows, not one that burns."
+      },
+      "glow-2": {
+        rung: 2,
+        text: "With the lit splint in your hand, choose Blow out."
+      },
+      "glow-3": {
+        rung: 3,
+        text: "Watch the flame go out and the tip glow."
+      },
+      "cat-1": {
+        rung: 1,
+        text: "Peroxide breaks down very slowly on its own. What speeds it up?"
+      },
+      "cat-2": {
+        rung: 2,
+        text: "Pour 5 mL of potassium iodide into the cylinder."
+      },
+      "cat-3": {
+        rung: 3,
+        text: "Watch the catalyst go in."
+      },
+      "foam-1": {
+        rung: 1,
+        text: "Give it a few seconds."
+      },
+      "foam-2": {
+        rung: 2,
+        text: "Watch the cylinder: the foam rises out of the top."
+      },
+      "foam-3": {
+        rung: 3,
+        text: "Watch the foam column."
+      },
+      "test-1": {
+        rung: 1,
+        text: "Which gas relights a glowing splint?"
+      },
+      "test-2": {
+        rung: 2,
+        text: "Pick up the glowing splint and choose To tube mouth, then the cylinder."
+      },
+      "test-3": {
+        rung: 3,
+        text: "Watch the splint relight."
+      }
+    },
+    observations: {
+      whatHappened: "As soon as the potassium iodide went in, a column of warm foam shot up out of the cylinder. A glowing splint held in the gas burst back into flame.",
+      why: "Hydrogen peroxide slowly breaks down into water and oxygen. Iodide ions are a catalyst: they give the reaction an easier route (lower activation energy), so it happens thousands of times faster, and they are not used up. The washing-up liquid traps the oxygen in millions of bubbles, making foam. The reaction gives out heat, so the foam is warm. Oxygen relights a glowing splint because it helps things burn.",
+      equationLatex: "\\mathrm{2H_2O_2(aq) \\xrightarrow{I^-} 2H_2O(l) + O_2(g)}",
+      realWorld: [
+        "Catalase in your liver breaks down peroxide the same way",
+        "Catalytic converters in cars",
+        "Peroxide as a bleach and disinfectant"
+      ],
+      prompts: [
+        {
+          id: "q-gas",
+          question: "The glowing splint relit. Which gas was made?",
+          choices: [
+            "Hydrogen",
+            "Oxygen",
+            "Carbon dioxide",
+            "Chlorine"
+          ],
+          answer: 1,
+          explain: "Oxygen relights a glowing splint. Hydrogen gives a squeaky pop instead."
+        },
+        {
+          id: "q-cat",
+          question: "What did the potassium iodide do?",
+          choices: [
+            "It reacted and was used up",
+            "It made the foam blue",
+            "It acted as a catalyst, speeding up the breakdown without being used up",
+            "It cooled the reaction"
+          ],
+          answer: 2,
+          explain: "A catalyst speeds up a reaction by lowering the activation energy and is left over at the end."
+        },
+        {
+          id: "q-heat",
+          question: "The cylinder got warm. The reaction is...",
+          choices: [
+            "Endothermic",
+            "Exothermic",
+            "Neither",
+            "Only physical"
+          ],
+          answer: 1,
+          explain: "It releases energy to the surroundings, so it is exothermic."
+        }
+      ]
+    },
+    safety: [],
+    golden: {
+      durationS: 38,
+      captions: [
+        {
+          t: 0,
+          text: "Goggles on. Hydrogen peroxide (H\u2082O\u2082) is slowly falling apart into water and oxygen all the time."
+        },
+        {
+          t: 5e3,
+          text: "A few drops of washing-up liquid will trap any gas as bubbles."
+        },
+        {
+          t: 11e3,
+          text: "Get a glowing splint ready: it is the test for oxygen."
+        },
+        {
+          t: 21e3,
+          text: "Now the catalyst: iodide ions give the breakdown a much easier route, so it speeds up enormously.",
+          slow: true
+        },
+        {
+          t: 25e3,
+          text: "Oxygen + soap = a column of foam. It's warm too: the reaction is exothermic."
+        },
+        {
+          t: 28500,
+          text: "The glowing splint relights: the gas is oxygen. The catalyst is not used up."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "goggles",
+            x: 0,
+            y: 0,
+            socket: "worn"
+          }
+        },
+        {
+          t: 4e3,
+          type: "liquid.pour",
+          payload: {
+            from: "h2o2",
+            to: "cyl",
+            volumeMl: 20,
+            tiltDegMax: 55,
+            meanRateMlPerS: 3.75,
+            peakRateMlPerS: 5,
+            durationMs: 5333
+          }
+        },
+        {
+          t: 8e3,
+          type: "liquid.drop",
+          payload: {
+            from: "soap",
+            to: "cyl",
+            drops: 5,
+            volumeMl: 0.25
+          }
+        },
+        {
+          t: 12e3,
+          type: "heat.set",
+          payload: {
+            target: "bunsen",
+            powerPct: 100
+          }
+        },
+        {
+          t: 15e3,
+          type: "equipment.connect",
+          payload: {
+            from: "splint",
+            to: "bunsen",
+            port: "flame"
+          }
+        },
+        {
+          t: 18e3,
+          type: "param.set",
+          payload: {
+            key: "glow:splint",
+            value: true
+          }
+        },
+        {
+          t: 21e3,
+          type: "liquid.pour",
+          payload: {
+            from: "ki",
+            to: "cyl",
+            volumeMl: 5,
+            tiltDegMax: 55,
+            meanRateMlPerS: 3.75,
+            peakRateMlPerS: 5,
+            durationMs: 1333
+          }
+        },
+        {
+          t: 29e3,
+          type: "equipment.connect",
+          payload: {
+            from: "splint",
+            to: "cyl",
+            port: "mouth"
+          }
+        },
+        {
+          t: 32e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-gas",
+            value: 1
+          }
+        },
+        {
+          t: 33e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-cat",
+            value: 2
+          }
+        },
+        {
+          t: 34e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-heat",
+            value: 1
+          }
+        }
+      ]
+    }
+  };
+
   // ../../content/experiments/flame-tests.json
   var flame_tests_default = {
     id: "chem-flame-tests",
@@ -3373,6 +5440,1909 @@ var LabEngine = (() => {
           payload: {
             key: "answer:q-why",
             value: 1
+          }
+        }
+      ]
+    }
+  };
+
+  // ../../content/experiments/making-copper-sulfate.json
+  var making_copper_sulfate_default = {
+    id: "chem-making-copper-sulfate",
+    slug: "making-copper-sulfate",
+    version: 1,
+    subject: "chemistry",
+    title: "Making copper sulfate crystals",
+    fidelity: "approximate",
+    reviewStatus: "draft",
+    bench: {
+      items: [
+        {
+          id: "acid",
+          kind: "reagent_bottle",
+          label: "Dilute sulfuric acid 1 M",
+          x: -340,
+          z: -70,
+          fill: {
+            reagentId: "h2so4-1",
+            volumeMl: 100
+          }
+        },
+        {
+          id: "tripod",
+          kind: "tripod",
+          x: -120,
+          z: 20
+        },
+        {
+          id: "beaker",
+          kind: "beaker_100",
+          label: "Beaker",
+          x: -120,
+          z: 20,
+          socket: "tripod:tripod"
+        },
+        {
+          id: "bunsen",
+          kind: "bunsen",
+          x: -40,
+          z: 110
+        },
+        {
+          id: "cuo",
+          kind: "watch_glass",
+          label: "Copper(II) oxide powder",
+          x: -260,
+          z: 80,
+          reagentId: "cuo"
+        },
+        {
+          id: "rod",
+          kind: "glass_rod",
+          x: -200,
+          z: 130
+        },
+        {
+          id: "funnel",
+          kind: "funnel",
+          label: "Funnel and filter paper",
+          x: 110,
+          z: -40
+        },
+        {
+          id: "basin",
+          kind: "evaporating_basin",
+          x: 120,
+          z: 40
+        },
+        {
+          id: "goggles",
+          kind: "goggles",
+          x: 320,
+          z: 120
+        }
+      ]
+    },
+    steps: [
+      {
+        id: "goggles",
+        title: "Put on goggles",
+        instruction: "Sulfuric acid and copper(II) oxide are harmful; hot acid spits. Goggles on.",
+        action: "equipment.place",
+        from: "goggles",
+        complete: {
+          onEvent: true
+        },
+        scoring: {
+          equipment: 1
+        },
+        hints: [
+          "safe-1",
+          "safe-2",
+          "safe-3"
+        ],
+        whatIf: {
+          no_ppe: "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+        }
+      },
+      {
+        id: "acid-in",
+        title: "15 mL acid into the beaker",
+        instruction: "Pour 15 mL of dilute sulfuric acid into the beaker on the tripod.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "acid",
+        to: "beaker",
+        quantity: {
+          target: 15,
+          plusMinus: 2,
+          unit: "mL"
+        },
+        technique: {
+          kind: "slow_pour",
+          maxRateMlPerS: 6
+        },
+        hints: [
+          "acid-1",
+          "acid-2",
+          "acid-3"
+        ]
+      },
+      {
+        id: "light",
+        title: "Light the Bunsen",
+        instruction: "Light the Bunsen burner and open the air hole.",
+        requires: [
+          "acid-in"
+        ],
+        action: "heat.set",
+        from: "bunsen",
+        complete: {
+          predicate: "burner-on:bunsen"
+        },
+        hints: [
+          "burn-1",
+          "burn-2",
+          "burn-3"
+        ]
+      },
+      {
+        id: "heat-acid",
+        title: "Heat the acid",
+        instruction: "Put the burner under the tripod to warm the acid.",
+        requires: [
+          "light"
+        ],
+        action: "equipment.connect",
+        from: "bunsen",
+        to: "beaker",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "heat-1",
+          "heat-2",
+          "heat-3"
+        ]
+      },
+      {
+        id: "warm",
+        title: "Warm it to about 50 \xB0C",
+        instruction: "Warm the acid to about 50 \xB0C. Do not let it boil.",
+        requires: [
+          "heat-acid"
+        ],
+        action: "timer.mark",
+        complete: {
+          predicate: "temp-above:beaker:50"
+        },
+        hints: [
+          "warm-1",
+          "warm-2",
+          "warm-3"
+        ],
+        whatIf: {
+          too_fast: "Boiling acid spits droplets of hot acid out of the beaker."
+        }
+      },
+      {
+        id: "off",
+        title: "Turn the Bunsen off",
+        instruction: "Turn the gas off: the warm acid stays hot long enough.",
+        requires: [
+          "warm"
+        ],
+        action: "heat.set",
+        from: "bunsen",
+        complete: {
+          predicate: "burner-off:bunsen"
+        },
+        hints: [
+          "off-1",
+          "off-2",
+          "off-3"
+        ]
+      },
+      {
+        id: "add-cuo",
+        title: "Add copper oxide until it is in excess",
+        instruction: "Add copper(II) oxide one spatula at a time, stirring after each, until black powder stays at the bottom (excess).",
+        requires: [
+          "off"
+        ],
+        action: "solid.add",
+        from: "cuo",
+        to: "beaker",
+        mixing: {
+          kind: "stir_gentle",
+          during: "each_addition",
+          withinMs: 2e4
+        },
+        complete: {
+          predicate: "seen:excess:CuO:beaker"
+        },
+        hints: [
+          "cuo-1",
+          "cuo-2",
+          "cuo-3"
+        ],
+        whatIf: {
+          too_fast: "Tipping it all in at once means you can't see when the acid is used up, and you waste oxide.",
+          wrong_amount: "Without excess oxide some acid is left, and it ends up in your crystals."
+        }
+      },
+      {
+        id: "filter",
+        title: "Filter off the excess",
+        instruction: "Filter the mixture into the evaporating basin. The black excess stays on the paper.",
+        requires: [
+          "add-cuo"
+        ],
+        action: "equipment.connect",
+        from: "beaker",
+        to: "basin",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "filter-1",
+          "filter-2",
+          "filter-3"
+        ]
+      },
+      {
+        id: "relight",
+        title: "Relight the Bunsen",
+        instruction: "Light the Bunsen again to evaporate some of the water.",
+        requires: [
+          "filter"
+        ],
+        action: "heat.set",
+        from: "bunsen",
+        complete: {
+          predicate: "burner-on:bunsen"
+        },
+        hints: [
+          "burn-1",
+          "burn-2",
+          "burn-3"
+        ]
+      },
+      {
+        id: "heat-basin",
+        title: "Heat the basin",
+        instruction: "Put the burner under the evaporating basin.",
+        requires: [
+          "relight"
+        ],
+        action: "equipment.connect",
+        from: "bunsen",
+        to: "basin",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "heat-1",
+          "heat-2",
+          "heat-3"
+        ]
+      },
+      {
+        id: "evaporate",
+        title: "Evaporate to about half",
+        instruction: "Boil off water until about 7 mL is left (about half). Never boil it dry.",
+        requires: [
+          "heat-basin"
+        ],
+        action: "timer.mark",
+        complete: {
+          predicate: "volume-at-most:basin:7"
+        },
+        hints: [
+          "evap-1",
+          "evap-2",
+          "evap-3"
+        ]
+      },
+      {
+        id: "off-2",
+        title: "Turn the Bunsen off",
+        instruction: "Turn the gas off and let the basin cool.",
+        requires: [
+          "evaporate"
+        ],
+        action: "heat.set",
+        from: "bunsen",
+        complete: {
+          predicate: "burner-off:bunsen"
+        },
+        hints: [
+          "off-1",
+          "off-2",
+          "off-3"
+        ]
+      },
+      {
+        id: "crystals",
+        title: "Leave it to crystallise",
+        instruction: "Leave it to cool (speed up time). Watch blue crystals grow.",
+        requires: [
+          "off-2"
+        ],
+        action: "timer.mark",
+        complete: {
+          predicate: "seen:crystals:basin"
+        },
+        hints: [
+          "cryst-1",
+          "cryst-2",
+          "cryst-3"
+        ]
+      }
+    ],
+    hints: {
+      "safe-1": {
+        rung: 1,
+        text: "What protects your eyes?"
+      },
+      "safe-2": {
+        rung: 2,
+        text: "Pick up the goggles and put them on before you touch any bottle."
+      },
+      "safe-3": {
+        rung: 3,
+        text: "Watch the goggles go on."
+      },
+      "acid-1": {
+        rung: 1,
+        text: "Measure the acid into the beaker on the tripod."
+      },
+      "acid-2": {
+        rung: 2,
+        text: "Pick up the acid bottle and pour 15 mL into the beaker."
+      },
+      "acid-3": {
+        rung: 3,
+        text: "Watch a slow 15 mL pour."
+      },
+      "burn-1": {
+        rung: 1,
+        text: "The Bunsen needs lighting."
+      },
+      "burn-2": {
+        rung: 2,
+        text: "Select the Bunsen and press Light it."
+      },
+      "burn-3": {
+        rung: 3,
+        text: "Watch the burner light."
+      },
+      "heat-1": {
+        rung: 1,
+        text: "The flame has to be under the vessel."
+      },
+      "heat-2": {
+        rung: 2,
+        text: "With the lit Bunsen selected, choose Heat a vessel and pick the vessel."
+      },
+      "heat-3": {
+        rung: 3,
+        text: "Watch the burner go under."
+      },
+      "warm-1": {
+        rung: 1,
+        text: "Warm acid reacts faster with the oxide."
+      },
+      "warm-2": {
+        rung: 2,
+        text: "Watch the temperature readout climb to 50 \xB0C."
+      },
+      "warm-3": {
+        rung: 3,
+        text: "Watch it warm."
+      },
+      "off-1": {
+        rung: 1,
+        text: "You don't want it to boil."
+      },
+      "off-2": {
+        rung: 2,
+        text: "Select the Bunsen and press Gas off."
+      },
+      "off-3": {
+        rung: 3,
+        text: "Watch the flame go out."
+      },
+      "cuo-1": {
+        rung: 1,
+        text: "Add the black powder a little at a time."
+      },
+      "cuo-2": {
+        rung: 2,
+        text: "Tip in a spatula of copper(II) oxide, stir with the rod, and repeat until black powder is left over."
+      },
+      "cuo-3": {
+        rung: 3,
+        text: "Watch the oxide dissolve, then stay."
+      },
+      "filter-1": {
+        rung: 1,
+        text: "The extra black oxide must be removed."
+      },
+      "filter-2": {
+        rung: 2,
+        text: "Pick up the beaker and choose Filter into, then the basin."
+      },
+      "filter-3": {
+        rung: 3,
+        text: "Watch the filtrate run through."
+      },
+      "evap-1": {
+        rung: 1,
+        text: "Boil away water to concentrate the solution."
+      },
+      "evap-2": {
+        rung: 2,
+        text: "Keep heating until the readout shows about 7 mL left."
+      },
+      "evap-3": {
+        rung: 3,
+        text: "Watch the volume fall."
+      },
+      "cryst-1": {
+        rung: 1,
+        text: "Copper sulfate is less soluble in cold water."
+      },
+      "cryst-2": {
+        rung: 2,
+        text: "Wait or speed up time while it cools."
+      },
+      "cryst-3": {
+        rung: 3,
+        text: "Watch the crystals grow."
+      }
+    },
+    observations: {
+      whatHappened: "The black copper(II) oxide disappeared into the warm acid and the liquid turned blue. Once the acid was used up, black powder stayed at the bottom. After filtering, the clear blue solution was boiled down and, on cooling, bright blue crystals grew.",
+      why: "Copper(II) oxide is a base: it neutralises sulfuric acid to make the salt copper(II) sulfate and water. Adding the oxide in excess makes sure all the acid reacts, and the extra solid is easy to filter off. Boiling away some water makes the solution more concentrated. Copper sulfate is less soluble in cold water, so as the saturated solution cools it can't hold it all and crystals form. They are hydrated: CuSO\u2084\xB75H\u2082O.",
+      equationLatex: "\\mathrm{CuO(s) + H_2SO_4(aq) \\longrightarrow CuSO_4(aq) + H_2O(l)}",
+      realWorld: [
+        "Making fertilisers and other salts in industry",
+        "Copper sulfate as a fungicide",
+        "Growing crystals for jewellery and electronics"
+      ],
+      prompts: [
+        {
+          id: "q-excess",
+          question: "Why add copper(II) oxide until some is left over?",
+          choices: [
+            "To make the crystals bigger",
+            "To make sure all the acid has reacted",
+            "Because it is a catalyst",
+            "To keep it warm"
+          ],
+          answer: 1,
+          explain: "Excess base uses up every bit of acid; the leftover solid is then filtered off."
+        },
+        {
+          id: "q-type",
+          question: "What type of reaction is base + acid \u2192 salt + water?",
+          choices: [
+            "Displacement",
+            "Neutralisation",
+            "Decomposition",
+            "Combustion"
+          ],
+          answer: 1,
+          explain: "A base neutralises an acid, making a salt and water."
+        },
+        {
+          id: "q-cool",
+          question: "Why do crystals form as the solution cools?",
+          choices: [
+            "Copper sulfate is less soluble in cold water",
+            "The water freezes",
+            "The acid evaporates",
+            "Cooling makes new copper"
+          ],
+          answer: 0,
+          explain: "A hot saturated solution holds more solute; on cooling the extra comes out as crystals."
+        }
+      ]
+    },
+    safety: [
+      {
+        when: "seen:boil:beaker",
+        code: "boiling-acid",
+        title: "Boiling acid",
+        message: "The acid is boiling and spitting hot drops. Only warm it to about 50 \xB0C, then turn the burner off.",
+        restartFrom: "light"
+      },
+      {
+        when: "seen:boil-dry:basin",
+        code: "boiled-dry",
+        title: "Heated to dryness",
+        message: "Heating to dryness makes hot copper sulfate spit out of the basin and breaks down the crystals. Stop at about half volume and let it cool.",
+        restartFrom: "relight"
+      }
+    ],
+    golden: {
+      durationS: 262,
+      captions: [
+        {
+          t: 0,
+          text: "Goggles on. Warm dilute sulfuric acid reacts faster with the copper oxide: particles move faster."
+        },
+        {
+          t: 23e3,
+          text: "Burner off. Now copper(II) oxide, a base, a spatula at a time with stirring..."
+        },
+        {
+          t: 27e3,
+          text: "It dissolves and the liquid turns blue: copper(II) sulfate is forming. Base + acid \u2192 salt + water.",
+          slow: true
+        },
+        {
+          t: 46e3,
+          text: "Black powder stays: the oxide is in excess, so all the acid has been used up."
+        },
+        {
+          t: 55e3,
+          text: "Filter off the excess. Clear blue copper sulfate solution runs through."
+        },
+        {
+          t: 62e3,
+          text: "Boil off about half the water to make the solution more concentrated. Never boil it dry."
+        },
+        {
+          t: 17e4,
+          text: "Burner off. Hot water holds more copper sulfate than cold water..."
+        },
+        {
+          t: 24e4,
+          text: "...so as it cools, the extra comes out as blue crystals: CuSO\u2084\xB75H\u2082O."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "goggles",
+            x: 0,
+            y: 0,
+            socket: "worn"
+          }
+        },
+        {
+          t: 4e3,
+          type: "liquid.pour",
+          payload: {
+            from: "acid",
+            to: "beaker",
+            volumeMl: 15,
+            tiltDegMax: 55,
+            meanRateMlPerS: 3,
+            peakRateMlPerS: 4,
+            durationMs: 5e3
+          }
+        },
+        {
+          t: 9e3,
+          type: "param.set",
+          payload: {
+            key: "airhole:bunsen",
+            value: true
+          }
+        },
+        {
+          t: 1e4,
+          type: "heat.set",
+          payload: {
+            target: "bunsen",
+            powerPct: 100
+          }
+        },
+        {
+          t: 12e3,
+          type: "equipment.connect",
+          payload: {
+            from: "bunsen",
+            to: "beaker",
+            port: "under"
+          }
+        },
+        {
+          t: 23e3,
+          type: "heat.set",
+          payload: {
+            target: "bunsen",
+            powerPct: 0
+          }
+        },
+        {
+          t: 25e3,
+          type: "solid.add",
+          payload: {
+            from: "cuo",
+            to: "beaker",
+            massG: 0.4
+          }
+        },
+        {
+          t: 26e3,
+          type: "mix.stir",
+          payload: {
+            target: "beaker",
+            intensity: "gentle",
+            durationMs: 2500
+          }
+        },
+        {
+          t: 31e3,
+          type: "solid.add",
+          payload: {
+            from: "cuo",
+            to: "beaker",
+            massG: 0.4
+          }
+        },
+        {
+          t: 32e3,
+          type: "mix.stir",
+          payload: {
+            target: "beaker",
+            intensity: "gentle",
+            durationMs: 2500
+          }
+        },
+        {
+          t: 37e3,
+          type: "solid.add",
+          payload: {
+            from: "cuo",
+            to: "beaker",
+            massG: 0.4
+          }
+        },
+        {
+          t: 38e3,
+          type: "mix.stir",
+          payload: {
+            target: "beaker",
+            intensity: "gentle",
+            durationMs: 2500
+          }
+        },
+        {
+          t: 43e3,
+          type: "solid.add",
+          payload: {
+            from: "cuo",
+            to: "beaker",
+            massG: 0.4
+          }
+        },
+        {
+          t: 44e3,
+          type: "mix.stir",
+          payload: {
+            target: "beaker",
+            intensity: "gentle",
+            durationMs: 2500
+          }
+        },
+        {
+          t: 55e3,
+          type: "equipment.connect",
+          payload: {
+            from: "beaker",
+            to: "basin",
+            port: "filter"
+          }
+        },
+        {
+          t: 59e3,
+          type: "heat.set",
+          payload: {
+            target: "bunsen",
+            powerPct: 100
+          }
+        },
+        {
+          t: 61e3,
+          type: "equipment.connect",
+          payload: {
+            from: "bunsen",
+            to: "basin",
+            port: "under"
+          }
+        },
+        {
+          t: 169e3,
+          type: "heat.set",
+          payload: {
+            target: "bunsen",
+            powerPct: 0
+          }
+        },
+        {
+          t: 256e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-excess",
+            value: 1
+          }
+        },
+        {
+          t: 257e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-type",
+            value: 1
+          }
+        },
+        {
+          t: 258e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-cool",
+            value: 0
+          }
+        }
+      ]
+    }
+  };
+
+  // ../../content/experiments/making-esters.json
+  var making_esters_default = {
+    id: "chem-making-esters",
+    slug: "making-esters",
+    version: 1,
+    subject: "chemistry",
+    title: "Making an ester: ethyl ethanoate",
+    fidelity: "qualitative",
+    reviewStatus: "draft",
+    bench: {
+      items: [
+        {
+          id: "ethanol",
+          kind: "reagent_bottle",
+          label: "Ethanol",
+          x: -340,
+          z: -70,
+          fill: {
+            reagentId: "ethanol",
+            volumeMl: 60
+          }
+        },
+        {
+          id: "acid",
+          kind: "reagent_bottle",
+          label: "Glacial ethanoic acid",
+          x: -250,
+          z: -70,
+          fill: {
+            reagentId: "ethanoic-glacial",
+            volumeMl: 60
+          }
+        },
+        {
+          id: "conc",
+          kind: "dropper_bottle",
+          label: "Concentrated sulfuric acid",
+          x: -160,
+          z: 60,
+          fill: {
+            reagentId: "h2so4-conc",
+            volumeMl: 20
+          }
+        },
+        {
+          id: "rack",
+          kind: "test_tube_rack",
+          x: 0,
+          z: 40
+        },
+        {
+          id: "tube",
+          kind: "boiling_tube",
+          label: "Boiling tube",
+          x: -20,
+          z: 40,
+          socket: "rack:rack"
+        },
+        {
+          id: "bath",
+          kind: "beaker_250",
+          label: "Hot water bath (from a kettle)",
+          x: 140,
+          z: 20,
+          fill: {
+            reagentId: "water",
+            volumeMl: 150,
+            tempC: 75
+          }
+        },
+        {
+          id: "bunsen",
+          kind: "bunsen",
+          label: "Bunsen burner (leave OFF)",
+          x: 300,
+          z: -60
+        },
+        {
+          id: "goggles",
+          kind: "goggles",
+          x: 320,
+          z: 110
+        }
+      ]
+    },
+    steps: [
+      {
+        id: "goggles",
+        title: "Put on goggles",
+        instruction: "Concentrated sulfuric acid and glacial ethanoic acid are corrosive. Ethanol is highly flammable: no flames today. Goggles on.",
+        action: "equipment.place",
+        from: "goggles",
+        complete: {
+          onEvent: true
+        },
+        scoring: {
+          equipment: 1
+        },
+        hints: [
+          "safe-1",
+          "safe-2",
+          "safe-3"
+        ],
+        whatIf: {
+          no_ppe: "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+        }
+      },
+      {
+        id: "ethanol-in",
+        title: "2 mL ethanol",
+        instruction: "Pour 2 mL of ethanol into the boiling tube.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "ethanol",
+        to: "tube",
+        quantity: {
+          target: 2,
+          plusMinus: 0.5,
+          unit: "mL"
+        },
+        technique: {
+          kind: "slow_pour",
+          maxRateMlPerS: 2
+        },
+        hints: [
+          "eth-1",
+          "eth-2",
+          "eth-3"
+        ],
+        whatIf: {
+          no_ppe: "Ethanol vapour catches fire from a flame a long way off; the Bunsen must stay off."
+        }
+      },
+      {
+        id: "acid-in",
+        title: "2 mL ethanoic acid",
+        instruction: "Add 2 mL of glacial ethanoic acid. Pour slowly: it is corrosive and smells strongly of vinegar.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "acid",
+        to: "tube",
+        quantity: {
+          target: 2,
+          plusMinus: 0.5,
+          unit: "mL"
+        },
+        technique: {
+          kind: "slow_pour",
+          maxRateMlPerS: 2
+        },
+        hints: [
+          "acid-1",
+          "acid-2",
+          "acid-3"
+        ],
+        whatIf: {
+          too_fast: "Glacial ethanoic acid burns skin and its vapour stings the eyes and nose."
+        }
+      },
+      {
+        id: "catalyst",
+        title: "3 drops of concentrated sulfuric acid",
+        instruction: "Add 3 drops of concentrated sulfuric acid, one at a time. It is the catalyst.",
+        requires: [
+          "ethanol-in",
+          "acid-in"
+        ],
+        action: "liquid.drop",
+        from: "conc",
+        to: "tube",
+        quantity: {
+          target: 0.15,
+          plusMinus: 0.06,
+          unit: "mL"
+        },
+        technique: {
+          kind: "dropwise",
+          dropVolumeMl: 0.05,
+          maxRateMlPerS: 0.5
+        },
+        hints: [
+          "cat-1",
+          "cat-2",
+          "cat-3"
+        ],
+        whatIf: {
+          wrong_amount: "More concentrated acid makes the mixture spit and char; a few drops is enough to catalyse it.",
+          too_fast: "Concentrated sulfuric acid gets hot as it mixes; adding it fast can make the mixture spit."
+        }
+      },
+      {
+        id: "bath",
+        title: "Into the hot water bath",
+        instruction: "Stand the boiling tube in the beaker of hot water from the kettle. Never use a Bunsen with ethanol.",
+        requires: [
+          "catalyst"
+        ],
+        action: "equipment.connect",
+        from: "tube",
+        to: "bath",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "bath-1",
+          "bath-2",
+          "bath-3"
+        ],
+        whatIf: {
+          wrong_order: "Heating with a naked flame instead of a water bath can set the ethanol vapour alight."
+        }
+      },
+      {
+        id: "react",
+        title: "Let it react",
+        instruction: "Leave it in the bath for a few minutes (speed up time) while the ester forms.",
+        requires: [
+          "bath"
+        ],
+        action: "timer.mark",
+        complete: {
+          predicate: "seen:ester:tube"
+        },
+        hints: [
+          "wait-1",
+          "wait-2",
+          "wait-3"
+        ]
+      },
+      {
+        id: "waft",
+        title: "Waft and smell",
+        instruction: "Waft the vapour towards your nose with your hand. Never sniff directly from the tube.",
+        requires: [
+          "react"
+        ],
+        action: "param.set",
+        from: "tube",
+        complete: {
+          predicate: "seen:smell:ester"
+        },
+        hints: [
+          "waft-1",
+          "waft-2",
+          "waft-3"
+        ],
+        whatIf: {
+          no_ppe: "Sniffing straight from the tube pulls a strong dose of acid vapour into your nose and lungs."
+        }
+      }
+    ],
+    hints: {
+      "safe-1": {
+        rung: 1,
+        text: "What protects your eyes?"
+      },
+      "safe-2": {
+        rung: 2,
+        text: "Pick up the goggles and put them on before you touch any bottle."
+      },
+      "safe-3": {
+        rung: 3,
+        text: "Watch the goggles go on."
+      },
+      "eth-1": {
+        rung: 1,
+        text: "The alcohol goes in first."
+      },
+      "eth-2": {
+        rung: 2,
+        text: "Pick up the ethanol and pour 2 mL into the boiling tube."
+      },
+      "eth-3": {
+        rung: 3,
+        text: "Watch a slow 2 mL pour."
+      },
+      "acid-1": {
+        rung: 1,
+        text: "Now the carboxylic acid."
+      },
+      "acid-2": {
+        rung: 2,
+        text: "Pour 2 mL of glacial ethanoic acid into the same tube."
+      },
+      "acid-3": {
+        rung: 3,
+        text: "Watch a slow 2 mL pour."
+      },
+      "cat-1": {
+        rung: 1,
+        text: "A catalyst speeds up the reaction."
+      },
+      "cat-2": {
+        rung: 2,
+        text: "Pick up the concentrated sulfuric acid and add drops one at a time to the tube."
+      },
+      "cat-3": {
+        rung: 3,
+        text: "Watch three single drops."
+      },
+      "bath-1": {
+        rung: 1,
+        text: "Warm it without a flame."
+      },
+      "bath-2": {
+        rung: 2,
+        text: "Pick up the boiling tube and choose Into water bath, then the beaker."
+      },
+      "bath-3": {
+        rung: 3,
+        text: "Watch the tube go into the bath."
+      },
+      "wait-1": {
+        rung: 1,
+        text: "Esterification is slow, even warm."
+      },
+      "wait-2": {
+        rung: 2,
+        text: "Wait or speed up time until a note says the ester has formed."
+      },
+      "wait-3": {
+        rung: 3,
+        text: "Watch the tube."
+      },
+      "waft-1": {
+        rung: 1,
+        text: "Smell it safely."
+      },
+      "waft-2": {
+        rung: 2,
+        text: "Select the tube and choose Waft to smell."
+      },
+      "waft-3": {
+        rung: 3,
+        text: "Watch a careful waft."
+      }
+    },
+    observations: {
+      whatHappened: "At first the mixture smelled sharply of vinegar. After a few minutes in the hot water bath a sweet, fruity smell like pear drops appeared and a thin oily layer formed.",
+      why: "An alcohol (ethanol) and a carboxylic acid (ethanoic acid) react to make an ester (ethyl ethanoate) and water. The reaction is slow and reversible, so a few drops of concentrated sulfuric acid are used as a catalyst and the mixture is warmed. A water bath is used instead of a flame because ethanol is very flammable. Esters have sweet, fruity smells, which is why they are used in perfumes and flavourings.",
+      equationLatex: "\\mathrm{CH_3COOH + C_2H_5OH \\rightleftharpoons CH_3COOC_2H_5 + H_2O}",
+      realWorld: [
+        "Fruit flavourings and perfumes",
+        "Nail-varnish remover and glues (ethyl ethanoate)",
+        "Fats and oils are esters too"
+      ],
+      prompts: [
+        {
+          id: "q-smell",
+          question: "What did the product smell like?",
+          choices: [
+            "Rotten eggs",
+            "Sweet and fruity",
+            "Swimming pool",
+            "No smell"
+          ],
+          answer: 1,
+          explain: "Esters have sweet, fruity smells. Ethyl ethanoate smells like pear drops."
+        },
+        {
+          id: "q-cat",
+          question: "What was the concentrated sulfuric acid for?",
+          choices: [
+            "It is a reactant that ends up in the ester",
+            "It is a catalyst",
+            "It cools the mixture",
+            "It colours the product"
+          ],
+          answer: 1,
+          explain: "It speeds up the reaction without being used up."
+        },
+        {
+          id: "q-bath",
+          question: "Why warm the tube in a water bath, not over a Bunsen?",
+          choices: [
+            "Water baths are faster",
+            "Ethanol is flammable",
+            "Bunsens are too cold",
+            "The ester is blue"
+          ],
+          answer: 1,
+          explain: "Ethanol vapour catches fire easily, so no naked flames."
+        }
+      ]
+    },
+    safety: [
+      {
+        when: "seen:flame-near-ethanol",
+        code: "flame-ethanol",
+        title: "Naked flame near ethanol",
+        message: "You lit a Bunsen with ethanol on the bench. Its vapour can catch fire and flash back to the bottle. Always warm ethanol in a hot water bath.",
+        restartFrom: "bath"
+      }
+    ],
+    golden: {
+      durationS: 58,
+      captions: [
+        {
+          t: 0,
+          text: "Goggles on. No flames today: ethanol is highly flammable."
+        },
+        {
+          t: 4e3,
+          text: "An alcohol (ethanol)..."
+        },
+        {
+          t: 8e3,
+          text: "...and a carboxylic acid (ethanoic acid): it smells of vinegar."
+        },
+        {
+          t: 12e3,
+          text: "Three drops of concentrated sulfuric acid: the catalyst."
+        },
+        {
+          t: 16e3,
+          text: "Warm it in hot water from a kettle, never over a flame.",
+          slow: true
+        },
+        {
+          t: 3e4,
+          text: "Alcohol + carboxylic acid \u2192 ester + water. The reaction is slow and reversible."
+        },
+        {
+          t: 47e3,
+          text: "Waft, don't sniff: a sweet, fruity smell. That's ethyl ethanoate, an ester."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "goggles",
+            x: 0,
+            y: 0,
+            socket: "worn"
+          }
+        },
+        {
+          t: 4e3,
+          type: "liquid.pour",
+          payload: {
+            from: "ethanol",
+            to: "tube",
+            volumeMl: 2,
+            tiltDegMax: 55,
+            meanRateMlPerS: 1.13,
+            peakRateMlPerS: 1.5,
+            durationMs: 1778
+          }
+        },
+        {
+          t: 8e3,
+          type: "liquid.pour",
+          payload: {
+            from: "acid",
+            to: "tube",
+            volumeMl: 2,
+            tiltDegMax: 55,
+            meanRateMlPerS: 1.13,
+            peakRateMlPerS: 1.5,
+            durationMs: 1778
+          }
+        },
+        {
+          t: 12e3,
+          type: "liquid.drop",
+          payload: {
+            from: "conc",
+            to: "tube",
+            drops: 1,
+            volumeMl: 0.05
+          }
+        },
+        {
+          t: 12700,
+          type: "liquid.drop",
+          payload: {
+            from: "conc",
+            to: "tube",
+            drops: 1,
+            volumeMl: 0.05
+          }
+        },
+        {
+          t: 13400,
+          type: "liquid.drop",
+          payload: {
+            from: "conc",
+            to: "tube",
+            drops: 1,
+            volumeMl: 0.05
+          }
+        },
+        {
+          t: 16e3,
+          type: "equipment.connect",
+          payload: {
+            from: "tube",
+            to: "bath",
+            port: "bath"
+          }
+        },
+        {
+          t: 48e3,
+          type: "param.set",
+          payload: {
+            key: "waft:tube",
+            value: true
+          }
+        },
+        {
+          t: 52e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-smell",
+            value: 1
+          }
+        },
+        {
+          t: 53e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-cat",
+            value: 1
+          }
+        },
+        {
+          t: 54e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-bath",
+            value: 1
+          }
+        }
+      ]
+    }
+  };
+
+  // ../../content/experiments/metal-displacement.json
+  var metal_displacement_default = {
+    id: "chem-metal-displacement",
+    slug: "metal-displacement",
+    version: 1,
+    subject: "chemistry",
+    title: "Displacement: building the reactivity series",
+    fidelity: "approximate",
+    reviewStatus: "draft",
+    bench: {
+      items: [
+        {
+          id: "znso4",
+          kind: "reagent_bottle",
+          label: "Zinc sulfate",
+          x: -360,
+          z: -90,
+          fill: {
+            reagentId: "znso4-0.5",
+            volumeMl: 80
+          }
+        },
+        {
+          id: "feso4",
+          kind: "reagent_bottle",
+          label: "Iron(II) sulfate",
+          x: -270,
+          z: -90,
+          fill: {
+            reagentId: "feso4-0.5",
+            volumeMl: 80
+          }
+        },
+        {
+          id: "cuso4",
+          kind: "reagent_bottle",
+          label: "Copper(II) sulfate",
+          x: -180,
+          z: -90,
+          fill: {
+            reagentId: "cuso4-0.5",
+            volumeMl: 80
+          }
+        },
+        {
+          id: "mgso4",
+          kind: "reagent_bottle",
+          label: "Magnesium sulfate",
+          x: -90,
+          z: -90,
+          fill: {
+            reagentId: "mgso4-0.5",
+            volumeMl: 80
+          }
+        },
+        {
+          id: "rack",
+          kind: "test_tube_rack",
+          x: 0,
+          z: 40
+        },
+        {
+          id: "t1",
+          kind: "test_tube",
+          label: "Tube A (zinc sulfate)",
+          x: -60,
+          z: 40,
+          socket: "rack:rack"
+        },
+        {
+          id: "t2",
+          kind: "test_tube",
+          label: "Tube B (iron(II) sulfate)",
+          x: -20,
+          z: 40,
+          socket: "rack:rack"
+        },
+        {
+          id: "t3",
+          kind: "test_tube",
+          label: "Tube C (copper(II) sulfate)",
+          x: 20,
+          z: 40,
+          socket: "rack:rack"
+        },
+        {
+          id: "t4",
+          kind: "test_tube",
+          label: "Tube D (magnesium sulfate)",
+          x: 60,
+          z: 40,
+          socket: "rack:rack"
+        },
+        {
+          id: "mg",
+          kind: "watch_glass",
+          label: "Magnesium ribbon",
+          x: 160,
+          z: -40,
+          reagentId: "mg-ribbon"
+        },
+        {
+          id: "zn",
+          kind: "watch_glass",
+          label: "Zinc foil",
+          x: 240,
+          z: -40,
+          reagentId: "zn-foil"
+        },
+        {
+          id: "fe",
+          kind: "watch_glass",
+          label: "Iron filings",
+          x: 160,
+          z: 70,
+          reagentId: "iron-filings"
+        },
+        {
+          id: "cu",
+          kind: "watch_glass",
+          label: "Copper foil",
+          x: 240,
+          z: 70,
+          reagentId: "cu-foil"
+        },
+        {
+          id: "goggles",
+          kind: "goggles",
+          x: 330,
+          z: 120
+        }
+      ]
+    },
+    steps: [
+      {
+        id: "goggles",
+        title: "Put on goggles",
+        instruction: "The metal salt solutions are harmful and irritate eyes. Goggles on.",
+        action: "equipment.place",
+        from: "goggles",
+        complete: {
+          onEvent: true
+        },
+        scoring: {
+          equipment: 1
+        },
+        hints: [
+          "safe-1",
+          "safe-2",
+          "safe-3"
+        ],
+        whatIf: {
+          no_ppe: "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+        }
+      },
+      {
+        id: "fill-a",
+        title: "5 mL zinc sulfate into tube A",
+        instruction: "Pour about 5 mL of zinc sulfate solution into tube A.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "znso4",
+        to: "t1",
+        quantity: {
+          target: 5,
+          plusMinus: 1.5,
+          unit: "mL"
+        },
+        technique: {
+          kind: "slow_pour",
+          maxRateMlPerS: 6
+        },
+        hints: [
+          "fill-1",
+          "fill-2",
+          "fill-3"
+        ]
+      },
+      {
+        id: "fill-b",
+        title: "5 mL iron(II) sulfate into tube B",
+        instruction: "Pour about 5 mL of iron(II) sulfate solution into tube B.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "feso4",
+        to: "t2",
+        quantity: {
+          target: 5,
+          plusMinus: 1.5,
+          unit: "mL"
+        },
+        technique: {
+          kind: "slow_pour",
+          maxRateMlPerS: 6
+        },
+        hints: [
+          "fill-1",
+          "fill-2",
+          "fill-3"
+        ]
+      },
+      {
+        id: "fill-c",
+        title: "5 mL copper(II) sulfate into tube C",
+        instruction: "Pour about 5 mL of copper(II) sulfate solution into tube C.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "cuso4",
+        to: "t3",
+        quantity: {
+          target: 5,
+          plusMinus: 1.5,
+          unit: "mL"
+        },
+        technique: {
+          kind: "slow_pour",
+          maxRateMlPerS: 6
+        },
+        hints: [
+          "fill-1",
+          "fill-2",
+          "fill-3"
+        ]
+      },
+      {
+        id: "fill-d",
+        title: "5 mL magnesium sulfate into tube D",
+        instruction: "Pour about 5 mL of magnesium sulfate solution into tube D.",
+        requires: [
+          "goggles"
+        ],
+        action: "liquid.pour",
+        from: "mgso4",
+        to: "t4",
+        quantity: {
+          target: 5,
+          plusMinus: 1.5,
+          unit: "mL"
+        },
+        technique: {
+          kind: "slow_pour",
+          maxRateMlPerS: 6
+        },
+        hints: [
+          "fill-1",
+          "fill-2",
+          "fill-3"
+        ]
+      },
+      {
+        id: "mg-in",
+        title: "Magnesium into zinc sulfate",
+        instruction: "Add the magnesium ribbon to tube A. Does magnesium push zinc out of its compound?",
+        requires: [
+          "fill-a"
+        ],
+        action: "solid.add",
+        from: "mg-ribbon",
+        to: "t1",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "metal-1",
+          "metal-2",
+          "metal-3"
+        ],
+        whatIf: {
+          wrong_order: "Each metal must meet a different metal's salt; the same metal in its own salt shows nothing."
+        }
+      },
+      {
+        id: "zn-in",
+        title: "Zinc into iron(II) sulfate",
+        instruction: "Add the zinc foil to tube B.",
+        requires: [
+          "fill-b"
+        ],
+        action: "solid.add",
+        from: "zn-foil",
+        to: "t2",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "metal-1",
+          "metal-2",
+          "metal-3"
+        ]
+      },
+      {
+        id: "fe-in",
+        title: "Iron into copper(II) sulfate",
+        instruction: "Add the iron filings to tube C.",
+        requires: [
+          "fill-c"
+        ],
+        action: "solid.add",
+        from: "iron-filings",
+        to: "t3",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "metal-1",
+          "metal-2",
+          "metal-3"
+        ]
+      },
+      {
+        id: "cu-in",
+        title: "Copper into magnesium sulfate",
+        instruction: "Add the copper foil to tube D.",
+        requires: [
+          "fill-d"
+        ],
+        action: "solid.add",
+        from: "cu-foil",
+        to: "t4",
+        complete: {
+          onEvent: true
+        },
+        hints: [
+          "metal-1",
+          "metal-2",
+          "metal-3"
+        ]
+      },
+      {
+        id: "watch",
+        title: "Compare the four tubes",
+        instruction: "Watch all four tubes for a minute (speed time up if you like). Which metals get coated? Which tube does nothing?",
+        requires: [
+          "mg-in",
+          "zn-in",
+          "fe-in",
+          "cu-in"
+        ],
+        action: "timer.mark",
+        complete: {
+          predicate: "deposit:t1&deposit:t2&deposit:t3"
+        },
+        hints: [
+          "watch-1",
+          "watch-2",
+          "watch-3"
+        ]
+      }
+    ],
+    hints: {
+      "safe-1": {
+        rung: 1,
+        text: "What protects your eyes?"
+      },
+      "safe-2": {
+        rung: 2,
+        text: "Pick up the goggles and put them on before you touch any bottle."
+      },
+      "safe-3": {
+        rung: 3,
+        text: "Watch the goggles go on."
+      },
+      "fill-1": {
+        rung: 1,
+        text: "Each tube gets a different solution - read the labels."
+      },
+      "fill-2": {
+        rung: 2,
+        text: "Pick up the bottle named on the tube's label and pour about 5 mL."
+      },
+      "fill-3": {
+        rung: 3,
+        text: "Watch a 5 mL pour."
+      },
+      "metal-1": {
+        rung: 1,
+        text: "Each metal goes into a different metal's salt solution."
+      },
+      "metal-2": {
+        rung: 2,
+        text: "Pick up the watch glass with the metal and tip it into the tube named in the step."
+      },
+      "metal-3": {
+        rung: 3,
+        text: "Watch the metal go in."
+      },
+      "watch-1": {
+        rung: 1,
+        text: "Look at the metal surfaces, not just the liquid."
+      },
+      "watch-2": {
+        rung: 2,
+        text: "Coatings form in seconds in tube C, slower in tube B. Speed up time to see."
+      },
+      "watch-3": {
+        rung: 3,
+        text: "Watch each tube in turn."
+      }
+    },
+    observations: {
+      whatHappened: "Magnesium in zinc sulfate grew a dark grey coat of zinc and the tube got warm. Zinc in iron(II) sulfate slowly turned black with iron. Iron in copper(II) sulfate turned pinky-brown with copper and the blue colour faded. Copper in magnesium sulfate did nothing at all.",
+      why: "A more reactive metal gives away electrons more easily, so it pushes (displaces) a less reactive metal out of its compound: the reactive metal becomes ions in solution and the less reactive metal comes out as a solid coating. Nothing happens if the metal is less reactive than the one in the solution. From the results the order is magnesium > zinc > iron > copper. The bigger the gap in the series, the faster and hotter the reaction.",
+      equationLatex: "\\mathrm{Fe(s) + CuSO_4(aq) \\longrightarrow FeSO_4(aq) + Cu(s)}",
+      realWorld: [
+        "Extracting copper from waste solutions with scrap iron",
+        "Sacrificial zinc and magnesium blocks protecting ships",
+        "The thermite reaction for welding railway lines"
+      ],
+      prompts: [
+        {
+          id: "q-order",
+          question: "Which order, most reactive first, fits your results?",
+          choices: [
+            "Cu > Fe > Zn > Mg",
+            "Mg > Zn > Fe > Cu",
+            "Zn > Mg > Cu > Fe",
+            "Fe > Cu > Mg > Zn"
+          ],
+          answer: 1,
+          explain: "Mg displaced Zn, Zn displaced Fe, Fe displaced Cu, and Cu displaced nothing."
+        },
+        {
+          id: "q-none",
+          question: "Why did nothing happen in tube D?",
+          choices: [
+            "The copper was dirty",
+            "Copper is less reactive than magnesium, so it cannot displace it",
+            "Magnesium sulfate is not a solution",
+            "The tube was too cold"
+          ],
+          answer: 1,
+          explain: "A metal can only displace a less reactive metal from its compound."
+        },
+        {
+          id: "q-blue",
+          question: "In tube C the blue colour faded. Why?",
+          choices: [
+            "Blue copper(II) ions were replaced by pale green iron(II) ions",
+            "The iron absorbed the dye",
+            "Water evaporated",
+            "The copper dissolved"
+          ],
+          answer: 0,
+          explain: "Fe + Cu\xB2\u207A \u2192 Fe\xB2\u207A + Cu: the copper ions that make the solution blue come out as copper metal."
+        }
+      ]
+    },
+    safety: [],
+    golden: {
+      durationS: 62,
+      captions: [
+        {
+          t: 0,
+          text: "Four metals, four salt solutions. Each metal meets a different metal's salt."
+        },
+        {
+          t: 16e3,
+          text: "Magnesium into zinc sulfate: a grey zinc coat appears and the tube warms up."
+        },
+        {
+          t: 21e3,
+          text: "Iron into copper sulfate: pinky-brown copper forms within seconds, and the blue starts to fade.",
+          slow: true
+        },
+        {
+          t: 3e4,
+          text: "Copper in magnesium sulfate: nothing. Copper is less reactive than magnesium."
+        },
+        {
+          t: 44e3,
+          text: "Zinc slowly blackens with iron. The bigger the gap in reactivity, the faster the reaction."
+        },
+        {
+          t: 52e3,
+          text: "So the order is Mg > Zn > Fe > Cu: the reactivity series."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "equipment.place",
+          payload: {
+            equipmentId: "goggles",
+            x: 0,
+            y: 0,
+            socket: "worn"
+          }
+        },
+        {
+          t: 4e3,
+          type: "liquid.pour",
+          payload: {
+            from: "znso4",
+            to: "t1",
+            volumeMl: 5,
+            tiltDegMax: 55,
+            meanRateMlPerS: 3,
+            peakRateMlPerS: 4,
+            durationMs: 1667
+          }
+        },
+        {
+          t: 7e3,
+          type: "liquid.pour",
+          payload: {
+            from: "feso4",
+            to: "t2",
+            volumeMl: 5,
+            tiltDegMax: 55,
+            meanRateMlPerS: 3,
+            peakRateMlPerS: 4,
+            durationMs: 1667
+          }
+        },
+        {
+          t: 1e4,
+          type: "liquid.pour",
+          payload: {
+            from: "cuso4",
+            to: "t3",
+            volumeMl: 5,
+            tiltDegMax: 55,
+            meanRateMlPerS: 3,
+            peakRateMlPerS: 4,
+            durationMs: 1667
+          }
+        },
+        {
+          t: 13e3,
+          type: "liquid.pour",
+          payload: {
+            from: "mgso4",
+            to: "t4",
+            volumeMl: 5,
+            tiltDegMax: 55,
+            meanRateMlPerS: 3,
+            peakRateMlPerS: 4,
+            durationMs: 1667
+          }
+        },
+        {
+          t: 16e3,
+          type: "solid.add",
+          payload: {
+            from: "mg-ribbon",
+            to: "t1",
+            massG: 0.05
+          }
+        },
+        {
+          t: 18e3,
+          type: "solid.add",
+          payload: {
+            from: "zn-foil",
+            to: "t2",
+            massG: 0.3
+          }
+        },
+        {
+          t: 2e4,
+          type: "solid.add",
+          payload: {
+            from: "iron-filings",
+            to: "t3",
+            massG: 0.5
+          }
+        },
+        {
+          t: 22e3,
+          type: "solid.add",
+          payload: {
+            from: "cu-foil",
+            to: "t4",
+            massG: 0.3
+          }
+        },
+        {
+          t: 56e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-order",
+            value: 1
+          }
+        },
+        {
+          t: 57e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-none",
+            value: 1
+          }
+        },
+        {
+          t: 58e3,
+          type: "param.set",
+          payload: {
+            key: "answer:q-blue",
+            value: 0
           }
         }
       ]
@@ -4493,7 +8463,7 @@ var LabEngine = (() => {
 
   // src/protocol/content.ts
   var EXPERIMENTS = Object.fromEntries(
-    [ph_indicators_default, acid_base_titration_default, precipitation_reactions_default, hydrogen_pop_test_default, iron_nail_copper_sulfate_default, diluting_acid_safely_default, flame_tests_default].map((c) => c).map((c) => [c.slug, c])
+    [ph_indicators_default, acid_base_titration_default, precipitation_reactions_default, hydrogen_pop_test_default, iron_nail_copper_sulfate_default, diluting_acid_safely_default, flame_tests_default, elephant_toothpaste_default, metal_displacement_default, disappearing_cross_default, making_copper_sulfate_default, making_esters_default, electrolysis_of_brine_default].map((c) => c).map((c) => [c.slug, c])
   );
 
   // src/protocol/evaluator.ts
@@ -4811,6 +8781,7 @@ var LabEngine = (() => {
     return Math.round(x * 100) / 100;
   }
   function predicate(expr, s) {
+    if (expr.includes("&")) return expr.split("&").every((part) => predicate(part, s));
     const [name, a, b, c] = expr.split(":");
     const it = a ? s.items[a] : void 0;
     switch (name) {
@@ -4841,6 +8812,12 @@ var LabEngine = (() => {
         return !!it?.liquid && it.liquid.tempC > Number(b);
       case "volume-at-least":
         return !!it?.liquid && it.liquid.volumeMl >= Number(b) - 1e-6;
+      case "volume-at-most":
+        return !!it?.liquid && it.liquid.volumeMl > 0 && it.liquid.volumeMl <= Number(b) + 1e-6;
+      case "burner-on":
+        return !!it?.gasOn;
+      case "burner-off":
+        return !!it && it.kind === "bunsen" && !it.gasOn;
       case "burette-clear":
         return !!it && it.kind === "burette_50" && !it.tipBubble && (it.liquid?.volumeMl ?? 0) > 0;
       case "spill-hazard":
@@ -6069,6 +10046,459 @@ var LabEngine = (() => {
       sequence: 10,
       technique: 50,
       measurement: 25,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/graph-transformations.json
+  var graph_transformations_default = {
+    version: 1,
+    fidelity: "exact",
+    reviewStatus: "draft",
+    id: "math-graph-transformations",
+    slug: "graph-transformations",
+    subject: "maths",
+    title: "Slide, stretch, flip",
+    setup: {
+      targets: [
+        {
+          id: "up",
+          label: "y = x\xB2 + 3",
+          f: "x^2",
+          a: 1,
+          b: 1,
+          c: 0,
+          d: 3
+        },
+        {
+          id: "right",
+          label: "y = (x \u2212 2)\xB2",
+          f: "x^2",
+          a: 1,
+          b: 1,
+          c: 2,
+          d: 0
+        },
+        {
+          id: "flip",
+          label: "y = \u2212|x|",
+          f: "abs",
+          a: -1,
+          b: 1,
+          c: 0,
+          d: 0
+        },
+        {
+          id: "squash",
+          label: "y = sin(2x)",
+          f: "sin",
+          a: 1,
+          b: 2,
+          c: 0,
+          d: 0
+        },
+        {
+          id: "combo",
+          label: "y = \u2212(x + 1)\xB2 + 4",
+          f: "x^2",
+          a: -1,
+          b: 1,
+          c: -1,
+          d: 4
+        }
+      ]
+    },
+    steps: [
+      {
+        id: "up",
+        title: "Slide it up",
+        instruction: "Move y = x\xB2 up by 3 so it lands on the dashed target y = x\xB2 + 3. Then press Check match.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "up-1",
+          "up-2",
+          "up-3"
+        ]
+      },
+      {
+        id: "right",
+        title: "Slide it right",
+        instruction: "Move y = x\xB2 two units to the right to match y = (x \u2212 2)\xB2.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "right-1",
+          "right-2",
+          "right-3"
+        ]
+      },
+      {
+        id: "flip",
+        title: "Flip it",
+        instruction: "Switch to y = |x| and reflect it in the x-axis to match y = \u2212|x|.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "flip-1",
+          "flip-2",
+          "flip-3"
+        ]
+      },
+      {
+        id: "squash",
+        title: "Squash it",
+        instruction: "Switch to y = sin x and squash it sideways to match y = sin(2x).",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "squash-1",
+          "squash-2",
+          "squash-3"
+        ]
+      },
+      {
+        id: "combo",
+        title: "Put it all together",
+        instruction: "Back to y = x\xB2. Match y = \u2212(x + 1)\xB2 + 4: flip it, slide it left 1 and up 4.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "combo-1",
+          "combo-2",
+          "combo-3"
+        ]
+      }
+    ],
+    hints: {
+      "up-1": {
+        rung: 1,
+        text: "Adding a number outside the function changes every y-value."
+      },
+      "up-2": {
+        rung: 2,
+        text: "d moves the whole graph up or down."
+      },
+      "up-3": {
+        rung: 3,
+        text: "Set d = 3, then press Check match."
+      },
+      "right-1": {
+        rung: 1,
+        text: "Changes inside the bracket act on x."
+      },
+      "right-2": {
+        rung: 2,
+        text: "y = f(x \u2212 c): a positive c moves the graph right. It feels backwards!"
+      },
+      "right-3": {
+        rung: 3,
+        text: "Set c = 2 (not \u22122), then Check match."
+      },
+      "flip-1": {
+        rung: 1,
+        text: "Base graph first: choose |x|."
+      },
+      "flip-2": {
+        rung: 2,
+        text: "Multiplying the whole function by \u22121 reflects it in the x-axis."
+      },
+      "flip-3": {
+        rung: 3,
+        text: "Pick |x|, set a = \u22121, Check match."
+      },
+      "squash-1": {
+        rung: 1,
+        text: "Base graph first: choose sin x."
+      },
+      "squash-2": {
+        rung: 2,
+        text: "b inside the function squashes the graph sideways by a factor 1/b, so the waves come twice as often when b = 2."
+      },
+      "squash-3": {
+        rung: 3,
+        text: "Pick sin x, set b = 2, Check match."
+      },
+      "combo-1": {
+        rung: 1,
+        text: "Do one transformation at a time: flip, then shift sideways, then shift up."
+      },
+      "combo-2": {
+        rung: 2,
+        text: "\u2212(x + 1)\xB2 + 4 means a = \u22121, c = \u22121 and d = 4. The vertex ends up at (\u22121, 4)."
+      },
+      "combo-3": {
+        rung: 3,
+        text: "Pick x\xB2, set a = \u22121, c = \u22121, d = 4, Check match."
+      }
+    },
+    observations: {
+      whatHappened: "Changing d slid the graph up and down, changing a stretched it vertically and a negative a flipped it upside down. Changing c slid it sideways, but in the opposite direction to the sign you see in the bracket, and changing b squashed it sideways.",
+      why: "In y = a\xB7f(b(x \u2212 c)) + d, the numbers outside f (a and d) act on the y-values, so they do what you expect: multiply or add. The numbers inside act on x before f sees it. To get the same y-value as before at x \u2212 c = 0 you need x = c, so the graph moves right by c; and b(x) reaches each value 1/b of the way along, so the graph squashes by a factor of 1/b. That is why changes inside feel backwards.",
+      equationLatex: "y = a,f\big(b(x - c)\big) + d",
+      realWorld: [
+        "Animators shifting and stretching motion curves",
+        "Audio equalisers and sound waves (stretching sin x changes the pitch)",
+        "Fitting a model curve to experimental data"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "How does the graph of y = f(x \u2212 3) compare with y = f(x)?",
+          choices: [
+            "Moved 3 left",
+            "Moved 3 right",
+            "Moved 3 up",
+            "Moved 3 down"
+          ],
+          answer: 1,
+          explain: "Inside the bracket feels backwards: x \u2212 3 moves the graph 3 to the right."
+        },
+        {
+          id: "q2",
+          question: "Which equation reflects y = f(x) in the x-axis?",
+          choices: [
+            "y = f(\u2212x)",
+            "y = f(x) \u2212 1",
+            "y = \u2212f(x)",
+            "y = f(x + 1)"
+          ],
+          answer: 2,
+          explain: "Multiplying every y-value by \u22121 flips the graph over the x-axis. f(\u2212x) reflects it in the y-axis instead."
+        },
+        {
+          id: "q3",
+          question: "y = sin(2x) compared with y = sin x is\u2026",
+          choices: [
+            "squashed sideways by a factor of \xBD",
+            "stretched sideways by a factor of 2",
+            "twice as tall",
+            "moved 2 right"
+          ],
+          answer: 0,
+          explain: "b = 2 inside the function makes the waves repeat twice as often: a horizontal stretch by factor \xBD."
+        }
+      ]
+    },
+    golden: {
+      durationS: 26,
+      captions: [
+        {
+          t: 800,
+          text: "d is outside the function: it adds to every y-value, so the whole graph slides up."
+        },
+        {
+          t: 4200,
+          text: "c is inside the bracket. f(x \u2212 2) slides the graph RIGHT by 2: inside changes feel backwards.",
+          slow: true
+        },
+        {
+          t: 7600,
+          text: "A negative a multiplies every y-value by \u22121: the graph flips over the x-axis."
+        },
+        {
+          t: 12200,
+          text: "b inside squashes sideways: sin(2x) fits two waves where sin x had one."
+        },
+        {
+          t: 16800,
+          text: "Combine them: flip with a, slide left with c = \u22121, lift with d = 4. The vertex lands at (\u22121, 4)."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "d",
+            value: 3
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "check",
+            value: true
+          }
+        },
+        {
+          t: 3400,
+          type: "param.set",
+          payload: {
+            key: "reset",
+            value: true
+          }
+        },
+        {
+          t: 4400,
+          type: "param.set",
+          payload: {
+            key: "c",
+            value: 2
+          }
+        },
+        {
+          t: 5600,
+          type: "param.set",
+          payload: {
+            key: "check",
+            value: true
+          }
+        },
+        {
+          t: 6800,
+          type: "param.set",
+          payload: {
+            key: "reset",
+            value: true
+          }
+        },
+        {
+          t: 7800,
+          type: "param.set",
+          payload: {
+            key: "f",
+            value: "abs"
+          }
+        },
+        {
+          t: 9e3,
+          type: "param.set",
+          payload: {
+            key: "a",
+            value: -1
+          }
+        },
+        {
+          t: 10200,
+          type: "param.set",
+          payload: {
+            key: "check",
+            value: true
+          }
+        },
+        {
+          t: 11400,
+          type: "param.set",
+          payload: {
+            key: "reset",
+            value: true
+          }
+        },
+        {
+          t: 12400,
+          type: "param.set",
+          payload: {
+            key: "f",
+            value: "sin"
+          }
+        },
+        {
+          t: 13600,
+          type: "param.set",
+          payload: {
+            key: "b",
+            value: 2
+          }
+        },
+        {
+          t: 14800,
+          type: "param.set",
+          payload: {
+            key: "check",
+            value: true
+          }
+        },
+        {
+          t: 16e3,
+          type: "param.set",
+          payload: {
+            key: "reset",
+            value: true
+          }
+        },
+        {
+          t: 17e3,
+          type: "param.set",
+          payload: {
+            key: "f",
+            value: "x^2"
+          }
+        },
+        {
+          t: 18200,
+          type: "param.set",
+          payload: {
+            key: "a",
+            value: -1
+          }
+        },
+        {
+          t: 19400,
+          type: "param.set",
+          payload: {
+            key: "c",
+            value: -1
+          }
+        },
+        {
+          t: 20600,
+          type: "param.set",
+          payload: {
+            key: "d",
+            value: 4
+          }
+        },
+        {
+          t: 21800,
+          type: "param.set",
+          payload: {
+            key: "check",
+            value: true
+          }
+        },
+        {
+          t: 23300,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 1
+          }
+        },
+        {
+          t: 23800,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 2
+          }
+        },
+        {
+          t: 24300,
+          type: "param.set",
+          payload: {
+            key: "answer:q3",
+            value: 0
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 0,
+      sequence: 10,
+      technique: 75,
+      measurement: 0,
       observation: 15
     }
   };
@@ -7648,14 +12078,1113 @@ var LabEngine = (() => {
     readouts: (s) => ({ runs: s.runs.length })
   };
 
+  // ../mathlab/src/labs/transformations.ts
+  var BASE_FNS = {
+    "x^2": { label: "x\xB2", f: (x) => x * x },
+    abs: { label: "|x|", f: (x) => Math.abs(x) },
+    sin: { label: "sin x", f: (x) => Math.sin(x) },
+    "x^3": { label: "x\xB3", f: (x) => x * x * x }
+  };
+  var IDENTITY = { a: 1, b: 1, c: 0, d: 0 };
+  function transformed(p) {
+    const base = BASE_FNS[p.f].f;
+    return (x) => p.a * base(p.b * (x - p.c)) + p.d;
+  }
+  function sameGraph(p, q) {
+    const f = transformed(p);
+    const g = transformed(q);
+    for (let i = 0; i <= 64; i++) {
+      const x = -6 + 12 * i / 64;
+      if (Math.abs(f(x) - g(x)) > 1e-6) return false;
+    }
+    return true;
+  }
+  var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(v * 100) / 100));
+  function mismatchAdvice(s, t) {
+    if (s.f !== t.f) return `Start from the right base graph: the target is built from y = ${BASE_FNS[t.f].label}.`;
+    if (sameGraph({ ...s, c: -s.c }, t) && s.c !== 0) return "Your graph is shifted the wrong way. Inside the bracket it feels backwards: y = f(x \u2212 2) moves the graph 2 to the RIGHT.";
+    if (sameGraph({ ...s, d: t.d }, t)) return "The shape and sideways position are right. Now move it up or down with d (outside the function).";
+    if (sameGraph({ ...s, c: t.c }, t)) return "The shape is right but it is in the wrong place sideways. Change c.";
+    if (sameGraph({ ...s, a: -s.a }, t)) return "Upside down! A negative a reflects the graph in the x-axis.";
+    if (sameGraph({ ...s, b: t.b }, t)) return "Check the horizontal stretch: b squashes the graph towards the y-axis by a factor of 1/b.";
+    if (sameGraph({ ...s, a: t.a }, t)) return "Check the vertical stretch: a multiplies every y-value.";
+    return "Not a match yet. Change one parameter at a time and watch which way the graph moves.";
+  }
+  var graphTransformations = {
+    slug: "graph-transformations",
+    init: () => ({ f: "x^2", ...IDENTITY, matched: [], checks: 0 }),
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      let s = s0;
+      const hits = [];
+      const notes = [];
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "f" && typeof value === "string" && value in BASE_FNS) s = { ...s, f: value };
+        if (key2 === "a" || key2 === "b") s = { ...s, [key2]: clamp(Number(value), -4, 4) };
+        if (key2 === "c" || key2 === "d") s = { ...s, [key2]: clamp(Number(value), -6, 6) };
+        if (key2 === "reset") s = { ...s, ...IDENTITY };
+        if (key2 === "check") {
+          const target2 = setup.targets.find((t) => !s.matched.includes(t.id));
+          if (target2) {
+            s = { ...s, checks: s.checks + 1 };
+            if (sameGraph(s, target2)) {
+              s = { ...s, matched: [...s.matched, target2.id] };
+              notes.push({ text: `Match! ${target2.label}`, tone: "success" });
+            } else {
+              hits.push({ stepId: target2.id, code: "no-match", severity: "minor", message: mismatchAdvice(s, target2), tag: "conceptual", dimension: "technique" });
+            }
+          }
+        }
+      }
+      return { state: s, hits, notes };
+    },
+    steps: {
+      up: (s) => s.matched.includes("up"),
+      right: (s) => s.matched.includes("right"),
+      flip: (s) => s.matched.includes("flip"),
+      squash: (s) => s.matched.includes("squash"),
+      combo: (s) => s.matched.includes("combo")
+    },
+    readouts: (s) => ({ f: s.f, a: s.a, b: s.b, c: s.c, d: s.d, matched: s.matched.length })
+  };
+
   // ../mathlab/src/labs/index.ts
   var MATHS_CONTENT = Object.fromEntries(
-    [quadratic_explorer_default, balance_equations_default, unit_circle_trig_default, derivative_as_slope_default, riemann_sums_default, dice_probability_default].map((c) => [c.slug, c])
+    [quadratic_explorer_default, balance_equations_default, unit_circle_trig_default, derivative_as_slope_default, riemann_sums_default, dice_probability_default, graph_transformations_default].map((c) => [c.slug, c])
   );
   var MATHS_MODELS = Object.fromEntries(
     // eslint-disable-line @typescript-eslint/no-explicit-any
-    [quadraticExplorer, balanceEquations, unitCircle, tangentDerivative, riemannSums, coinsDice].map((m) => [m.slug, m])
+    [quadraticExplorer, balanceEquations, unitCircle, tangentDerivative, riemannSums, coinsDice, graphTransformations].map((m) => [m.slug, m])
   );
+
+  // ../../content/experiments/newtons-second-law.json
+  var newtons_second_law_default = {
+    version: 1,
+    fidelity: "approximate",
+    reviewStatus: "draft",
+    id: "phys-newton-2",
+    slug: "newtons-second-law",
+    subject: "physics",
+    title: "F = ma with a trolley and light gates",
+    setup: {
+      g: 9.81,
+      trolleyKg: 0.5,
+      hangerKg: 0.02,
+      slotKg: 0.02,
+      slots: 5,
+      boxSlots: 3,
+      mu: 0.012,
+      cardM: 0.1,
+      startToGate1M: 0.2,
+      gateGapM: 0.5
+    },
+    steps: [
+      {
+        id: "compensate",
+        title: "Cancel out friction",
+        instruction: "Raise one end of the runway a little at a time. After each change, nudge the trolley. Stop when it rolls at a steady speed: the slope now cancels friction.",
+        action: "param.set",
+        scoring: {
+          technique: 1,
+          equipment: 1
+        },
+        hints: [
+          "comp-1",
+          "comp-2",
+          "comp-3"
+        ]
+      },
+      {
+        id: "first-run",
+        title: "First run",
+        instruction: "With only the hanger on the string (5 slotted masses still on the trolley), release the trolley from the start line. Read the acceleration from the light-gate logger and record it.",
+        action: "measure.read",
+        scoring: {
+          technique: 1,
+          measurement: 1
+        },
+        hints: [
+          "run-1",
+          "run-2",
+          "run-3"
+        ]
+      },
+      {
+        id: "five-forces",
+        title: "Five different forces",
+        instruction: "Move one slotted mass from the trolley to the hanger, release again and record a. Repeat until you have five forces. Take the masses from the trolley, never the box, so the total mass stays the same.",
+        action: "measure.read",
+        scoring: {
+          technique: 1,
+          measurement: 1
+        },
+        hints: [
+          "five-1",
+          "five-2",
+          "five-3"
+        ]
+      },
+      {
+        id: "result",
+        title: "Find the mass from the graph",
+        instruction: "Your graph of a against F is a straight line through the origin. Its gradient is 1/m. Work out m = 1 \xF7 gradient and enter it.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "m-1",
+          "m-2",
+          "m-3"
+        ]
+      }
+    ],
+    hints: {
+      "comp-1": {
+        rung: 1,
+        text: "Friction slows the trolley down. A small slope can push it along by exactly the same amount."
+      },
+      "comp-2": {
+        rung: 2,
+        text: "Use the tilt control, then press Nudge. Slows down: tilt more. Speeds up: tilt less."
+      },
+      "comp-3": {
+        rung: 3,
+        text: "Set the tilt to about 0.7\xB0, then nudge. It should roll at a steady speed."
+      },
+      "run-1": {
+        rung: 1,
+        text: "The falling hanger pulls the trolley through both light gates."
+      },
+      "run-2": {
+        rung: 2,
+        text: "Press Release, then read a from the logger panel."
+      },
+      "run-3": {
+        rung: 3,
+        text: "Type the logger's a (for the hanger alone it is about 0.32 m/s\xB2) and press Record."
+      },
+      "five-1": {
+        rung: 1,
+        text: "To change only the force, the total mass must not change."
+      },
+      "five-2": {
+        rung: 2,
+        text: 'Use "Trolley \u2192 hanger" to move one 20 g mass each time.'
+      },
+      "five-3": {
+        rung: 3,
+        text: "Move one mass, Release, record a. Do this four more times."
+      },
+      "m-1": {
+        rung: 1,
+        text: "F = ma can be rearranged to a = (1/m) \xD7 F."
+      },
+      "m-2": {
+        rung: 2,
+        text: "So the gradient of a against F is 1/m. The panel shows the best-fit gradient."
+      },
+      "m-3": {
+        rung: 3,
+        text: "m = 1 \xF7 gradient. It should be close to 0.62 kg: trolley 0.50 kg + five 20 g masses + 20 g hanger."
+      }
+    },
+    observations: {
+      whatHappened: "Each extra 20 g moved onto the hanger made the trolley speed up more. Doubling the pulling force doubled the acceleration, so a against F was a straight line through the origin.",
+      why: "The resultant force on the trolley and hanger is the weight of the hanger, because the tilted runway cancels friction. Newton's second law says F = ma. Keeping the total mass m the same and changing only F gives a = F/m: the acceleration is directly proportional to the force, and the gradient of the graph is 1/m.",
+      equationLatex: "F = ma \\qquad a = \\frac{(v_2^2 - v_1^2)}{2s}",
+      realWorld: [
+        "Why a fully loaded lorry takes longer to speed up",
+        "Car crumple zones and seatbelts",
+        "Rocket launches"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "The total mass stays the same and the pulling force doubles. The acceleration\u2026",
+          choices: [
+            "halves",
+            "stays the same",
+            "doubles",
+            "quadruples"
+          ],
+          answer: 2,
+          explain: "a = F/m, so with m fixed, a is directly proportional to F."
+        },
+        {
+          id: "q2",
+          question: "Why move masses from the trolley to the hanger, instead of adding new ones from the box?",
+          choices: [
+            "It is quicker",
+            "So the total mass being accelerated stays the same",
+            "The box masses are heavier",
+            "So the trolley goes faster"
+          ],
+          answer: 1,
+          explain: "To test a \u221D F you must change only the force. Masses from the box would change the mass too."
+        },
+        {
+          id: "q3",
+          question: "Why was the runway tilted slightly before the runs?",
+          choices: [
+            "To make the trolley go as fast as possible",
+            "So a component of weight cancels friction",
+            "To stop the trolley falling off",
+            "To make the light gates work"
+          ],
+          answer: 1,
+          explain: "With friction cancelled, the resultant force is just the weight of the hanger."
+        }
+      ]
+    },
+    golden: {
+      durationS: 27,
+      captions: [
+        {
+          t: 800,
+          text: "Friction slows the trolley. Tilting the runway a little lets gravity cancel it out."
+        },
+        {
+          t: 3400,
+          text: "A nudge and it rolls at a steady speed: friction is now balanced.",
+          slow: true
+        },
+        {
+          t: 5600,
+          text: "The falling hanger pulls the trolley. Two light gates time a card to find its speed twice."
+        },
+        {
+          t: 8800,
+          text: "Move a mass from the trolley to the hanger: more force, same total mass."
+        },
+        {
+          t: 14e3,
+          text: "Double the force, double the acceleration: a is proportional to F."
+        },
+        {
+          t: 21e3,
+          text: "The gradient of a against F is 1/m. Here m = 0.62 kg, everything being pulled."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "tilt",
+            value: 0.3
+          }
+        },
+        {
+          t: 2200,
+          type: "param.set",
+          payload: {
+            key: "nudge",
+            value: true
+          }
+        },
+        {
+          t: 3400,
+          type: "param.set",
+          payload: {
+            key: "tilt",
+            value: 0.7
+          }
+        },
+        {
+          t: 4600,
+          type: "param.set",
+          payload: {
+            key: "nudge",
+            value: true
+          }
+        },
+        {
+          t: 6e3,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 7600,
+          type: "measure.read",
+          payload: {
+            instrument: "light-gates",
+            reading: {
+              key: "a",
+              value: 0.317,
+              unit: "m/s\xB2"
+            }
+          }
+        },
+        {
+          t: 9e3,
+          type: "param.set",
+          payload: {
+            key: "move",
+            value: "to-hanger"
+          }
+        },
+        {
+          t: 10200,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 11600,
+          type: "measure.read",
+          payload: {
+            instrument: "light-gates",
+            reading: {
+              key: "a",
+              value: 0.635,
+              unit: "m/s\xB2"
+            }
+          }
+        },
+        {
+          t: 12600,
+          type: "param.set",
+          payload: {
+            key: "move",
+            value: "to-hanger"
+          }
+        },
+        {
+          t: 13600,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 15e3,
+          type: "measure.read",
+          payload: {
+            instrument: "light-gates",
+            reading: {
+              key: "a",
+              value: 0.94,
+              unit: "m/s\xB2"
+            }
+          }
+        },
+        {
+          t: 16e3,
+          type: "param.set",
+          payload: {
+            key: "move",
+            value: "to-hanger"
+          }
+        },
+        {
+          t: 17e3,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 18400,
+          type: "measure.read",
+          payload: {
+            instrument: "light-gates",
+            reading: {
+              key: "a",
+              value: 1.268,
+              unit: "m/s\xB2"
+            }
+          }
+        },
+        {
+          t: 19400,
+          type: "param.set",
+          payload: {
+            key: "move",
+            value: "to-hanger"
+          }
+        },
+        {
+          t: 20400,
+          type: "sim.start",
+          payload: {}
+        },
+        {
+          t: 21800,
+          type: "measure.read",
+          payload: {
+            instrument: "light-gates",
+            reading: {
+              key: "a",
+              value: 1.598,
+              unit: "m/s\xB2"
+            }
+          }
+        },
+        {
+          t: 23400,
+          type: "param.set",
+          payload: {
+            key: "result:m",
+            value: 0.62
+          }
+        },
+        {
+          t: 24800,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 2
+          }
+        },
+        {
+          t: 25300,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 1
+          }
+        },
+        {
+          t: 25800,
+          type: "param.set",
+          payload: {
+            key: "answer:q3",
+            value: 1
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 10,
+      sequence: 15,
+      technique: 25,
+      measurement: 35,
+      observation: 15
+    }
+  };
+
+  // ../../content/experiments/specific-heat-capacity.json
+  var specific_heat_capacity_default = {
+    version: 1,
+    fidelity: "approximate",
+    reviewStatus: "draft",
+    id: "phys-specific-heat",
+    slug: "specific-heat-capacity",
+    subject: "physics",
+    title: "Specific heat capacity of aluminium",
+    setup: {
+      massKg: 1,
+      c: 900,
+      volts: 11.8,
+      amps: 4.1,
+      roomC: 20,
+      kInsulated: 0.08,
+      kBare: 0.45,
+      tauOil: 15,
+      tauDry: 80,
+      maxS: 1200
+    },
+    steps: [
+      {
+        id: "setup",
+        title: "Set up the block",
+        instruction: "Put the immersion heater and the thermometer into the 1.0 kg aluminium block, with a drop of oil in the thermometer hole. Wrap the block in insulation.",
+        action: "param.set",
+        scoring: {
+          equipment: 1,
+          technique: 1
+        },
+        hints: [
+          "set-1",
+          "set-2",
+          "set-3"
+        ]
+      },
+      {
+        id: "start",
+        title: "Start temperature, then heat",
+        instruction: "Record the starting temperature, then switch the heater on and start timing.",
+        action: "param.set",
+        scoring: {
+          sequence: 1,
+          technique: 1
+        },
+        hints: [
+          "start-1",
+          "start-2",
+          "start-3"
+        ]
+      },
+      {
+        id: "meters",
+        title: "Read the meters",
+        instruction: "With the heater on, read the voltmeter (across the heater) and the ammeter (in series with it) and record both.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "met-1",
+          "met-2",
+          "met-3"
+        ]
+      },
+      {
+        id: "readings",
+        title: "A reading every minute",
+        instruction: "Every minute for 10 minutes, read the thermometer and record the temperature.",
+        action: "measure.read",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "read-1",
+          "read-2",
+          "read-3"
+        ]
+      },
+      {
+        id: "off",
+        title: "Switch off at 10 minutes",
+        instruction: "Switch the heater off after exactly 10 minutes. Leave the hot block alone: it stays hot for a long time.",
+        action: "param.set",
+        scoring: {
+          technique: 1
+        },
+        hints: [
+          "off-1",
+          "off-2",
+          "off-3"
+        ]
+      },
+      {
+        id: "energy",
+        title: "Energy supplied",
+        instruction: "Work out the energy supplied, E = V \xD7 I \xD7 t, and enter it in joules.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "en-1",
+          "en-2",
+          "en-3"
+        ]
+      },
+      {
+        id: "result",
+        title: "Find c",
+        instruction: "Use E = m c \u0394\u03B8 to work out the specific heat capacity of aluminium and enter it.",
+        action: "param.set",
+        scoring: {
+          measurement: 1
+        },
+        hints: [
+          "c-1",
+          "c-2",
+          "c-3"
+        ]
+      }
+    ],
+    hints: {
+      "set-1": {
+        rung: 1,
+        text: "Heat must go into the block, and the thermometer must feel the block quickly."
+      },
+      "set-2": {
+        rung: 2,
+        text: "Put the heater and the thermometer in their holes, add a drop of oil to the thermometer hole, then wrap the block in insulation."
+      },
+      "set-3": {
+        rung: 3,
+        text: "Use the four set-up switches: heater in, thermometer in, oil, insulation."
+      },
+      "met-1": {
+        rung: 1,
+        text: "Power = voltage \xD7 current. You need both."
+      },
+      "met-2": {
+        rung: 2,
+        text: "The voltmeter is across the heater; the ammeter is in series with it. Read each one."
+      },
+      "met-3": {
+        rung: 3,
+        text: "Type 11.8 V and 4.10 A and record them while the heater is on."
+      },
+      "start-1": {
+        rung: 1,
+        text: "You need the temperature before any heating starts."
+      },
+      "start-2": {
+        rung: 2,
+        text: "Read the thermometer first, then switch the heater on."
+      },
+      "start-3": {
+        rung: 3,
+        text: "Record 20.0 \xB0C, then press Heater on."
+      },
+      "read-1": {
+        rung: 1,
+        text: "One reading every minute, for ten minutes."
+      },
+      "read-2": {
+        rung: 2,
+        text: 'Press "Wait 1 min", then read the thermometer and record it.'
+      },
+      "read-3": {
+        rung: 3,
+        text: "Repeat wait-then-record until you reach 10 minutes."
+      },
+      "off-1": {
+        rung: 1,
+        text: "The heating time must be exactly what you use in E = VIt."
+      },
+      "off-2": {
+        rung: 2,
+        text: "Switch the heater off at 10 minutes."
+      },
+      "off-3": {
+        rung: 3,
+        text: "Press Heater off once the clock shows 10:00."
+      },
+      "en-1": {
+        rung: 1,
+        text: "Energy = power \xD7 time."
+      },
+      "en-2": {
+        rung: 2,
+        text: "E = V \xD7 I \xD7 t, with t in seconds."
+      },
+      "en-3": {
+        rung: 3,
+        text: "11.8 \xD7 4.10 \xD7 600 = 29 028 J."
+      },
+      "c-1": {
+        rung: 1,
+        text: "E = m c \u0394\u03B8, so c = E \xF7 (m \u0394\u03B8)."
+      },
+      "c-2": {
+        rung: 2,
+        text: "\u0394\u03B8 = final temperature \u2212 starting temperature; m = 1.0 kg."
+      },
+      "c-3": {
+        rung: 3,
+        text: "With your readings c is about 29 028 \xF7 30.7 \u2248 946 J/kg\xB0C."
+      }
+    },
+    observations: {
+      whatHappened: "The temperature of the block rose steadily, about 3 \xB0C every minute, from 20.0 \xB0C to about 50.7 \xB0C in 10 minutes. The value of c came out at about 946 J/kg\xB0C, a little above the textbook value of 900 J/kg\xB0C.",
+      why: "The heater turns electrical energy into thermal energy at a rate P = VI. All of it should go into the block: E = m c \u0394\u03B8. Some energy still escapes to the air through the insulation, and the thermometer lags slightly behind the block, so the measured \u0394\u03B8 is a bit too small and the calculated c a bit too big. Insulation and the drop of oil make both errors smaller.",
+      equationLatex: "E = VIt qquad c = \frac{E}{m,Delta	heta}",
+      realWorld: [
+        "Storage heaters full of high-c bricks",
+        "Why the sea stays cool on a hot day (water has a very high c)",
+        "Choosing materials for saucepans and radiators"
+      ],
+      prompts: [
+        {
+          id: "q1",
+          question: "Your value of c is higher than the true value. The most likely reason is\u2026",
+          choices: [
+            "The thermometer was too accurate",
+            "Some energy was lost to the surroundings",
+            "The block was too light",
+            "The current was too small"
+          ],
+          answer: 1,
+          explain: "Energy lost to the air did not heat the block, so \u0394\u03B8 was smaller than it should be and c = E/(m\u0394\u03B8) came out too big."
+        },
+        {
+          id: "q2",
+          question: "Why put a drop of oil in the thermometer hole?",
+          choices: [
+            "To stop the block rusting",
+            "To cool the thermometer",
+            "To make good thermal contact so the thermometer reads the block temperature",
+            "To make the heater work"
+          ],
+          answer: 2,
+          explain: "Air is a poor conductor. Oil fills the gap so heat reaches the thermometer quickly."
+        },
+        {
+          id: "q3",
+          question: "Water has c = 4200 J/kg\xB0C, aluminium about 900 J/kg\xB0C. With the same heater and mass, which warms faster?",
+          choices: [
+            "Aluminium",
+            "Water",
+            "They warm at the same rate",
+            "It depends on the room"
+          ],
+          answer: 0,
+          explain: "Aluminium needs less energy per kilogram per degree, so the same power raises its temperature more quickly."
+        }
+      ]
+    },
+    golden: {
+      durationS: 31,
+      captions: [
+        {
+          t: 800,
+          text: "A 1 kg aluminium block. The heater goes in one hole and the thermometer in the other, with a drop of oil for good contact."
+        },
+        {
+          t: 4e3,
+          text: "Insulation keeps heat in the block instead of escaping to the room."
+        },
+        {
+          t: 5200,
+          text: "Start temperature first, then switch on and start the clock."
+        },
+        {
+          t: 7600,
+          text: "Power = voltage \xD7 current: 11.8 V \xD7 4.10 A \u2248 48 W, so 48 joules every second.",
+          slow: true
+        },
+        {
+          t: 1e4,
+          text: "Every minute the block warms by about 3 \xB0C. A steady rise means steady power."
+        },
+        {
+          t: 24400,
+          text: "After 600 s: E = VIt \u2248 29 000 J went into the block."
+        },
+        {
+          t: 26800,
+          text: "c = E \xF7 (m \u0394\u03B8) \u2248 946 J/kg\xB0C. A bit above 900 because some heat still escaped."
+        }
+      ],
+      events: [
+        {
+          t: 1e3,
+          type: "param.set",
+          payload: {
+            key: "heater-in",
+            value: true
+          }
+        },
+        {
+          t: 2e3,
+          type: "param.set",
+          payload: {
+            key: "thermo-in",
+            value: true
+          }
+        },
+        {
+          t: 3e3,
+          type: "param.set",
+          payload: {
+            key: "oil",
+            value: true
+          }
+        },
+        {
+          t: 4e3,
+          type: "param.set",
+          payload: {
+            key: "insulate",
+            value: true
+          }
+        },
+        {
+          t: 5400,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 20,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 6400,
+          type: "param.set",
+          payload: {
+            key: "heater",
+            value: true
+          }
+        },
+        {
+          t: 7800,
+          type: "measure.read",
+          payload: {
+            instrument: "voltmeter",
+            reading: {
+              key: "V",
+              value: 11.8,
+              unit: "V"
+            }
+          }
+        },
+        {
+          t: 8800,
+          type: "measure.read",
+          payload: {
+            instrument: "ammeter",
+            reading: {
+              key: "I",
+              value: 4.1,
+              unit: "A"
+            }
+          }
+        },
+        {
+          t: 10200,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 10900,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 22.5,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 11600,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 12300,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 25.6,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 13e3,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 13700,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 28.8,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 14400,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 15100,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 32,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 15800,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 16500,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 35.2,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 17200,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 17900,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 38.3,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 18600,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 19300,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 41.4,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 2e4,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 20700,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 44.5,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 21400,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 22100,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 47.6,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 22800,
+          type: "param.set",
+          payload: {
+            key: "wait",
+            value: 60
+          }
+        },
+        {
+          t: 23500,
+          type: "measure.read",
+          payload: {
+            instrument: "thermometer",
+            reading: {
+              key: "T",
+              value: 50.7,
+              unit: "\xB0C"
+            }
+          }
+        },
+        {
+          t: 24200,
+          type: "param.set",
+          payload: {
+            key: "heater",
+            value: false
+          }
+        },
+        {
+          t: 25800,
+          type: "param.set",
+          payload: {
+            key: "result:E",
+            value: 29028
+          }
+        },
+        {
+          t: 27e3,
+          type: "param.set",
+          payload: {
+            key: "result:c",
+            value: 946
+          }
+        },
+        {
+          t: 28600,
+          type: "param.set",
+          payload: {
+            key: "answer:q1",
+            value: 1
+          }
+        },
+        {
+          t: 29100,
+          type: "param.set",
+          payload: {
+            key: "answer:q2",
+            value: 2
+          }
+        },
+        {
+          t: 29600,
+          type: "param.set",
+          payload: {
+            key: "answer:q3",
+            value: 0
+          }
+        }
+      ]
+    },
+    scoring: {
+      equipment: 10,
+      sequence: 15,
+      technique: 20,
+      measurement: 40,
+      observation: 15
+    }
+  };
 
   // ../../content/experiments/archimedes-principle.json
   var archimedes_principle_default = {
@@ -10565,6 +16094,111 @@ var LabEngine = (() => {
     }
   };
 
+  // ../physics/src/labs/dynamics.ts
+  function slopeResidual(tiltDeg, mu) {
+    const th = tiltDeg * Math.PI / 180;
+    return Math.sin(th) - mu * Math.cos(th);
+  }
+  var COMP_TOL = 25e-4;
+  function newtonMasses(s, setup) {
+    const hang = setup.hangerKg + s.onHanger * setup.slotKg;
+    const roll = setup.trolleyKg + s.onTrolley * setup.slotKg;
+    return { hang, roll, total: hang + roll };
+  }
+  function newtonRun(s, setup) {
+    const { hang, roll, total } = newtonMasses(s, setup);
+    const F = hang * setup.g;
+    const net = F + roll * setup.g * slopeResidual(s.tiltDeg, setup.mu);
+    const a = Math.max(0, net / total);
+    if (a <= 0) return { F, M: total, a: 0, t1: 0, t2: 0, aLogger: 0 };
+    const v1 = Math.sqrt(2 * a * setup.startToGate1M);
+    const v2 = Math.sqrt(2 * a * (setup.startToGate1M + setup.gateGapM));
+    const t1 = Math.round(setup.cardM / v1 * 1e3) / 1e3;
+    const t2 = Math.round(setup.cardM / v2 * 1e3) / 1e3;
+    const u1 = setup.cardM / t1;
+    const u2 = setup.cardM / t2;
+    const aLogger = (u2 * u2 - u1 * u1) / (2 * setup.gateGapM);
+    return { F, M: total, a, t1, t2, aLogger };
+  }
+  var fKey = (F) => F.toFixed(4);
+  var newtonsSecondLaw = {
+    slug: "newtons-second-law",
+    init: (c) => {
+      const setup = c.setup;
+      return { tiltDeg: 0, compensated: false, onTrolley: setup.slots, onHanger: 0, inBox: setup.boxSlots, runs: [], points: {}, results: {} };
+    },
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      let s = s0;
+      const hits = [];
+      const notes = [];
+      const initialTotal = setup.trolleyKg + setup.hangerKg + setup.slots * setup.slotKg;
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        if (key2 === "tilt") {
+          const tiltDeg = Math.max(0, Math.min(3, Math.round(Number(value) * 10) / 10));
+          s = { ...s, tiltDeg, compensated: s.compensated && Math.abs(slopeResidual(tiltDeg, setup.mu)) <= COMP_TOL };
+        }
+        if (key2 === "nudge") {
+          const r = slopeResidual(s.tiltDeg, setup.mu);
+          if (r < -COMP_TOL) notes.push({ text: "The trolley slows down and stops: friction is still winning. Raise the runway a little.", tone: "info" });
+          else if (r > COMP_TOL) notes.push({ text: "The trolley speeds up on its own: the runway is too steep. Lower it a little.", tone: "warning" });
+          else {
+            notes.push({ text: "The trolley rolls at a steady speed: the slope exactly cancels friction.", tone: "success" });
+            s = { ...s, compensated: true };
+          }
+        }
+        if (key2 === "move") {
+          const v = String(value);
+          if (v === "to-hanger" && s.onTrolley > 0) s = { ...s, onTrolley: s.onTrolley - 1, onHanger: s.onHanger + 1 };
+          if (v === "to-trolley" && s.onHanger > 0) s = { ...s, onTrolley: s.onTrolley + 1, onHanger: s.onHanger - 1 };
+          if (v === "box-to-hanger" && s.inBox > 0) s = { ...s, inBox: s.inBox - 1, onHanger: s.onHanger + 1 };
+          if (v === "hanger-to-box" && s.onHanger > 0) s = { ...s, inBox: s.inBox + 1, onHanger: s.onHanger - 1 };
+        }
+        if (key2.startsWith("result:")) {
+          const v = Number(value);
+          s = { ...s, results: { ...s.results, [key2.slice(7)]: v } };
+          if (key2 === "result:m" && Math.abs(v - initialTotal) / initialTotal > 0.05)
+            hits.push({ code: "wrong-mass", severity: "major", message: "The gradient of a against F is 1/m, so m = 1 \xF7 gradient. That m is everything being accelerated: trolley, slotted masses and hanger.", tag: "conceptual", dimension: "measurement" });
+        }
+      }
+      if (e.type === "sim.start") {
+        const r = newtonRun(s, setup);
+        const massOk = Math.abs(r.M - initialTotal) < 1e-9;
+        if (!s.compensated) hits.push({ code: "friction", severity: "minor", message: "The runway was not friction-compensated, so part of the pull went into beating friction and every acceleration came out too small. Tilt the runway until a nudged trolley rolls at a steady speed.", tag: "procedural", dimension: "technique" });
+        if (!massOk) hits.push({ code: "mass-changed", severity: "major", message: "The total mass changed because a mass came from the box. To test a \u221D F, move masses from the trolley to the hanger so the total mass stays the same.", tag: "conceptual", dimension: "technique" });
+        if (r.a <= 0) notes.push({ text: "The trolley does not move.", tone: "warning" });
+        else notes.push({ text: `Through the gates: card times ${r.t1.toFixed(3)} s and ${r.t2.toFixed(3)} s.`, tone: "info" });
+        s = { ...s, runs: [...s.runs, { ...r, compensated: s.compensated, massOk, t: e.t }] };
+      }
+      if (e.type === "measure.read" && e.payload.instrument === "light-gates") {
+        const last = s.runs[s.runs.length - 1];
+        const v = e.payload.reading.value;
+        if (!last || last.a <= 0) hits.push({ code: "nothing-to-read", severity: "minor", message: "Release the trolley first, then read the logger.", tag: "procedural", dimension: "sequence" });
+        else if (Math.abs(v - last.aLogger) > Math.max(0.01, last.aLogger * 0.02)) hits.push({ code: "gate-misread", severity: "minor", message: `The logger gives a = ${last.aLogger.toFixed(3)} m/s\xB2. a = (v\u2082\xB2 \u2212 v\u2081\xB2) \xF7 2s, with each v = card length \xF7 card time.`, tag: "procedural", dimension: "measurement" });
+        else if (last.compensated && last.massOk) {
+          s = { ...s, points: { ...s.points, [fKey(last.F)]: { F: last.F, a: v } } };
+          notes.push({ text: `F = ${last.F.toFixed(3)} N, a = ${v.toFixed(3)} m/s\xB2`, tone: "success" });
+        }
+      }
+      return { state: s, hits, notes };
+    },
+    steps: {
+      compensate: (s) => s.compensated,
+      "first-run": (s) => Object.keys(s.points).length >= 1,
+      "five-forces": (s) => Object.keys(s.points).length >= 5,
+      result: (s, ctx) => {
+        const setup = ctx.content.setup;
+        const total = setup.trolleyKg + setup.hangerKg + setup.slots * setup.slotKg;
+        return s.results.m !== void 0 && Math.abs(s.results.m - total) / total <= 0.05;
+      }
+    },
+    readouts: (s) => {
+      const last = s.runs[s.runs.length - 1];
+      return { a: last?.aLogger ?? null, F: last?.F ?? null, points: Object.keys(s.points).length, tilt: s.tiltDeg };
+    }
+  };
+
   // ../physics/src/labs/mechanics.ts
   function flightOf(speed, angle, planet, drag) {
     const g = PLANETS[planet].g;
@@ -10857,13 +16491,136 @@ var LabEngine = (() => {
     readouts: (s) => ({ sheets: s.sets.filter((x) => x.done).length })
   };
 
+  // ../physics/src/labs/thermal.ts
+  function heatAdvance(s, setup, seconds) {
+    let { blockC, thermoC, onS } = s;
+    const k = s.insulated ? setup.kInsulated : setup.kBare;
+    const tau = s.oil ? setup.tauOil : setup.tauDry;
+    const n = Math.max(0, Math.round(seconds));
+    const lag = 1 - Math.exp(-1 / tau);
+    for (let i = 0; i < n; i++) {
+      const p = s.heaterOn && s.heaterIn ? setup.volts * setup.amps : 0;
+      blockC += (p - k * (blockC - setup.roomC)) / (setup.massKg * setup.c);
+      thermoC += s.thermoIn ? (blockC - thermoC) * lag : (setup.roomC - thermoC) * lag;
+      if (s.heaterOn && s.heaterIn) onS += 1;
+    }
+    return { ...s, t: s.t + n, blockC, thermoC, onS };
+  }
+  var thermoShown = (s) => Math.round(s.thermoC * 10) / 10;
+  var specificHeat = {
+    slug: "specific-heat-capacity",
+    init: (c) => {
+      const setup = c.setup;
+      return { t: 0, blockC: setup.roomC, thermoC: setup.roomC, heaterIn: false, thermoIn: false, oil: false, insulated: false, heaterOn: false, onS: 0, onAt: null, readings: [], meters: {}, results: {}, burnt: false };
+    },
+    apply: (s0, e, ctx) => {
+      const setup = ctx.content.setup;
+      let s = s0;
+      const hits = [];
+      const notes = [];
+      if (e.type === "param.set") {
+        const { key: key2, value } = e.payload;
+        const on = !!value;
+        if (key2 === "heater-in") s = { ...s, heaterIn: on };
+        if (key2 === "thermo-in") s = { ...s, thermoIn: on };
+        if (key2 === "oil") s = { ...s, oil: on };
+        if (key2 === "insulate") {
+          if (s.heaterOn && on !== s.insulated) notes.push({ text: "Changing the insulation halfway through changes the heat loss partway through the run.", tone: "warning" });
+          s = { ...s, insulated: on };
+        }
+        if (key2 === "heater" && on !== s.heaterOn) {
+          if (on) {
+            if (!s.heaterIn) s = { ...s, burnt: true };
+            if (!s.readings.some((r) => r.t === s.t)) hits.push({ code: "no-start-temp", severity: "minor", message: "Read the starting temperature before you switch the heater on: you need it to find the temperature rise.", tag: "procedural", dimension: "sequence" });
+            if (!s.insulated) hits.push({ code: "no-insulation", severity: "minor", message: "Without insulation the block loses a lot of heat to the room, so it warms less and your value of c comes out too high.", tag: "procedural", dimension: "technique" });
+            if (!s.oil || !s.thermoIn) hits.push({ code: "no-oil", severity: "minor", message: "Put the thermometer in its hole with a drop of oil. Air is a poor conductor, so a dry thermometer lags behind the block.", tag: "procedural", dimension: "measurement" });
+            s = { ...s, heaterOn: true, onAt: s.onAt ?? s.t };
+            notes.push({ text: `Heater on: ${setup.volts.toFixed(1)} V \xD7 ${setup.amps.toFixed(2)} A = ${(setup.volts * setup.amps).toFixed(1)} W.`, tone: "info" });
+          } else {
+            s = { ...s, heaterOn: false };
+            notes.push({ text: `Heater off after ${s.onS} s. The block stays hot for a long time: do not touch it.`, tone: "warning" });
+          }
+        }
+        if (key2 === "wait") {
+          const secs = Math.max(0, Math.min(600, Number(value)));
+          s = heatAdvance(s, setup, secs);
+        }
+        if (key2.startsWith("result:")) {
+          const v = Number(value);
+          s = { ...s, results: { ...s.results, [key2.slice(7)]: v } };
+          if (key2 === "result:E") {
+            const E = setup.volts * setup.amps * s.onS;
+            if (Math.abs(v - E) / Math.max(E, 1) > 0.02) hits.push({ code: "wrong-energy", severity: "major", message: "Energy = V \xD7 I \xD7 t, with t in seconds (10 minutes = 600 s).", tag: "conceptual", dimension: "measurement" });
+          }
+          if (key2 === "result:c") {
+            const expect = cFromReadings(s, setup);
+            if (expect === null || Math.abs(v - expect) / expect > 0.05) hits.push({ code: "wrong-c", severity: "major", message: "c = E \xF7 (m \xD7 \u0394\u03B8). \u0394\u03B8 is your final temperature minus your starting temperature, and m = 1.0 kg.", tag: "conceptual", dimension: "measurement" });
+          }
+        }
+      }
+      if (e.type === "measure.read") {
+        const { key: key2, value } = e.payload.reading;
+        if (e.payload.instrument === "thermometer" && key2 === "T") {
+          const shown = thermoShown(s);
+          if (!s.thermoIn) hits.push({ code: "thermo-out", severity: "minor", message: "The thermometer is not in the block, so it reads the room.", tag: "procedural", dimension: "measurement" });
+          else if (Math.abs(value - shown) > 0.15) hits.push({ code: "thermo-misread", severity: "minor", message: `The thermometer shows ${shown.toFixed(1)} \xB0C.`, tag: "procedural", dimension: "measurement" });
+          else {
+            s = { ...s, readings: [...s.readings.filter((r) => r.t !== s.t), { t: s.t, T: value }] };
+            notes.push({ text: `${(s.t / 60).toFixed(0)} min: ${value.toFixed(1)} \xB0C`, tone: "success" });
+          }
+        }
+        if ((e.payload.instrument === "voltmeter" || e.payload.instrument === "ammeter") && !(s.heaterOn && s.heaterIn)) {
+          hits.push({ code: "meter-off", severity: "minor", message: "Switch the heater on first: with no current flowing both meters read zero.", tag: "procedural", dimension: "sequence" });
+        } else if (e.payload.instrument === "voltmeter" && key2 === "V") {
+          if (Math.abs(value - setup.volts) > 0.05) hits.push({ code: "meter-misread", severity: "minor", message: `The voltmeter reads ${setup.volts.toFixed(1)} V.`, tag: "procedural", dimension: "measurement" });
+          else s = { ...s, meters: { ...s.meters, V: value } };
+        } else if (e.payload.instrument === "ammeter" && key2 === "I") {
+          if (Math.abs(value - setup.amps) > 0.01) hits.push({ code: "meter-misread", severity: "minor", message: `The ammeter reads ${setup.amps.toFixed(2)} A.`, tag: "procedural", dimension: "measurement" });
+          else s = { ...s, meters: { ...s.meters, I: value } };
+        }
+      }
+      return { state: s, hits, notes };
+    },
+    steps: {
+      setup: (s) => s.heaterIn && s.thermoIn && s.oil && s.insulated,
+      start: (s) => s.heaterOn && s.onAt !== null && s.readings.some((r) => r.t === s.onAt),
+      meters: (s) => s.meters.V !== void 0 && s.meters.I !== void 0,
+      readings: (s) => s.onAt !== null && minuteReadings(s).length >= 10,
+      off: (s) => !s.heaterOn && s.onS >= 600,
+      energy: (s, ctx) => {
+        const setup = ctx.content.setup;
+        const E = setup.volts * setup.amps * s.onS;
+        return s.results.E !== void 0 && Math.abs(s.results.E - E) / Math.max(E, 1) <= 0.02;
+      },
+      result: (s, ctx) => {
+        const expect = cFromReadings(s, ctx.content.setup);
+        return s.results.c !== void 0 && expect !== null && Math.abs(s.results.c - expect) / expect <= 0.05;
+      }
+    },
+    safety: (s) => s.burnt ? { code: "heater-in-air", title: "Heater switched on outside the block", message: "An immersion heater switched on in air has nothing to pass its heat to: it gets hot enough to burn skin and the bench, and can crack. Always put it in the block first, and switch off before taking it out." } : null,
+    readouts: (s) => ({ t: s.t, thermo: thermoShown(s), onS: s.onS, readings: s.readings.length })
+  };
+  function minuteReadings(s) {
+    if (s.onAt === null) return [];
+    return s.readings.filter((r) => r.t > s.onAt && (r.t - s.onAt) % 60 === 0 && r.t - s.onAt <= 600);
+  }
+  function cFromReadings(s, setup) {
+    if (s.onAt === null) return null;
+    const start = s.readings.find((r) => r.t === s.onAt);
+    const mins = minuteReadings(s);
+    const end = mins.reduce((a, r) => !a || r.t > a.t ? r : a, null);
+    if (!start || !end || end.T <= start.T) return null;
+    const E = setup.volts * setup.amps * (end.t - s.onAt);
+    return E / (setup.massKg * (end.T - start.T));
+  }
+
   // ../physics/src/labs/index.ts
   var PHYSICS_CONTENT = Object.fromEntries(
-    [ohms_law_default, series_and_parallel_default, projectile_motion_default, refraction_snells_law_default, simple_pendulum_default, archimedes_principle_default].map((c) => [c.slug, c])
+    [ohms_law_default, series_and_parallel_default, projectile_motion_default, refraction_snells_law_default, simple_pendulum_default, archimedes_principle_default, newtons_second_law_default, specific_heat_capacity_default].map((c) => [c.slug, c])
   );
   var PHYSICS_MODELS = Object.fromEntries(
     // eslint-disable-line @typescript-eslint/no-explicit-any
-    [ohmsLaw, seriesParallel, projectile, refraction, pendulum, archimedes].map((m) => [m.slug, m])
+    [ohmsLaw, seriesParallel, projectile, refraction, pendulum, archimedes, newtonsSecondLaw, specificHeat].map((m) => [m.slug, m])
   );
 
   // ../physics/src/protocol/evaluator.ts

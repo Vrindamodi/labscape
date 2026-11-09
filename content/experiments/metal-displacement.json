@@ -1,0 +1,608 @@
+{
+  "id": "chem-metal-displacement",
+  "slug": "metal-displacement",
+  "version": 1,
+  "subject": "chemistry",
+  "title": "Displacement: building the reactivity series",
+  "fidelity": "approximate",
+  "reviewStatus": "draft",
+  "bench": {
+    "items": [
+      {
+        "id": "znso4",
+        "kind": "reagent_bottle",
+        "label": "Zinc sulfate",
+        "x": -360,
+        "z": -90,
+        "fill": {
+          "reagentId": "znso4-0.5",
+          "volumeMl": 80
+        }
+      },
+      {
+        "id": "feso4",
+        "kind": "reagent_bottle",
+        "label": "Iron(II) sulfate",
+        "x": -270,
+        "z": -90,
+        "fill": {
+          "reagentId": "feso4-0.5",
+          "volumeMl": 80
+        }
+      },
+      {
+        "id": "cuso4",
+        "kind": "reagent_bottle",
+        "label": "Copper(II) sulfate",
+        "x": -180,
+        "z": -90,
+        "fill": {
+          "reagentId": "cuso4-0.5",
+          "volumeMl": 80
+        }
+      },
+      {
+        "id": "mgso4",
+        "kind": "reagent_bottle",
+        "label": "Magnesium sulfate",
+        "x": -90,
+        "z": -90,
+        "fill": {
+          "reagentId": "mgso4-0.5",
+          "volumeMl": 80
+        }
+      },
+      {
+        "id": "rack",
+        "kind": "test_tube_rack",
+        "x": 0,
+        "z": 40
+      },
+      {
+        "id": "t1",
+        "kind": "test_tube",
+        "label": "Tube A (zinc sulfate)",
+        "x": -60,
+        "z": 40,
+        "socket": "rack:rack"
+      },
+      {
+        "id": "t2",
+        "kind": "test_tube",
+        "label": "Tube B (iron(II) sulfate)",
+        "x": -20,
+        "z": 40,
+        "socket": "rack:rack"
+      },
+      {
+        "id": "t3",
+        "kind": "test_tube",
+        "label": "Tube C (copper(II) sulfate)",
+        "x": 20,
+        "z": 40,
+        "socket": "rack:rack"
+      },
+      {
+        "id": "t4",
+        "kind": "test_tube",
+        "label": "Tube D (magnesium sulfate)",
+        "x": 60,
+        "z": 40,
+        "socket": "rack:rack"
+      },
+      {
+        "id": "mg",
+        "kind": "watch_glass",
+        "label": "Magnesium ribbon",
+        "x": 160,
+        "z": -40,
+        "reagentId": "mg-ribbon"
+      },
+      {
+        "id": "zn",
+        "kind": "watch_glass",
+        "label": "Zinc foil",
+        "x": 240,
+        "z": -40,
+        "reagentId": "zn-foil"
+      },
+      {
+        "id": "fe",
+        "kind": "watch_glass",
+        "label": "Iron filings",
+        "x": 160,
+        "z": 70,
+        "reagentId": "iron-filings"
+      },
+      {
+        "id": "cu",
+        "kind": "watch_glass",
+        "label": "Copper foil",
+        "x": 240,
+        "z": 70,
+        "reagentId": "cu-foil"
+      },
+      {
+        "id": "goggles",
+        "kind": "goggles",
+        "x": 330,
+        "z": 120
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "goggles",
+      "title": "Put on goggles",
+      "instruction": "The metal salt solutions are harmful and irritate eyes. Goggles on.",
+      "action": "equipment.place",
+      "from": "goggles",
+      "complete": {
+        "onEvent": true
+      },
+      "scoring": {
+        "equipment": 1
+      },
+      "hints": [
+        "safe-1",
+        "safe-2",
+        "safe-3"
+      ],
+      "whatIf": {
+        "no_ppe": "A single splash in an unprotected eye can cause lasting damage, which is why goggles go on before any bottle is opened."
+      }
+    },
+    {
+      "id": "fill-a",
+      "title": "5 mL zinc sulfate into tube A",
+      "instruction": "Pour about 5 mL of zinc sulfate solution into tube A.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "znso4",
+      "to": "t1",
+      "quantity": {
+        "target": 5,
+        "plusMinus": 1.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 6
+      },
+      "hints": [
+        "fill-1",
+        "fill-2",
+        "fill-3"
+      ]
+    },
+    {
+      "id": "fill-b",
+      "title": "5 mL iron(II) sulfate into tube B",
+      "instruction": "Pour about 5 mL of iron(II) sulfate solution into tube B.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "feso4",
+      "to": "t2",
+      "quantity": {
+        "target": 5,
+        "plusMinus": 1.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 6
+      },
+      "hints": [
+        "fill-1",
+        "fill-2",
+        "fill-3"
+      ]
+    },
+    {
+      "id": "fill-c",
+      "title": "5 mL copper(II) sulfate into tube C",
+      "instruction": "Pour about 5 mL of copper(II) sulfate solution into tube C.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "cuso4",
+      "to": "t3",
+      "quantity": {
+        "target": 5,
+        "plusMinus": 1.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 6
+      },
+      "hints": [
+        "fill-1",
+        "fill-2",
+        "fill-3"
+      ]
+    },
+    {
+      "id": "fill-d",
+      "title": "5 mL magnesium sulfate into tube D",
+      "instruction": "Pour about 5 mL of magnesium sulfate solution into tube D.",
+      "requires": [
+        "goggles"
+      ],
+      "action": "liquid.pour",
+      "from": "mgso4",
+      "to": "t4",
+      "quantity": {
+        "target": 5,
+        "plusMinus": 1.5,
+        "unit": "mL"
+      },
+      "technique": {
+        "kind": "slow_pour",
+        "maxRateMlPerS": 6
+      },
+      "hints": [
+        "fill-1",
+        "fill-2",
+        "fill-3"
+      ]
+    },
+    {
+      "id": "mg-in",
+      "title": "Magnesium into zinc sulfate",
+      "instruction": "Add the magnesium ribbon to tube A. Does magnesium push zinc out of its compound?",
+      "requires": [
+        "fill-a"
+      ],
+      "action": "solid.add",
+      "from": "mg-ribbon",
+      "to": "t1",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "metal-1",
+        "metal-2",
+        "metal-3"
+      ],
+      "whatIf": {
+        "wrong_order": "Each metal must meet a different metal's salt; the same metal in its own salt shows nothing."
+      }
+    },
+    {
+      "id": "zn-in",
+      "title": "Zinc into iron(II) sulfate",
+      "instruction": "Add the zinc foil to tube B.",
+      "requires": [
+        "fill-b"
+      ],
+      "action": "solid.add",
+      "from": "zn-foil",
+      "to": "t2",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "metal-1",
+        "metal-2",
+        "metal-3"
+      ]
+    },
+    {
+      "id": "fe-in",
+      "title": "Iron into copper(II) sulfate",
+      "instruction": "Add the iron filings to tube C.",
+      "requires": [
+        "fill-c"
+      ],
+      "action": "solid.add",
+      "from": "iron-filings",
+      "to": "t3",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "metal-1",
+        "metal-2",
+        "metal-3"
+      ]
+    },
+    {
+      "id": "cu-in",
+      "title": "Copper into magnesium sulfate",
+      "instruction": "Add the copper foil to tube D.",
+      "requires": [
+        "fill-d"
+      ],
+      "action": "solid.add",
+      "from": "cu-foil",
+      "to": "t4",
+      "complete": {
+        "onEvent": true
+      },
+      "hints": [
+        "metal-1",
+        "metal-2",
+        "metal-3"
+      ]
+    },
+    {
+      "id": "watch",
+      "title": "Compare the four tubes",
+      "instruction": "Watch all four tubes for a minute (speed time up if you like). Which metals get coated? Which tube does nothing?",
+      "requires": [
+        "mg-in",
+        "zn-in",
+        "fe-in",
+        "cu-in"
+      ],
+      "action": "timer.mark",
+      "complete": {
+        "predicate": "deposit:t1&deposit:t2&deposit:t3"
+      },
+      "hints": [
+        "watch-1",
+        "watch-2",
+        "watch-3"
+      ]
+    }
+  ],
+  "hints": {
+    "safe-1": {
+      "rung": 1,
+      "text": "What protects your eyes?"
+    },
+    "safe-2": {
+      "rung": 2,
+      "text": "Pick up the goggles and put them on before you touch any bottle."
+    },
+    "safe-3": {
+      "rung": 3,
+      "text": "Watch the goggles go on."
+    },
+    "fill-1": {
+      "rung": 1,
+      "text": "Each tube gets a different solution - read the labels."
+    },
+    "fill-2": {
+      "rung": 2,
+      "text": "Pick up the bottle named on the tube's label and pour about 5 mL."
+    },
+    "fill-3": {
+      "rung": 3,
+      "text": "Watch a 5 mL pour."
+    },
+    "metal-1": {
+      "rung": 1,
+      "text": "Each metal goes into a different metal's salt solution."
+    },
+    "metal-2": {
+      "rung": 2,
+      "text": "Pick up the watch glass with the metal and tip it into the tube named in the step."
+    },
+    "metal-3": {
+      "rung": 3,
+      "text": "Watch the metal go in."
+    },
+    "watch-1": {
+      "rung": 1,
+      "text": "Look at the metal surfaces, not just the liquid."
+    },
+    "watch-2": {
+      "rung": 2,
+      "text": "Coatings form in seconds in tube C, slower in tube B. Speed up time to see."
+    },
+    "watch-3": {
+      "rung": 3,
+      "text": "Watch each tube in turn."
+    }
+  },
+  "observations": {
+    "whatHappened": "Magnesium in zinc sulfate grew a dark grey coat of zinc and the tube got warm. Zinc in iron(II) sulfate slowly turned black with iron. Iron in copper(II) sulfate turned pinky-brown with copper and the blue colour faded. Copper in magnesium sulfate did nothing at all.",
+    "why": "A more reactive metal gives away electrons more easily, so it pushes (displaces) a less reactive metal out of its compound: the reactive metal becomes ions in solution and the less reactive metal comes out as a solid coating. Nothing happens if the metal is less reactive than the one in the solution. From the results the order is magnesium > zinc > iron > copper. The bigger the gap in the series, the faster and hotter the reaction.",
+    "equationLatex": "\\mathrm{Fe(s) + CuSO_4(aq) \\longrightarrow FeSO_4(aq) + Cu(s)}",
+    "realWorld": [
+      "Extracting copper from waste solutions with scrap iron",
+      "Sacrificial zinc and magnesium blocks protecting ships",
+      "The thermite reaction for welding railway lines"
+    ],
+    "prompts": [
+      {
+        "id": "q-order",
+        "question": "Which order, most reactive first, fits your results?",
+        "choices": [
+          "Cu > Fe > Zn > Mg",
+          "Mg > Zn > Fe > Cu",
+          "Zn > Mg > Cu > Fe",
+          "Fe > Cu > Mg > Zn"
+        ],
+        "answer": 1,
+        "explain": "Mg displaced Zn, Zn displaced Fe, Fe displaced Cu, and Cu displaced nothing."
+      },
+      {
+        "id": "q-none",
+        "question": "Why did nothing happen in tube D?",
+        "choices": [
+          "The copper was dirty",
+          "Copper is less reactive than magnesium, so it cannot displace it",
+          "Magnesium sulfate is not a solution",
+          "The tube was too cold"
+        ],
+        "answer": 1,
+        "explain": "A metal can only displace a less reactive metal from its compound."
+      },
+      {
+        "id": "q-blue",
+        "question": "In tube C the blue colour faded. Why?",
+        "choices": [
+          "Blue copper(II) ions were replaced by pale green iron(II) ions",
+          "The iron absorbed the dye",
+          "Water evaporated",
+          "The copper dissolved"
+        ],
+        "answer": 0,
+        "explain": "Fe + Cu²⁺ → Fe²⁺ + Cu: the copper ions that make the solution blue come out as copper metal."
+      }
+    ]
+  },
+  "safety": [],
+  "golden": {
+    "durationS": 62,
+    "captions": [
+      {
+        "t": 0,
+        "text": "Four metals, four salt solutions. Each metal meets a different metal's salt."
+      },
+      {
+        "t": 16000,
+        "text": "Magnesium into zinc sulfate: a grey zinc coat appears and the tube warms up."
+      },
+      {
+        "t": 21000,
+        "text": "Iron into copper sulfate: pinky-brown copper forms within seconds, and the blue starts to fade.",
+        "slow": true
+      },
+      {
+        "t": 30000,
+        "text": "Copper in magnesium sulfate: nothing. Copper is less reactive than magnesium."
+      },
+      {
+        "t": 44000,
+        "text": "Zinc slowly blackens with iron. The bigger the gap in reactivity, the faster the reaction."
+      },
+      {
+        "t": 52000,
+        "text": "So the order is Mg > Zn > Fe > Cu: the reactivity series."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "equipment.place",
+        "payload": {
+          "equipmentId": "goggles",
+          "x": 0,
+          "y": 0,
+          "socket": "worn"
+        }
+      },
+      {
+        "t": 4000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "znso4",
+          "to": "t1",
+          "volumeMl": 5,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 3,
+          "peakRateMlPerS": 4,
+          "durationMs": 1667
+        }
+      },
+      {
+        "t": 7000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "feso4",
+          "to": "t2",
+          "volumeMl": 5,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 3,
+          "peakRateMlPerS": 4,
+          "durationMs": 1667
+        }
+      },
+      {
+        "t": 10000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "cuso4",
+          "to": "t3",
+          "volumeMl": 5,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 3,
+          "peakRateMlPerS": 4,
+          "durationMs": 1667
+        }
+      },
+      {
+        "t": 13000,
+        "type": "liquid.pour",
+        "payload": {
+          "from": "mgso4",
+          "to": "t4",
+          "volumeMl": 5,
+          "tiltDegMax": 55,
+          "meanRateMlPerS": 3,
+          "peakRateMlPerS": 4,
+          "durationMs": 1667
+        }
+      },
+      {
+        "t": 16000,
+        "type": "solid.add",
+        "payload": {
+          "from": "mg-ribbon",
+          "to": "t1",
+          "massG": 0.05
+        }
+      },
+      {
+        "t": 18000,
+        "type": "solid.add",
+        "payload": {
+          "from": "zn-foil",
+          "to": "t2",
+          "massG": 0.3
+        }
+      },
+      {
+        "t": 20000,
+        "type": "solid.add",
+        "payload": {
+          "from": "iron-filings",
+          "to": "t3",
+          "massG": 0.5
+        }
+      },
+      {
+        "t": 22000,
+        "type": "solid.add",
+        "payload": {
+          "from": "cu-foil",
+          "to": "t4",
+          "massG": 0.3
+        }
+      },
+      {
+        "t": 56000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-order",
+          "value": 1
+        }
+      },
+      {
+        "t": 57000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-none",
+          "value": 1
+        }
+      },
+      {
+        "t": 58000,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q-blue",
+          "value": 0
+        }
+      }
+    ]
+  }
+}

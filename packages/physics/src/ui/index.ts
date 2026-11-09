@@ -4,6 +4,8 @@ import { CircuitWorkspace } from "./CircuitWorkspace";
 import { PendulumWorkspace } from "./PendulumWorkspace";
 import { ProjectileWorkspace } from "./ProjectileWorkspace";
 import { SlabWorkspace } from "./SlabWorkspace";
+import { HeatCapacityWorkspace } from "./HeatCapacityWorkspace";
+import { TrolleyWorkspace } from "./TrolleyWorkspace";
 import type { SimSession } from "./useSimSession";
 
 export * from "./kit";
@@ -23,4 +25,6 @@ export const PHYSICS_WORKSPACES: Record<string, ComponentType<WorkspaceProps>> =
   "refraction-snells-law": SlabWorkspace,
   "simple-pendulum": PendulumWorkspace,
   "archimedes-principle": ArchimedesWorkspace,
+  "newtons-second-law": TrolleyWorkspace,
+  "specific-heat-capacity": HeatCapacityWorkspace,
 };

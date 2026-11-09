@@ -134,4 +134,28 @@ export const MATHS_GUIDES: Record<string, SimGuide> = {
       "dice-sum": [{ q: "What if I use one die?", a: "Each number 1 to 6 is equally likely: no pile-up in the middle." }],
     },
   },
+  "graph-transformations": {
+    idea: {
+      title: "Moving and stretching graphs",
+      body: "In y = a·f(b(x − c)) + d, four numbers change the graph's position and shape without changing what kind of graph it is. Numbers outside the function change y-values (up and down). Numbers inside change x-values (left and right), and they feel backwards.",
+      watch: ["d slides the graph up or down.", "c slides it right when c is positive, the opposite of what you might expect.", "A negative a flips the graph upside down; b squashes or stretches it sideways."],
+    },
+    beats: [
+      "Adding d to every y-value lifts every point by the same amount, so the shape stays the same and just moves up.",
+      "To get the same y-value as before, x now has to be 2 bigger, so every point appears 2 further to the right. That's why inside changes feel backwards.",
+      "Multiplying every y-value by −1 swaps positive and negative, mirroring the graph in the x-axis.",
+      "With b = 2 the input runs twice as fast, so everything happens in half the distance and the graph is squashed towards the y-axis.",
+      "Apply the changes one at a time: flip, then slide sideways, then lift. Following one point, like the vertex, shows where the whole graph goes.",
+    ],
+    whatIf: {
+      "no-match": "Your graph doesn't sit on the dashed target yet. Change one slider at a time and watch one point, such as the vertex, to see which number moves it where.",
+    },
+    explore: {
+      up: [{ q: "What if d is negative?", a: "The graph slides down by that amount instead." }],
+      right: [{ q: "What if I use c = −2?", a: "f(x + 2) slides the graph LEFT by 2: the sign inside the bracket works backwards." }],
+      flip: [{ q: "What if a = 2 instead of −1?", a: "The graph stretches upwards to twice as tall, without flipping." }],
+      squash: [{ q: "What if b = 0.5?", a: "The graph stretches sideways to twice as wide: one wave now takes twice the distance." }],
+      combo: [{ q: "Does the order matter?", a: "For this form, apply the inside changes (b, c) before the outside ones (a, d) and you'll land in the right place." }],
+    },
+  },
 };

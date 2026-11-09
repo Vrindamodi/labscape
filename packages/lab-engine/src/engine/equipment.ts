@@ -29,7 +29,9 @@ export type EquipmentKind =
   | "glass_rod"
   | "funnel"
   | "watch_glass"
-  | "goggles";
+  | "goggles"
+  | "evaporating_basin"
+  | "litmus_paper";
 
 export type KindDef = {
   label: string;
@@ -51,6 +53,8 @@ export type KindDef = {
   heatCapacityJK: number;
   /** Glassware vs tool. */
   category: "vessel" | "dispenser" | "tool" | "support" | "heat" | "safety";
+  /** Heat loss to the room, W per K above room temperature (default 0.9). Wide, shallow dishes lose more. */
+  lossWPerK?: number;
 };
 
 export type SocketKind = "bench" | "rack" | "clamp" | "tile" | "tripod" | "flame";
@@ -83,6 +87,8 @@ export const KINDS: Record<EquipmentKind, KindDef> = {
   funnel: { label: "Filter funnel", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 20, category: "tool" },
   watch_glass: { label: "Watch glass", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 15, category: "tool" },
   goggles: { label: "Safety goggles", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 0, category: "safety" },
+  evaporating_basin: { label: "Evaporating basin", capacityMl: 60, profile: P([[14, 0], [30, 8], [38, 18], [41, 26], [43, 28]]), neckMm: 40, pours: true, fits: ["bench", "tripod"], heatCapacityJK: 60, category: "vessel", lossWPerK: 1.4 },
+  litmus_paper: { label: "Damp blue litmus paper", capacityMl: 0, profile: [], neckMm: 0, pours: false, fits: ["bench"], heatCapacityJK: 0, category: "tool" },
 };
 
 /* ------------------------------------------------------------------ profile geometry */

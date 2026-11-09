@@ -198,4 +198,72 @@ export const PHYSICS_GUIDES: Record<string, SimGuide> = {
       volume: [{ q: "What if I read the top of the meniscus?", a: "You over-read by a mL or two. Always read the bottom of the curve at eye level." }],
     },
   },
+  "newtons-second-law": {
+    idea: {
+      title: "Force makes things speed up",
+      body: "Newton's second law says F = m × a: the bigger the force on something, the faster its speed changes (its acceleration), and the heavier it is, the slower it speeds up. You test it by pulling a trolley with different forces while keeping the total mass the same.",
+      watch: ["Tilt the runway until a nudged trolley rolls at a steady speed.", "Move masses from the trolley to the hanger, never add new ones.", "Plot acceleration against force: it should be a straight line."],
+    },
+    beats: [
+      "Friction is a hidden force pulling backwards. If you leave it in, part of your pull is used up fighting it and every acceleration comes out too small.",
+      "A steady speed means the forces are balanced, so from now on the only unbalanced force is the hanging weight.",
+      "Speed at the first gate and the second gate, plus the time between them, give the acceleration: a = change in speed ÷ time.",
+      "The hanger also gets pulled along, so it is part of the moving mass. Moving masses across keeps the total the same, so only the force changes.",
+      "A straight line through the origin means a is proportional to F: double the push, double the speeding up.",
+      "Rearranged, a = F ÷ m, so the gradient of a against F is 1 ÷ m. Turning the gradient upside down gives the mass being accelerated.",
+    ],
+    whatIf: {
+      friction: "With friction left in, some of the force is used up against it. Every acceleration is too small and the line misses the origin, cutting the force axis instead.",
+      "mass-changed": "Adding a new mass to the hanger changes the total mass as well as the force, so the two effects mix and the graph curves instead of being straight.",
+      "gate-misread": "A wrong light-gate reading puts that point off the line. Read the gate display carefully and repeat any run that looks odd.",
+      "wrong-mass": "The gradient of a against F is 1 ÷ m, so m = 1 ÷ gradient. Using the gradient itself gives a number far too small.",
+    },
+    explore: {
+      compensate: [{ q: "What if I don't tilt the runway?", a: "Friction steals part of each pull, so every acceleration is too small and the line doesn't pass through the origin." }],
+      "first-run": [{ q: "What if the card is longer?", a: "The gates time it over a longer distance, which averages the speed better. Just enter the right card length." }],
+      "five-forces": [
+        { q: "What if I add new masses to the hanger instead of moving them?", a: "The total mass grows too, so the acceleration rises less than it should and the graph bends." },
+        { q: "What if I use only one force?", a: "One point can't show a pattern. You need several to see that a rises in step with F." },
+      ],
+      result: [{ q: "What if the line doesn't go through zero?", a: "That usually means friction wasn't fully cancelled. Re-tilt the runway and repeat." }],
+    },
+  },
+  "specific-heat-capacity": {
+    idea: {
+      title: "How much energy does it take to warm something?",
+      body: "Different materials need different amounts of energy to warm up. The specific heat capacity c is the energy needed to warm 1 kg by 1 °C. You heat a block with a known power, measure how much its temperature rises, and use E = m × c × Δθ to find c.",
+      watch: ["Put a drop of oil in the thermometer hole and wrap the block in insulation.", "Read the start temperature before switching on.", "Take a reading every minute for 10 minutes."],
+    },
+    beats: [
+      "Heater and thermometer sit inside the block. The oil fills the air gap so heat reaches the thermometer quickly and the reading keeps up with the block.",
+      "Without insulation, heat leaks into the room. The block warms less, so c comes out too big.",
+      "The temperature rise is measured from the start, so the start reading must come before the heater goes on.",
+      "Power is the energy per second. A voltmeter and ammeter give it: P = V × I.",
+      "Equal rises each minute show the heater is delivering a steady power, so the energy is just power × time.",
+      "Energy = voltage × current × time, all in volts, amps and seconds. 10 minutes is 600 s.",
+      "Rearranging E = m c Δθ gives c = E ÷ (m × Δθ). Real aluminium is about 900 J/kg°C; heat lost to the room makes your answer a bit higher.",
+    ],
+    whatIf: {
+      "heater-in-air": "In air the heater has nothing to pass its heat to. It gets hot enough to burn and can crack, so always put it in the block first.",
+      "no-insulation": "Heat escapes into the room. The block warms less for the same energy, so your value of c comes out too big.",
+      "no-oil": "Air in the hole is a poor conductor, so the thermometer lags behind the block. The rise you read is too small and c comes out too big.",
+      "no-start-temp": "Without a start temperature you can't work out how much it warmed, so c can't be found.",
+      "meter-off": "With the heater off the meters read zero, which tells you nothing about the power.",
+      "meter-misread": "A wrong voltage or current makes the power, the energy and c all wrong by the same fraction.",
+      "thermo-misread": "Read the thermometer at eye level, straight on. A misread changes the temperature rise and so c.",
+      "thermo-out": "Out of the block the thermometer measures the air, not the aluminium.",
+      "nothing-to-read": "Switch on and wait for a reading before recording.",
+      "wrong-energy": "E = V × I × t with t in seconds. Using minutes makes E 60 times too small.",
+      "wrong-c": "c = E ÷ (m × Δθ), with m in kg and Δθ the rise, not the final temperature.",
+    },
+    explore: {
+      setup: [
+        { q: "What if I skip the insulation?", a: "More heat leaks out, the block warms less, and c comes out too high." },
+        { q: "What if I leave out the oil?", a: "The thermometer reads behind the block, so the rise looks smaller and c too big." },
+      ],
+      start: [{ q: "What if I switch on before reading the start temperature?", a: "Some of the rise is missed, so Δθ is too small and c is too big." }],
+      readings: [{ q: "What if I heat for only 2 minutes?", a: "The rise is small, so a 0.5 °C reading error is a big percentage. Longer heating gives a more accurate c." }],
+      result: [{ q: "Why is my answer above 900?", a: "Some heat still escaped and warmed the heater and thermometer, so the block got less energy than you counted." }],
+    },
+  },
 };

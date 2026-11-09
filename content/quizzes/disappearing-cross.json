@@ -1,0 +1,180 @@
+{
+  "id": "quiz-disappearing-cross",
+  "version": 1,
+  "experimentSlug": "disappearing-cross",
+  "title": "Rates of reaction quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "rate": "Rate of reaction",
+    "collision-theory": "Collision theory",
+    "fair-test": "Fair tests"
+  },
+  "questions": [
+    {
+      "id": "why-cloudy",
+      "type": "multiple_choice",
+      "prompt": "Why does the liquid go cloudy?",
+      "conceptIds": [
+        "rate"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Bubbles of gas"
+        },
+        {
+          "id": "b",
+          "text": "Tiny particles of solid sulfur form"
+        },
+        {
+          "id": "c",
+          "text": "The acid evaporates"
+        },
+        {
+          "id": "d",
+          "text": "The flask steams up"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "S₂O₃²⁻ + 2H⁺ → S + SO₂ + H₂O: the sulfur is an insoluble solid.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "rate",
+      "type": "numerical",
+      "prompt": "The cross disappears after 40 s. What is the rate, using rate = 1/time?",
+      "conceptIds": [
+        "rate"
+      ],
+      "unit": "1/s",
+      "answer": 0.025,
+      "tolerance": {
+        "abs": 0.001
+      },
+      "acceptUnits": [
+        "1/s",
+        "s^-1",
+        "/s"
+      ],
+      "explanation": "Rate = 1 ÷ 40 = 0.025 s⁻¹.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "collide",
+      "type": "multiple_choice",
+      "prompt": "Why is the reaction faster in a more concentrated solution?",
+      "conceptIds": [
+        "collision-theory"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "The particles are bigger"
+        },
+        {
+          "id": "b",
+          "text": "There are more particles in the same volume, so they collide more often"
+        },
+        {
+          "id": "c",
+          "text": "The particles move more slowly"
+        },
+        {
+          "id": "d",
+          "text": "The solution is colder"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "More frequent collisions means more successful collisions per second.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "hot",
+      "type": "predict_outcome",
+      "prompt": "The same mixture is warmed to 40 °C. What happens to the time for the cross to vanish?",
+      "conceptIds": [
+        "collision-theory"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "It gets shorter"
+        },
+        {
+          "id": "b",
+          "text": "It gets longer"
+        },
+        {
+          "id": "c",
+          "text": "It stays the same"
+        },
+        {
+          "id": "d",
+          "text": "The cross never vanishes"
+        }
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "Hotter particles move faster and collide more often and with more energy.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "fair",
+      "type": "multiple_choice",
+      "prompt": "Which variable must stay the same when testing concentration?",
+      "conceptIds": [
+        "fair-test"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "The concentration of thiosulfate"
+        },
+        {
+          "id": "b",
+          "text": "The total volume and the temperature"
+        },
+        {
+          "id": "c",
+          "text": "The time"
+        },
+        {
+          "id": "d",
+          "text": "The amount of sulfur made"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Only the independent variable (concentration) should change.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "smell",
+      "type": "true_false",
+      "prompt": "The reaction gives off sulfur dioxide, so the room should be well ventilated.",
+      "conceptIds": [
+        "rate"
+      ],
+      "answer": true,
+      "explanation": "Sulfur dioxide is toxic and can trigger asthma.",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}

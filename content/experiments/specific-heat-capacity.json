@@ -1,0 +1,624 @@
+{
+  "version": 1,
+  "fidelity": "approximate",
+  "reviewStatus": "draft",
+  "id": "phys-specific-heat",
+  "slug": "specific-heat-capacity",
+  "subject": "physics",
+  "title": "Specific heat capacity of aluminium",
+  "setup": {
+    "massKg": 1,
+    "c": 900,
+    "volts": 11.8,
+    "amps": 4.1,
+    "roomC": 20,
+    "kInsulated": 0.08,
+    "kBare": 0.45,
+    "tauOil": 15,
+    "tauDry": 80,
+    "maxS": 1200
+  },
+  "steps": [
+    {
+      "id": "setup",
+      "title": "Set up the block",
+      "instruction": "Put the immersion heater and the thermometer into the 1.0 kg aluminium block, with a drop of oil in the thermometer hole. Wrap the block in insulation.",
+      "action": "param.set",
+      "scoring": {
+        "equipment": 1,
+        "technique": 1
+      },
+      "hints": [
+        "set-1",
+        "set-2",
+        "set-3"
+      ]
+    },
+    {
+      "id": "start",
+      "title": "Start temperature, then heat",
+      "instruction": "Record the starting temperature, then switch the heater on and start timing.",
+      "action": "param.set",
+      "scoring": {
+        "sequence": 1,
+        "technique": 1
+      },
+      "hints": [
+        "start-1",
+        "start-2",
+        "start-3"
+      ]
+    },
+    {
+      "id": "meters",
+      "title": "Read the meters",
+      "instruction": "With the heater on, read the voltmeter (across the heater) and the ammeter (in series with it) and record both.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "met-1",
+        "met-2",
+        "met-3"
+      ]
+    },
+    {
+      "id": "readings",
+      "title": "A reading every minute",
+      "instruction": "Every minute for 10 minutes, read the thermometer and record the temperature.",
+      "action": "measure.read",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "read-1",
+        "read-2",
+        "read-3"
+      ]
+    },
+    {
+      "id": "off",
+      "title": "Switch off at 10 minutes",
+      "instruction": "Switch the heater off after exactly 10 minutes. Leave the hot block alone: it stays hot for a long time.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1
+      },
+      "hints": [
+        "off-1",
+        "off-2",
+        "off-3"
+      ]
+    },
+    {
+      "id": "energy",
+      "title": "Energy supplied",
+      "instruction": "Work out the energy supplied, E = V × I × t, and enter it in joules.",
+      "action": "param.set",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "en-1",
+        "en-2",
+        "en-3"
+      ]
+    },
+    {
+      "id": "result",
+      "title": "Find c",
+      "instruction": "Use E = m c Δθ to work out the specific heat capacity of aluminium and enter it.",
+      "action": "param.set",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "c-1",
+        "c-2",
+        "c-3"
+      ]
+    }
+  ],
+  "hints": {
+    "set-1": {
+      "rung": 1,
+      "text": "Heat must go into the block, and the thermometer must feel the block quickly."
+    },
+    "set-2": {
+      "rung": 2,
+      "text": "Put the heater and the thermometer in their holes, add a drop of oil to the thermometer hole, then wrap the block in insulation."
+    },
+    "set-3": {
+      "rung": 3,
+      "text": "Use the four set-up switches: heater in, thermometer in, oil, insulation."
+    },
+    "met-1": {
+      "rung": 1,
+      "text": "Power = voltage × current. You need both."
+    },
+    "met-2": {
+      "rung": 2,
+      "text": "The voltmeter is across the heater; the ammeter is in series with it. Read each one."
+    },
+    "met-3": {
+      "rung": 3,
+      "text": "Type 11.8 V and 4.10 A and record them while the heater is on."
+    },
+    "start-1": {
+      "rung": 1,
+      "text": "You need the temperature before any heating starts."
+    },
+    "start-2": {
+      "rung": 2,
+      "text": "Read the thermometer first, then switch the heater on."
+    },
+    "start-3": {
+      "rung": 3,
+      "text": "Record 20.0 °C, then press Heater on."
+    },
+    "read-1": {
+      "rung": 1,
+      "text": "One reading every minute, for ten minutes."
+    },
+    "read-2": {
+      "rung": 2,
+      "text": "Press \"Wait 1 min\", then read the thermometer and record it."
+    },
+    "read-3": {
+      "rung": 3,
+      "text": "Repeat wait-then-record until you reach 10 minutes."
+    },
+    "off-1": {
+      "rung": 1,
+      "text": "The heating time must be exactly what you use in E = VIt."
+    },
+    "off-2": {
+      "rung": 2,
+      "text": "Switch the heater off at 10 minutes."
+    },
+    "off-3": {
+      "rung": 3,
+      "text": "Press Heater off once the clock shows 10:00."
+    },
+    "en-1": {
+      "rung": 1,
+      "text": "Energy = power × time."
+    },
+    "en-2": {
+      "rung": 2,
+      "text": "E = V × I × t, with t in seconds."
+    },
+    "en-3": {
+      "rung": 3,
+      "text": "11.8 × 4.10 × 600 = 29 028 J."
+    },
+    "c-1": {
+      "rung": 1,
+      "text": "E = m c Δθ, so c = E ÷ (m Δθ)."
+    },
+    "c-2": {
+      "rung": 2,
+      "text": "Δθ = final temperature − starting temperature; m = 1.0 kg."
+    },
+    "c-3": {
+      "rung": 3,
+      "text": "With your readings c is about 29 028 ÷ 30.7 ≈ 946 J/kg°C."
+    }
+  },
+  "observations": {
+    "whatHappened": "The temperature of the block rose steadily, about 3 °C every minute, from 20.0 °C to about 50.7 °C in 10 minutes. The value of c came out at about 946 J/kg°C, a little above the textbook value of 900 J/kg°C.",
+    "why": "The heater turns electrical energy into thermal energy at a rate P = VI. All of it should go into the block: E = m c Δθ. Some energy still escapes to the air through the insulation, and the thermometer lags slightly behind the block, so the measured Δθ is a bit too small and the calculated c a bit too big. Insulation and the drop of oil make both errors smaller.",
+    "equationLatex": "E = VIt qquad c = \frac{E}{m,Delta\theta}",
+    "realWorld": [
+      "Storage heaters full of high-c bricks",
+      "Why the sea stays cool on a hot day (water has a very high c)",
+      "Choosing materials for saucepans and radiators"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "Your value of c is higher than the true value. The most likely reason is…",
+        "choices": [
+          "The thermometer was too accurate",
+          "Some energy was lost to the surroundings",
+          "The block was too light",
+          "The current was too small"
+        ],
+        "answer": 1,
+        "explain": "Energy lost to the air did not heat the block, so Δθ was smaller than it should be and c = E/(mΔθ) came out too big."
+      },
+      {
+        "id": "q2",
+        "question": "Why put a drop of oil in the thermometer hole?",
+        "choices": [
+          "To stop the block rusting",
+          "To cool the thermometer",
+          "To make good thermal contact so the thermometer reads the block temperature",
+          "To make the heater work"
+        ],
+        "answer": 2,
+        "explain": "Air is a poor conductor. Oil fills the gap so heat reaches the thermometer quickly."
+      },
+      {
+        "id": "q3",
+        "question": "Water has c = 4200 J/kg°C, aluminium about 900 J/kg°C. With the same heater and mass, which warms faster?",
+        "choices": [
+          "Aluminium",
+          "Water",
+          "They warm at the same rate",
+          "It depends on the room"
+        ],
+        "answer": 0,
+        "explain": "Aluminium needs less energy per kilogram per degree, so the same power raises its temperature more quickly."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 31,
+    "captions": [
+      {
+        "t": 800,
+        "text": "A 1 kg aluminium block. The heater goes in one hole and the thermometer in the other, with a drop of oil for good contact."
+      },
+      {
+        "t": 4000,
+        "text": "Insulation keeps heat in the block instead of escaping to the room."
+      },
+      {
+        "t": 5200,
+        "text": "Start temperature first, then switch on and start the clock."
+      },
+      {
+        "t": 7600,
+        "text": "Power = voltage × current: 11.8 V × 4.10 A ≈ 48 W, so 48 joules every second.",
+        "slow": true
+      },
+      {
+        "t": 10000,
+        "text": "Every minute the block warms by about 3 °C. A steady rise means steady power."
+      },
+      {
+        "t": 24400,
+        "text": "After 600 s: E = VIt ≈ 29 000 J went into the block."
+      },
+      {
+        "t": 26800,
+        "text": "c = E ÷ (m Δθ) ≈ 946 J/kg°C. A bit above 900 because some heat still escaped."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "param.set",
+        "payload": {
+          "key": "heater-in",
+          "value": true
+        }
+      },
+      {
+        "t": 2000,
+        "type": "param.set",
+        "payload": {
+          "key": "thermo-in",
+          "value": true
+        }
+      },
+      {
+        "t": 3000,
+        "type": "param.set",
+        "payload": {
+          "key": "oil",
+          "value": true
+        }
+      },
+      {
+        "t": 4000,
+        "type": "param.set",
+        "payload": {
+          "key": "insulate",
+          "value": true
+        }
+      },
+      {
+        "t": 5400,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 20,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 6400,
+        "type": "param.set",
+        "payload": {
+          "key": "heater",
+          "value": true
+        }
+      },
+      {
+        "t": 7800,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "voltmeter",
+          "reading": {
+            "key": "V",
+            "value": 11.8,
+            "unit": "V"
+          }
+        }
+      },
+      {
+        "t": 8800,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "ammeter",
+          "reading": {
+            "key": "I",
+            "value": 4.1,
+            "unit": "A"
+          }
+        }
+      },
+      {
+        "t": 10200,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 10900,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 22.5,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 11600,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 12300,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 25.6,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 13000,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 13700,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 28.8,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 14400,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 15100,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 32,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 15800,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 16500,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 35.2,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 17200,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 17900,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 38.3,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 18600,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 19300,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 41.4,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 20000,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 20700,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 44.5,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 21400,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 22100,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 47.6,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 22800,
+        "type": "param.set",
+        "payload": {
+          "key": "wait",
+          "value": 60
+        }
+      },
+      {
+        "t": 23500,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "thermometer",
+          "reading": {
+            "key": "T",
+            "value": 50.7,
+            "unit": "°C"
+          }
+        }
+      },
+      {
+        "t": 24200,
+        "type": "param.set",
+        "payload": {
+          "key": "heater",
+          "value": false
+        }
+      },
+      {
+        "t": 25800,
+        "type": "param.set",
+        "payload": {
+          "key": "result:E",
+          "value": 29028
+        }
+      },
+      {
+        "t": 27000,
+        "type": "param.set",
+        "payload": {
+          "key": "result:c",
+          "value": 946
+        }
+      },
+      {
+        "t": 28600,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 1
+        }
+      },
+      {
+        "t": 29100,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 2
+        }
+      },
+      {
+        "t": 29600,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q3",
+          "value": 0
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 10,
+    "sequence": 15,
+    "technique": 20,
+    "measurement": 40,
+    "observation": 15
+  }
+}

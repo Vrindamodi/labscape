@@ -360,9 +360,12 @@ function round2(x: number) {
  * Forms: "seen:<key>", "pink-persists:<id>", "ph-above:<id>:<v>", "ph-below:<id>:<v>",
  * "precipitate:<id>:<formula>", "gas-collected:<id>:<gas>:<mL>", "deposit:<id>",
  * "temp-above:<id>:<C>", "volume-at-least:<id>:<mL>", "spill-hazard", "burette-clear:<id>",
- * "count:<n>:<seen key>", "time-at-least:<ms>".
+ * "count:<n>:<seen key>", "time-at-least:<ms>", "volume-at-most:<id>:<mL>", "burner-on:<id>",
+ * "burner-off:<id>", and "<a>&<b>" for several at once.
  */
 export function predicate(expr: string, s: LabState): boolean {
+  // "<p1>&<p2>": every part must hold (e.g. three tubes have all been coated).
+  if (expr.includes("&")) return expr.split("&").every((part) => predicate(part, s));
   const [name, a, b, c] = expr.split(":");
   const it = a ? s.items[a] : undefined;
   switch (name) {
@@ -395,6 +398,12 @@ export function predicate(expr: string, s: LabState): boolean {
       return !!it?.liquid && it.liquid.tempC > Number(b);
     case "volume-at-least":
       return !!it?.liquid && it.liquid.volumeMl >= Number(b) - 1e-6;
+    case "volume-at-most":
+      return !!it?.liquid && it.liquid.volumeMl > 0 && it.liquid.volumeMl <= Number(b) + 1e-6;
+    case "burner-on":
+      return !!it?.gasOn;
+    case "burner-off":
+      return !!it && it.kind === "bunsen" && !it.gasOn;
     case "burette-clear":
       return !!it && it.kind === "burette_50" && !it.tipBubble && (it.liquid?.volumeMl ?? 0) > 0;
     case "spill-hazard":

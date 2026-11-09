@@ -101,7 +101,80 @@ describe("cross-engine fixture", () => {
     const file = path.resolve(process.cwd(), "../../apps/api/src/test/resources/engine-golden-hashes.json");
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(out, null, 2) + "\n");
-    expect(Object.keys(out).length).toBe(19);
+    expect(Object.keys(out).length).toBe(28); // 13 chemistry + 8 physics + 7 maths
+  }, 60_000);
+});
+
+describe("Part 5 chemistry", () => {
+  const ev = (content: string, fn: (e: LabEvent[]) => LabEvent[]) => edit(goldenEvents(EXPERIMENTS[content]!.golden), fn);
+
+  it("elephant toothpaste: no catalyst, no foam and no oxygen to relight the splint", () => {
+    const c = EXPERIMENTS["elephant-toothpaste"]!;
+    const r = runSession(c, ev("elephant-toothpaste", (es) => es.filter((e) => (e.payload as { from?: string }).from !== "ki")), { tailMs: 5000 });
+    expect(r.state.seen["foam:cyl"]).toBeUndefined();
+    expect(r.state.seen["relight"]).toBeUndefined();
+    expect(r.report.completed).toBe(false);
+  });
+
+  it("metal displacement: copper cannot displace magnesium", () => {
+    const c = EXPERIMENTS["metal-displacement"]!;
+    const r = runSession(c, goldenEvents(c.golden), { tailMs: 1000 });
+    expect(r.state.items["t4"]!.depositMol).toBe(0);
+    expect(r.state.items["t1"]!.depositOf).toBe("Zn");
+    expect(r.state.items["t2"]!.depositOf).toBe("Fe");
+    expect(r.state.items["t1"]!.liquid!.tempC).toBeGreaterThan(23);
+  });
+
+  it("disappearing cross: half the concentration takes about twice as long", () => {
+    const c = EXPERIMENTS["disappearing-cross"]!;
+    const r = runSession(c, goldenEvents(c.golden), { tailMs: 1000 });
+    const a = r.state.seen["cross-gone:fA"]!;
+    const b = r.state.seen["cross-gone:fB"]!;
+    expect(a).toBeGreaterThan(15);
+    expect(a).toBeLessThan(35);
+    expect(b / a).toBeGreaterThan(1.7);
+    expect(b / a).toBeLessThan(2.3);
+  });
+
+  it("disappearing cross: warm thiosulfate clouds faster", () => {
+    const c = EXPERIMENTS["disappearing-cross"]!;
+    const warm = { ...c, bench: { items: c.bench.items.map((i) => (i.id === "thio" ? { ...i, fill: { reagentId: "thio-0.15", volumeMl: 200, tempC: 40 } } : i)) } };
+    const r = runSession(warm, goldenEvents(c.golden), { tailMs: 1000 });
+    expect(r.state.seen["cross-gone:fA"]!).toBeLessThan(15);
+  });
+
+  it("making copper sulfate: boiling the acid stops the run", () => {
+    const c = EXPERIMENTS["making-copper-sulfate"]!;
+    const r = runSession(c, ev("making-copper-sulfate", (es) => es.filter((e) => !(e.type === "heat.set" && (e.payload as { powerPct: number }).powerPct === 0))), { tailMs: 1000 });
+    expect(r.report.stoppedForSafety).toBe(true);
+    expect(r.report.deviations.some((d) => d.code === "boiling-acid")).toBe(true);
+  });
+
+  it("making copper sulfate: crystals only appear once the solution cools", () => {
+    const c = EXPERIMENTS["making-copper-sulfate"]!;
+    const r = runSession(c, goldenEvents(c.golden), { tailMs: 1000 });
+    expect(r.state.items["basin"]!.liquid!.solids["CuSO4.5H2O"]).toBeGreaterThan(1e-3);
+    expect(r.state.items["basin"]!.liquid!.tempC).toBeLessThan(50);
+  });
+
+  it("making esters: lighting the Bunsen near ethanol is a safety stop", () => {
+    const c = EXPERIMENTS["making-esters"]!;
+    const r = runSession(c, ev("making-esters", (es) => [...es.slice(0, 3), { ...es[0]!, type: "heat.set", t: 9000, payload: { target: "bunsen", powerPct: 100 } } as LabEvent, ...es.slice(3)]), { tailMs: 1000 });
+    expect(r.report.stoppedForSafety).toBe(true);
+  });
+
+  it("making esters: without the catalyst there is no fruity smell", () => {
+    const c = EXPERIMENTS["making-esters"]!;
+    const r = runSession(c, ev("making-esters", (es) => es.filter((e) => (e.payload as { from?: string }).from !== "conc")), { tailMs: 1000 });
+    expect(r.state.seen["smell:ester"]).toBeUndefined();
+  });
+
+  it("electrolysis: hydrogen at the cathode, chlorine bleaches, the solution turns alkaline", () => {
+    const c = EXPERIMENTS["electrolysis-of-brine"]!;
+    const r = runSession(c, goldenEvents(c.golden), { tailMs: 1000 });
+    expect(r.state.seen["pop-test"]).toBe(1);
+    expect(r.state.items["litmus"]!.litmus).toBe("bleached");
+    expect(r.state.items["cell"]!.liquid!.ph).toBeGreaterThan(10);
   });
 });
 
@@ -115,5 +188,5 @@ describe("golden-run recorder", () => {
       expect(golden.events[0]!.t).toBe(1000);
       expect(golden.captions.length, c.slug).toBe(c.steps.length);
     }
-  });
+  }, 60_000);
 });

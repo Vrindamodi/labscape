@@ -1,0 +1,400 @@
+{
+  "version": 1,
+  "fidelity": "approximate",
+  "reviewStatus": "draft",
+  "id": "phys-newton-2",
+  "slug": "newtons-second-law",
+  "subject": "physics",
+  "title": "F = ma with a trolley and light gates",
+  "setup": {
+    "g": 9.81,
+    "trolleyKg": 0.5,
+    "hangerKg": 0.02,
+    "slotKg": 0.02,
+    "slots": 5,
+    "boxSlots": 3,
+    "mu": 0.012,
+    "cardM": 0.1,
+    "startToGate1M": 0.2,
+    "gateGapM": 0.5
+  },
+  "steps": [
+    {
+      "id": "compensate",
+      "title": "Cancel out friction",
+      "instruction": "Raise one end of the runway a little at a time. After each change, nudge the trolley. Stop when it rolls at a steady speed: the slope now cancels friction.",
+      "action": "param.set",
+      "scoring": {
+        "technique": 1,
+        "equipment": 1
+      },
+      "hints": [
+        "comp-1",
+        "comp-2",
+        "comp-3"
+      ]
+    },
+    {
+      "id": "first-run",
+      "title": "First run",
+      "instruction": "With only the hanger on the string (5 slotted masses still on the trolley), release the trolley from the start line. Read the acceleration from the light-gate logger and record it.",
+      "action": "measure.read",
+      "scoring": {
+        "technique": 1,
+        "measurement": 1
+      },
+      "hints": [
+        "run-1",
+        "run-2",
+        "run-3"
+      ]
+    },
+    {
+      "id": "five-forces",
+      "title": "Five different forces",
+      "instruction": "Move one slotted mass from the trolley to the hanger, release again and record a. Repeat until you have five forces. Take the masses from the trolley, never the box, so the total mass stays the same.",
+      "action": "measure.read",
+      "scoring": {
+        "technique": 1,
+        "measurement": 1
+      },
+      "hints": [
+        "five-1",
+        "five-2",
+        "five-3"
+      ]
+    },
+    {
+      "id": "result",
+      "title": "Find the mass from the graph",
+      "instruction": "Your graph of a against F is a straight line through the origin. Its gradient is 1/m. Work out m = 1 ÷ gradient and enter it.",
+      "action": "param.set",
+      "scoring": {
+        "measurement": 1
+      },
+      "hints": [
+        "m-1",
+        "m-2",
+        "m-3"
+      ]
+    }
+  ],
+  "hints": {
+    "comp-1": {
+      "rung": 1,
+      "text": "Friction slows the trolley down. A small slope can push it along by exactly the same amount."
+    },
+    "comp-2": {
+      "rung": 2,
+      "text": "Use the tilt control, then press Nudge. Slows down: tilt more. Speeds up: tilt less."
+    },
+    "comp-3": {
+      "rung": 3,
+      "text": "Set the tilt to about 0.7°, then nudge. It should roll at a steady speed."
+    },
+    "run-1": {
+      "rung": 1,
+      "text": "The falling hanger pulls the trolley through both light gates."
+    },
+    "run-2": {
+      "rung": 2,
+      "text": "Press Release, then read a from the logger panel."
+    },
+    "run-3": {
+      "rung": 3,
+      "text": "Type the logger's a (for the hanger alone it is about 0.32 m/s²) and press Record."
+    },
+    "five-1": {
+      "rung": 1,
+      "text": "To change only the force, the total mass must not change."
+    },
+    "five-2": {
+      "rung": 2,
+      "text": "Use \"Trolley → hanger\" to move one 20 g mass each time."
+    },
+    "five-3": {
+      "rung": 3,
+      "text": "Move one mass, Release, record a. Do this four more times."
+    },
+    "m-1": {
+      "rung": 1,
+      "text": "F = ma can be rearranged to a = (1/m) × F."
+    },
+    "m-2": {
+      "rung": 2,
+      "text": "So the gradient of a against F is 1/m. The panel shows the best-fit gradient."
+    },
+    "m-3": {
+      "rung": 3,
+      "text": "m = 1 ÷ gradient. It should be close to 0.62 kg: trolley 0.50 kg + five 20 g masses + 20 g hanger."
+    }
+  },
+  "observations": {
+    "whatHappened": "Each extra 20 g moved onto the hanger made the trolley speed up more. Doubling the pulling force doubled the acceleration, so a against F was a straight line through the origin.",
+    "why": "The resultant force on the trolley and hanger is the weight of the hanger, because the tilted runway cancels friction. Newton's second law says F = ma. Keeping the total mass m the same and changing only F gives a = F/m: the acceleration is directly proportional to the force, and the gradient of the graph is 1/m.",
+    "equationLatex": "F = ma \\qquad a = \\frac{(v_2^2 - v_1^2)}{2s}",
+    "realWorld": [
+      "Why a fully loaded lorry takes longer to speed up",
+      "Car crumple zones and seatbelts",
+      "Rocket launches"
+    ],
+    "prompts": [
+      {
+        "id": "q1",
+        "question": "The total mass stays the same and the pulling force doubles. The acceleration…",
+        "choices": [
+          "halves",
+          "stays the same",
+          "doubles",
+          "quadruples"
+        ],
+        "answer": 2,
+        "explain": "a = F/m, so with m fixed, a is directly proportional to F."
+      },
+      {
+        "id": "q2",
+        "question": "Why move masses from the trolley to the hanger, instead of adding new ones from the box?",
+        "choices": [
+          "It is quicker",
+          "So the total mass being accelerated stays the same",
+          "The box masses are heavier",
+          "So the trolley goes faster"
+        ],
+        "answer": 1,
+        "explain": "To test a ∝ F you must change only the force. Masses from the box would change the mass too."
+      },
+      {
+        "id": "q3",
+        "question": "Why was the runway tilted slightly before the runs?",
+        "choices": [
+          "To make the trolley go as fast as possible",
+          "So a component of weight cancels friction",
+          "To stop the trolley falling off",
+          "To make the light gates work"
+        ],
+        "answer": 1,
+        "explain": "With friction cancelled, the resultant force is just the weight of the hanger."
+      }
+    ]
+  },
+  "golden": {
+    "durationS": 27,
+    "captions": [
+      {
+        "t": 800,
+        "text": "Friction slows the trolley. Tilting the runway a little lets gravity cancel it out."
+      },
+      {
+        "t": 3400,
+        "text": "A nudge and it rolls at a steady speed: friction is now balanced.",
+        "slow": true
+      },
+      {
+        "t": 5600,
+        "text": "The falling hanger pulls the trolley. Two light gates time a card to find its speed twice."
+      },
+      {
+        "t": 8800,
+        "text": "Move a mass from the trolley to the hanger: more force, same total mass."
+      },
+      {
+        "t": 14000,
+        "text": "Double the force, double the acceleration: a is proportional to F."
+      },
+      {
+        "t": 21000,
+        "text": "The gradient of a against F is 1/m. Here m = 0.62 kg, everything being pulled."
+      }
+    ],
+    "events": [
+      {
+        "t": 1000,
+        "type": "param.set",
+        "payload": {
+          "key": "tilt",
+          "value": 0.3
+        }
+      },
+      {
+        "t": 2200,
+        "type": "param.set",
+        "payload": {
+          "key": "nudge",
+          "value": true
+        }
+      },
+      {
+        "t": 3400,
+        "type": "param.set",
+        "payload": {
+          "key": "tilt",
+          "value": 0.7
+        }
+      },
+      {
+        "t": 4600,
+        "type": "param.set",
+        "payload": {
+          "key": "nudge",
+          "value": true
+        }
+      },
+      {
+        "t": 6000,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 7600,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "light-gates",
+          "reading": {
+            "key": "a",
+            "value": 0.317,
+            "unit": "m/s²"
+          }
+        }
+      },
+      {
+        "t": 9000,
+        "type": "param.set",
+        "payload": {
+          "key": "move",
+          "value": "to-hanger"
+        }
+      },
+      {
+        "t": 10200,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 11600,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "light-gates",
+          "reading": {
+            "key": "a",
+            "value": 0.635,
+            "unit": "m/s²"
+          }
+        }
+      },
+      {
+        "t": 12600,
+        "type": "param.set",
+        "payload": {
+          "key": "move",
+          "value": "to-hanger"
+        }
+      },
+      {
+        "t": 13600,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 15000,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "light-gates",
+          "reading": {
+            "key": "a",
+            "value": 0.94,
+            "unit": "m/s²"
+          }
+        }
+      },
+      {
+        "t": 16000,
+        "type": "param.set",
+        "payload": {
+          "key": "move",
+          "value": "to-hanger"
+        }
+      },
+      {
+        "t": 17000,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 18400,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "light-gates",
+          "reading": {
+            "key": "a",
+            "value": 1.268,
+            "unit": "m/s²"
+          }
+        }
+      },
+      {
+        "t": 19400,
+        "type": "param.set",
+        "payload": {
+          "key": "move",
+          "value": "to-hanger"
+        }
+      },
+      {
+        "t": 20400,
+        "type": "sim.start",
+        "payload": {}
+      },
+      {
+        "t": 21800,
+        "type": "measure.read",
+        "payload": {
+          "instrument": "light-gates",
+          "reading": {
+            "key": "a",
+            "value": 1.598,
+            "unit": "m/s²"
+          }
+        }
+      },
+      {
+        "t": 23400,
+        "type": "param.set",
+        "payload": {
+          "key": "result:m",
+          "value": 0.62
+        }
+      },
+      {
+        "t": 24800,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q1",
+          "value": 2
+        }
+      },
+      {
+        "t": 25300,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q2",
+          "value": 1
+        }
+      },
+      {
+        "t": 25800,
+        "type": "param.set",
+        "payload": {
+          "key": "answer:q3",
+          "value": 1
+        }
+      }
+    ]
+  },
+  "scoring": {
+    "equipment": 10,
+    "sequence": 15,
+    "technique": 25,
+    "measurement": 35,
+    "observation": 15
+  }
+}

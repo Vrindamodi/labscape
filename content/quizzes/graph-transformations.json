@@ -1,0 +1,203 @@
+{
+  "id": "quiz-graph-transformations",
+  "version": 1,
+  "experimentSlug": "graph-transformations",
+  "title": "Graph transformations quiz",
+  "passPct": 60,
+  "draw": 5,
+  "reviewStatus": "draft",
+  "concepts": {
+    "translations": "Translations",
+    "reflections": "Reflections",
+    "stretches": "Stretches"
+  },
+  "questions": [
+    {
+      "id": "shift-right",
+      "type": "multiple_choice",
+      "prompt": "How is the graph of y = (x − 4)² related to y = x²?",
+      "conceptIds": [
+        "translations"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Moved 4 units left"
+        },
+        {
+          "id": "b",
+          "text": "Moved 4 units right"
+        },
+        {
+          "id": "c",
+          "text": "Moved 4 units up"
+        },
+        {
+          "id": "d",
+          "text": "Moved 4 units down"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Inside the bracket the change acts on x and feels backwards: x − 4 moves the graph 4 to the right.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "vertex",
+      "type": "fill_blank",
+      "prompt": "The turning point of y = (x + 3)² − 5 is at (___, ___).",
+      "conceptIds": [
+        "translations"
+      ],
+      "blanks": 2,
+      "answer": [
+        [
+          "-3",
+          "−3"
+        ],
+        [
+          "-5",
+          "−5"
+        ]
+      ],
+      "explanation": "y = x² has its turning point at (0, 0). x + 3 moves it 3 left and − 5 moves it 5 down.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "reflect",
+      "type": "match",
+      "prompt": "Match each equation to what it does to the graph of y = f(x).",
+      "conceptIds": [
+        "reflections",
+        "translations"
+      ],
+      "left": [
+        {
+          "id": "l1",
+          "text": "y = −f(x)"
+        },
+        {
+          "id": "l2",
+          "text": "y = f(−x)"
+        },
+        {
+          "id": "l3",
+          "text": "y = f(x) + 2"
+        }
+      ],
+      "right": [
+        {
+          "id": "r1",
+          "text": "Reflect in the x-axis"
+        },
+        {
+          "id": "r2",
+          "text": "Reflect in the y-axis"
+        },
+        {
+          "id": "r3",
+          "text": "Move up 2"
+        }
+      ],
+      "answer": [
+        [
+          "l1",
+          "r1"
+        ],
+        [
+          "l2",
+          "r2"
+        ],
+        [
+          "l3",
+          "r3"
+        ]
+      ],
+      "explanation": "A minus sign outside acts on y (flips over the x-axis); a minus sign inside acts on x (flips over the y-axis).",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "stretch",
+      "type": "predict_outcome",
+      "prompt": "What does y = 3 sin x look like compared with y = sin x?",
+      "conceptIds": [
+        "stretches"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "Three times as tall, same width"
+        },
+        {
+          "id": "b",
+          "text": "Three times as wide"
+        },
+        {
+          "id": "c",
+          "text": "Squashed to a third of the width"
+        },
+        {
+          "id": "d",
+          "text": "Moved up 3"
+        }
+      ],
+      "answer": [
+        0
+      ],
+      "explanation": "a multiplies every y-value: a vertical stretch by factor 3.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "sin2x",
+      "type": "true_false",
+      "prompt": "y = sin(2x) repeats twice as often as y = sin x.",
+      "conceptIds": [
+        "stretches"
+      ],
+      "answer": true,
+      "explanation": "b = 2 inside squashes the graph sideways by a factor of ½, so the period halves from 2π to π.",
+      "status": "approved",
+      "source": "author"
+    },
+    {
+      "id": "combo",
+      "type": "multiple_choice",
+      "prompt": "Which equation is y = x² flipped over the x-axis, then moved 1 left and 4 up?",
+      "conceptIds": [
+        "reflections",
+        "translations"
+      ],
+      "options": [
+        {
+          "id": "a",
+          "text": "y = −(x − 1)² + 4"
+        },
+        {
+          "id": "b",
+          "text": "y = −(x + 1)² + 4"
+        },
+        {
+          "id": "c",
+          "text": "y = (x + 1)² − 4"
+        },
+        {
+          "id": "d",
+          "text": "y = −(x + 4)² + 1"
+        }
+      ],
+      "multi": false,
+      "answer": [
+        1
+      ],
+      "explanation": "Flip: a = −1. Left 1: x + 1 inside. Up 4: + 4 outside. The turning point ends up at (−1, 4).",
+      "status": "approved",
+      "source": "author"
+    }
+  ]
+}
