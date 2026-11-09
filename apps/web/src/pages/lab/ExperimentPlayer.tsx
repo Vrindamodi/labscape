@@ -503,9 +503,9 @@ function Try({
         )}
       </motion.div>
 
-      <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto border-l border-white/[0.07] bg-[#0d1426]/70 p-4" aria-label="Steps and observations">
+      <aside className="ls-scroll m-3 flex min-h-0 flex-col gap-3 overflow-y-auto rounded-[18px] border border-[rgba(140,180,255,.16)] bg-[linear-gradient(180deg,rgba(14,26,56,.78),rgba(8,16,38,.84))] p-4 shadow-[inset_0_1px_0_rgba(200,220,255,.10),0_24px_60px_-24px_rgba(0,0,0,.8)] lg:ml-0" aria-label="Steps and observations">
         {recording && <Recorder content={content} events={session.events} />}
-        <div className="rounded-xl border border-accent/40 bg-accent/[0.08] p-4">
+        <div className="rounded-[14px] border border-[rgba(110,170,255,.45)] bg-[linear-gradient(120deg,rgba(61,139,255,.18),rgba(57,214,255,.06))] p-4">
           {current ? (
             <>
               <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-cyan">Step {content.steps.indexOf(current) + 1} of {content.steps.length}</div>
