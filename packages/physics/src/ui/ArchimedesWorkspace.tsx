@@ -117,7 +117,7 @@ export function ArchimedesWorkspace({ session }: { session: SimSession<Archimede
   const flowing = s.canFull && s.cylinderPlaced && depth !== null && liveF > s.immersed + 0.01;
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_330px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_330px]">
       <LabStyles />
       <Stage className="min-h-[340px]" label={dripping ? "The can is still dripping…" : undefined}>
         <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full select-none" role="group" aria-label={`Spring balance over an overflow can. Sinker ${Math.round(liveF * 100)} % under water${liveTouch ? ", touching the bottom" : ""}.`}>

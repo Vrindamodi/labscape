@@ -195,7 +195,7 @@ export function ProjectileWorkspace({ session }: { session: SimSession<Projectil
   };
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_320px]">
       <LabStyles />
       <div className="flex min-h-0 flex-col gap-3">
         <Stage className="min-h-[300px] flex-1">
@@ -426,8 +426,8 @@ export function ProjectileWorkspace({ session }: { session: SimSession<Projectil
             </div>
           </div>
           <div className="space-y-2.5">
-            <ParamSlider label="Fine-tune speed" value={s.speed} min={5} max={30} step={0.5} unit="m/s" onCommit={(v) => session.dispatch("param.set", { key: "speed", value: v })} disabled={ro} />
-            <ParamSlider label="Fine-tune angle" value={s.angle} min={5} max={85} step={0.1} unit="°" onCommit={(v) => session.dispatch("param.set", { key: "angle", value: v })} disabled={ro} />
+            <ParamSlider guideId="param:speed" label="Fine-tune speed" value={s.speed} min={5} max={30} step={0.5} unit="m/s" onCommit={(v) => session.dispatch("param.set", { key: "speed", value: v })} disabled={ro} />
+            <ParamSlider guideId="param:angle" label="Fine-tune angle" value={s.angle} min={5} max={85} step={0.1} unit="°" onCommit={(v) => session.dispatch("param.set", { key: "angle", value: v })} disabled={ro} />
             <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Planet">
               {(Object.keys(PLANETS) as Planet[]).map((p) => (
                 <button key={p} type="button" role="radio" aria-checked={s.planet === p} disabled={ro} onClick={() => session.dispatch("param.set", { key: "planet", value: p })} className="ls-chip">

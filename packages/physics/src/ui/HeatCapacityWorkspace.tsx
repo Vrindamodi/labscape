@@ -52,7 +52,7 @@ export function HeatCapacityWorkspace({ session }: { session: SimSession<HeatSta
   const thermoY = s.thermoIn ? BY + 20 : BY - 120;
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_340px]">
       <LabStyles />
       <div className="flex min-h-0 flex-col gap-3">
         <Stage className="min-h-[300px]" label={live ? `Heating · ${clock(sinceOn ?? 0)}` : s.onS > 0 ? "Heater off · the block is still hot" : "Set up the block"}>

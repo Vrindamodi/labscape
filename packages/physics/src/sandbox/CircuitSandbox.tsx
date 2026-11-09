@@ -343,7 +343,7 @@ export function CircuitSandbox({ initial, onChange }: { initial?: CircuitBuild |
   const selInfo = sel ? explained.lines.filter((l) => l.ids?.includes(sel.id) && l.ids.length <= 2) : [];
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <div className="flex flex-wrap gap-1.5" role="toolbar" aria-label="Add a part">

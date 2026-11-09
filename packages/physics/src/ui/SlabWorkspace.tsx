@@ -102,7 +102,7 @@ export function SlabWorkspace({ session }: { session: SimSession<SlabState> }) {
   }
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_330px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_330px]">
       <LabStyles />
       <Stage className="min-h-[340px] !bg-[#0b1730] p-3" label={`Sheet ${done.length + 1} · ${stored.traced ? "traced: drag the protractor onto a face and read the angles" : active ? `click to push in ${active}${active === "P3" || active === "P4" ? " below the slab" : " above the slab"}, then drag to adjust` : aligned ? "all four pins line up" : "drag P3 and P4 until all four line up"}`}>
         <svg

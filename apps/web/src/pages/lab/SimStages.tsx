@@ -2,15 +2,16 @@ import { sound } from "@labscape/audio";
 import { registerStage, type StageDemoProps, type StageTryProps } from "@labscape/lab-engine";
 import { MATHS_CONTENT, MATHS_GUIDES, MATHS_MODELS, MATHS_WORKSPACES } from "@labscape/mathlab";
 import { useMotion } from "@labscape/motion";
-import { describeAction, PHYSICS_CONTENT, PHYSICS_GUIDES, PHYSICS_MODELS, PHYSICS_WORKSPACES, undoKey, useSimSession, type SimContent, type SimFeedback, type SimGuide, type SimModel, type SimSession, type WorkspaceProps } from "@labscape/physics";
+import { describeAction, firstSentence, goldenSteps, PHYSICS_CONTENT, PHYSICS_GUIDES, PHYSICS_MODELS, PHYSICS_WORKSPACES, undoKey, useSimSession, type SimContent, type SimFeedback, type SimGuide, type SimModel, type SimSession, type WorkspaceProps } from "@labscape/physics";
 import { Button, Chip, cx, Modal, useShell } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Captions, Check, CircleAlert, CircleHelp, Eye, Gauge, Lightbulb, Pause, Play, RotateCcw, ShieldAlert, Sparkles, Undo2 } from "lucide-react";
+import { ArrowRight, Captions, Check, CircleAlert, CircleHelp, Eye, Gauge, Hand, Lightbulb, Navigation, Pause, Play, RotateCcw, ShieldAlert, Sparkles, Undo2, Wand2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import type { LabContext } from "@labscape/contracts";
 import { post } from "../../lib/api";
 import { usePublishLabContext } from "../../lib/labContext";
 import { useSession } from "../../lib/session";
+import { FitBench, GuideArrow, nextGoldenAction, StepReplay, useGuidePref, wireSentence } from "./SimGuide";
 
 type Sim = { content: SimContent; model: SimModel<unknown>; Workspace: ComponentType<WorkspaceProps>; guide: SimGuide | null };
 
@@ -26,8 +27,8 @@ function simFor(slug: string): Sim | null {
 function SimDemo({ slug, onTry }: StageDemoProps) {
   const sim = simFor(slug)!;
   const idea = sim.guide?.idea ?? null;
-  // Long demos drag at 1x: they start at 2x (1.5x for short ones). With an idea card, wait for Start.
-  const session = useSimSession(sim.content, sim.model, { mode: "demo", autoplay: !idea, speed: sim.content.golden.durationS > 25 ? 2 : 1.5 });
+  // A steady, readable pace: 1x (the longest runs start at 1.25x). With an idea card, wait for Start.
+  const session = useSimSession(sim.content, sim.model, { mode: "demo", autoplay: !idea, speed: sim.content.golden.durationS > 40 ? 1.25 : 1 });
   const [captions, setCaptions] = useState(true);
   const [started, setStarted] = useState(!idea);
   const d = session.demo;
@@ -37,11 +38,12 @@ function SimDemo({ slug, onTry }: StageDemoProps) {
   const why = caption ? sim.guide?.beats[capIdx] : null;
   const W = sim.Workspace;
   return (
-    <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto_auto]">
-      <div className="relative min-h-0 overflow-y-auto p-3">
-        <div className="pointer-events-none h-full [&_*]:pointer-events-none" aria-hidden={false}>
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto_auto]">
+      <div className="relative min-h-0 p-3">
+        {/* The whole bench at once (scaled to fit), so nothing scrolls or jumps while it plays. */}
+        <FitBench className="pointer-events-none [&_*]:pointer-events-none">
           <W session={session} />
-        </div>
+        </FitBench>
         {!started && idea && (
           <div className="absolute inset-0 z-10 grid place-items-center overflow-y-auto bg-[#060b18]/80 p-3 backdrop-blur-sm">
             <div className="w-full max-w-lg rounded-2xl border border-[#ffd77a]/30 bg-[#0d1426] p-4 shadow-2xl sm:p-5">
@@ -68,33 +70,41 @@ function SimDemo({ slug, onTry }: StageDemoProps) {
           </div>
         )}
       </div>
-      <AnimatePresence initial={false} mode="wait">
-        {captions && started && caption && (
-          <motion.div key={caption.t} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="border-t border-white/[0.07] bg-black/40 px-4 py-2" aria-live="polite">
-            <p className="text-sm font-semibold text-white sm:text-base">
-              {caption.slow && <span className="mr-2 rounded bg-accent/40 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase">slow-mo</span>}
-              {caption.text}
-            </p>
-            {why && (
-              <p className="mt-0.5 text-[13px] text-[#cfe0ff]/80">
-                <span className="font-semibold text-[#ffd77a]">Why: </span>
-                {why}
+      {/* A fixed-height caption strip: the bench never jumps when a caption changes length. */}
+      <div className={cx("relative overflow-hidden border-t border-white/[0.07] bg-black/40", captions ? "h-[112px] sm:h-[96px]" : "h-0 border-t-0")} aria-live="polite">
+        <AnimatePresence initial={false} mode="wait">
+          {captions && started && caption && (
+            <motion.div key={caption.t} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.28, ease: "easeOut" }} className="absolute inset-0 overflow-y-auto px-4 py-2.5">
+              <p className="text-[15px] font-semibold leading-snug text-white sm:text-base">
+                {caption.slow && <span className="mr-2 rounded bg-accent/40 px-1.5 py-0.5 align-middle text-[12px] font-bold uppercase">slow-mo</span>}
+                {caption.text}
               </p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {why && (
+                <p className="mt-1 text-[14px] leading-snug text-[#cfe0ff]/85">
+                  <span className="font-semibold text-[#ffd77a]">Why: </span>
+                  {why}
+                </p>
+              )}
+            </motion.div>
+          )}
+          {captions && started && !caption && (
+            <motion.p key="wait" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 px-4 py-2.5 text-[15px] text-white/50">
+              Watch the bench…
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
       <div className="flex flex-wrap items-center gap-3 border-t border-white/[0.07] bg-[#0d1426]/80 px-4 py-3">
         <Button size="sm" variant="secondary" icon={d.playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} onClick={() => (setStarted(true), d.setPlaying(!d.playing))}>
           {d.playing ? "Pause" : d.t >= d.duration ? "Replay" : "Play"}
         </Button>
         <input type="range" min={0} max={d.duration} value={d.t} onChange={(e) => d.seek(Number(e.target.value))} className="h-1 min-w-[160px] flex-1 accent-[#2f80ff]" aria-label="Demo position" />
-        <span className="font-mono text-xs text-white/60 tabular-nums">
+        <span className="text-[13px] text-white/60 tabular-nums">
           {(d.t / 1000).toFixed(0)} / {(d.duration / 1000).toFixed(0)} s
         </span>
         <div className="flex gap-1" role="radiogroup" aria-label="Speed">
-          {[1, 1.5, 2, 3].map((x) => (
-            <button key={x} role="radio" aria-checked={d.speed === x} onClick={() => d.setSpeed(x)} className={cx("rounded-full px-2 py-1 text-xs font-semibold", d.speed === x ? "bg-white/15 text-white" : "text-white/50")}>
+          {[0.75, 1, 1.5, 2].map((x) => (
+            <button key={x} role="radio" aria-checked={d.speed === x} onClick={() => d.setSpeed(x)} className={cx("rounded-full px-2.5 py-1 text-[13px] font-semibold", d.speed === x ? "bg-white/15 text-white" : "text-white/55 hover:text-white")}>
               {x}×
             </button>
           ))}
@@ -205,22 +215,98 @@ function SimTry({ slug, attempt, onSaved, onSaving, onSaveError, onDone, onResta
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  return (
-    <div className="grid h-full min-h-0 grid-rows-[1fr_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-1">
-      <motion.div key={shake} className="relative min-h-0 overflow-y-auto p-3" animate={shake ? { x: [0, -3, 3, -3, 3, 0] } : {}} transition={{ duration: 0.3 }}>
-        <W session={session} />
-      </motion.div>
+  /* ---------------------------------------------------------------- guide me */
+  const [guideOn, setGuideOn] = useGuidePref();
+  const groups = useMemo(() => goldenSteps(sim.content, sim.model), [sim.content, sim.model]);
+  const group = current ? groups[current.id] ?? null : null;
+  const [replay, setReplay] = useState<string | null>(null);
+  const [assisting, setAssisting] = useState<string | null>(null);
+  const [assisted, setAssisted] = useState<Record<string, true>>({});
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => void (alive.current = false);
+  }, []);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const scopeRef = useRef<HTMLDivElement>(null);
+  const lastSeq = session.events[session.events.length - 1]?.seq ?? 0;
+  const next = useMemo(
+    () => (guideOn && current ? nextGoldenAction(sim.content, sim.model, session.events, group) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [guideOn, current?.id, group, session.events.length, lastSeq],
+  );
+  const doThis = current ? (wireSentence(scopeRef.current, next) ?? firstSentence(current.instruction)) : "";
+  /** Plays the golden actions for this step through the learner's own session (logged as assisted). */
+  const doForMe = async () => {
+    if (!current || !group || assisting) return;
+    const stepId = current.id;
+    setAssisting(stepId);
+    setAssisted((a) => ({ ...a, [stepId]: true }));
+    session.dispatch("hint.shown", { hintId: `assist:${stepId}`, rung: 3, stepId });
+    announce(`Doing this step for you: ${current.title}`);
+    for (const e of group.events) {
+      await new Promise((r) => window.setTimeout(r, reduced ? 150 : 650));
+      const s = sessionRef.current;
+      if (!alive.current || s.stopped || s.doneSteps[stepId] != null) break;
+      s.dispatch(e.type, e.payload as never);
+    }
+    await new Promise((r) => window.setTimeout(r, 300));
+    if (!alive.current) return;
+    setAssisting(null);
+    if (sessionRef.current.doneSteps[stepId] == null)
+      toast({ kind: "warning", title: "Not quite finished", body: "Something you changed earlier is in the way. Press Undo to take it back, or use Show me to watch this step." });
+  };
 
-      <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto border-l border-white/[0.07] bg-[#0d1426]/70 p-4" aria-label="Steps and feedback">
-        <div className="rounded-xl border border-accent/40 bg-accent/[0.08] p-4">
+  return (
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-1">
+      <div ref={rootRef} className="relative min-h-0">
+        <motion.div ref={scopeRef} key={shake} className={cx("relative h-full min-h-0 overflow-y-auto p-3", assisting && "pointer-events-none")} animate={shake ? { x: [0, -3, 3, -3, 3, 0] } : {}} transition={{ duration: 0.3 }}>
+          <W session={session} />
+        </motion.div>
+        <GuideArrow rootRef={rootRef} scopeRef={scopeRef} active={guideOn && !!current && !session.stopped && !replay} stepKey={current?.id ?? null} reduced={reduced} next={next} />
+      </div>
+
+      <aside className="flex min-h-0 flex-col gap-3 overflow-y-auto border-white/[0.07] bg-[#0d1426]/70 p-3 max-lg:max-h-[46vh] max-lg:border-t sm:p-4 lg:border-l" aria-label="Steps and feedback">
+        <div className="rounded-xl border border-accent/40 bg-accent/[0.08] p-4 max-lg:sticky max-lg:top-0 max-lg:z-10 max-lg:bg-[#111a33]">
           {current ? (
             <>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-cyan">
-                Step {steps.indexOf(current) + 1} of {steps.length}
-                {current.optional ? " · optional" : ""}
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[13px] font-semibold uppercase tracking-[0.1em] text-accent-cyan">
+                  Step {steps.indexOf(current) + 1} of {steps.length}
+                  {current.optional ? " · optional" : ""}
+                </div>
+                <button type="button" role="switch" aria-checked={guideOn} onClick={() => setGuideOn(!guideOn)} className={cx("flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold transition-colors", guideOn ? "bg-[#ffd77a]/20 text-[#ffe3a3] ring-1 ring-inset ring-[#ffd77a]/50" : "bg-white/[0.06] text-white/60 hover:text-white")}>
+                  <Navigation className="h-3.5 w-3.5" />
+                  Guide me {guideOn ? "on" : "off"}
+                </button>
               </div>
-              <div className="mt-1 font-heading text-lg font-semibold">{current.title}</div>
-              <p className="mt-1 text-sm text-white/75">{current.instruction}</p>
+              <div className="mt-1 font-heading text-[19px] font-semibold leading-snug">{current.title}</div>
+              {guideOn ? (
+                <>
+                  <p className="mt-2 flex gap-2 rounded-lg bg-[#ffd77a]/10 px-3 py-2 text-[15px] font-semibold leading-snug text-[#ffe9b0]">
+                    <Hand className="mt-0.5 h-4 w-4 shrink-0 text-[#ffd77a]" />
+                    {doThis}
+                  </p>
+                  <details className="mt-1.5 text-[14px] leading-snug text-white/70">
+                    <summary className="cursor-pointer select-none text-[13px] font-semibold text-white/55 hover:text-white">Whole step</summary>
+                    <p className="mt-1">{current.instruction}</p>
+                  </details>
+                  {group && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button size="sm" variant="secondary" icon={<Eye className="h-4 w-4" />} onClick={() => setReplay(current.id)} disabled={!!assisting}>
+                        Show me
+                      </Button>
+                      <Button size="sm" variant="secondary" icon={<Wand2 className="h-4 w-4" />} onClick={() => void doForMe()} loading={assisting === current.id} disabled={!!assisting} title="Does this step for you. It counts as a hint.">
+                        {assisting === current.id ? "Doing it…" : "Do this step for me"}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="mt-1 text-[15px] leading-snug text-white/75">{current.instruction}</p>
+              )}
             </>
           ) : (
             <>
@@ -258,7 +344,7 @@ function SimTry({ slug, attempt, onSaved, onSaving, onSaveError, onDone, onResta
 
         {explore.length > 0 && (
           <div>
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-[0.1em] text-white/50">
               <CircleHelp className="h-3.5 w-3.5" />
               What if…?
             </div>
@@ -279,16 +365,17 @@ function SimTry({ slug, attempt, onSaved, onSaving, onSaveError, onDone, onResta
         )}
 
         <div>
-          <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">Steps</div>
+          <div className="mb-1.5 text-[13px] font-semibold uppercase tracking-[0.1em] text-white/50">Steps</div>
           <ol className="space-y-1">
             {steps.map((s, i) => {
               const isDone = session.doneSteps[s.id] !== null && session.doneSteps[s.id] !== undefined;
               const isCur = current?.id === s.id;
               return (
-                <li key={s.id} className={cx("flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm", isCur && "bg-white/[0.06]")}>
+                <li key={s.id} className={cx("flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[15px]", isCur && "bg-white/[0.06]")}>
                   <span className={cx("grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold", isDone ? "bg-state-success text-[#06210f]" : isCur ? "bg-accent text-white" : "bg-white/10 text-white/50")}>{isDone ? <Check className="h-3 w-3" /> : i + 1}</span>
                   <span className={cx(isDone ? "text-white/50" : isCur ? "font-medium text-white" : "text-white/60")}>{s.title}</span>
                   {s.optional && <Chip>optional</Chip>}
+                  {assisted[s.id] && <span className="ml-auto shrink-0 text-[12px] font-semibold text-[#ffd77a]/80">helped</span>}
                 </li>
               );
             })}
@@ -297,7 +384,7 @@ function SimTry({ slug, attempt, onSaved, onSaving, onSaveError, onDone, onResta
 
         {devs.length > 0 && (
           <div>
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-[0.1em] text-white/50">
               <Gauge className="h-3.5 w-3.5" />
               Technique
             </div>
@@ -327,7 +414,7 @@ function SimTry({ slug, attempt, onSaved, onSaving, onSaveError, onDone, onResta
         )}
 
         <div className="mt-auto">
-          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
+          <div className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-[0.1em] text-white/50">
             <Eye className="h-3.5 w-3.5" />
             Observations
           </div>
@@ -344,6 +431,10 @@ function SimTry({ slug, attempt, onSaved, onSaving, onSaveError, onDone, onResta
           </ul>
         </div>
       </aside>
+
+      {replay && groups[replay] && (
+        <StepReplay content={sim.content} model={sim.model} Workspace={W} step={steps.find((x) => x.id === replay)!} group={groups[replay]!} onClose={() => setReplay(null)} />
+      )}
 
       <Modal open={!!safety} onClose={() => {}} dismissible={false} title="Safety stop" width={480}>
         {safety && (

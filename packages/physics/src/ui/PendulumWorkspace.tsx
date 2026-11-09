@@ -158,7 +158,7 @@ export function PendulumWorkspace({ session }: { session: SimSession<PendulumSta
   } else if (demo.last && demo.since < 450 && (demo.last.type === "sim.start" || paramOf(demo.last, "amplitude") !== undefined)) hand = restBob;
 
   return (
-    <div className="grid h-full min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_330px]">
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,1fr)] gap-3 max-lg:h-auto lg:grid-cols-[minmax(0,1fr)_330px]">
       <LabStyles />
       <div className="grid min-h-0 gap-3 md:grid-cols-[minmax(0,1fr)_210px]">
         <Stage className="min-h-[340px]" label={s.released ? "Swinging · click the bob to catch it" : "Pull the bob out and let go"}>
