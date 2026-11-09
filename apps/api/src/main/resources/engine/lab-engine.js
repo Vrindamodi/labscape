@@ -11573,9 +11573,9 @@ var LabEngine = (() => {
         }
         if (c.kind === "led") {
           if (ledOn[c.id]) {
-            const g = 1 / LED.onOhm;
+            const g = 1 / (c.onOhm ?? LED.onOhm);
             stampG(na, nb, g);
-            stampI(na, nb, -LED.forwardV * g);
+            stampI(na, nb, -(c.forwardV ?? LED.forwardV) * g);
           } else stampG(na, nb, 1e-9);
           continue;
         }
@@ -11603,7 +11603,8 @@ var LabEngine = (() => {
       let changed = false;
       for (const c of components.filter((c2) => c2.kind === "led")) {
         const v = voltages[nodeOf[`${c.id}.a`]] - voltages[nodeOf[`${c.id}.b`]];
-        const shouldBeOn = ledOn[c.id] ? v >= LED.forwardV - 1e-9 : v > LED.forwardV;
+        const vf = c.forwardV ?? LED.forwardV;
+        const shouldBeOn = ledOn[c.id] ? v >= vf - 1e-9 : v > vf;
         if (shouldBeOn !== ledOn[c.id]) {
           ledOn[c.id] = shouldBeOn;
           changed = true;
@@ -11620,7 +11621,7 @@ var LabEngine = (() => {
       if (isSource(c)) {
         if (c.internal && c.internal > 0) i = ((c.value ?? 1.5) - v) / c.internal;
         else i = srcCurrents[c.id] ?? 0;
-      } else if (c.kind === "led") i = ledOn[c.id] ? Math.max(0, (v - LED.forwardV) / LED.onOhm) : 0;
+      } else if (c.kind === "led") i = ledOn[c.id] ? Math.max(0, (v - (c.forwardV ?? LED.forwardV)) / (c.onOhm ?? LED.onOhm)) : 0;
       else {
         const R = resistanceOf(c);
         i = R === null ? 0 : v / R;
