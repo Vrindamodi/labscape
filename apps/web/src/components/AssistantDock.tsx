@@ -112,6 +112,7 @@ export function AssistantLauncher() {
               <motion.aside
                 role="dialog"
                 aria-label="Science assistant"
+                data-surface="dark"
                 className="fixed inset-x-0 bottom-0 z-50 flex h-[78vh] flex-col rounded-t-2xl border-t border-white/10 bg-[#0d1426] p-4 shadow-2xl sm:inset-x-auto sm:bottom-0 sm:right-0 sm:top-0 sm:h-auto sm:w-[400px] sm:rounded-none sm:border-l sm:border-t-0"
                 initial={reduced ? { opacity: 0 } : { y: 40, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}

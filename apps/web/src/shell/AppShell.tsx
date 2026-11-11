@@ -67,8 +67,7 @@ export function AppShell() {
   }
 
   const collapsed = settings.sidebarCollapsed;
-  // Pages moved to the light look render straight on the cream page; the rest keep their dark
-  // styling inside a rounded dark stage until they are restyled.
+  // Pages render straight on the cream page; lab sections load on a rounded dark stage.
   const light = !isDarkSection(location.pathname);
   return (
     <div className="ls-app-bg min-h-full">
@@ -104,12 +103,13 @@ export function AppShell() {
 }
 
 /**
- * Sections not yet restyled for the light page: they render inside the rounded dark stage. Every
- * other route (including the 404 page, which can match any path) renders on the cream page.
- * Remove a prefix here once its pages use the surface tokens.
+ * Lab sections. Their pages go full screen once mounted; until a lazy page has loaded, its skeleton
+ * sits on the rounded dark stage instead of the cream page. A trailing "/" matches only sub-routes
+ * (the /playground list itself is a light page). Every other route (including the 404 page, which
+ * can match any path) renders on the cream page.
  */
-const DARK_SECTIONS = ["/assistant", "/lab", "/playground"];
-const isDarkSection = (path: string) => DARK_SECTIONS.some((p) => path === p || path.startsWith(`${p}/`));
+const DARK_SECTIONS = ["/lab", "/playground/"];
+const isDarkSection = (path: string) => DARK_SECTIONS.some((p) => (p.endsWith("/") ? path.startsWith(p) : path === p || path.startsWith(`${p}/`)));
 
 /** Nav accent hues are tuned for dark; these deeper tones keep the icons readable on cream. */
 const ON_LIGHT: Record<string, string> = {
@@ -564,9 +564,9 @@ function ContextPanel({ open }: { open: boolean }) {
               <div ref={slotRefs.progress} />
             </div>
             <div hidden={tab !== "assistant"} ref={slotRefs.assistant}>
-              {/* The assistant keeps its dark chat styling, shown as a dark card on the cream page. */}
-              <div data-surface="dark" className="h-[calc(100vh-160px)] overflow-hidden rounded-card bg-surface p-3">
-                {tab === "assistant" && <AssistantDock compact />}
+              <div className="h-[calc(100vh-160px)] overflow-hidden rounded-card bg-card p-3">
+                {/* The default placeholder is too long for this narrow panel and wraps. */}
+                {tab === "assistant" && <AssistantDock compact panel={{ placeholder: "Ask a question…" }} />}
               </div>
             </div>
             {/* The placeholder hides itself once a page portals its own details in here. */}

@@ -7,6 +7,7 @@ import "katex/dist/katex.min.css";
 import { ArrowLeft, ArrowRight, Beaker, Cable, Crown, FunctionSquare, History, Infinity as InfinityIcon, Orbit, Sparkles, type LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { PageHeader } from "../components/PageHeader";
 import { api, ApiError, post } from "../lib/api";
 
 export type Mode = "chemistry" | "circuits" | "motion" | "graphing";
@@ -14,11 +15,11 @@ type Usage = { usedToday: number; limit?: number | null };
 type Item = { id: string; mode: Mode; title: string | null; startedAt: string; updatedAt: string; hasSnapshot: boolean };
 type Started = { id: string; mode: Mode; snapshot: unknown; usage: Usage };
 
-const MODES: Record<Mode, { title: string; blurb: string; icon: LucideIcon; colour: string; to: string }> = {
-  chemistry: { title: "Chemistry bench", blurb: "Mix anything on the shelf. The safety engine decides what really happens.", icon: Beaker, colour: "#2DD4BF", to: "/playground/chemistry" },
-  circuits: { title: "Circuit builder", blurb: "Batteries, bulbs, motors, buzzers, dimmers and light sensors: wire them however you like and build a night light or an alarm.", icon: Cable, colour: "#38BDF8", to: "/playground/circuits" },
-  motion: { title: "Motion lab", blurb: "Throw things on the Moon, crash carts together, bounce a mass on a spring, slide a block down a ramp.", icon: Orbit, colour: "#a78bfa", to: "/playground/motion" },
-  graphing: { title: "Graphing", blurb: "Plot up to six functions, turn every letter into a slider and draw the slope of any curve.", icon: FunctionSquare, colour: "#FB923C", to: "/playground/graphing" },
+const MODES: Record<Mode, { title: string; blurb: string; icon: LucideIcon; tint: string; to: string }> = {
+  chemistry: { title: "Chemistry bench", blurb: "Mix anything on the shelf. The safety engine decides what really happens.", icon: Beaker, tint: "#48F08B", to: "/playground/chemistry" },
+  circuits: { title: "Circuit builder", blurb: "Batteries, bulbs, motors, buzzers, dimmers and light sensors: wire them however you like and build a night light or an alarm.", icon: Cable, tint: "#5E9BFF", to: "/playground/circuits" },
+  motion: { title: "Motion lab", blurb: "Throw things on the Moon, crash carts together, bounce a mass on a spring, slide a block down a ramp.", icon: Orbit, tint: "#C9B8FF", to: "/playground/motion" },
+  graphing: { title: "Graphing", blurb: "Plot up to six functions, turn every letter into a slider and draw the slope of any curve.", icon: FunctionSquare, tint: "#FCC934", to: "/playground/graphing" },
 };
 
 /** The same idea seen from two subjects (build plan 4.9: cross-subject bridges). */
@@ -53,26 +54,30 @@ const BRIDGES: { id: string; title: string; body: string; graph: GraphBuild; oth
   },
 ];
 
+/** Pill link on white cards: cream at rest, ink on hover. */
+const PILL = "rounded-full bg-surface px-4 py-2 text-sm font-medium text-ink-strong ring-1 ring-inset ring-line transition hover:bg-ink-strong hover:text-on-ink";
+const SECTION = "mb-4 font-heading text-[26px] font-medium leading-tight tracking-[-0.02em] text-ink-strong";
+
 const fmtWhen = (s: string) => new Date(s).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
 function UsageMeter({ usage }: { usage: Usage }) {
   if (usage.limit == null)
     return (
-      <span className="flex items-center gap-1.5 rounded-full bg-amber-400/15 px-3 py-1 text-xs font-semibold text-amber-200">
+      <span className="flex items-center gap-1.5 rounded-full bg-tint-yellow px-3 py-1.5 text-xs font-semibold text-[#3d2a00]">
         <InfinityIcon className="h-4 w-4" /> Unlimited sessions
       </span>
     );
   const left = Math.max(0, usage.limit - usage.usedToday);
   return (
-    <div className="w-56" aria-label={`${left} of ${usage.limit} free sessions left today`}>
-      <div className="flex justify-between text-xs text-white/60">
+    <div className="w-60 rounded-[20px] bg-card px-4 py-3" aria-label={`${left} of ${usage.limit} free sessions left today`}>
+      <div className="flex justify-between text-xs text-ink-muted">
         <span>Free sessions today</span>
-        <span className="font-mono">
+        <span className="font-mono text-ink-strong">
           {usage.usedToday}/{usage.limit}
         </span>
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
-        <div className={cx("h-full rounded-full", left === 0 ? "bg-red-400" : "bg-accent")} style={{ width: `${Math.min(100, (usage.usedToday / usage.limit) * 100)}%` }} />
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
+        <div className={cx("h-full rounded-full", left === 0 ? "bg-[#D93025]" : "bg-ink-strong")} style={{ width: `${Math.min(100, (usage.usedToday / usage.limit) * 100)}%` }} />
       </div>
     </div>
   );
@@ -84,46 +89,46 @@ export default function Playground() {
   if (q.isError) return <ErrorState title="Couldn't open the playground" onRetry={() => void q.refetch()} />;
   return (
     <div className="mx-auto max-w-[1100px] space-y-7">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#E879F9]">
+      <PageHeader
+        eyebrow={
+          <span className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" /> Labs
-          </p>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Playground</h1>
-          <p className="mt-1 max-w-2xl text-sm text-white/60">No steps, no scores. Build, break and try things the experiments don't let you.</p>
-        </div>
-        {q.data && <UsageMeter usage={q.data.usage} />}
-      </header>
+          </span>
+        }
+        title="Playground"
+        sub="No steps, no scores. Build, break and try things the experiments don't let you."
+        aside={q.data && <UsageMeter usage={q.data.usage} />}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         {(Object.keys(MODES) as Mode[]).map((m) => {
           const M = MODES[m];
           return (
-            <Link key={m} to={M.to} className="group rounded-2xl bg-white/[0.035] p-5 ring-1 ring-inset ring-white/[0.08] transition hover:bg-white/[0.06]">
-              <span className="grid h-11 w-11 place-items-center rounded-xl" style={{ background: `${M.colour}22`, color: M.colour }}>
+            <Link key={m} to={M.to} className="group rounded-card bg-card p-6 transition hover:shadow-lift">
+              <span className="grid h-12 w-12 place-items-center rounded-full text-[#1a1a1a]" style={{ background: M.tint }}>
                 <M.icon className="h-6 w-6" />
               </span>
-              <h2 className="mt-3 flex items-center gap-2 text-lg font-bold text-white">
+              <h2 className="mt-4 flex items-center gap-2 font-heading text-xl font-medium text-ink-strong">
                 {M.title} <ArrowRight className="h-4 w-4 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
               </h2>
-              <p className="mt-1 text-sm text-white/60">{M.blurb}</p>
+              <p className="mt-1 text-sm text-ink-muted">{M.blurb}</p>
             </Link>
           );
         })}
       </div>
 
       <section>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-white/55">Bridges between subjects</h2>
-        <div className="grid gap-3 md:grid-cols-2">
+        <h2 className={SECTION}>Bridges between subjects</h2>
+        <div className="grid gap-4 md:grid-cols-2">
           {BRIDGES.map((b) => (
-            <div key={b.id} className="rounded-2xl bg-white/[0.03] p-4 ring-1 ring-inset ring-white/[0.08]">
-              <h3 className="font-semibold text-white">{b.title}</h3>
-              <p className="mt-1 text-sm text-white/60">{b.body}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link to={`/playground/graphing?bridge=${b.id}`} className="rounded-md bg-white/[0.07] px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/10 hover:bg-white/[0.12]">
+            <div key={b.id} className="rounded-card bg-card p-6">
+              <h3 className="font-heading text-lg font-medium text-ink-strong">{b.title}</h3>
+              <p className="mt-1 text-sm text-ink-muted">{b.body}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link to={`/playground/graphing?bridge=${b.id}`} className={PILL}>
                   See the graph
                 </Link>
-                <Link to={b.other.to} className="rounded-md bg-white/[0.07] px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/10 hover:bg-white/[0.12]">
+                <Link to={b.other.to} className={PILL}>
                   {b.other.label}
                 </Link>
               </div>
@@ -133,24 +138,26 @@ export default function Playground() {
       </section>
 
       <section>
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-white/55">
-          <History className="h-4 w-4" /> Recent sessions
+        <h2 className={cx(SECTION, "flex items-center gap-2.5")}>
+          <History className="h-5 w-5 text-ink-muted" /> Recent sessions
         </h2>
-        {q.isLoading && <Skeleton className="h-24 rounded-xl" />}
-        {q.data && q.data.sessions.length === 0 && <p className="rounded-xl bg-white/[0.03] p-5 text-center text-sm text-white/50">Your builds will appear here so you can pick up where you left off.</p>}
+        {q.isLoading && <Skeleton className="h-24 rounded-card" />}
+        {q.data && q.data.sessions.length === 0 && <p className="rounded-card bg-card p-6 text-center text-sm text-ink-muted">Your builds will appear here so you can pick up where you left off.</p>}
         <ul className="space-y-2">
           {(q.data?.sessions ?? []).map((s) => {
             const M = MODES[s.mode];
             const resumable = s.mode !== "chemistry" && s.hasSnapshot;
             return (
-              <li key={s.id} className="flex items-center gap-3 rounded-xl bg-white/[0.035] px-4 py-3 ring-1 ring-inset ring-white/[0.08]">
-                <M.icon className="h-5 w-5 shrink-0" style={{ color: M.colour }} />
+              <li key={s.id} className="flex items-center gap-3 rounded-[20px] bg-card px-4 py-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[#1a1a1a]" style={{ background: M.tint }}>
+                  <M.icon className="h-5 w-5" />
+                </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium text-white">{s.title ?? M.title}</span>
-                  <span className="text-xs text-white/45">{fmtWhen(s.updatedAt)}</span>
+                  <span className="block truncate font-medium text-ink-strong">{s.title ?? M.title}</span>
+                  <span className="text-xs text-ink-muted">{fmtWhen(s.updatedAt)}</span>
                 </span>
                 {resumable && (
-                  <Link to={`${M.to}?resume=${s.id}`} className="rounded-md bg-white/[0.07] px-3 py-1.5 text-sm font-semibold text-white ring-1 ring-inset ring-white/10 hover:bg-white/[0.12]">
+                  <Link to={`${M.to}?resume=${s.id}`} className={PILL}>
                     Reopen
                   </Link>
                 )}
