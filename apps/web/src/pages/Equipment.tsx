@@ -208,7 +208,7 @@ function ItemView({ item, category }: { item: Item; category: string }) {
                 {item.experiments.map((x) => (
                   <Link key={x.slug} to={x.playable ? `/lab/${x.subject}/${x.slug}` : `/library/${x.slug}`} className="rounded-full bg-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-ink-strong hover:text-on-ink">
                     {x.title}
-                    {x.playable && <span className="ml-1.5">▶</span>}
+                    {x.playable && <Play className="ml-1.5 inline h-3 w-3 -translate-y-px fill-current" aria-hidden />}
                   </Link>
                 ))}
               </div>

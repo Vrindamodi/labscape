@@ -195,8 +195,9 @@ export function ArchimedesWorkspace({ session }: { session: SimSession<Archimede
           {s.canFull && !s.dripStopped && (
             <DragHandle role="button" label="Wait for the last drip" disabled={ro} onActivate={() => session.dispatch("param.set", { key: "wait-drip", value: true })} ring={{ cx: waitPill.x, cy: waitPill.y, r: 12 }} pulse={waitPulse}>
               <rect x={waitPill.x - 52} y={waitPill.y - 13} width={104} height={26} rx={13} fill="#060d1f" stroke={V3.cyan} strokeOpacity={0.6} />
-              <text x={waitPill.x} y={waitPill.y + 4} fontSize={11} fontWeight={700} textAnchor="middle" fill={V3.cyan}>
-                ⏳ wait for drip
+              <Hourglass x={waitPill.x - 44} y={waitPill.y - 6} width={12} height={12} color={V3.cyan} strokeWidth={2.5} aria-hidden />
+              <text x={waitPill.x + 7} y={waitPill.y + 4} fontSize={11} fontWeight={700} textAnchor="middle" fill={V3.cyan}>
+                wait for drip
               </text>
             </DragHandle>
           )}

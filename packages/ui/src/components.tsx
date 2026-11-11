@@ -3,19 +3,26 @@ import {
   AlertTriangle,
   Atom,
   Beaker,
+  Bird,
   Check,
   CircleAlert,
   CloudHail,
   Cpu,
+  Dna,
   Flame,
   FlaskConical,
+  FlaskRound,
   Info,
+  Lightbulb,
   ListChecks,
   Loader2,
+  Magnet,
   Microscope,
+  Mountain,
   Orbit,
   Palette,
   RefreshCw,
+  Rocket,
   Scale,
   ShieldCheck,
   Sigma,
@@ -23,6 +30,7 @@ import {
   Sparkles,
   Target,
   Telescope,
+  TestTube,
   Wind,
   X,
   Zap,
@@ -563,6 +571,25 @@ export function Modal({
 
 export type AvatarSpec = { hue?: number | undefined; emoji?: string | undefined };
 
+/**
+ * Avatar emblems. Profiles store the key (an emoji character, kept so saved profiles still match),
+ * but the emblem is always drawn as an SVG icon, never as an emoji.
+ */
+export const AVATAR_EMBLEMS: { key: string; label: string; Icon: LucideIcon }[] = [
+  { key: "🧪", label: "Test tube", Icon: TestTube },
+  { key: "⚗️", label: "Flask", Icon: FlaskRound },
+  { key: "🔬", label: "Microscope", Icon: Microscope },
+  { key: "🧬", label: "DNA", Icon: Dna },
+  { key: "🚀", label: "Rocket", Icon: Rocket },
+  { key: "⚡", label: "Lightning", Icon: Zap },
+  { key: "🌋", label: "Mountain", Icon: Mountain },
+  { key: "🪐", label: "Orbit", Icon: Orbit },
+  { key: "🧲", label: "Magnet", Icon: Magnet },
+  { key: "💡", label: "Light bulb", Icon: Lightbulb },
+  { key: "🦉", label: "Bird", Icon: Bird },
+];
+const EMBLEM = new Map(AVATAR_EMBLEMS.map((e) => [e.key, e.Icon]));
+
 export function Avatar({ name, spec, size = 36, ring }: { name: string; spec?: AvatarSpec | null | undefined; size?: number; ring?: string | undefined }) {
   const hue = spec?.hue ?? [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
   const initials = name
@@ -571,6 +598,8 @@ export function Avatar({ name, spec, size = 36, ring }: { name: string; spec?: A
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  // An unknown key falls back to the initials rather than showing a raw emoji.
+  const Emblem = spec?.emoji ? EMBLEM.get(spec.emoji) : undefined;
   return (
     <span
       className="relative inline-grid shrink-0 place-items-center rounded-full font-heading font-bold text-white"
@@ -583,7 +612,7 @@ export function Avatar({ name, spec, size = 36, ring }: { name: string; spec?: A
       }}
       aria-hidden
     >
-      {spec?.emoji ? <span style={{ fontSize: size * 0.5 }}>{spec.emoji}</span> : initials}
+      {Emblem ? <Emblem style={{ width: size * 0.48, height: size * 0.48 }} strokeWidth={2.25} aria-hidden /> : initials}
     </span>
   );
 }

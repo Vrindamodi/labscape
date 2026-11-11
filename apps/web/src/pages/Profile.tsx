@@ -1,4 +1,4 @@
-import { Avatar, Blob, Button, Card, Chip, cx, Field, inputClass, NamedIcon, Skeleton, useShell } from "@labscape/ui";
+import { Avatar, AVATAR_EMBLEMS, Blob, Button, Card, Chip, cx, Field, inputClass, NamedIcon, Skeleton, useShell } from "@labscape/ui";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Crown, Pencil, Save } from "lucide-react";
 import { useState } from "react";
@@ -9,7 +9,6 @@ import { useSession } from "../lib/session";
 import type { Me, Summary } from "../lib/types";
 import { StreakFlame } from "../shell/brand";
 
-const EMOJI = ["", "🧪", "⚗️", "🔬", "🧬", "🚀", "⚡", "🌋", "🪐", "🧲", "💡", "🦉"];
 const HUES = [210, 190, 265, 300, 340, 20, 45, 140];
 
 export default function Profile() {
@@ -76,13 +75,16 @@ export default function Profile() {
             <div>
               <div className="mb-2 text-sm font-medium text-ink">Emblem</div>
               <div className="flex flex-wrap gap-2">
-                {EMOJI.map((e) => (
+                {[{ key: "", label: "Initials", Icon: null }, ...AVATAR_EMBLEMS].map(({ key, label, Icon }) => (
                   <button
-                    key={e || "initials"}
-                    onClick={() => setAvatar({ ...avatar, emoji: e || undefined })}
-                    className={cx("grid h-11 w-11 place-items-center rounded-full text-lg transition", (avatar.emoji ?? "") === e ? "bg-ink-strong text-on-ink" : "bg-surface text-ink hover:bg-line")}
+                    key={key || "initials"}
+                    onClick={() => setAvatar({ ...avatar, emoji: key || undefined })}
+                    aria-label={label}
+                    aria-pressed={(avatar.emoji ?? "") === key}
+                    title={label}
+                    className={cx("grid h-11 w-11 place-items-center rounded-full transition", (avatar.emoji ?? "") === key ? "bg-ink-strong text-on-ink" : "bg-surface text-ink hover:bg-line")}
                   >
-                    {e || <span className="text-xs font-bold">AB</span>}
+                    {Icon ? <Icon className="h-5 w-5" aria-hidden /> : <span className="text-xs font-bold">AB</span>}
                   </button>
                 ))}
               </div>

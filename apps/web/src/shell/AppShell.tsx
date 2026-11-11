@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Bell,
   Check,
+  CheckCheck,
   ChevronsLeft,
   ChevronsRight,
   CloudOff,
@@ -428,14 +429,19 @@ function NotificationBell({ unread }: { unread: number }) {
                   >
                     <span className={cx("mt-1.5 h-2 w-2 shrink-0 rounded-full", n.read ? "bg-transparent" : "bg-accent")} />
                     <span className="min-w-0">
-                      <span className={cx("block text-sm", n.read ? "text-ink-muted" : "font-medium text-ink-strong")}>{n.title}</span>
+                      <span className={cx("block text-sm", n.read ? "text-ink-muted" : "font-medium text-ink-strong")}>{noEmoji(n.title)}</span>
                       {n.body && <span className="mt-0.5 block text-xs text-ink-muted">{n.body}</span>}
                       <span className="mt-1 block text-[11px] text-ink-muted">{timeAgo(n.createdAt)}</span>
                     </span>
                   </button>
                 ))
               ) : (
-                <div className="px-4 py-10 text-center text-sm text-ink-muted">You're all caught up ✨</div>
+                <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-sm text-ink-muted">
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-surface text-ink-strong">
+                    <CheckCheck className="h-5 w-5" aria-hidden />
+                  </span>
+                  You're all caught up
+                </div>
               )}
             </div>
           </motion.div>
@@ -720,6 +726,9 @@ function FullscreenLoader() {
     </div>
   );
 }
+
+/** The UI shows no emojis; notifications saved before that rule may still carry one. */
+const noEmoji = (s: string) => s.replace(/\p{Extended_Pictographic}\uFE0F?/gu, "").replace(/\s{2,}/g, " ").trim();
 
 export function timeAgo(iso: string) {
   const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);

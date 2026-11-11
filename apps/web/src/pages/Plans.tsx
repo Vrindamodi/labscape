@@ -57,7 +57,7 @@ export default function Plans() {
     void refresh();
     sound.play("levelUp");
     celebrate({ preset: "confetti", count: 140, colors: ["#ffe07a", "#ffc23d", "#ff8a3d", "#fff", "#8b5cf6"] });
-    toast({ kind: "reward", title: "Welcome to Premium ✨", body: "Everything is unlocked. Enjoy the full lab." });
+    toast({ kind: "reward", title: "Welcome to Premium", body: "Everything is unlocked. Enjoy the full lab." });
     setSuccess(planId);
   };
 

@@ -48,8 +48,7 @@ export default function Dashboard() {
                 <span className="text-sm font-medium text-ink-muted">{greeting()}</span>
               </div>
               <h1 className="mt-4 font-heading text-[40px] font-normal leading-[1.04] tracking-[-0.03em] text-ink-strong sm:text-[64px]">
-                {me.guest ? "Scientist" : me.displayName.split(" ")[0]}{" "}
-                <span className="inline-block origin-[70%_70%] animate-[ls-float_3s_ease-in-out_infinite]">👋</span>
+                {me.guest ? "Scientist" : me.displayName.split(" ")[0]}
               </h1>
               <div className="mt-6 flex max-w-md items-center gap-3">
                 <span className="rounded-full bg-ink-strong px-2.5 py-1 text-xs font-medium text-on-ink">Lv {lvl.index + 1}</span>

@@ -2,7 +2,7 @@ import { GhostButton, Glass, Kicker, PrimaryButton, useLabSession, Workbench, ty
 import { useMotion } from "@labscape/motion";
 import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Check, Crosshair, Eye, FlaskConical, Lightbulb, Pause, Play, RotateCcw, ShieldAlert } from "lucide-react";
+import { ArrowRight, Check, Crosshair, Eye, FastForward, FlaskConical, Lightbulb, Pause, Play, RotateCcw, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 /**
@@ -196,8 +196,8 @@ export function ChemDemo({ content, onTry }: { content: ExperimentContent; onTry
                 {/* small status chips in the top-left corner, clear of the apparatus in the middle */}
                 <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5">
                   {lapsing && started && !done && (
-                    <div className="rounded-full bg-[rgba(8,16,38,.9)] px-3 py-1.5 text-[14px] font-semibold text-white ring-1 ring-[#39d6ff]/50" role="status">
-                      ⏩ {fmtGap(lapsing.gap)} later
+                    <div className="flex items-center gap-1.5 rounded-full bg-[rgba(8,16,38,.9)] px-3 py-1.5 text-[14px] font-semibold text-white ring-1 ring-[#39d6ff]/50" role="status">
+                      <FastForward className="h-4 w-4 fill-current text-[#39d6ff]" aria-hidden /> {fmtGap(lapsing.gap)} later
                     </div>
                   )}
                   {slow && started && !done && !lapsing && (
