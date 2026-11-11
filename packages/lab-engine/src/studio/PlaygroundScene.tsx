@@ -1743,6 +1743,8 @@ function Thermometer({ c, target, reducedMotion }: { c: number; target: number; 
 const REAGENT = KINDS.reagent_bottle;
 const BOTTLE_H = 125 * U;
 const BOTTLE_S = 0.5;
+/** A dropper's length from the pivot it is held by down to its tip. */
+const DROPPER_L = 0.32;
 
 function Held({ held, view, quality, reducedMotion }: { held: NonNullable<PlaygroundView["held"]>; view: PlaygroundView; quality: Quality; reducedMotion: boolean }) {
   const glass = useGlass(quality);
@@ -1751,8 +1753,26 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
   const tilt = useRef(0);
   const appear = useRef(0);
   const liquidTop = PLATE_H + 0.012 + fillH(view);
-  // The mouth sits just above and outside the rim; the body hangs below it and swings out as it tilts.
-  const mouth = useMemo(() => new THREE.Vector3(BEAKER_R + 0.16, PLATE_H + BEAKER_H + 0.2, 0.05), []);
+  const rim = PLATE_H + BEAKER_H;
+  // A bottle's mouth sits just above and outside the rim; the body hangs below it and swings out as it
+  // tilts, and the stream arcs in. A dropper and a spatula let go straight down, so they are held over
+  // the opening instead: anything they drop has to land inside the glass.
+  const mouth = useMemo(
+    () =>
+      held.kind === "dropper"
+        ? new THREE.Vector3(BEAKER_R * 0.3, rim + 0.12 + DROPPER_L, 0.05)
+        : held.kind === "spatula"
+          ? new THREE.Vector3(BEAKER_R * 0.35, rim + 0.16, 0.05)
+          : new THREE.Vector3(BEAKER_R + 0.16, rim + 0.2, 0.05),
+    [held.kind, rim],
+  );
+  // Where drops and grains leave the tool: the dropper's tip swings out a little as it tilts; the
+  // spatula's heap sits just under the point it turns about.
+  const lean = (held.tiltDeg * Math.PI) / 180;
+  const tip =
+    held.kind === "dropper"
+      ? new THREE.Vector3(mouth.x + DROPPER_L * Math.sin(lean), mouth.y - DROPPER_L * Math.cos(lean), mouth.z)
+      : new THREE.Vector3(mouth.x, mouth.y - 0.05, mouth.z);
   useFrame(({ clock }, dt) => {
     const g = pivot.current;
     if (!g) return;
@@ -1788,9 +1808,9 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
           </group>
         )}
         {held.kind === "dropper" && (
-          <group position={[0, -0.32, 0]}>
-            <mesh position={[0, 0.16, 0]} material={glass}>
-              <cylinderGeometry args={[0.025, 0.012, 0.32, 16]} />
+          <group position={[0, -DROPPER_L, 0]}>
+            <mesh position={[0, DROPPER_L / 2, 0]} material={glass}>
+              <cylinderGeometry args={[0.025, 0.012, DROPPER_L, 16]} />
             </mesh>
             <mesh position={[0, 0.1, 0]}>
               <cylinderGeometry args={[0.02, 0.011, 0.16, 16]} />
@@ -1828,8 +1848,8 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
         )}
       </group>
       {held.flowing && held.kind === "bottle" && <Stream from={mouth} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
-      {held.flowing && held.kind === "dropper" && <Drops from={mouth} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
-      {held.flowing && held.kind === "spatula" && <Drops from={new THREE.Vector3(mouth.x - 0.05, mouth.y - 0.06, mouth.z)} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} grains />}
+      {held.flowing && held.kind === "dropper" && <Drops from={tip} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
+      {held.flowing && held.kind === "spatula" && <Drops from={tip} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} grains />}
       {held.kind === "gas" && <GasHose from={new THREE.Vector3(mouth.x + 0.35, mouth.y - 0.1, mouth.z)} />}
     </>
   );
@@ -1876,7 +1896,7 @@ function Drops({ from, toY, colour, reducedMotion, grains }: { from: THREE.Vecto
     if (!g) return;
     g.children.forEach((c, i) => {
       const t = reducedMotion ? 0.5 : (clock.elapsedTime * (grains ? 2.2 : 1.4) + i / g.children.length) % 1;
-      c.position.set(from.x - 0.03 + (grains ? Math.sin(i * 3.1) * 0.03 : 0), from.y - 0.02 - t * t * (from.y - toY), from.z + (grains ? Math.cos(i * 1.7) * 0.03 : 0));
+      c.position.set(from.x + (grains ? Math.sin(i * 3.1) * 0.03 : 0), from.y - 0.02 - t * t * (from.y - toY), from.z + (grains ? Math.cos(i * 1.7) * 0.03 : 0));
       if (!grains) c.scale.set(1, 1 + t * 0.6, 1);
     });
   });
