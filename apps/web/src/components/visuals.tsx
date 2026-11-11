@@ -1,5 +1,5 @@
 import { useMotion } from "@labscape/motion";
-import { useEffect, useRef } from "react";
+import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 
 /**
  * Welcome background: molecules, atoms and equation glyphs in 3 depth layers drifting on 12-30 s
@@ -121,8 +121,75 @@ export function MoleculeField({ count = 100 }: { count?: number }) {
   return <canvas ref={ref} aria-hidden className="pointer-events-none absolute inset-0 h-full w-full" />;
 }
 
-/** Subject card loops: bubbling flask, swinging pendulum, tracing sine wave. */
-export function SubjectArt({ subject, size = 120 }: { subject: "chemistry" | "physics" | "maths"; size?: number }) {
+type Subject = "chemistry" | "physics" | "maths";
+
+/**
+ * The Rive build of the subject art, when one has been published into `assets/rive` (see
+ * `graphics/subject-art`). Absent, the app simply keeps the SVG art below.
+ */
+const SUBJECT_RIV = Object.values(
+  import.meta.glob<string>("../assets/rive/subject-art.riv", { query: "?url", import: "default", eager: true }),
+)[0];
+const SubjectArtRive = SUBJECT_RIV ? lazy(() => import("./SubjectArtRive")) : null;
+
+/** A crash inside the Rive canvas (no WebGL, a bad file) falls back to the SVG instead of the page's error card. */
+class ArtBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
+  override state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  override componentDidCatch(error: Error) {
+    console.warn("[subject art] Rive failed, keeping the SVG", error);
+    this.props.onError();
+  }
+
+  override render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+/**
+ * Subject card loops: bubbling flask, swinging pendulum, tracing sine wave. Drawn by Rive when its file
+ * is there and motion is allowed; the SVG shows first, and stays if Rive cannot load or draw.
+ */
+export function SubjectArt({ subject, size = 120 }: { subject: Subject; size?: number }) {
+  const { reduced } = useMotion();
+  const [ready, setReady] = useState(false);
+  const [settled, setSettled] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  if (!SubjectArtRive || !SUBJECT_RIV || reduced || failed) return <SubjectArtSvg subject={subject} size={size} />;
+
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }} aria-hidden>
+      {!settled && (
+        <div
+          className="absolute inset-0 transition-opacity duration-300"
+          style={{ opacity: ready ? 0 : 1 }}
+          onTransitionEnd={() => ready && setSettled(true)}
+        >
+          <SubjectArtSvg subject={subject} size={size} />
+        </div>
+      )}
+      <div className="absolute inset-0 transition-opacity duration-300" style={{ opacity: ready ? 1 : 0 }}>
+        <ArtBoundary onError={() => setFailed(true)}>
+          <Suspense fallback={null}>
+            <SubjectArtRive
+              src={SUBJECT_RIV}
+              artboard={subject}
+              onReady={() => setReady(true)}
+              onError={() => setFailed(true)}
+            />
+          </Suspense>
+        </ArtBoundary>
+      </div>
+    </div>
+  );
+}
+
+function SubjectArtSvg({ subject, size }: { subject: Subject; size: number }) {
   if (subject === "chemistry") {
     return (
       <svg width={size} height={size} viewBox="0 0 120 120" aria-hidden>

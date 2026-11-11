@@ -15,6 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm -r --if-present test",
+    "graphics:check": "rive graphics/subject-art --verify",
+    "graphics:publish": "rive graphics/subject-art --publish --output-dir=../../apps/web/src/assets/rive",
     "api": "cd apps/api && mvn spring-boot:run -Dspring-boot.run.profiles=dev",
     "api:test": "cd apps/api && mvn -B verify",
     "api:demo": "cd apps/api && mvn spring-boot:run -Dspring-boot.run.profiles=dev",
