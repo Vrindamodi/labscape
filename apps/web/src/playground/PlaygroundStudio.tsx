@@ -6,7 +6,7 @@ import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { ArrowLeft, ArrowRightLeft, Atom, Filter as FilterIcon, Split, ChevronLeft, ChevronRight, Droplet, Eraser, Flame, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Atom, Filter as FilterIcon, Split, ChevronLeft, ChevronRight, Droplet, Eraser, Flame, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, TestTube, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -72,10 +72,15 @@ type LogLine = { t: number; text: string; tone?: "good" | "warn" | "bad" };
  * the others wait here as they were last seen. `bases` is what was poured, split or filtered into it
  * from earlier mixes (the server replays those), `adds` what has been added since.
  */
-type Vessel = { id: string; name: string; adds: TrayItem[]; bases: SimulationBase[]; ignition: boolean; colour: string; opacity: number; ml: number; /** Colour of the solid sitting in it, if any. */ solid: string | null };
+type Vessel = { id: string; name: string; adds: TrayItem[]; bases: SimulationBase[]; ignition: boolean; colour: string; opacity: number; ml: number; /** Colour of the solid sitting in it, if any. */ solid: string | null; /** A test tube in the rack, not a beaker. */ tube?: boolean };
 const blankVessel = (id: string, name: string): Vessel => ({ id, name, adds: [], bases: [], ignition: false, colour: CLEAN, opacity: 0.05, ml: 0, solid: null });
 const isEmptyVessel = (v: Vessel) => !v.adds.length && !v.bases.length;
 const MAX_VESSELS = 4;
+/** Test tubes are extra small vessels: the rack holds six, each takes 20 mL, and a sample for one is 5 mL. */
+const MAX_TUBES = 6;
+const TUBE_ML = 20;
+const SAMPLE_ML = 5;
+const kindOf = (v: { tube?: boolean | undefined }) => (v.tube ? "test tube" : "beaker");
 const CLEAN = "#cfe6ff";
 /** Cues that leave something to see once the action is over; the rest (fizz, flames, sounds) are skipped when a beaker is only being looked at again. */
 const LASTING = new Set(["colour", "precipitate", "dissolve", "layers", "crystals", "deposit"]);
@@ -274,7 +279,11 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [inFlight, setInFlight] = useState(0);
   const flowRef = useRef({ added: 0, tilt: 0, custom: false });
 
-  const capacity = cat?.conditions.vesselCapacityMl ?? 150;
+  const beakerMl = cat?.conditions.vesselCapacityMl ?? 150;
+  const activeTube = !!vessels.find((v) => v.id === activeId)?.tube;
+  /** What the vessel on the hot plate holds: a test tube takes far less than a beaker. */
+  const capacity = activeTube ? TUBE_ML : beakerMl;
+  const capacityOf = (v: { tube?: boolean | undefined }) => (v.tube ? TUBE_ML : beakerMl);
   const levelMl = carriedMl + tray.reduce((a, t) => a + liquidMl(t), 0);
   const hasContents = tray.length > 0 || bases.length > 0;
   const heldMode = held ? dispenseMode(held) : null;
@@ -641,6 +650,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const already = held ? tray.find((t) => t.item.id === held.id)?.amount ?? 0 : 0;
   const maxAdd = held ? Math.max(0, Math.min(room, held.limits.max - already, burette ? BURETTE_ML - titre : Infinity)) : 0;
 
+  /** The usual amount of something for the vessel on the plate: a test tube takes small portions. */
+  const usualAmount = (it: ShelfItem) => (activeTube && it.limits.unit === "mL" ? Math.max(it.limits.min, Math.min(quickAmount(it), 3)) : quickAmount(it));
   const pick = (it: ShelfItem) => {
     if (held?.id === it.id) return putDown();
     setHeld(it);
@@ -648,7 +659,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setTitre(0);
     setFlowing(false);
     setTilt(0);
-    setAmount(quickAmount(it));
+    setAmount(usualAmount(it));
     sound.play("clink");
   };
   const putDown = () => {
@@ -670,7 +681,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   /** One drop from the burette's jet. */
   const oneDrop = () => {
     if (!held || !burette || flowing) return;
-    if (maxAdd < DROP_ML - 1e-6) return flash(titre >= BURETTE_ML - 1e-6 ? "The burette is empty." : room <= 0 ? "The beaker is full." : `That is the most ${held.name} allowed.`);
+    if (maxAdd < DROP_ML - 1e-6) return flash(titre >= BURETTE_ML - 1e-6 ? "The burette is empty." : room <= 0 ? `The ${activeTube ? "test tube" : "beaker"} is full.` : `That is the most ${held.name} allowed.`);
     if (commit(held, DROP_ML, "one drop from the burette")) {
       setTitre((t) => Math.round((t + DROP_ML) * 100) / 100);
       sound.play("drop");
@@ -698,7 +709,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   }, [flowing, held, heldMode, speed, amount, maxAdd, burette]);
 
   const startFlow = (custom = false) => {
-    if (!held || maxAdd <= 0) return flash(maxAdd <= 0 && held ? (burette && titre >= BURETTE_ML - 1e-6 ? "The burette is empty." : room <= 0 ? "The beaker is full." : `That is the most ${held.name} allowed.`) : "Pick something up first.");
+    if (!held || maxAdd <= 0) return flash(maxAdd <= 0 && held ? (burette && titre >= BURETTE_ML - 1e-6 ? "The burette is empty." : room <= 0 ? `The ${activeTube ? "test tube" : "beaker"} is full.` : `That is the most ${held.name} allowed.`) : "Pick something up first.");
     flowRef.current = { added: 0, tilt: custom ? tilt : TILT[speed], custom };
     setInFlight(0);
     if (heldMode === "pour") {
@@ -899,7 +910,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const solidNow = visual.precipitate?.colour ?? (visual.solid && visual.solid.amount > 0.01 ? visual.solid.colour : null);
   const hasSolidNow = solidNow !== null;
   /** The beaker on the plate, as it would be stored. */
-  const snapshot = (): Vessel => ({ id: activeId, name: activeName, adds, bases, ignition, colour: visual.colour, opacity: visual.opacity, ml: levelMl, solid: solidNow });
+  const snapshot = (): Vessel => ({ id: activeId, name: activeName, adds, bases, ignition, colour: visual.colour, opacity: visual.opacity, ml: levelMl, solid: solidNow, ...(activeTube ? { tube: true } : {}) });
   /** Any beaker as it is right now: the one on the plate from live state, the others as last seen. */
   const vesselNow = (id: string): Vessel | undefined => (id === activeId ? snapshot() : vessels.find((v) => v.id === id));
   /** A beaker's contents as something the next beaker starts from: all of it, the filtrate or the residue, and what share. */
@@ -984,12 +995,23 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const switchTo = (id: string) => {
     const target = vessels.find((v) => v.id === id);
     if (!target || id === activeId || !handsFree()) return;
-    addLog(`Moved beaker ${target.name} onto the hot plate`);
+    addLog(`Moved ${kindOf(target)} ${target.name} onto the hot plate`);
     sound.play("clink");
     setBench(benchNow(), target, true);
   };
+  const beakerCount = vessels.filter((v) => !v.tube).length;
+  const tubeCount = vessels.length - beakerCount;
+  /** Puts a clean test tube in the rack. Tubes are named for their place in it: T1 is the leftmost hole. */
+  const addTube = () => {
+    if (tubeCount >= MAX_TUBES) return flash(`The rack holds ${MAX_TUBES} test tubes. Remove an empty one first.`);
+    const name = Array.from({ length: MAX_TUBES }, (_, i) => `T${i + 1}`).find((n) => !vessels.some((v) => v.tube && v.name.split(" ")[0] === n))!;
+    setVessels([...benchNow(), { ...blankVessel(crypto.randomUUID(), name), tube: true }]);
+    addLog(`Put a clean test tube (${name}) in the rack`);
+    sound.play("clink");
+    flash(`Test tube ${name} is in the rack. Drag a beaker onto it to pour in a sample, or click it to work on it.`, "good");
+  };
   const addVessel = () => {
-    if (vessels.length >= MAX_VESSELS) return flash(`The bench holds ${MAX_VESSELS} beakers. Remove an empty one first.`);
+    if (beakerCount >= MAX_VESSELS) return flash(`The bench holds ${MAX_VESSELS} beakers. Remove an empty one first.`);
     const clean = blankVessel(crypto.randomUUID(), nextLetter());
     setVessels([...benchNow(), clean]);
     addLog(`Put a clean beaker (${clean.name}) on the bench`);
@@ -1010,12 +1032,12 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     if (isEmptyVessel(src)) return flash(`Beaker ${src.name} is empty: there is nothing to filter.`);
     if (src.ml <= 0.5) return flash(`Beaker ${src.name} has no liquid to run through the paper. Filtering separates a solid from a liquid.`);
     if (!src.solid) return flash(`There is no solid in beaker ${src.name} to filter out: everything is dissolved.`);
-    if (vessels.length >= MAX_VESSELS) return flash("No room on the bench for the residue. Remove an empty beaker first.");
+    if (beakerCount >= MAX_VESSELS) return flash("No room on the bench for the residue. Remove an empty beaker first.");
     const back = undoable();
     const onPlate = src.id === activeId;
     const letter = src.name.split(" ")[0]!;
     const residue: Vessel = { ...blankVessel(crypto.randomUUID(), uniqueName(`${letter} residue`)), bases: [baseOf(src, "residue", 1)], solid: src.solid };
-    const filtrate: Vessel = { ...blankVessel(src.id, src.name.endsWith("filtrate") ? src.name : uniqueName(`${letter} filtrate`)), bases: [baseOf(src, "filtrate", 1)], colour: src.colour, opacity: src.opacity, ml: src.ml };
+    const filtrate: Vessel = { ...blankVessel(src.id, src.name.endsWith("filtrate") ? src.name : uniqueName(`${letter} filtrate`)), ...(src.tube ? { tube: true } : {}), bases: [baseOf(src, "filtrate", 1)], colour: src.colour, opacity: src.opacity, ml: src.ml };
     addLog(`Filtered beaker ${src.name}: the filtrate is in "${filtrate.name}", the solid in "${residue.name}"`, "good");
     sound.play("pour");
     setBench([...benchNow().map((v) => (v.id === src.id ? filtrate : v)), residue], onPlate ? filtrate : null, true, back);
@@ -1036,28 +1058,28 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     const src = vesselNow(srcId);
     if (!src) return;
     if (isEmptyVessel(src)) return flash(`Beaker ${src.name} is empty: there is nothing to pour.`);
-    if (dstId === "new" && vessels.length >= MAX_VESSELS) return flash("No room on the bench for another beaker. Remove an empty one first.");
+    if (dstId === "new" && beakerCount >= MAX_VESSELS) return flash("No room on the bench for another beaker. Remove an empty one first.");
     const dst = dstId === "new" ? blankVessel(crypto.randomUUID(), nextLetter()) : vesselNow(dstId);
     if (!dst) return;
     const all = fraction >= 1 - 1e-9;
     const moved = src.ml * fraction;
-    if (dst.ml + moved > capacity + 1e-6) return flash(`Beaker ${dst.name} would overflow: a beaker holds ${capacity} mL.`);
+    if (dst.ml + moved > capacityOf(dst) + 1e-6) return flash(`${capitalise(kindOf(dst))} ${dst.name} would overflow: a ${kindOf(dst)} holds ${capacityOf(dst)} mL.`);
     const back = undoable();
     const intoEmpty = isEmptyVessel(dst);
     const got: Vessel =
       intoEmpty && all
         ? { ...dst, adds: src.adds, bases: src.bases, ignition: src.ignition, colour: src.colour, opacity: src.opacity, ml: src.ml, solid: src.solid }
         : { ...dst, adds: [], bases: [...(intoEmpty ? [] : [baseOf(dst, "all", 1)]), baseOf(src, "all", fraction)], ignition: false, colour: intoEmpty ? src.colour : dst.colour, opacity: intoEmpty ? src.opacity : Math.max(dst.opacity, src.opacity), ml: dst.ml + moved, solid: dst.solid ?? src.solid };
-    const left: Vessel = all ? blankVessel(src.id, src.name) : { ...src, adds: [], bases: [baseOf(src, "all", 1 - fraction)], ignition: false, ml: src.ml - moved };
+    const left: Vessel = all ? { ...blankVessel(src.id, src.name), ...(src.tube ? { tube: true } : {}) } : { ...src, adds: [], bases: [baseOf(src, "all", 1 - fraction)], ignition: false, ml: src.ml - moved };
     const list = benchNow().map((v) => (v.id === src.id ? left : v.id === got.id ? got : v));
     const next = dstId === "new" ? [...list, got] : list;
-    addLog(`Poured ${all ? "" : `${Math.round(fraction * 100)}% of `}beaker ${src.name} into beaker ${got.name}`);
+    addLog(`Poured ${all ? "" : `${fmt(moved, "mL")} mL of `}${kindOf(src)} ${src.name} into ${kindOf(got)} ${got.name}`);
     sound.play("pour");
     const reacts = !intoEmpty;
     const onPlate = reacts ? got : src.id === activeId ? left : got.id === activeId ? got : null;
     setBench(next, onPlate, !reacts, back);
-    if (reacts && got.id !== activeId) flash(`Beaker ${got.name} is on the hot plate now, so you can watch what the two do together.`, "good");
-    else if (!reacts && !all) flash(`${Math.round(fraction * 100)}% is now in beaker ${got.name}: test each part a different way.`, "good");
+    if (reacts && got.id !== activeId) flash(`${capitalise(kindOf(got))} ${got.name} is on the hot plate now, so you can watch what the two do together.`, "good");
+    else if (!reacts && !all) flash(`${fmt(moved, "mL")} mL is now in ${kindOf(got)} ${got.name}: test each part a different way.`, "good");
   };
   const split = () => {
     if (hasContents) transfer(activeId, "new", 0.5);
@@ -1127,9 +1149,9 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setDrop({ src, dst, x: at.x, y: at.y });
   };
   const chips = vessels.map((v) =>
-    v.id === activeId ? { id: v.id, name: v.name, active: true, empty: !hasContents, ml: levelMl, solid: hasSolidNow, colour: visual.colour } : { id: v.id, name: v.name, active: false, empty: isEmptyVessel(v), ml: v.ml, solid: !!v.solid, colour: v.colour },
+    v.id === activeId ? { id: v.id, name: v.name, tube: !!v.tube, active: true, empty: !hasContents, ml: levelMl, solid: hasSolidNow, colour: visual.colour } : { id: v.id, name: v.name, tube: !!v.tube, active: false, empty: isEmptyVessel(v), ml: v.ml, solid: !!v.solid, colour: v.colour },
   );
-  const bench: BenchBeaker[] = vessels.filter((v) => v.id !== activeId).map((v) => ({ id: v.id, name: v.name, colour: v.colour, opacity: v.opacity, levelMl: v.ml, solid: v.solid }));
+  const bench: BenchBeaker[] = vessels.filter((v) => v.id !== activeId).map((v) => ({ id: v.id, name: v.name, colour: v.colour, opacity: v.opacity, levelMl: v.ml, solid: v.solid, capacityMl: capacityOf(v), ...(v.tube ? { tube: true, hole: Math.max(0, Math.min(MAX_TUBES - 1, (parseInt(v.name.slice(1), 10) || 1) - 1)) } : {}) }));
 
   /* ---------------------------------------------------------------- keyboard */
 
@@ -1211,6 +1233,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     thermometer: levelMl > 0 ? { targetC } : null,
     captions,
     flameTest,
+    vessel: activeTube ? "tube" : "beaker",
     held: held
       ? {
           kind: (heldMode === "pour" ? (burette ? "burette" : "bottle") : heldMode) as HeldKind,
@@ -1348,17 +1371,30 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           const R = rootRef.current?.getBoundingClientRect();
           const left = Math.max(8, Math.min((R?.width ?? 800) - 228, drop.x - (R?.left ?? 0) - 110));
           const top = Math.max(84, Math.min((R?.height ?? 600) - 250, drop.y - (R?.top ?? 0) - 70));
+          const fits = (share: number) => to.ml + from.ml * share <= capacityOf(to) + 1e-6;
+          // into a test tube the usual thing is a small sample, not the whole beaker
+          const sample = !!to.tube && from.ml > SAMPLE_ML + 0.01 && to.ml + SAMPLE_ML <= TUBE_ML + 1e-6;
           return (
             <>
               <div className="absolute inset-0 z-[35]" onPointerDown={() => setDrop(null)} aria-hidden />
-              <Glass radius="md" className="absolute z-[36] w-[220px] p-3" style={{ left, top }} role="dialog" aria-label={`Pour beaker ${from.name} into beaker ${to.name}`}>
+              <Glass radius="md" className="absolute z-[36] w-[220px] p-3" style={{ left, top }} role="dialog" aria-label={`Pour ${kindOf(from)} ${from.name} into ${kindOf(to)} ${to.name}`}>
                 <Kicker>Pour {from.name} into {to.name}</Kicker>
-                <p className="mt-1 text-[13px] leading-snug text-[#9db2da]">How much of it?</p>
+                <p className="mt-1 text-[13px] leading-snug text-[#9db2da]">{sample || fits(1) || fits(0.5) ? "How much of it?" : `It won't fit: a ${kindOf(to)} holds ${capacityOf(to)} mL.`}</p>
                 <div className="mt-2 grid gap-1.5">
-                  <PrimaryButton autoFocus onClick={() => transfer(drop.src, drop.dst, 1)}>
-                    All of it
-                  </PrimaryButton>
-                  <GhostButton onClick={() => transfer(drop.src, drop.dst, 0.5)}>Half (keep the rest)</GhostButton>
+                  {sample && (
+                    <PrimaryButton autoFocus onClick={() => transfer(drop.src, drop.dst, SAMPLE_ML / from.ml)}>
+                      A {SAMPLE_ML} mL sample
+                    </PrimaryButton>
+                  )}
+                  {fits(1) &&
+                    (sample ? (
+                      <GhostButton onClick={() => transfer(drop.src, drop.dst, 1)}>All of it</GhostButton>
+                    ) : (
+                      <PrimaryButton autoFocus onClick={() => transfer(drop.src, drop.dst, 1)}>
+                        All of it
+                      </PrimaryButton>
+                    ))}
+                  {fits(0.5) && <GhostButton onClick={() => transfer(drop.src, drop.dst, 0.5)}>Half (keep the rest)</GhostButton>}
                   <button type="button" onClick={() => setDrop(null)} className="h-8 rounded-lg text-[13px] font-semibold text-[#8fa6d1] hover:text-white">
                     Cancel
                   </button>
@@ -1450,6 +1486,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           </AnimatePresence>
           {!focus && drawer === "shelf" && (
             <Shelf
+              usual={usualAmount}
               cat={cat}
               held={held}
               onPick={(it) => {
@@ -1576,7 +1613,9 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           <VesselStrip
             chips={chips}
             pouring={pouring}
-            canAdd={vessels.length < MAX_VESSELS}
+            canAdd={beakerCount < MAX_VESSELS}
+            canAddTube={tubeCount < MAX_TUBES}
+            onAddTube={addTube}
             canFilter={hasContents && hasSolidNow && levelMl > 0.5 && !busy}
             canSplit={hasContents && !busy}
             canPour={hasContents && vessels.length > 1 && !busy}
@@ -1739,10 +1778,10 @@ function describeBase(b: SimulationBase, nameOf: (id: string) => string | undefi
   return b.fraction < 1 ? `${share} of ${earlier.length > 1 ? "a mix of " : ""}${what}` : `Poured in: ${what}`;
 }
 
-type VesselChip = { id: string; name: string; active: boolean; empty: boolean; ml: number; solid: boolean; colour: string };
+type VesselChip = { id: string; name: string; tube: boolean; active: boolean; empty: boolean; ml: number; solid: boolean; colour: string };
 
 /** The beakers on the bench and what can be done between them. Sits on top of the tool dock. */
-function VesselStrip({ chips, pouring, canAdd, canFilter, canSplit, canPour, onOpen, onAdd, onRemove, onFilter, onSplit, onPour }: { chips: VesselChip[]; pouring: boolean; canAdd: boolean; canFilter: boolean; canSplit: boolean; canPour: boolean; onOpen: (id: string) => void; onAdd: () => void; onRemove: (id: string) => void; onFilter: () => void; onSplit: () => void; onPour: () => void }) {
+function VesselStrip({ chips, pouring, canAdd, canAddTube, onAddTube, canFilter, canSplit, canPour, onOpen, onAdd, onRemove, onFilter, onSplit, onPour }: { chips: VesselChip[]; pouring: boolean; canAdd: boolean; canAddTube: boolean; onAddTube: () => void; canFilter: boolean; canSplit: boolean; canPour: boolean; onOpen: (id: string) => void; onAdd: () => void; onRemove: (id: string) => void; onFilter: () => void; onSplit: () => void; onPour: () => void }) {
   const act = "flex h-9 shrink-0 items-center gap-1.5 rounded-[10px] px-2.5 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-35";
   return (
     <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5">
@@ -1755,21 +1794,21 @@ function VesselStrip({ chips, pouring, canAdd, canFilter, canSplit, canPour, onO
                 type="button"
                 onClick={() => onOpen(c.id)}
                 aria-pressed={c.active}
-                aria-label={`${pouring && !c.active ? "Pour into" : c.active ? "On the hot plate:" : "Bring to the hot plate:"} beaker ${c.name}, ${c.empty ? "empty" : c.ml > 0.05 ? `${fmt(c.ml, "mL")} mL${c.solid ? " with a solid" : ""}` : "a solid, no liquid"}`}
+                aria-label={`${pouring && !c.active ? "Pour into" : c.active ? "On the hot plate:" : "Bring to the hot plate:"} ${c.tube ? "test tube" : "beaker"} ${c.name}, ${c.empty ? "empty" : c.ml > 0.05 ? `${fmt(c.ml, "mL")} mL${c.solid ? " with a solid" : ""}` : "a solid, no liquid"}`}
                 className={cx(
                   "flex h-9 items-center gap-1.5 rounded-[10px] px-2 text-[13px] font-semibold transition-colors",
                   c.active ? "bg-[rgba(61,139,255,.3)] text-white shadow-[inset_0_0_0_1px_#6aa8ff]" : target ? "animate-pulse bg-[rgba(255,194,61,.18)] text-[#ffd98a] shadow-[inset_0_0_0_1px_#ffc23d]" : "text-[#a9bde4] hover:bg-white/[0.06] hover:text-white",
                 )}
               >
-                <span className="relative h-4 w-3.5 shrink-0 overflow-hidden rounded-b-[4px] rounded-t-[1px] border border-[rgba(220,235,255,.55)]" aria-hidden>
-                  {!c.empty && <span className="absolute inset-x-0 bottom-0" style={{ height: `${Math.max(25, Math.min(100, (c.ml / 60) * 100))}%`, background: c.colour, opacity: 0.9 }} />}
+                <span className={cx("relative h-4 shrink-0 overflow-hidden border border-[rgba(220,235,255,.55)]", c.tube ? "w-2 rounded-b-full rounded-t-[1px]" : "w-3.5 rounded-b-[4px] rounded-t-[1px]")} aria-hidden>
+                  {!c.empty && <span className="absolute inset-x-0 bottom-0" style={{ height: `${Math.max(25, Math.min(100, (c.ml / (c.tube ? TUBE_ML : 60)) * 100))}%`, background: c.colour, opacity: 0.9 }} />}
                   {c.solid && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/80" />}
                 </span>
                 <span className="whitespace-nowrap">{c.name}</span>
                 <span className="whitespace-nowrap text-[12px] font-medium tabular-nums opacity-70 max-sm:hidden">{c.empty ? "empty" : c.ml > 0.05 ? `${fmt(c.ml, "mL")} mL` : "solid"}</span>
               </button>
               {!c.active && c.empty && chips.length > 1 && !pouring && (
-                <button type="button" onClick={() => onRemove(c.id)} className="grid h-7 w-6 place-items-center rounded-md text-[#8fa6d1] hover:text-white" aria-label={`Remove empty beaker ${c.name}`} title="Take this empty beaker off the bench">
+                <button type="button" onClick={() => onRemove(c.id)} className="grid h-7 w-6 place-items-center rounded-md text-[#8fa6d1] hover:text-white" aria-label={`Remove empty ${c.tube ? "test tube" : "beaker"} ${c.name}`} title={c.tube ? "Take this empty test tube out of the rack" : "Take this empty beaker off the bench"}>
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
@@ -1778,6 +1817,10 @@ function VesselStrip({ chips, pouring, canAdd, canFilter, canSplit, canPour, onO
         })}
         <button type="button" onClick={onAdd} disabled={!canAdd || pouring} className="grid h-9 w-8 place-items-center rounded-[10px] text-[#a9bde4] hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-35" aria-label="Put another clean beaker on the bench" title="Another clean beaker">
           <Plus className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={onAddTube} disabled={!canAddTube || pouring} className="flex h-9 items-center gap-0.5 rounded-[10px] px-1.5 text-[#a9bde4] hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-35" aria-label="Put a clean test tube in the rack" title="A clean test tube in the rack">
+          <Plus className="h-3 w-3" />
+          <TestTube className="h-4 w-4" />
         </button>
       </Glass>
       <Glass radius="md" className="flex items-center gap-0.5 p-1" role="group" aria-label="Between beakers">
@@ -1848,7 +1891,7 @@ function NoEntrySign() {
 
 /* ------------------------------------------------------------------ shelf */
 
-function Shelf({ cat, held, onPick, onQuick, glow, onTable, onClose, collapsible = false }: { cat: CatalogueResponse | null; held: ShelfItem | null; onPick: (it: ShelfItem) => void; onQuick: (it: ShelfItem) => void; glow: string | null; onTable: () => void; onClose: (() => void) | null; collapsible?: boolean }) {
+function Shelf({ cat, held, onPick, onQuick, usual: usualOf = quickAmount, glow, onTable, onClose, collapsible = false }: { cat: CatalogueResponse | null; held: ShelfItem | null; onPick: (it: ShelfItem) => void; usual?: (it: ShelfItem) => number; onQuick: (it: ShelfItem) => void; glow: string | null; onTable: () => void; onClose: (() => void) | null; collapsible?: boolean }) {
   // On short screens the card in hand needs the room: the shelf folds to its header until asked.
   const [unfolded, setUnfolded] = useState(false);
   useEffect(() => setUnfolded(false), [held?.id]);
@@ -1897,7 +1940,7 @@ function Shelf({ cat, held, onPick, onQuick, glow, onTable, onClose, collapsible
       <div className="ls-scroll mt-2 grid min-h-0 flex-1 auto-rows-max grid-cols-2 content-start gap-2 overflow-y-auto pr-1 pt-0.5">
         {list.map((it) => {
           const inHand = held?.id === it.id;
-          const usual = quickAmount(it);
+          const usual = usualOf(it);
           return (
             <div key={it.id} className="group relative">
             <button

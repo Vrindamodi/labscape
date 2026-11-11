@@ -51,6 +51,8 @@ export type PlaygroundView = {
    * `colour` while the loop is in it (null: the flame stays blue).
    */
   flameTest?: { pulse: number; colour: string | null; from: string } | null;
+  /** What stands on the hot plate: a beaker, or a test tube (tall, narrow, small). */
+  vessel?: "beaker" | "tube";
   focus: boolean;
 
   /* ---- optional extras: every one may be left out ---- */
@@ -92,12 +94,35 @@ const fillH = (v: PlaygroundView) => Math.pow(Math.min(1, Math.max(0, v.levelMl 
 export type SceneInsets = { left: number; right: number; top: number; bottom: number };
 
 /** A beaker standing on the bench beside the hot plate, drawn as it was last seen. */
-export type BenchBeaker = { id: string; name: string; colour: string; opacity: number; levelMl: number; solid: string | null };
+export type BenchBeaker = {
+  id: string;
+  name: string;
+  colour: string;
+  opacity: number;
+  levelMl: number;
+  solid: string | null;
+  /** How much it holds when full (the hot-plate vessel's capacity if left out). */
+  capacityMl?: number;
+  /** A test tube standing in the rack, and which of the rack's holes it is in (0 is the leftmost). */
+  tube?: boolean;
+  hole?: number;
+};
 
 /** Resting beakers are a little smaller than the one being worked on, and line up to the left of the hot plate. */
 const REST_SCALE = 0.82;
 const REST_STEP = 0.72;
 const restSlot = (i: number): [number, number, number] => [-1.14 - i * REST_STEP, 0, 0.2];
+
+/** The test-tube rack stands at the far end of the row of resting beakers. */
+const RACK_HOLES = 6;
+const HOLE_STEP = 0.15;
+const RACK_W = RACK_HOLES * HOLE_STEP + 0.1;
+const TUBE_R = 0.05;
+const TUBE_H = 0.5;
+/** A test tube on the hot plate is drawn as the beaker made this much narrower. */
+const TUBE_SX = 0.4;
+const rackCentre = (beakers: number) => restSlot(beakers)[0] + BEAKER_R * REST_SCALE - RACK_W / 2;
+const rackHole = (beakers: number, hole: number): [number, number, number] => [rackCentre(beakers) + (hole - (RACK_HOLES - 1) / 2) * HOLE_STEP, 0, 0.2];
 
 /** The id `onDropBeaker` reports when a beaker is let go over the filter funnel instead of over another beaker. */
 export const FILTER_FUNNEL = "filter-funnel";
@@ -125,7 +150,9 @@ const LOOP_OUT = 4.4;
 export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench = [], plateId = "plate", onOpenBeaker, onDropBeaker, onFunnel, onBurner }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets; bench?: BenchBeaker[]; plateId?: string; onOpenBeaker?: (id: string) => void; onDropBeaker?: (from: string, onto: string, at: { x: number; y: number }) => void; onFunnel?: () => void; onBurner?: () => void }) {
   const [quality, setQuality] = useState<Quality>(() => (((navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8) < 4 ? "lite" : "high"));
   // The camera keeps the hot plate and every resting beaker in view: the frame only widens when there is more than one beaker.
-  const frameMinX = bench.length ? restSlot(bench.length - 1)[0] - BEAKER_R * REST_SCALE - 0.16 : -FRAME_W / 2;
+  const resting = bench.filter((b) => !b.tube).length;
+  const rack = view.vessel === "tube" || bench.some((b) => b.tube);
+  const frameMinX = rack ? rackCentre(resting) - RACK_W / 2 - 0.16 : resting ? restSlot(resting - 1)[0] - BEAKER_R * REST_SCALE - 0.16 : -FRAME_W / 2;
   return (
     <Canvas
       shadows={quality === "high"}
@@ -477,11 +504,16 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
   const glassGeom = useMemo(() => lathe(BEAKER.profile), []);
   const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.5), []);
   const hit = useMemo(() => new THREE.Vector3(), []);
+  const beakers = useMemo(() => bench.filter((b) => !b.tube), [bench]);
+  const tubes = useMemo(() => bench.filter((b) => b.tube), [bench]);
+  const narrow = view.vessel === "tube";
+  const rack = narrow || tubes.length > 0;
   const homes = useMemo(() => {
     const m = new Map<string, [number, number, number]>([[plateId, [0, PLATE_H, 0]]]);
-    bench.forEach((b, i) => m.set(b.id, restSlot(i)));
+    beakers.forEach((b, i) => m.set(b.id, restSlot(i)));
+    tubes.forEach((b, i) => m.set(b.id, rackHole(beakers.length, b.hole ?? i)));
     return m;
-  }, [bench, plateId]);
+  }, [beakers, tubes, plateId]);
   // With the funnel on the bench there is always somewhere to carry a beaker, even a lone one.
   const canDrag = !!onDrop && (bench.length > 0 || funnel);
 
@@ -585,15 +617,31 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
   return (
     <>
       <group ref={keep(plateId)} position={[0, PLATE_H, 0]} {...handlers(plateId)}>
-        <BeakerWithContents view={view} quality={quality} reducedMotion={reducedMotion} />
-        {over === plateId && <DropRing radius={BEAKER_R + 0.12} />}
+        <group scale={narrow ? [TUBE_SX, 1, TUBE_SX] : 1}>
+          <BeakerWithContents view={view} quality={quality} reducedMotion={reducedMotion} />
+        </group>
+        {over === plateId && <DropRing radius={narrow ? BEAKER_R * TUBE_SX + 0.1 : BEAKER_R + 0.12} />}
       </group>
+      {rack && <TubeRack x={rackCentre(beakers.length)} />}
+      {tubes.map((b, i) => (
+        <group key={b.id} ref={keep(b.id)} position={rackHole(beakers.length, b.hole ?? i)} {...handlers(b.id)}>
+          <RestingTube b={b} glass={glass} />
+          {over === b.id && <DropRing radius={TUBE_R + 0.06} />}
+          {carried !== b.id && (
+            <Html position={[0, TUBE_H + 0.13, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+              <div style={{ whiteSpace: "nowrap", padding: over === b.id ? "2px 8px" : "1px 5px", borderRadius: 8, background: over === b.id ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.8)", border: `1px solid ${over === b.id ? "#ffc23d" : "rgba(140,180,255,.25)"}`, color: over === b.id ? "#ffd98a" : "#dbe7ff", font: `600 ${over === b.id ? 12 : 10}px Inter, system-ui, sans-serif` }}>
+                {over === b.id ? `Pour into ${b.name}` : b.name}
+              </div>
+            </Html>
+          )}
+        </group>
+      ))}
       {funnel && <FilterStand over={over === FILTER_FUNNEL} carrying={carried !== null} onClick={onFunnel} />}
       {funnel && <BunsenBurner test={view.flameTest ?? null} from={view.flameTest ? (homes.get(view.flameTest.from) ?? homes.get(plateId)!) : null} over={over === BUNSEN_BURNER} carrying={carried !== null} reducedMotion={reducedMotion} onClick={onBurner} />}
-      {bench.map((b, i) => (
+      {beakers.map((b, i) => (
         <group key={b.id} ref={keep(b.id)} position={restSlot(i)} {...handlers(b.id)}>
           <group scale={REST_SCALE}>
-            <RestingBeaker b={b} capacityMl={view.capacityMl} glass={glass} glassGeom={glassGeom} />
+            <RestingBeaker b={b} capacityMl={b.capacityMl ?? view.capacityMl} glass={glass} glassGeom={glassGeom} />
             {over === b.id && <DropRing radius={BEAKER_R + 0.12} />}
           </group>
           {carried !== b.id && (
@@ -647,6 +695,64 @@ function RestingBeaker({ b, capacityMl, glass, glassGeom }: { b: BenchBeaker; ca
       <mesh position={[0, BEAKER_H / 2, 0]} visible={false}>
         <cylinderGeometry args={[BEAKER_R + 0.04, BEAKER_R + 0.04, BEAKER_H, 12]} />
       </mesh>
+    </group>
+  );
+}
+
+/** A test tube standing in the rack: glass, what is in it, and any solid at the bottom. */
+function RestingTube({ b, glass }: { b: BenchBeaker; glass: THREE.Material }) {
+  const inner = TUBE_R * 0.84;
+  const h = Math.min(1, Math.max(0, b.levelMl / (b.capacityMl ?? 20))) * (TUBE_H - 0.08);
+  const y0 = 0.03 + TUBE_R;
+  return (
+    <group>
+      {h > 0.004 && (
+        <mesh position={[0, y0 + h / 2, 0]} renderOrder={1}>
+          <cylinderGeometry args={[inner, inner, h, 16]} />
+          <meshStandardMaterial color={b.colour} emissive={b.colour} emissiveIntensity={0.08 + b.opacity * 0.12} transparent opacity={Math.min(0.96, 0.3 + b.opacity * 0.66)} roughness={0.08} depthWrite={false} />
+        </mesh>
+      )}
+      {b.solid && (
+        <mesh position={[0, y0 + 0.012, 0]}>
+          <cylinderGeometry args={[inner, inner * 0.8, 0.035, 12]} />
+          <meshStandardMaterial color={b.solid} roughness={0.9} />
+        </mesh>
+      )}
+      <mesh position={[0, y0 + (TUBE_H - TUBE_R) / 2, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[TUBE_R, TUBE_R, TUBE_H - TUBE_R, 20, 1, true]} />
+      </mesh>
+      <mesh position={[0, y0, 0]} rotation-x={Math.PI} material={glass} renderOrder={3}>
+        <sphereGeometry args={[TUBE_R, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      </mesh>
+      {/* an easy thing to grab: the glass itself is thin and see-through */}
+      <mesh position={[0, 0.03 + TUBE_H / 2, 0]} visible={false}>
+        <cylinderGeometry args={[TUBE_R + 0.025, TUBE_R + 0.025, TUBE_H, 8]} />
+      </mesh>
+    </group>
+  );
+}
+
+/** A wooden test-tube rack: a base, a shelf the tubes pass through, and the two ends that hold it up. */
+function TubeRack({ x }: { x: number }) {
+  return (
+    <group position={[x, 0, 0.2]}>
+      <mesh position={[0, 0.015, 0]} castShadow>
+        <boxGeometry args={[RACK_W, 0.03, 0.24]} />
+        <meshStandardMaterial color="#8a6a45" roughness={0.8} />
+      </mesh>
+      {/* the shelf is two rails, so the tubes between them stay in view */}
+      {[-0.085, 0.085].map((z) => (
+        <mesh key={z} position={[0, 0.3, z]}>
+          <boxGeometry args={[RACK_W, 0.022, 0.05]} />
+          <meshStandardMaterial color="#8a6a45" roughness={0.8} />
+        </mesh>
+      ))}
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * (RACK_W / 2 - 0.015), 0.16, 0]}>
+          <boxGeometry args={[0.03, 0.3, 0.24]} />
+          <meshStandardMaterial color="#7a5c3b" roughness={0.8} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -1890,16 +1996,19 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
   // A bottle's mouth sits just above and outside the rim; the body hangs below it and swings out as it
   // tilts, and the stream arcs in. A dropper and a spatula let go straight down, so they are held over
   // the opening instead: anything they drop has to land inside the glass.
+  // over a test tube the opening is much smaller, so everything is held closer to the middle
+  const narrow = view.vessel === "tube";
+  const sx = narrow ? TUBE_SX : 1;
   const mouth = useMemo(
     () =>
       held.kind === "dropper"
-        ? new THREE.Vector3(BEAKER_R * 0.3, rim + 0.12 + DROPPER_L, 0.05)
+        ? new THREE.Vector3(narrow ? -0.06 : BEAKER_R * 0.3, rim + 0.12 + DROPPER_L, narrow ? 0 : 0.05)
         : held.kind === "spatula"
-          ? new THREE.Vector3(BEAKER_R * 0.35, rim + 0.16, 0.05)
+          ? new THREE.Vector3(BEAKER_R * 0.35 * sx, rim + 0.16, narrow ? 0 : 0.05)
           : held.kind === "burette"
-            ? new THREE.Vector3(BEAKER_R * 0.3, rim + 0.08, 0)
-            : new THREE.Vector3(BEAKER_R + 0.16, rim + 0.2, 0.05),
-    [held.kind, rim],
+            ? new THREE.Vector3(BEAKER_R * 0.3 * sx, rim + 0.08, 0)
+            : new THREE.Vector3(BEAKER_R * sx + 0.16, rim + 0.2, narrow ? 0.02 : 0.05),
+    [held.kind, rim, narrow, sx],
   );
   // Where drops and grains leave the tool: the dropper's tip swings out a little as it tilts; the
   // spatula's heap sits just under the point it turns about.
@@ -1987,7 +2096,7 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
           </group>
         )}
       </group>
-      {held.flowing && held.kind === "bottle" && <Stream from={mouth} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
+      {held.flowing && held.kind === "bottle" && <Stream from={mouth} toY={liquidTop} endX={LIQ_R * 0.35 * sx} colour={held.colour} reducedMotion={reducedMotion} />}
       {held.flowing && (held.kind === "dropper" || held.kind === "burette") && <Drops from={tip} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
       {held.flowing && held.kind === "spatula" && <Drops from={tip} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} grains />}
       {held.kind === "gas" && <GasHose from={new THREE.Vector3(mouth.x + 0.35, mouth.y - 0.1, mouth.z)} />}
@@ -2058,13 +2167,13 @@ function Burette({ colour, fill, glass }: { colour: string; fill: number; glass:
 }
 
 /** The pour: a tube whose surface texture scrolls, so the stream visibly flows. */
-function Stream({ from, toY, colour, reducedMotion }: { from: THREE.Vector3; toY: number; colour: string; reducedMotion: boolean }) {
+function Stream({ from, toY, endX, colour, reducedMotion }: { from: THREE.Vector3; toY: number; endX: number; colour: string; reducedMotion: boolean }) {
   const geom = useMemo(() => {
     const start = new THREE.Vector3(from.x - 0.04, from.y - 0.02, from.z);
-    const end = new THREE.Vector3(LIQ_R * 0.35, toY, 0.02);
+    const end = new THREE.Vector3(endX, toY, 0.02);
     const mid = new THREE.Vector3((start.x + end.x) / 2 + 0.02, (start.y + end.y) / 2 + 0.06, 0.03);
     return new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(start, mid, end), 32, 0.014, 10, false);
-  }, [from, toY]);
+  }, [from, toY, endX]);
   useEffect(() => () => geom.dispose(), [geom]);
   const tex = useMemo(() => {
     const c = document.createElement("canvas");
