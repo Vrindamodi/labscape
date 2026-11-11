@@ -8,7 +8,7 @@ import { Backdrop, BenchTop, lathe, useGlass, type Quality } from "../bench/Benc
 import { KINDS } from "../engine/equipment";
 
 /** How the substance in hand is dispensed. */
-export type HeldKind = "bottle" | "dropper" | "spatula" | "gas";
+export type HeldKind = "bottle" | "dropper" | "spatula" | "gas" | "burette";
 
 /**
  * Everything the open-playground bench shows. The scene only draws; what happens chemically comes
@@ -44,7 +44,13 @@ export type PlaygroundView = {
   reactionPulse: number;
   sparkPulse: number;
   /** What is in hand and how it is being used. */
-  held: { kind: HeldKind; colour: string; capColour: string; tiltDeg: number; flowing: boolean; label: string } | null;
+  /** `fill` (0..1) is how full a burette still is; other tools ignore it. */
+  held: { kind: HeldKind; colour: string; capColour: string; tiltDeg: number; flowing: boolean; label: string; fill?: number } | null;
+  /**
+   * A flame test: each new `pulse` sends the wire loop from beaker `from` into the burner's flame, which burns
+   * `colour` while the loop is in it (null: the flame stays blue).
+   */
+  flameTest?: { pulse: number; colour: string | null; from: string } | null;
   focus: boolean;
 
   /* ---- optional extras: every one may be left out ---- */
@@ -99,13 +105,24 @@ export const FILTER_FUNNEL = "filter-funnel";
 const FUNNEL_AT: [number, number, number] = [-0.95, 0, -0.85];
 const FUNNEL_Y = 1.02;
 
+/** The id `onDropBeaker` reports when a beaker is let go over the Bunsen burner. */
+export const BUNSEN_BURNER = "bunsen-burner";
+/** The burner stands behind the hot plate, between it and the funnel: in view, and clear of a bottle held on the right. */
+const BURNER_AT: [number, number, number] = [-0.5, 0, -0.95];
+/** Height of the top of the burner's barrel, where the flame sits. */
+const BURNER_H = 0.42;
+/** Seconds into a flame test at which the loop reaches the flame, and at which it is taken out again. */
+const LOOP_IN = 1.1;
+const LOOP_OUT = 4.4;
+
 /**
  * @param bench other beakers on the bench, in bench order. Any beaker (these, or the one on the plate) can be
  *        dragged onto another: `onDropBeaker` is told which went onto which and where on screen it was let go.
  *        A click without a drag on a resting beaker calls `onOpenBeaker`. Dropping a beaker on the filter
  *        funnel reports `FILTER_FUNNEL` as what it went onto; a click on the funnel calls `onFunnel`.
+ *        Dropping one on the Bunsen burner reports `BUNSEN_BURNER`; a click on the burner calls `onBurner`.
  */
-export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench = [], plateId = "plate", onOpenBeaker, onDropBeaker, onFunnel }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets; bench?: BenchBeaker[]; plateId?: string; onOpenBeaker?: (id: string) => void; onDropBeaker?: (from: string, onto: string, at: { x: number; y: number }) => void; onFunnel?: () => void }) {
+export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench = [], plateId = "plate", onOpenBeaker, onDropBeaker, onFunnel, onBurner }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets; bench?: BenchBeaker[]; plateId?: string; onOpenBeaker?: (id: string) => void; onDropBeaker?: (from: string, onto: string, at: { x: number; y: number }) => void; onFunnel?: () => void; onBurner?: () => void }) {
   const [quality, setQuality] = useState<Quality>(() => (((navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8) < 4 ? "lite" : "high"));
   // The camera keeps the hot plate and every resting beaker in view: the frame only widens when there is more than one beaker.
   const frameMinX = bench.length ? restSlot(bench.length - 1)[0] - BEAKER_R * REST_SCALE - 0.16 : -FRAME_W / 2;
@@ -129,7 +146,7 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench =
       {!reducedMotion && <Dust count={quality === "high" ? 220 : 80} />}
       <HotPlate plateC={view.plateC} stirring={view.stirring} />
       {view.iceBath && <IceBath reducedMotion={reducedMotion} />}
-      <Beakers view={view} quality={quality} reducedMotion={reducedMotion} bench={view.focus ? [] : bench} plateId={plateId} funnel={!view.focus && !!onDropBeaker} onBeaker={onBeaker} onOpen={onOpenBeaker} onDrop={onDropBeaker} onFunnel={onFunnel} />
+      <Beakers view={view} quality={quality} reducedMotion={reducedMotion} bench={view.focus ? [] : bench} plateId={plateId} funnel={!view.focus && !!onDropBeaker} onBeaker={onBeaker} onOpen={onOpenBeaker} onDrop={onDropBeaker} onFunnel={onFunnel} onBurner={onBurner} />
       {view.held && <Held held={view.held} view={view} quality={quality} reducedMotion={reducedMotion} />}
       {quality === "high" && (
         <EffectComposer multisampling={4}>
@@ -429,26 +446,27 @@ type DragState = { id: string; x0: number; y0: number; moving: boolean };
  * go over another beaker reports the drop (the page then asks how much to pour). A press that never moves is
  * a click. While a beaker is being carried the camera is locked, so the bench does not spin under it.
  */
-function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeaker, onOpen, onDrop, onFunnel }: { view: PlaygroundView; quality: Quality; reducedMotion: boolean; bench: BenchBeaker[]; plateId: string; funnel: boolean; onBeaker?: (() => void) | undefined; onOpen?: ((id: string) => void) | undefined; onDrop?: ((from: string, onto: string, at: { x: number; y: number }) => void) | undefined; onFunnel?: (() => void) | undefined }) {
+function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeaker, onOpen, onDrop, onFunnel, onBurner }: { view: PlaygroundView; quality: Quality; reducedMotion: boolean; bench: BenchBeaker[]; plateId: string; funnel: boolean; onBeaker?: (() => void) | undefined; onOpen?: ((id: string) => void) | undefined; onDrop?: ((from: string, onto: string, at: { x: number; y: number }) => void) | undefined; onFunnel?: (() => void) | undefined; onBurner?: (() => void) | undefined }) {
   const controls = useThree((st) => st.controls) as { enabled: boolean } | null;
   const camera = useThree((st) => st.camera);
   const gl = useThree((st) => st.gl);
   const probe = useMemo(() => new THREE.Vector3(), []);
   /**
-   * Is the pointer on the funnel stand as it appears on screen? The stand is tall and set back, so where it
-   * looks to be and where it stands on the bench are different places: this is judged in screen pixels.
+   * Is the pointer on something that stands at `at` and reaches from `low` to `high`, as it appears on screen?
+   * The funnel stand and the burner are set back, so where they look to be and where they stand on the bench
+   * are different places: this is judged in screen pixels.
    */
-  const onFunnelStand = (clientX: number, clientY: number) => {
+  const onStanding = (at: [number, number, number], low: number, high: number, reach: number, clientX: number, clientY: number) => {
     const r = gl.domElement.getBoundingClientRect();
     const px = (y: number): [number, number] => {
-      probe.set(FUNNEL_AT[0], y, FUNNEL_AT[2]).project(camera);
+      probe.set(at[0], y, at[2]).project(camera);
       return [r.left + ((probe.x + 1) / 2) * r.width, r.top + ((1 - probe.y) / 2) * r.height];
     };
-    const [ax, ay] = px(0.25);
-    const [bx, by] = px(FUNNEL_Y + 0.25);
+    const [ax, ay] = px(low);
+    const [bx, by] = px(high);
     const len2 = (bx - ax) ** 2 + (by - ay) ** 2;
     const t = Math.max(0, Math.min(1, ((clientX - ax) * (bx - ax) + (clientY - ay) * (by - ay)) / Math.max(1, len2)));
-    return Math.hypot(clientX - (ax + (bx - ax) * t), clientY - (ay + (by - ay) * t)) < Math.sqrt(len2) * 0.36;
+    return Math.hypot(clientX - (ax + (bx - ax) * t), clientY - (ay + (by - ay) * t)) < Math.sqrt(len2) * reach;
   };
   const groups = useRef(new Map<string, THREE.Group>());
   const drag = useRef<DragState | null>(null);
@@ -491,7 +509,7 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
         g.position.z += (home[2] - g.position.z) * k;
       }
       // A carried beaker leans towards the one it would pour into.
-      const target = held && overRef.current ? (overRef.current === FILTER_FUNNEL ? FUNNEL_AT : homes.get(overRef.current)) : null;
+      const target = held && overRef.current ? (overRef.current === FILTER_FUNNEL ? FUNNEL_AT : overRef.current === BUNSEN_BURNER ? BURNER_AT : homes.get(overRef.current)) : null;
       const lean = target ? (target[0] < g.position.x ? 0.42 : -0.42) : 0;
       g.rotation.z += (lean - g.rotation.z) * k;
     }
@@ -526,7 +544,8 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
           best = other;
         }
       }
-      if (funnel && onFunnelStand(e.nativeEvent.clientX, e.nativeEvent.clientY)) best = FILTER_FUNNEL;
+      if (funnel && onStanding(FUNNEL_AT, 0.25, FUNNEL_Y + 0.25, 0.36, e.nativeEvent.clientX, e.nativeEvent.clientY)) best = FILTER_FUNNEL;
+      else if (funnel && onStanding(BURNER_AT, 0, BURNER_H + 0.4, 0.42, e.nativeEvent.clientX, e.nativeEvent.clientY)) best = BUNSEN_BURNER;
       if (best !== overRef.current) {
         overRef.current = best;
         setOver(best);
@@ -570,6 +589,7 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
         {over === plateId && <DropRing radius={BEAKER_R + 0.12} />}
       </group>
       {funnel && <FilterStand over={over === FILTER_FUNNEL} carrying={carried !== null} onClick={onFunnel} />}
+      {funnel && <BunsenBurner test={view.flameTest ?? null} from={view.flameTest ? (homes.get(view.flameTest.from) ?? homes.get(plateId)!) : null} over={over === BUNSEN_BURNER} carrying={carried !== null} reducedMotion={reducedMotion} onClick={onBurner} />}
       {bench.map((b, i) => (
         <group key={b.id} ref={keep(b.id)} position={restSlot(i)} {...handlers(b.id)}>
           <group scale={REST_SCALE}>
@@ -679,6 +699,117 @@ function FilterStand({ over, carrying, onClick }: { over: boolean; carrying: boo
         </div>
       </Html>
     </group>
+  );
+}
+
+const BURNER_BLUE = new THREE.Color("#4aa8ff");
+
+/**
+ * A lit Bunsen burner. Carry a beaker to it (or click it) for a flame test: a wire loop takes a little of the
+ * beaker's contents into the flame, and the flame burns the colour of the metal in it.
+ */
+function BunsenBurner({ test, from, over, carrying, reducedMotion, onClick }: { test: NonNullable<PlaygroundView["flameTest"]> | null; from: [number, number, number] | null; over: boolean; carrying: boolean; reducedMotion: boolean; onClick?: (() => void) | undefined }) {
+  const outer = useRef<THREE.Mesh>(null);
+  const inner = useRef<THREE.Mesh>(null);
+  const loop = useRef<THREE.Group>(null);
+  // a test that was already over when the burner came into view is not played again
+  const seen = useRef(test?.pulse ?? 0);
+  const started = useRef(-1);
+  const colour = useMemo(() => new THREE.Color(), []);
+  const top: [number, number, number] = [BURNER_AT[0], BURNER_H + 0.16, BURNER_AT[2]];
+
+  useFrame(({ clock }, dt) => {
+    const t = clock.elapsedTime;
+    if (test && test.pulse !== seen.current) {
+      seen.current = test.pulse;
+      started.current = t;
+    }
+    const age = started.current < 0 ? Infinity : t - started.current;
+    const inFlame = age >= (reducedMotion ? 0 : LOOP_IN) && age < LOOP_OUT;
+    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 7);
+    const flicker = reducedMotion ? 1 : 1 + Math.sin(t * 17) * 0.05 + Math.sin(t * 29) * 0.03;
+    if (outer.current) {
+      const m = outer.current.material as THREE.MeshBasicMaterial;
+      m.color.lerp(inFlame && test?.colour ? colour.set(test.colour) : BURNER_BLUE, k);
+      // a coloured flame is taller and fuller than the quiet blue one
+      const grow = inFlame && test?.colour ? 1.35 : 1;
+      outer.current.scale.x += (grow - outer.current.scale.x) * k;
+      outer.current.scale.z = outer.current.scale.x;
+      outer.current.scale.y = (outer.current.scale.y + (grow - outer.current.scale.y) * k) * 1;
+      outer.current.position.y = BURNER_H + 0.16 * outer.current.scale.y * flicker;
+    }
+    if (inner.current) inner.current.scale.y = flicker;
+    const g = loop.current;
+    if (g) {
+      const src = from ?? [0, PLATE_H, 0];
+      const above: [number, number, number] = [src[0], src[1] + BEAKER_H + 0.3, src[2]];
+      const dipped: [number, number, number] = [src[0], src[1] + 0.1, src[2]];
+      g.visible = age < LOOP_OUT + 0.5;
+      if (g.visible) {
+        const mix = (a: [number, number, number], b: [number, number, number], f: number) => {
+          const e = f * f * (3 - 2 * f);
+          g.position.set(a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, a[2] + (b[2] - a[2]) * e);
+        };
+        if (reducedMotion || age >= LOOP_IN) mix(top, [top[0], top[1] + 0.5, top[2]], age < LOOP_OUT ? 0 : Math.min(1, (age - LOOP_OUT) / 0.5));
+        else if (age < 0.4) mix(above, dipped, age / 0.4);
+        else if (age < 0.7) mix(dipped, above, (age - 0.4) / 0.3);
+        else mix(above, top, (age - 0.7) / (LOOP_IN - 0.7));
+      }
+    }
+  });
+
+  return (
+    <>
+      <group position={BURNER_AT} onClick={(e) => (e.stopPropagation(), onClick?.())}>
+        {/* base, barrel, collar with its air hole, and the gas hose trailing off the back of the bench */}
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <cylinderGeometry args={[0.15, 0.17, 0.04, 28]} />
+          <meshStandardMaterial color="#2a3350" roughness={0.45} metalness={0.6} />
+        </mesh>
+        <mesh position={[0, BURNER_H / 2 + 0.02, 0]} castShadow>
+          <cylinderGeometry args={[0.032, 0.036, BURNER_H - 0.04, 20]} />
+          <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+        </mesh>
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[0.046, 0.046, 0.07, 20]} />
+          <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+        </mesh>
+        <mesh position={[0.2, 0.05, -0.12]} rotation-z={Math.PI / 2} rotation-y={0.55}>
+          <cylinderGeometry args={[0.016, 0.016, 0.5, 10]} />
+          <meshStandardMaterial color="#b3472e" roughness={0.8} />
+        </mesh>
+        {/* the flame: a pale inner cone inside an outer one that takes the colour of the test */}
+        <mesh ref={outer} position={[0, BURNER_H + 0.16, 0]} renderOrder={5}>
+          <coneGeometry args={[0.055, 0.32, 20, 1, true]} />
+          <meshBasicMaterial color="#4aa8ff" transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+        </mesh>
+        <mesh ref={inner} position={[0, BURNER_H + 0.08, 0]} renderOrder={6}>
+          <coneGeometry args={[0.026, 0.16, 16, 1, true]} />
+          <meshBasicMaterial color="#cfeaff" transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+        </mesh>
+        {over && <DropRing radius={0.26} />}
+        <Html position={[0, BURNER_H + 0.5, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+          <div style={{ whiteSpace: "nowrap", padding: "2px 8px", borderRadius: 9, background: over ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.85)", border: `1px solid ${over ? "#ffc23d" : carrying ? "rgba(255,194,61,.55)" : "rgba(140,180,255,.3)"}`, color: over ? "#ffd98a" : "#dbe7ff", font: "600 12px Inter, system-ui, sans-serif" }}>
+            {over ? "Flame-test it here" : "Bunsen burner"}
+          </div>
+        </Html>
+      </group>
+      {/* the nichrome wire loop: a handle, a wire and the small loop that carries the sample */}
+      <group ref={loop} visible={false}>
+        <mesh position={[0.135, 0.37, 0]} rotation-z={-0.35}>
+          <cylinderGeometry args={[0.02, 0.02, 0.3, 10]} />
+          <meshStandardMaterial color="#e6dcc2" roughness={0.7} />
+        </mesh>
+        <mesh position={[0.045, 0.125, 0]} rotation-z={-0.35}>
+          <cylinderGeometry args={[0.007, 0.007, 0.26, 6]} />
+          <meshStandardMaterial color="#dfe5f0" metalness={0.7} roughness={0.3} />
+        </mesh>
+        <mesh>
+          <torusGeometry args={[0.03, 0.007, 8, 18]} />
+          <meshStandardMaterial color="#dfe5f0" metalness={0.7} roughness={0.3} />
+        </mesh>
+      </group>
+    </>
   );
 }
 
@@ -1743,6 +1874,10 @@ const BOTTLE_H = 125 * U;
 const BOTTLE_S = 0.5;
 /** A dropper's length from the pivot it is held by down to its tip. */
 const DROPPER_L = 0.32;
+/** A burette: the graduated tube above its tap, and the tap and jet below it. */
+const BURETTE_L = 0.86;
+const BURETTE_R = 0.03;
+const BURETTE_JET = 0.16;
 
 function Held({ held, view, quality, reducedMotion }: { held: NonNullable<PlaygroundView["held"]>; view: PlaygroundView; quality: Quality; reducedMotion: boolean }) {
   const glass = useGlass(quality);
@@ -1761,7 +1896,9 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
         ? new THREE.Vector3(BEAKER_R * 0.3, rim + 0.12 + DROPPER_L, 0.05)
         : held.kind === "spatula"
           ? new THREE.Vector3(BEAKER_R * 0.35, rim + 0.16, 0.05)
-          : new THREE.Vector3(BEAKER_R + 0.16, rim + 0.2, 0.05),
+          : held.kind === "burette"
+            ? new THREE.Vector3(BEAKER_R * 0.3, rim + 0.08, 0)
+            : new THREE.Vector3(BEAKER_R + 0.16, rim + 0.2, 0.05),
     [held.kind, rim],
   );
   // Where drops and grains leave the tool: the dropper's tip swings out a little as it tilts; the
@@ -1770,7 +1907,10 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
   const tip =
     held.kind === "dropper"
       ? new THREE.Vector3(mouth.x + DROPPER_L * Math.sin(lean), mouth.y - DROPPER_L * Math.cos(lean), mouth.z)
-      : new THREE.Vector3(mouth.x, mouth.y - 0.05, mouth.z);
+      : held.kind === "burette"
+        ? mouth
+        : new THREE.Vector3(mouth.x, mouth.y - 0.05, mouth.z);
+  const clamped = held.kind === "burette";
   useFrame(({ clock }, dt) => {
     const g = pivot.current;
     if (!g) return;
@@ -1779,8 +1919,9 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
     const ka = reducedMotion ? 1 : 1 - Math.exp(-dt * 5.5);
     tilt.current += ((held.tiltDeg * Math.PI) / 180 - tilt.current) * kt;
     appear.current += (1 - appear.current) * ka;
-    g.rotation.z = tilt.current + (reducedMotion || held.flowing ? 0 : Math.sin(clock.elapsedTime * 1.4) * 0.02);
-    g.position.set(mouth.x + (1 - appear.current) * 0.8, mouth.y + (1 - appear.current) * 0.3 + (held.flowing || reducedMotion ? 0 : Math.sin(clock.elapsedTime * 1.1) * 0.012), mouth.z);
+    // a burette is clamped: it neither tilts nor sways in the hand
+    g.rotation.z = clamped ? 0 : tilt.current + (reducedMotion || held.flowing ? 0 : Math.sin(clock.elapsedTime * 1.4) * 0.02);
+    g.position.set(mouth.x + (1 - appear.current) * 0.8, mouth.y + (1 - appear.current) * 0.3 + (clamped || held.flowing || reducedMotion ? 0 : Math.sin(clock.elapsedTime * 1.1) * 0.012), mouth.z);
   });
 
   const h = BOTTLE_H * BOTTLE_S;
@@ -1832,6 +1973,7 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
             </mesh>
           </group>
         )}
+        {held.kind === "burette" && <Burette colour={held.colour} fill={held.fill ?? 1} glass={glass} />}
         {held.kind === "gas" && (
           <group position={[0.35, -0.55, 0]}>
             <mesh castShadow>
@@ -1846,10 +1988,72 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
         )}
       </group>
       {held.flowing && held.kind === "bottle" && <Stream from={mouth} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
-      {held.flowing && held.kind === "dropper" && <Drops from={tip} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
+      {held.flowing && (held.kind === "dropper" || held.kind === "burette") && <Drops from={tip} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
       {held.flowing && held.kind === "spatula" && <Drops from={tip} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} grains />}
       {held.kind === "gas" && <GasHose from={new THREE.Vector3(mouth.x + 0.35, mouth.y - 0.1, mouth.z)} />}
     </>
+  );
+}
+
+/**
+ * A burette in a clamp on a retort stand, drawn from its jet (the origin) upwards: jet, tap, then the graduated
+ * tube with the liquid still in it. The stand is off to the right, behind where a bottle would be held.
+ */
+function Burette({ colour, fill, glass }: { colour: string; fill: number; glass: THREE.Material }) {
+  const tube0 = BURETTE_JET + 0.05;
+  const level = Math.max(0, Math.min(1, fill)) * (BURETTE_L - 0.06);
+  const standX = 0.62;
+  const standZ = -0.2;
+  const clampY = tube0 + BURETTE_L * 0.45;
+  const arm = Math.hypot(standX, standZ);
+  return (
+    <group>
+      {/* jet and tap */}
+      <mesh position={[0, BURETTE_JET / 2, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[0.012, 0.006, BURETTE_JET, 10]} />
+      </mesh>
+      <mesh position={[0, BURETTE_JET + 0.025, 0]} rotation-x={Math.PI / 2}>
+        <cylinderGeometry args={[0.018, 0.018, 0.11, 10]} />
+        <meshStandardMaterial color="#3d8bff" roughness={0.4} />
+      </mesh>
+      {/* the graduated tube, the liquid in it, and a few marks */}
+      <mesh position={[0, tube0 + BURETTE_L / 2, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[BURETTE_R, BURETTE_R, BURETTE_L, 20, 1, true]} />
+      </mesh>
+      {level > 0.002 && (
+        <mesh position={[0, tube0 + level / 2, 0]}>
+          <cylinderGeometry args={[BURETTE_R * 0.82, BURETTE_R * 0.82, level, 16]} />
+          <meshStandardMaterial color={colour} transparent opacity={0.78} roughness={0.1} />
+        </mesh>
+      )}
+      {Array.from({ length: 11 }, (_, i) => (
+        <mesh key={i} position={[0, tube0 + 0.03 + (i / 10) * (BURETTE_L - 0.06), 0]} rotation-x={Math.PI / 2}>
+          <torusGeometry args={[BURETTE_R + 0.001, i % 5 === 0 ? 0.0035 : 0.002, 4, 20, Math.PI]} />
+          <meshBasicMaterial color="#dbe7ff" transparent opacity={0.75} />
+        </mesh>
+      ))}
+      {/* the stand: base, rod, and the boss and arm that hold the burette */}
+      <mesh position={[standX, 0.02 - (PLATE_H + BEAKER_H + 0.08), standZ]} castShadow>
+        <boxGeometry args={[0.4, 0.04, 0.5]} />
+        <meshStandardMaterial color="#2a3350" roughness={0.5} metalness={0.5} />
+      </mesh>
+      <mesh position={[standX, (tube0 + BURETTE_L * 0.7 - (PLATE_H + BEAKER_H + 0.08)) / 2, standZ]}>
+        <cylinderGeometry args={[0.018, 0.018, tube0 + BURETTE_L * 0.7 + PLATE_H + BEAKER_H + 0.08, 12]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      <mesh position={[standX, clampY, standZ]}>
+        <boxGeometry args={[0.06, 0.06, 0.06]} />
+        <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+      </mesh>
+      <mesh position={[standX / 2, clampY, standZ / 2]} rotation-y={Math.atan2(-standZ, standX)} rotation-z={Math.PI / 2}>
+        <cylinderGeometry args={[0.012, 0.012, arm, 8]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      <mesh position={[0, clampY, 0]} rotation-x={Math.PI / 2}>
+        <torusGeometry args={[BURETTE_R + 0.012, 0.012, 8, 20]} />
+        <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+      </mesh>
+    </group>
   );
 }
 

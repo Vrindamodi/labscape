@@ -1,12 +1,12 @@
 import type { SimulationBase, SimulationResult } from "@labscape/contracts";
-import { DockButton, DockSeparator, FILTER_FUNNEL, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type BenchBeaker, type HeldKind, type PlaygroundView, type SceneCaption, type SceneInsets } from "@labscape/lab-engine";
+import { BUNSEN_BURNER, DockButton, DockSeparator, FILTER_FUNNEL, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type BenchBeaker, type HeldKind, type PlaygroundView, type SceneCaption, type SceneInsets } from "@labscape/lab-engine";
 import { useMotion } from "@labscape/motion";
 import { dispenseMode, fetchCatalogue, fetchTryNext, liquidMl, loadDiscoveries, loadMuted, mixInputs, ProblemError, resolveMix, saveDiscoveries, saveMuted, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem, type TryNextHint } from "@labscape/playground";
 import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { ArrowLeft, ArrowRightLeft, Atom, Filter as FilterIcon, Split, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Atom, Filter as FilterIcon, Split, ChevronLeft, ChevronRight, Droplet, Eraser, Flame, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +19,11 @@ import { capitalise, colourDistance, colourName } from "./colourName";
 type Speed = "drop" | "slow" | "steady" | "fast";
 const RATE: Record<Speed, number> = { drop: 0.3, slow: 1.5, steady: 4, fast: 9 };
 const TILT: Record<Speed, number> = { drop: 62, slow: 78, steady: 96, fast: 118 };
+/** A burette runs far more gently than a tipped bottle: mL per second with the tap at each setting. */
+const BURETTE_RATE: Record<Speed, number> = { drop: 0.1, slow: 0.4, steady: 1.2, fast: 3 };
+const BURETTE_ML = 50;
+/** One drop from a burette. */
+const DROP_ML = 0.05;
 type Tab = "live" | "molecules" | "notebook" | "facts";
 type Filter = "all" | "household" | "acid" | "alkali" | "salt" | "metal" | "indicator" | "solid" | "gas" | "element" | "other";
 const FILTERS: { id: Filter; label: string }[] = [
@@ -225,6 +230,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [sparkPulse, setSparkPulse] = useState(0);
   /** The spark pulse the Spark button is still lit for (0 = not lit). */
   const [sparkLit, setSparkLit] = useState(0);
+  const [flameTest, setFlameTest] = useState<{ pulse: number; colour: string | null; from: string } | null>(null);
   const [drawer, setDrawer] = useState<"shelf" | "table" | "journal">("shelf");
   /** What the engine says is worth trying next with this beaker (shelf items and bench tools). */
   const [hints, setHints] = useState<TryNextHint[]>([]);
@@ -261,6 +267,9 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [speed, setSpeed] = useState<Speed>("steady");
   const [amount, setAmount] = useState(10);
   const [flowing, setFlowing] = useState(false);
+  /** The liquid in hand is in a burette, not being poured from its bottle; `titre` is how much has run out of it. */
+  const [burette, setBurette] = useState(false);
+  const [titre, setTitre] = useState(0);
   const [tilt, setTilt] = useState(0);
   const [inFlight, setInFlight] = useState(0);
   const flowRef = useRef({ added: 0, tilt: 0, custom: false });
@@ -610,8 +619,9 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
 
   const commit = (item: ShelfItem, amt: number, how: string) => {
     const a = Math.round(amt * 100) / 100;
-    if (a < item.limits.min - 1e-6) return flash(`Add at least ${item.limits.min} ${unitLabel(item)} of ${item.name}.`);
-    if (online === false) return flash("The safety engine is offline, so nothing can be mixed.", "bad");
+    const before = adds.filter((x) => x.item.id === item.id).reduce((n, x) => n + x.amount, 0);
+    if (before + a < item.limits.min - 1e-6) return flash(`Add at least ${item.limits.min} ${unitLabel(item)} of ${item.name}.`), false;
+    if (online === false) return flash("The safety engine is offline, so nothing can be mixed.", "bad"), false;
     const add: TrayItem = { key: crypto.randomUUID(), item, amount: a };
     const prev = adds;
     const nextAdds = [...adds, add];
@@ -620,6 +630,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     setAdds(nextAdds);
     addLog(`Added ${fmt(a, item.limits.unit)} ${unitLabel(item)} ${item.name}${item.concentrationM ? ` (${item.concentrationM} M)` : ""} · ${how}`);
     void resolve(mergeTray(nextAdds), { temp: plateC, stir: stirring, ign: ignition }, () => setAdds(prev));
+    return true;
   };
 
   const reResolve = (cond: { temp: number; stir: boolean; ign: boolean }) => hasContents && void resolve(tray, cond, () => {}, false);
@@ -628,11 +639,13 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
 
   const room = held ? (held.limits.unit === "mL" && held.form !== "gas" ? Math.max(0, capacity - levelMl) : Infinity) : 0;
   const already = held ? tray.find((t) => t.item.id === held.id)?.amount ?? 0 : 0;
-  const maxAdd = held ? Math.max(0, Math.min(room, held.limits.max - already)) : 0;
+  const maxAdd = held ? Math.max(0, Math.min(room, held.limits.max - already, burette ? BURETTE_ML - titre : Infinity)) : 0;
 
   const pick = (it: ShelfItem) => {
     if (held?.id === it.id) return putDown();
     setHeld(it);
+    setBurette(false);
+    setTitre(0);
     setFlowing(false);
     setTilt(0);
     setAmount(quickAmount(it));
@@ -642,7 +655,26 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     auto.current = null;
     stopFlow(false);
     setHeld(null);
+    setBurette(false);
+    setTitre(0);
     setTilt(0);
+  };
+  /** Move the liquid in hand into a burette clamped over the beaker (or back to its bottle). A fresh burette reads zero. */
+  const toBurette = (on: boolean) => {
+    if (flowing) return flash("Close the tap first.");
+    setBurette(on);
+    setTitre(0);
+    setTilt(0);
+    if (on) setSpeed("slow");
+  };
+  /** One drop from the burette's jet. */
+  const oneDrop = () => {
+    if (!held || !burette || flowing) return;
+    if (maxAdd < DROP_ML - 1e-6) return flash(titre >= BURETTE_ML - 1e-6 ? "The burette is empty." : room <= 0 ? "The beaker is full." : `That is the most ${held.name} allowed.`);
+    if (commit(held, DROP_ML, "one drop from the burette")) {
+      setTitre((t) => Math.round((t + DROP_ML) * 100) / 100);
+      sound.play("drop");
+    }
   };
 
   // Liquid pour loop: flow at the chosen speed (or the dragged tilt), stop at the target.
@@ -654,23 +686,25 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       const now = performance.now();
       const dt = (now - last) / 1000;
       last = now;
-      const rate = f.custom ? Math.max(0, Math.pow(Math.max(0, (f.tilt - 55) / 70), 1.6) * 12) : RATE[speed];
-      f.added = Math.min(f.added + rate * dt, amount, maxAdd);
+      const rate = burette ? BURETTE_RATE[speed] : f.custom ? Math.max(0, Math.pow(Math.max(0, (f.tilt - 55) / 70), 1.6) * 12) : RATE[speed];
+      // a bottle pours the amount that was asked for; a burette runs until its tap is closed
+      const target = burette ? maxAdd : Math.min(amount, maxAdd);
+      f.added = Math.min(f.added + rate * dt, target);
       setInFlight(f.added);
-      if (f.added >= Math.min(amount, maxAdd) - 1e-6) stopFlow(true);
+      if (f.added >= target - 1e-6) stopFlow(true);
     }, 50);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flowing, held, heldMode, speed, amount, maxAdd]);
+  }, [flowing, held, heldMode, speed, amount, maxAdd, burette]);
 
   const startFlow = (custom = false) => {
-    if (!held || maxAdd <= 0) return flash(maxAdd <= 0 && held ? (room <= 0 ? "The beaker is full." : `That is the most ${held.name} allowed.`) : "Pick something up first.");
+    if (!held || maxAdd <= 0) return flash(maxAdd <= 0 && held ? (burette && titre >= BURETTE_ML - 1e-6 ? "The burette is empty." : room <= 0 ? "The beaker is full." : `That is the most ${held.name} allowed.`) : "Pick something up first.");
     flowRef.current = { added: 0, tilt: custom ? tilt : TILT[speed], custom };
     setInFlight(0);
     if (heldMode === "pour") {
-      setTilt(TILT[speed]);
+      setTilt(burette ? 0 : TILT[speed]);
       setFlowing(true);
-      sound.loop("pour", true, 0.6);
+      sound.loop("pour", true, burette ? 0.2 : 0.6);
       return;
     }
     // Drops, scoops and gas run for a moment, then the whole amount goes in.
@@ -695,6 +729,12 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     const added = flowRef.current.added;
     flowRef.current.added = 0;
     setInFlight(0);
+    if (burette) {
+      // every drop counts in a titration, and the reading only moves by what really went in
+      const ran = Math.round(added * 100) / 100;
+      if (ran > 0 && commit(held, ran, "from the burette")) setTitre((t) => Math.round((t + ran) * 100) / 100);
+      return;
+    }
     if (added > 0.05) commit(held, added, flowRef.current.custom ? "hand pour" : `${speed} pour`);
     if (finish) sound.play("clink", 0.4);
   }
@@ -705,12 +745,12 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     if (!held || heldMode !== "pour") return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     pad.current = { y: e.clientY, base: TILT[speed] };
-    setTilt(TILT[speed]);
+    if (!burette) setTilt(TILT[speed]);
     startFlow(false);
   };
   const onPadMove = (e: ReactPointerEvent) => {
     const p = pad.current;
-    if (!p) return;
+    if (!p || burette) return;
     const dy = e.clientY - p.y;
     if (Math.abs(dy) < 6) return;
     const t = Math.max(0, Math.min(135, p.base + dy * 0.45));
@@ -1023,9 +1063,64 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     if (hasContents) transfer(activeId, "new", 0.5);
   };
   const pourInto = (id: string) => transfer(activeId, id, 1);
+  /**
+   * A flame test: a wire loop takes a little of a beaker's contents into the Bunsen flame. The beaker itself
+   * is untouched: the loop's worth is a small share of it, held in a flame on its own.
+   */
+  const flameTestOf = async (srcId: string) => {
+    if (!handsFree()) return;
+    const v = vesselNow(srcId);
+    if (!v || isEmptyVessel(v)) return flash("Put something in the beaker first, then take a sample to the flame.");
+    if (online === false) return flash("The safety engine is offline, so nothing can be tested right now.", "bad");
+    setBusy(true);
+    try {
+      const r = await resolveMix([], 22, false, true, [baseOf(v, "all", 0.02)]);
+      if (r.outcome === "prohibited" || r.outcome === "out_of_range") return flash(r.presentation?.message ?? "That can't be flame-tested.");
+      const pres = r.presentation;
+      const test = pres?.reactions.find((x) => x.id.startsWith("flame-test-"));
+      const flames = r.cues.filter((c) => c.kind === "flame");
+      const last = flames[flames.length - 1];
+      const colour = last && last.kind === "flame" ? oklabToHex(last.colour) : null;
+      setFlameTest((t) => ({ pulse: (t?.pulse ?? 0) + 1, colour, from: srcId }));
+      sound.play("spark");
+      // say what the flame shows once the loop is in it
+      const shown = (f: () => void) => later(reduced ? 0 : 1100, f);
+      if (test && colour) {
+        const metal = test.name.replace(/^Flame test:\s*/i, "");
+        shown(() => caption(`${capitalise(colourName(colour))} flame: ${metal}`, { colour }));
+        addLog(`Flame test on ${v.name}: a ${colourName(colour)} flame, the colour ${metal} gives`, "good");
+        if (pres?.discoveryIds.includes("flame-test") && !found["flame-test"]) {
+          const nextFound = { ...found, "flame-test": { at: Date.now(), equationLatex: test.equationLatex ?? "" } };
+          setFound(nextFound);
+          saveDiscoveries(nextFound);
+          onDiscoveries?.(["flame-test"]);
+          const d = cat?.discoveries.find((x) => x.id === "flame-test");
+          if (d) {
+            shown(() => {
+              setCelebrate(d);
+              sound.play("discover");
+            });
+            later(5300, () => setCelebrate(null));
+          }
+        }
+      } else if (colour) {
+        shown(() => caption("The sample itself catches fire on the loop", { colour, tone: "warn" }));
+        addLog(`Flame test on ${v.name}: the sample burns, which hides any flame colour`, "warn");
+      } else {
+        shown(() => caption("The flame stays blue: nothing in this sample colours it"));
+        addLog(`Flame test on ${v.name}: no colour`);
+      }
+    } catch (e) {
+      if (e instanceof ProblemError && e.status === 429) flash(e.problem.detail ?? "Slow down: too many blocked mixes. Try again shortly.", "bad");
+      else flash("The flame test could not be run just now.", "bad");
+    } finally {
+      setBusy(false);
+    }
+  };
   /** A beaker was dragged onto another on the bench: ask how much to pour, right where it was dropped. */
   const onDropBeaker = (src: string, dst: string, at: { x: number; y: number }) => {
     if (dst === FILTER_FUNNEL) return filterVessel(src);
+    if (dst === BUNSEN_BURNER) return void flameTestOf(src);
     const from = vesselNow(src);
     if (!from || !handsFree()) return;
     if (isEmptyVessel(from)) return flash(`Beaker ${from.name} is empty: there is nothing to pour.`);
@@ -1069,6 +1164,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         return heatTo(plateC > 22 ? 22 : friendlyOutcome(result, shelfName)?.heatC ?? 60);
       case "f":
         return spark();
+      case "t":
+        return void flameTestOf(activeId);
       case "i":
         return toggleIce();
       case "z":
@@ -1113,9 +1210,11 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     focus,
     thermometer: levelMl > 0 ? { targetC } : null,
     captions,
+    flameTest,
     held: held
       ? {
-          kind: (heldMode === "pour" ? "bottle" : heldMode) as HeldKind,
+          kind: (heldMode === "pour" ? (burette ? "burette" : "bottle") : heldMode) as HeldKind,
+          ...(burette ? { fill: Math.max(0, 1 - (titre + inFlight) / BURETTE_ML) } : {}),
           colour: held.colour,
           capColour: CAP_COLOUR[held.category] ?? "#3d8bff",
           tiltDeg: tilt,
@@ -1211,6 +1310,10 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       }}
       onPutDown={putDown}
       compact={!wide || snug}
+      burette={burette}
+      titre={titre}
+      onBurette={toBurette}
+      onOneDrop={oneDrop}
     />
   );
   const panelMotion = reduced ? {} : { initial: { opacity: 0, x: -16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -16 }, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const } };
@@ -1218,7 +1321,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   return (
     <div ref={rootRef} className="relative h-screen w-full overflow-hidden bg-[#0b1530] font-sans text-[#e8f0ff]">
       <div className="absolute inset-0">
-        <PlaygroundScene view={view} reducedMotion={reduced} insets={{ ...insets, bottom: insets.bottom + CAPTION_BAND }} bench={bench} plateId={activeId} onOpenBeaker={switchTo} onDropBeaker={onDropBeaker} onFunnel={() => flash("Drag a beaker onto the funnel to filter it: the liquid runs through, the solid stays on the paper.")} />
+        <PlaygroundScene view={view} reducedMotion={reduced} insets={{ ...insets, bottom: insets.bottom + CAPTION_BAND }} bench={bench} plateId={activeId} onOpenBeaker={switchTo} onDropBeaker={onDropBeaker} onBurner={() => void flameTestOf(activeId)} onFunnel={() => flash("Drag a beaker onto the funnel to filter it: the liquid runs through, the solid stays on the paper.")} />
       </div>
       <AnimatePresence>
         {screenFlash > 0 && !reduced && (
@@ -1491,6 +1594,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           <DockSeparator />
           <HeatButton plateC={plateC} glow={needs.includes("heat")} onHeat={heatTo} />
           <DockButton icon={<Zap />} label="Spark" kbd="F" title="Hold a flame to the beaker (F)" tone={sparkLit ? "hot" : needs.includes("spark") ? "on" : "default"} className={needs.includes("spark") && !ignition ? "animate-pulse" : ""} disabled={!hasContents} onClick={spark} />
+          <DockButton icon={<Flame />} label="Flame test" kbd="T" title="Take a sample into the Bunsen flame on a wire loop (T)" disabled={!hasContents} onClick={() => void flameTestOf(activeId)} />
           <DockButton icon={<Snowflake />} label="Ice bath" kbd="I" tone={iceBath ? "on" : "default"} onClick={toggleIce} />
           <DockSeparator />
           <DockButton icon={<Undo2 />} label={!adds.length && canRestore ? "Restore" : "Undo"} kbd="Z" title={!adds.length && canRestore ? "Bring the emptied beaker back (Z)" : "Undo the last addition (Z)"} disabled={(!adds.length && !canRestore) || busy} onClick={undo} />
@@ -1891,20 +1995,22 @@ function ShelfArt({ item }: { item: ShelfItem }) {
 
 /* ------------------------------------------------------------------ in-hand card */
 
-function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; speed: Speed; setSpeed: (s: Speed) => void; amount: number; setAmount: (n: number) => void; max: number; tilt: number; flowing: boolean; inFlight: number; onGo: () => void; onDropwise: () => void; onPutDown: () => void; compact?: boolean }) {
+function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; speed: Speed; setSpeed: (s: Speed) => void; amount: number; setAmount: (n: number) => void; max: number; tilt: number; flowing: boolean; inFlight: number; onGo: () => void; onDropwise: () => void; onPutDown: () => void; compact?: boolean; burette: boolean; titre: number; onBurette: (on: boolean) => void; onOneDrop: () => void }) {
   const it = p.item;
+  const inBurette = p.mode === "pour" && p.burette;
   const unit = unitLabel(it);
   const step = it.limits.unit === "drops" ? 1 : it.limits.unit === "g" ? (it.limits.max <= 2 ? 0.1 : 0.5) : 1;
   const chips = it.limits.unit === "drops" ? [1, 3, 5, 10] : it.limits.unit === "g" ? [0.1, 0.5, 1, 2, 5] : [1, 5, 10, 25, 50];
   const verb = p.mode === "pour" ? "Pouring" : p.mode === "dropper" ? "Dropping" : p.mode === "spatula" ? "Adding" : "Bubbling";
-  const rate = p.mode === "pour" && p.flowing ? (p.tilt > 0 ? RATE[p.speed] : 0) : 0;
+  const rate = p.mode === "pour" && p.flowing ? (inBurette ? BURETTE_RATE[p.speed] : p.tilt > 0 ? RATE[p.speed] : 0) : 0;
+  const run = Math.round((p.titre + (inBurette && p.flowing ? p.inFlight : 0)) * 100) / 100;
   return (
     <Glass className="space-y-2 p-3">
       <div className="flex items-center gap-2">
         <span className="h-4 w-4 shrink-0 rounded-[5px]" style={{ background: it.colour }} />
         <div className="min-w-0 flex-1">
           <b className="line-clamp-2 block font-heading text-[16px] leading-tight">
-            {p.flowing ? verb : "Holding"} {it.name}
+            {inBurette ? (p.flowing ? "Running in" : "Burette:") : p.flowing ? verb : "Holding"} {it.name}
           </b>
           <div className="truncate text-[13px] text-[#9db2da]">
             {it.formula}
@@ -1915,7 +2021,31 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
           <X className="h-5 w-5" />
         </button>
       </div>
-      {p.mode === "pour" && !p.compact && (
+      {p.mode === "pour" && (
+        <Segmented<"bottle" | "burette">
+          value={inBurette ? "burette" : "bottle"}
+          label="Pour from"
+          size="sm"
+          onChange={(v) => p.onBurette(v === "burette")}
+          options={[
+            { id: "bottle", label: "Bottle" },
+            { id: "burette", label: "Burette" },
+          ]}
+        />
+      )}
+      {inBurette && (
+        <div className="rounded-[11px] border border-[rgba(140,180,255,.2)] bg-[rgba(2,8,24,.65)] px-3 py-2">
+          <Kicker>Burette reading</Kicker>
+          <div className="font-heading text-[22px] font-bold tabular-nums" aria-live="polite">
+            {run.toFixed(2)} <span className="text-[13px] text-[#8fa6d1]">mL run in</span>
+          </div>
+          <div className="text-[13px] text-[#9db2da]">
+            {rate > 0 ? `${rate.toFixed(1)} mL/s · ` : ""}
+            {Math.max(0, BURETTE_ML - run).toFixed(2)} mL left in the burette
+          </div>
+        </div>
+      )}
+      {p.mode === "pour" && !inBurette && !p.compact && (
         <div className="flex items-center gap-3">
           <TiltGauge deg={p.tilt} max={135} size={56} />
           <div>
@@ -1930,17 +2060,18 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
       {p.mode === "pour" && (
         <Segmented<Speed>
           value={p.speed}
-          label="Pour speed"
+          label={inBurette ? "Tap" : "Pour speed"}
           size="sm"
           onChange={p.setSpeed}
           options={[
-            { id: "drop", label: "Drop" },
+            { id: "drop", label: inBurette ? "Drip" : "Drop" },
             { id: "slow", label: "Slow" },
             { id: "steady", label: "Steady" },
             { id: "fast", label: "Fast" },
           ]}
         />
       )}
+      {!inBurette && (
       <div className="flex items-center gap-1.5">
         <SquareButton aria-label="Less" onClick={() => p.setAmount(Math.max(it.limits.min, +(p.amount - step).toFixed(2)))}>
           <Minus className="h-4 w-4" />
@@ -1955,6 +2086,8 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
           <Plus className="h-4 w-4" />
         </SquareButton>
       </div>
+      )}
+      {!inBurette && (
       <div className="flex gap-1">
         {chips.filter((v) => v >= it.limits.min && v <= it.limits.max).map((v) => (
           <button key={v} onClick={() => p.setAmount(Math.min(v, Math.max(it.limits.min, p.max)))} className={cx("h-8 flex-1 rounded-lg text-[13px] font-semibold tabular-nums transition-colors", p.amount === v ? "bg-[rgba(61,139,255,.3)] text-white" : "bg-[rgba(120,160,255,.08)] text-[#a9bde4] hover:text-white")}>
@@ -1962,9 +2095,12 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
           </button>
         ))}
       </div>
+      )}
       <div className="grid grid-cols-2 gap-2">
         <PrimaryButton className={p.mode === "pour" ? "" : "col-span-2"} onClick={p.onGo} disabled={p.max <= 0 && !p.flowing}>
-          {p.flowing ? (
+          {inBurette ? (
+            p.flowing ? "Close tap" : "Open tap"
+          ) : p.flowing ? (
             "Stop"
           ) : (
             <>
@@ -1973,13 +2109,18 @@ function HoldCard(p: { item: ShelfItem; mode: ReturnType<typeof dispenseMode>; s
             </>
           )}
         </PrimaryButton>
-        {p.mode === "pour" && (
+        {p.mode === "pour" && !inBurette && (
           <GhostButton onClick={p.onDropwise} disabled={p.flowing || p.max <= 0}>
             <Droplet className="h-4 w-4" /> Dropwise
           </GhostButton>
         )}
+        {inBurette && (
+          <GhostButton onClick={p.onOneDrop} disabled={p.flowing || p.max <= 0}>
+            <Droplet className="h-4 w-4" /> One drop
+          </GhostButton>
+        )}
       </div>
-      {p.mode === "pour" && !p.compact && (
+      {p.mode === "pour" && !inBurette && !p.compact && (
         <p className="flex items-start gap-1.5 text-[13px] leading-snug text-[#9db2da]">
           <MoveDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#39d6ff]" /> Or press and hold on the bench to pour by hand; drag down to tilt more.
         </p>
