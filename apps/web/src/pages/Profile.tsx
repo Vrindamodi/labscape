@@ -1,8 +1,9 @@
-import { Avatar, Button, Card, Chip, cx, Field, inputClass, NamedIcon, Skeleton, useShell } from "@labscape/ui";
+import { Avatar, Blob, Button, Card, Chip, cx, Field, inputClass, NamedIcon, Skeleton, useShell } from "@labscape/ui";
 import { useQuery } from "@tanstack/react-query";
-import { Crown, Pencil, Save } from "lucide-react";
+import { ArrowRight, Crown, Pencil, Save } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { CardTitle } from "../components/PageHeader";
 import { api, ApiError, patch } from "../lib/api";
 import { useSession } from "../lib/session";
 import type { Me, Summary } from "../lib/types";
@@ -38,37 +39,49 @@ export default function Profile() {
   return (
     <div className="mx-auto max-w-[900px] space-y-6">
       <Card className="overflow-hidden p-0">
-        <div className="h-28 bg-[radial-gradient(600px_200px_at_20%_0%,rgba(47,128,255,.5),transparent_60%),radial-gradient(500px_200px_at_100%_100%,rgba(139,92,246,.4),transparent_60%),#121a30]" />
-        <div className="-mt-12 flex flex-wrap items-end gap-5 px-6 pb-6">
-          <Avatar name={editing ? name || me.displayName : me.displayName} spec={editing ? avatar : me.profile.avatar} size={104} ring={me.plan !== "free" ? "#ffc23d" : "#2f80ff"} />
-          <div className="min-w-0 flex-1 pb-1">
+        {/* A flat colour band with blobs, in place of the old glow banner. */}
+        <div className="relative h-32 overflow-hidden bg-tint-blue">
+          <Blob shape="cloud" color="#48F08B" size={260} className="absolute -right-10 -top-24" />
+          <Blob shape="hex" color="#FFBDF9" size={150} rotate={14} className="absolute right-[34%] -bottom-20" />
+        </div>
+        <div className="flex flex-wrap items-end gap-x-5 gap-y-3 px-6 pb-6 sm:px-8">
+          {/* Only the avatar overlaps the band; the name stays on white. */}
+          <span className="relative -mt-12 rounded-full ring-[6px] ring-card">
+            <Avatar name={editing ? name || me.displayName : me.displayName} spec={editing ? avatar : me.profile.avatar} size={104} ring={me.plan !== "free" ? "#ffc23d" : undefined} />
+          </span>
+          {/* A floor on the width makes the name wrap under the avatar on phones instead of shrinking. */}
+          <div className="min-w-[200px] flex-1 pb-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate font-heading text-3xl font-bold">{me.displayName}</h1>
+              <h1 className="truncate font-heading text-[34px] font-normal tracking-[-0.02em] text-ink-strong">{me.displayName}</h1>
               {me.plan !== "free" && <Chip tone="gold"><Crown className="h-3 w-3" />Premium</Chip>}
               {me.guest && <Chip tone="warning">Guest</Chip>}
             </div>
-            <div className="text-sm text-white/50">@{me.username} · Level {me.level.index + 1} {me.level.name}</div>
+            <div className="text-sm text-ink-muted">@{me.username} · Level {me.level.index + 1} {me.level.name}</div>
           </div>
           {!editing && <Button variant="secondary" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => setEditing(true)}>Edit profile</Button>}
         </div>
         {editing && (
-          <div className="space-y-5 border-t border-white/[0.06] p-6">
+          <div className="space-y-6 border-t border-line p-6 sm:px-8">
             <Field label="Display name">
               <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
             </Field>
             <div>
-              <div className="mb-2 text-sm font-medium text-white/80">Avatar colour</div>
+              <div className="mb-2 text-sm font-medium text-ink">Avatar colour</div>
               <div className="flex flex-wrap gap-2">
                 {HUES.map((h) => (
-                  <button key={h} aria-label={`Hue ${h}`} onClick={() => setAvatar({ ...avatar, hue: h })} className={cx("h-9 w-9 rounded-full transition", avatar.hue === h && "ring-2 ring-white ring-offset-2 ring-offset-[#121829]")} style={{ background: `conic-gradient(from 200deg, hsl(${h} 90% 60%), hsl(${(h + 60) % 360} 90% 55%), hsl(${(h + 140) % 360} 85% 55%), hsl(${h} 90% 60%))` }} />
+                  <button key={h} aria-label={`Hue ${h}`} onClick={() => setAvatar({ ...avatar, hue: h })} className={cx("h-9 w-9 rounded-full transition", avatar.hue === h && "ring-2 ring-ink-strong ring-offset-2 ring-offset-card")} style={{ background: `conic-gradient(from 200deg, hsl(${h} 90% 60%), hsl(${(h + 60) % 360} 90% 55%), hsl(${(h + 140) % 360} 85% 55%), hsl(${h} 90% 60%))` }} />
                 ))}
               </div>
             </div>
             <div>
-              <div className="mb-2 text-sm font-medium text-white/80">Emblem</div>
+              <div className="mb-2 text-sm font-medium text-ink">Emblem</div>
               <div className="flex flex-wrap gap-2">
                 {EMOJI.map((e) => (
-                  <button key={e || "initials"} onClick={() => setAvatar({ ...avatar, emoji: e || undefined })} className={cx("grid h-10 w-10 place-items-center rounded-lg bg-white/[0.05] text-lg transition hover:bg-white/10", (avatar.emoji ?? "") === e && "bg-accent/30 ring-1 ring-accent")}>
+                  <button
+                    key={e || "initials"}
+                    onClick={() => setAvatar({ ...avatar, emoji: e || undefined })}
+                    className={cx("grid h-11 w-11 place-items-center rounded-full text-lg transition", (avatar.emoji ?? "") === e ? "bg-ink-strong text-on-ink" : "bg-surface text-ink hover:bg-line")}
+                  >
                     {e || <span className="text-xs font-bold">AB</span>}
                   </button>
                 ))}
@@ -82,48 +95,50 @@ export default function Profile() {
         )}
       </Card>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Total XP" value={me.totalXp.toLocaleString()} />
         <Stat label="Experiments" value={String(summary.data?.counts.experiments ?? "–")} />
         <Stat label="Badges" value={String(badges.length)} />
         <Card className="flex items-center gap-3 p-5">
-          <StreakFlame days={me.streaks.find((s) => s.kind === "login")?.days ?? 0} size={30} />
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface"><StreakFlame days={me.streaks.find((s) => s.kind === "login")?.days ?? 0} size={26} /></span>
           <div>
-            <div className="font-heading text-2xl font-bold">{me.streaks.find((s) => s.kind === "login")?.days ?? 0}</div>
-            <div className="text-xs text-white/45">day streak</div>
+            <div className="font-heading text-[28px] font-medium leading-none tracking-tight text-ink-strong">{me.streaks.find((s) => s.kind === "login")?.days ?? 0}</div>
+            <div className="mt-1 text-xs text-ink-muted">day streak</div>
           </div>
         </Card>
       </div>
 
-      <Card className="p-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-heading text-lg font-semibold">Badges</h2>
-          <Link to="/achievements" className="text-sm text-white/50 hover:text-white">All achievements →</Link>
+      <Card className="p-6 sm:p-7">
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle>Badges</CardTitle>
+          <Link to="/achievements" className="flex items-center gap-1.5 rounded-full bg-line px-4 py-2 text-sm font-medium text-ink transition hover:bg-ink-strong hover:text-on-ink">
+            All achievements <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
         {summary.isLoading ? (
           <Skeleton className="mt-4 h-20" />
         ) : badges.length ? (
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
             {badges.map((b) => (
-              <span key={b.id} title={b.name} className="grid h-14 w-14 place-items-center rounded-2xl text-[#1b1305]" style={{ background: "radial-gradient(circle at 35% 25%, #ffe07a, #e0a020)", boxShadow: "0 0 20px -6px #ffc23d" }}>
+              <span key={b.id} title={b.name} className="grid h-14 w-14 place-items-center rounded-full bg-tint-yellow text-[#3d2a00]">
                 <NamedIcon name={b.icon} className="h-6 w-6" />
               </span>
             ))}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-white/50">No badges yet — finish onboarding or make a Playground discovery.</p>
+          <p className="mt-4 text-sm text-ink-muted">No badges yet — finish onboarding or make a Playground discovery.</p>
         )}
       </Card>
 
-      <Card className="p-6">
-        <h2 className="font-heading text-lg font-semibold">Account</h2>
-        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-          <div><dt className="text-white/45">Email</dt><dd>{me.email ?? "— (guest)"}</dd></div>
-          <div><dt className="text-white/45">Plan</dt><dd className="capitalize">{me.plan.replace("_", " ")} · <Link to="/plans" className="text-accent-cyan hover:underline">Manage</Link></dd></div>
-          <div><dt className="text-white/45">Learning level</dt><dd className="capitalize">{me.profile.learningLevel?.replace("_", " ")}</dd></div>
-          <div><dt className="text-white/45">Interests</dt><dd className="capitalize">{me.profile.interests.join(", ")}</dd></div>
+      <Card className="p-6 sm:p-7">
+        <CardTitle>Account</CardTitle>
+        <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+          <div><dt className="text-ink-muted">Email</dt><dd className="mt-0.5 text-ink-strong">{me.email ?? "— (guest)"}</dd></div>
+          <div><dt className="text-ink-muted">Plan</dt><dd className="mt-0.5 capitalize text-ink-strong">{me.plan.replace("_", " ")} · <Link to="/plans" className="text-link hover:underline">Manage</Link></dd></div>
+          <div><dt className="text-ink-muted">Learning level</dt><dd className="mt-0.5 capitalize text-ink-strong">{me.profile.learningLevel?.replace("_", " ")}</dd></div>
+          <div><dt className="text-ink-muted">Interests</dt><dd className="mt-0.5 capitalize text-ink-strong">{me.profile.interests.join(", ")}</dd></div>
         </dl>
-        {me.guest && <Link to="/signup"><Button className="mt-5" variant="premium">Create an account to keep this</Button></Link>}
+        {me.guest && <Link to="/signup"><Button className="mt-6">Create an account to keep this</Button></Link>}
       </Card>
     </div>
   );
@@ -132,8 +147,8 @@ export default function Profile() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <Card className="p-5">
-      <div className="text-xs text-white/45">{label}</div>
-      <div className="mt-1 font-heading text-2xl font-bold">{value}</div>
+      <div className="text-xs text-ink-muted">{label}</div>
+      <div className="mt-1 font-heading text-[28px] font-medium leading-tight tracking-tight text-ink-strong">{value}</div>
     </Card>
   );
 }

@@ -3,9 +3,10 @@ import { useMotion } from "@labscape/motion";
 import { Chip, cx, ErrorState, inputClass, Skeleton } from "@labscape/ui";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, FlaskConical, Layers, Lightbulb, Pause, Play, Ruler, Search, ShieldCheck, Wrench, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FlaskConical, Layers, Lightbulb, Pause, Play, Ruler, Search, ShieldCheck, XCircle } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { CardTitle, PageHeader } from "../components/PageHeader";
 import { api } from "../lib/api";
 
 type Part = { id: string; name: string; detail: string };
@@ -41,41 +42,44 @@ export default function Equipment() {
 
   return (
     <div className="mx-auto max-w-[1300px]">
-      <header className="mb-5">
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#8cbcff]">
-          <Wrench className="h-4 w-4" /> Resources
-        </p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Equipment</h1>
-        <p className="mt-1 max-w-2xl text-sm text-white/65">Every piece of kit on the LABscape bench, in 3D. Spin it, read how to use it properly, and see the mistakes that cost marks.</p>
-      </header>
+      <PageHeader
+        eyebrow="Resources"
+        title="Equipment"
+        sub="Every piece of kit on the LABscape bench, in 3D. Spin it, read how to use it properly, and see the mistakes that cost marks."
+      />
 
       <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="space-y-3">
           <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search equipment" className={cx(inputClass, "pl-9")} aria-label="Search equipment" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search equipment" className={cx(inputClass, "pl-10")} aria-label="Search equipment" />
           </label>
           <div className="flex flex-wrap gap-1.5">
             {[null, ...Object.keys(q.data?.categories ?? {})].map((c) => (
-              <button key={c ?? "all"} onClick={() => setCat(c)} className={cx("rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset", cat === c ? "bg-accent text-white ring-accent" : "text-white/60 ring-white/10 hover:text-white")}>
+              <button
+                key={c ?? "all"}
+                onClick={() => setCat(c)}
+                aria-pressed={cat === c}
+                className={cx("rounded-full px-3 py-1.5 text-xs font-medium transition", cat === c ? "bg-ink-strong text-on-ink" : "bg-card text-ink-muted ring-1 ring-inset ring-line hover:text-ink-strong")}
+              >
                 {c ? q.data!.categories[c] : "All"}
               </button>
             ))}
           </div>
-          <nav className="max-h-[62vh] space-y-1 overflow-y-auto pr-1" aria-label="Equipment list">
-            {q.isLoading && Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+          <nav className="max-h-[62vh] space-y-0.5 overflow-y-auto rounded-card bg-card p-2" aria-label="Equipment list">
+            {q.isLoading && Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-12 rounded-[16px]" />)}
             {shown.map((i) => (
               <button
                 key={i.id}
                 onClick={() => setParams({ item: i.id }, { replace: true })}
                 aria-current={current?.id === i.id}
-                className={cx("flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition", current?.id === i.id ? "bg-accent/15 text-white ring-1 ring-inset ring-accent/50" : "text-white/75 hover:bg-white/[0.05] hover:text-white")}
+                className={cx("flex w-full items-center justify-between gap-2 rounded-[16px] px-3 py-2.5 text-left text-sm transition", current?.id === i.id ? "bg-line-strong text-ink-strong" : "text-ink hover:bg-surface")}
               >
-                <span className="font-semibold">{i.name}</span>
-                <span className="text-[10px] uppercase tracking-wide text-white/35">{q.data!.categories[i.category]}</span>
+                <span className="font-medium">{i.name}</span>
+                <span className="shrink-0 text-[10px] uppercase tracking-wide text-ink-muted">{q.data!.categories[i.category]}</span>
               </button>
             ))}
-            {!q.isLoading && shown.length === 0 && <p className="px-2 py-4 text-sm text-white/50">Nothing matches "{search}".</p>}
+            {!q.isLoading && shown.length === 0 && <p className="px-3 py-4 text-sm text-ink-muted">Nothing matches "{search}".</p>}
           </nav>
         </aside>
 
@@ -94,20 +98,23 @@ function ItemView({ item, category }: { item: Item; category: string }) {
 
   return (
     <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0 : 0.2 }} className="min-w-0 space-y-5" aria-label={item.name}>
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <div className="relative h-[440px] overflow-hidden rounded-2xl bg-[radial-gradient(500px_300px_at_50%_30%,#1d3263,#0a1124)] ring-1 ring-inset ring-white/10">
+      {/* Viewer and details sit side by side only on very wide screens; with the sidebar and context
+          panel open the viewer would be too narrow for its controls. */}
+      <div className="grid gap-5 min-[1800px]:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        {/* The 3D viewer keeps its dark well, like a media card on the cream page. */}
+        <div data-surface="dark" className="relative h-[440px] overflow-hidden rounded-panel bg-[radial-gradient(500px_300px_at_50%_30%,#1d3263,#0a1124)]">
           <Suspense fallback={<Skeleton className="h-full w-full" />}>
             <EquipmentViewer kind={item.model} explode={explode} highlight={part} autoRotate={spin && explode === 0} reducedMotion={reduced} />
           </Suspense>
-          <div className="absolute left-3 top-3 flex gap-2">
-            <button onClick={() => setSpin((s) => !s)} className="flex items-center gap-1.5 rounded-full bg-[#0a1124cc] px-3 py-1 text-xs font-semibold text-white/80 ring-1 ring-white/15 hover:text-white" aria-pressed={spin}>
+          <div className="absolute left-4 top-4 flex gap-2">
+            <button onClick={() => setSpin((s) => !s)} className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[#1a1a1a] transition hover:bg-white/85" aria-pressed={spin}>
               {spin ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />} {spin ? "Stop turning" : "Turn"}
             </button>
           </div>
-          <p className="pointer-events-none absolute bottom-3 left-3 text-[11px] text-white/45">Drag to rotate · scroll to zoom</p>
+          <p className="pointer-events-none absolute right-4 top-5 text-[11px] text-white/55">Drag to rotate · scroll to zoom</p>
           {explodable && (
-            <div className="absolute right-3 top-3 w-52 rounded-xl bg-[#0a1124d9] p-3 ring-1 ring-white/15">
-              <p className="flex items-center gap-1.5 text-xs font-bold text-white">
+            <div className="absolute bottom-4 left-4 w-[min(15rem,calc(100%-2rem))] rounded-[18px] bg-[#0a1124d9] p-3 ring-1 ring-white/15">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-white">
                 <Layers className="h-3.5 w-3.5 text-accent-cyan" /> Exploded view
               </p>
               <input type="range" min={0} max={100} value={Math.round(explode * 100)} onChange={(e) => setExplode(Number(e.target.value) / 100)} className="mt-2 h-1 w-full accent-[#2f80ff]" aria-label="Explode the burette into its parts" />
@@ -116,24 +123,24 @@ function ItemView({ item, category }: { item: Item; category: string }) {
         </div>
 
         <div className="space-y-4">
-          <div>
+          <div className="rounded-card bg-card p-6">
             <Chip tone="blue">{category}</Chip>
-            <h2 className="mt-2 text-2xl font-extrabold text-white">{item.name}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-white/80">{item.summary}</p>
-          </div>
-          {item.precision !== "-" && (
-            <div className="flex items-start gap-2 rounded-xl bg-white/[0.04] p-3 text-sm ring-1 ring-inset ring-white/[0.07]">
-              <Ruler className="mt-0.5 h-4 w-4 shrink-0 text-accent-cyan" />
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wide text-white/45">Precision</p>
-                <p className="text-white">{item.precision}</p>
+            <h2 className="mt-3 font-heading text-[30px] font-normal leading-tight tracking-[-0.02em] text-ink-strong">{item.name}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink">{item.summary}</p>
+            {item.precision !== "-" && (
+              <div className="mt-4 flex items-start gap-3 rounded-[18px] bg-surface p-3 text-sm">
+                <Ruler className="mt-0.5 h-4 w-4 shrink-0 text-link" />
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">Precision</p>
+                  <p className="text-ink-strong">{item.precision}</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
           {explodable && (
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/45">Parts</p>
-              <ul className="space-y-1.5">
+            <div className="rounded-card bg-card p-4">
+              <p className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-ink-muted">Parts</p>
+              <ul className="space-y-1">
                 {item.parts!.map((p) => (
                   <li key={p.id}>
                     <button
@@ -145,29 +152,29 @@ function ItemView({ item, category }: { item: Item; category: string }) {
                       }}
                       onBlur={() => setPart(null)}
                       onClick={() => setExplode((x) => (x < 0.5 ? 1 : x))}
-                      className={cx("w-full rounded-lg px-3 py-2 text-left text-sm ring-1 ring-inset transition", part === p.id ? "bg-accent/15 ring-accent/50" : "bg-white/[0.03] ring-white/[0.06]")}
+                      className={cx("w-full rounded-[16px] px-3 py-2 text-left text-sm transition", part === p.id ? "bg-[#E1EBFF]" : "bg-surface hover:bg-line")}
                     >
-                      <b className="text-white">{p.name}</b>
-                      <span className="block text-xs text-white/60">{p.detail}</span>
+                      <b className="font-medium text-ink-strong">{p.name}</b>
+                      <span className="block text-xs text-ink-muted">{p.detail}</span>
                     </button>
                   </li>
                 ))}
               </ul>
             </div>
           )}
-          <div className="flex items-start gap-2 rounded-xl bg-amber-400/[0.07] p-3 text-sm text-amber-100/90 ring-1 ring-inset ring-amber-300/20">
-            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+          <div className="flex items-start gap-3 rounded-card bg-[#FFF4CF] p-4 text-sm text-[#4a3500]">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[#9A6B00]" />
             {item.fact}
           </div>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Panel title="How to use it" icon={<CheckCircle2 className="h-4 w-4 text-emerald-300" />}>
-          <ol className="space-y-2">
+        <Panel title="How to use it" icon={<CheckCircle2 className="h-4 w-4 text-[#1E8E3E]" />}>
+          <ol className="space-y-2.5">
             {item.steps.map((s, i) => (
-              <li key={i} className="flex gap-3 text-sm text-white/85">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent/20 text-xs font-bold text-[#8cbcff]">{i + 1}</span>
+              <li key={i} className="flex gap-3 text-sm text-ink">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tint-blue/30 text-xs font-bold text-[#1A4FB8]">{i + 1}</span>
                 <span className="pt-0.5">{s}</span>
               </li>
             ))}
@@ -175,11 +182,11 @@ function ItemView({ item, category }: { item: Item; category: string }) {
         </Panel>
         <div className="space-y-4">
           {item.mistakes.length > 0 && (
-            <Panel title="Mistakes that cost marks" icon={<XCircle className="h-4 w-4 text-red-300" />}>
-              <ul className="space-y-1.5 text-sm text-white/80">
+            <Panel title="Mistakes that cost marks" icon={<XCircle className="h-4 w-4 text-[#C5221F]" />}>
+              <ul className="space-y-1.5 text-sm text-ink">
                 {item.mistakes.map((m, i) => (
                   <li key={i} className="flex gap-2">
-                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-300/80" />
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C5221F]" />
                     {m}
                   </li>
                 ))}
@@ -187,26 +194,26 @@ function ItemView({ item, category }: { item: Item; category: string }) {
             </Panel>
           )}
           {item.safety.length > 0 && (
-            <Panel title="Safety" icon={<ShieldCheck className="h-4 w-4 text-sky-300" />}>
-              <ul className="space-y-1.5 text-sm text-white/80">
+            <Panel title="Safety" icon={<ShieldCheck className="h-4 w-4 text-[#0369A1]" />}>
+              <ul className="space-y-1.5 text-sm text-ink">
                 {item.safety.map((m, i) => (
                   <li key={i}>{m}</li>
                 ))}
               </ul>
             </Panel>
           )}
-          <Panel title="Used in" icon={<FlaskConical className="h-4 w-4 text-teal-300" />}>
+          <Panel title="Used in" icon={<FlaskConical className="h-4 w-4 text-[#0F766E]" />}>
             {item.experiments.length ? (
               <div className="flex flex-wrap gap-2">
                 {item.experiments.map((x) => (
-                  <Link key={x.slug} to={x.playable ? `/lab/${x.subject}/${x.slug}` : `/library/${x.slug}`} className="rounded-full bg-white/[0.05] px-3 py-1 text-xs font-semibold text-white ring-1 ring-inset ring-white/10 hover:bg-white/[0.1]">
+                  <Link key={x.slug} to={x.playable ? `/lab/${x.subject}/${x.slug}` : `/library/${x.slug}`} className="rounded-full bg-line px-3 py-1.5 text-xs font-medium text-ink transition hover:bg-ink-strong hover:text-on-ink">
                     {x.title}
-                    {x.playable && <span className="ml-1.5 text-accent-cyan">▶</span>}
+                    {x.playable && <span className="ml-1.5">▶</span>}
                   </Link>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-white/50">Used on every bench, in every experiment.</p>
+              <p className="text-sm text-ink-muted">Used on every bench, in every experiment.</p>
             )}
           </Panel>
         </div>
@@ -217,10 +224,8 @@ function ItemView({ item, category }: { item: Item; category: string }) {
 
 function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-white/[0.03] p-4 ring-1 ring-inset ring-white/[0.07]">
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-white">
-        {icon} {title}
-      </h3>
+    <div className="rounded-card bg-card p-6">
+      <CardTitle icon={icon} className="mb-4 text-lg">{title}</CardTitle>
       {children}
     </div>
   );

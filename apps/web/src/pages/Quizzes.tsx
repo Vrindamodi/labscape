@@ -1,7 +1,8 @@
 import { FullscreenLab, cx, EmptyState, ErrorState, Skeleton, SUBJECTS, type SubjectKey } from "@labscape/ui";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Brain, ListChecks, Play, Sparkles, Target } from "lucide-react";
+import { ArrowLeft, Brain, Play, Sparkles, Target } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { CardTitle, PageHeader } from "../components/PageHeader";
 import { QuizStage } from "../components/QuizStage";
 import { api } from "../lib/api";
 import { useSession } from "../lib/session";
@@ -22,36 +23,37 @@ export default function Quizzes() {
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-6">
-      <header className="relative overflow-hidden rounded-2xl border border-white/[0.08] p-6 sm:p-7" style={{ background: "radial-gradient(700px 300px at 100% 0%, #20c99730, transparent 60%), linear-gradient(160deg,#18233f,#0e1529)" }}>
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-300">
-          <ListChecks className="h-4 w-4" /> Labs
-        </p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Quizzes</h1>
-        <p className="mt-1 max-w-2xl text-sm text-white/65">Every experiment has a quiz, including questions on technique. We track how well you know each idea and build practice around the ones that need work.</p>
-        {me && (
-          <Link to="/quizzes/practice" className="mt-4 inline-flex h-10 items-center gap-2 rounded-md bg-accent px-4 text-sm font-semibold text-white">
-            <Target className="h-4 w-4" /> Practise my weak spots
-          </Link>
-        )}
-      </header>
+      <PageHeader
+        eyebrow="Labs"
+        title="Quizzes"
+        sub="Every experiment has a quiz, including questions on technique. We track how well you know each idea and build practice around the ones that need work."
+        aside={
+          me && (
+            <Link to="/quizzes/practice" className="inline-flex h-11 items-center gap-2 rounded-full bg-ink-strong px-5 text-sm font-medium text-on-ink transition hover:bg-ink-strong/85">
+              <Target className="h-4 w-4" /> Practise my weak spots
+            </Link>
+          )
+        }
+        className="mb-2"
+      />
 
       {me && (recs.data?.length ?? 0) > 0 && (
-        <section className="rounded-2xl bg-amber-400/[0.06] p-5 ring-1 ring-inset ring-amber-300/20" aria-label="Recommended revision">
-          <h2 className="flex items-center gap-2 font-semibold text-amber-100">
+        <section className="rounded-card bg-[#FFF4CF] p-5 sm:p-6" aria-label="Recommended revision">
+          <h2 className="flex items-center gap-2 font-heading text-lg font-medium text-[#3d2a00]">
             <Sparkles className="h-4 w-4" /> Worth revising
           </h2>
           <ul className="mt-3 grid gap-2 md:grid-cols-2">
             {recs.data!.map((r) => (
-              <li key={r.conceptId} className="flex items-center gap-3 rounded-lg bg-black/20 px-3 py-2 text-sm">
+              <li key={r.conceptId} className="flex items-center gap-3 rounded-[18px] bg-card px-4 py-2.5 text-sm">
                 <span className="min-w-0 flex-1">
-                  <b className="text-white">{r.label}</b>
-                  <span className="block truncate text-xs text-white/50">{r.experimentTitle}</span>
+                  <b className="font-medium text-ink-strong">{r.label}</b>
+                  <span className="block truncate text-xs text-ink-muted">{r.experimentTitle}</span>
                 </span>
-                <Link to={`/quizzes/${r.quizId}`} className="rounded-full px-2.5 py-1 text-xs font-semibold text-emerald-200 ring-1 ring-inset ring-emerald-300/40">
+                <Link to={`/quizzes/${r.quizId}`} className="rounded-full bg-ink-strong px-3 py-1 text-xs font-medium text-on-ink transition hover:bg-ink-strong/85">
                   Quiz
                 </Link>
                 {r.playable && r.subject && (
-                  <Link to={`/lab/${r.subject}/${r.experimentSlug}`} className="rounded-full px-2.5 py-1 text-xs font-semibold text-accent-cyan ring-1 ring-inset ring-accent/40">
+                  <Link to={`/lab/${r.subject}/${r.experimentSlug}`} className="rounded-full bg-line px-3 py-1 text-xs font-medium text-ink transition hover:bg-line-strong">
                     Lab
                   </Link>
                 )}
@@ -62,46 +64,44 @@ export default function Quizzes() {
       )}
 
       {me && seen.length > 0 && (
-        <section aria-label="Mastery" className="rounded-2xl bg-white/[0.03] p-5 ring-1 ring-inset ring-white/[0.08]">
-          <h2 className="flex items-center gap-2 font-semibold text-white">
-            <Brain className="h-4 w-4 text-[#c4b1ff]" /> What you know
-          </h2>
-          <div className="mt-3 grid gap-x-6 gap-y-2 md:grid-cols-2">
+        <section aria-label="Mastery" className="rounded-card bg-card p-6">
+          <CardTitle icon={<Brain className="h-4 w-4 text-[#6D28D9]" />} className="text-lg">What you know</CardTitle>
+          <div className="mt-4 grid gap-x-6 gap-y-2.5 md:grid-cols-2">
             {seen
               .sort((a, b) => a.pKnown - b.pKnown)
               .map((c) => (
                 <div key={c.conceptId} className="flex items-center gap-3 text-sm">
-                  <span className="w-48 truncate text-white/80">{c.label}</span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10" role="meter" aria-label={c.label} aria-valuenow={Math.round(c.pKnown * 100)} aria-valuemin={0} aria-valuemax={100}>
-                    <div className={cx("h-full rounded-full", c.pKnown >= 0.95 ? "bg-emerald-400" : c.pKnown >= 0.6 ? "bg-accent" : "bg-amber-300")} style={{ width: `${Math.round(c.pKnown * 100)}%` }} />
+                  <span className="w-48 truncate text-ink">{c.label}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/10" role="meter" aria-label={c.label} aria-valuenow={Math.round(c.pKnown * 100)} aria-valuemin={0} aria-valuemax={100}>
+                    <div className={cx("h-full rounded-full", c.pKnown >= 0.95 ? "bg-[#1E8E3E]" : c.pKnown >= 0.6 ? "bg-accent" : "bg-[#E0A020]")} style={{ width: `${Math.round(c.pKnown * 100)}%` }} />
                   </div>
-                  <span className="w-16 text-right text-xs text-white/45">{c.pKnown >= 0.95 ? "mastered" : `${Math.round(c.pKnown * 100)}%`}</span>
+                  <span className="w-16 text-right text-xs text-ink-muted">{c.pKnown >= 0.95 ? "mastered" : `${Math.round(c.pKnown * 100)}%`}</span>
                 </div>
               ))}
           </div>
         </section>
       )}
 
-      {quizzes.isLoading && <Skeleton className="h-64 rounded-2xl" />}
+      {quizzes.isLoading && <Skeleton className="h-64 rounded-card" />}
       {quizzes.data?.length === 0 && <EmptyState title="No quizzes yet" />}
       {bySubject.map(([s, list]) =>
         list.length ? (
-          <section key={s} aria-label={SUBJECTS[s].label}>
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-white/55">
-              <span className="h-2 w-2 rounded-full" style={{ background: SUBJECTS[s].color }} />
+          <section key={s} aria-label={SUBJECTS[s].label} className="pt-2">
+            <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: SUBJECTS[s].tint }} />
               {SUBJECTS[s].label}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {list.map((q) => (
-                <Link key={q.id} to={`/quizzes/${q.id}`} className="group rounded-xl bg-white/[0.035] p-4 ring-1 ring-inset ring-white/[0.08] transition hover:bg-white/[0.06]">
+                <Link key={q.id} to={`/quizzes/${q.id}`} className="group flex flex-col rounded-card bg-card p-5 transition hover:shadow-lift">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-white">{q.title.replace(/ quiz$/, "")}</h3>
-                    {q.bestScore !== null && <span className={cx("rounded-full px-2 py-0.5 text-xs font-bold", q.bestScore >= 80 ? "bg-emerald-400/20 text-emerald-200" : "bg-white/10 text-white/70")}>{q.bestScore}%</span>}
+                    <h3 className="font-heading text-[17px] font-medium text-ink-strong">{q.title.replace(/ quiz$/, "")}</h3>
+                    {q.bestScore !== null && <span className={cx("shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold", q.bestScore >= 80 ? "bg-[#DBF6E5] text-[#11703A]" : "bg-line text-ink")}>{q.bestScore}%</span>}
                   </div>
-                  <p className="mt-1 text-xs text-white/50">
+                  <p className="mt-1 text-xs text-ink-muted">
                     {q.draw} questions from a pool of {q.poolSize} · {Object.keys(q.concepts).length} ideas
                   </p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent-cyan">
+                  <span className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-line px-3 py-1.5 text-xs font-medium text-ink transition group-hover:bg-ink-strong group-hover:text-on-ink">
                     <Play className="h-3 w-3" /> {q.sittings ? "Try again" : "Start"}
                   </span>
                 </Link>

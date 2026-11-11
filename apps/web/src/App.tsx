@@ -1,4 +1,5 @@
-import { lazy, Suspense, type ReactNode } from "react";
+import { useShell } from "@labscape/ui";
+import { lazy, Suspense, useLayoutEffect, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useSession } from "./lib/session";
 import { AppShell } from "./shell/AppShell";
@@ -39,9 +40,29 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // Part 4 route, lazy so its assets only load on the playground (performance budget).
 const ChemistryPlaygroundRoute = lazy(() => import("./routes/playground/ChemistryPlaygroundRoute"));
 
+/** Screens outside the shell that still use the original dark styling. */
+const DARK_OUTSIDE_SHELL = ["/welcome", "/onboarding", "/login", "/signup", "/forgot-password", "/reset-password"];
+
+/**
+ * The shell is light. Full-screen labs and the screens outside the shell are still dark, so they
+ * mark the whole document as a dark surface (body colour, portals and toasts follow).
+ */
+function RootSurface() {
+  const { fullscreen } = useShell();
+  const { pathname } = useLocation();
+  const dark = fullscreen || DARK_OUTSIDE_SHELL.includes(pathname);
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (dark) root.dataset.surface = "dark";
+    else delete root.dataset.surface;
+  }, [dark]);
+  return null;
+}
+
 export function App() {
   return (
     <>
+      <RootSurface />
       <Suspense fallback={<Splash />}>
       <Routes>
         <Route path="/welcome" element={<PublicOnly><Welcome /></PublicOnly>} />
@@ -110,7 +131,7 @@ function PublicOnly({ children }: { children: ReactNode }) {
 
 function Splash() {
   return (
-    <div className="grid h-full min-h-screen place-items-center bg-[#070b18]">
+    <div className="grid h-full min-h-screen place-items-center bg-surface">
       <LogoMark size={56} draw />
     </div>
   );

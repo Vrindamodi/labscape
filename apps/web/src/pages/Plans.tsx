@@ -1,6 +1,7 @@
 import { sound } from "@labscape/audio";
 import { celebrate } from "@labscape/motion";
-import { Button, Callout, Card, Chip, cx, Modal, Segmented, Skeleton, useShell } from "@labscape/ui";
+import { Blob, Button, Callout, Card, Chip, cx, Modal, Segmented, Skeleton, useShell } from "@labscape/ui";
+import { CardTitle } from "../components/PageHeader";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, CreditCard, Crown, Receipt, ShieldCheck, Sparkles } from "lucide-react";
@@ -156,11 +157,11 @@ export default function Plans() {
 
   return (
     <div className="mx-auto max-w-[1040px]">
-      <div className="text-center">
+      <div className="relative text-center">
         <Chip tone="gold"><Crown className="h-3 w-3" />LABscape Premium</Chip>
-        <h1 className="mt-4 font-heading text-4xl font-bold tracking-tight sm:text-5xl">Go Premium</h1>
-        <p className="mx-auto mt-3 max-w-xl text-white/60">Every experiment is free. Premium adds no ads, 200 AI messages a day, detailed analytics and report export. Cancel any time.</p>
-        <div className="mt-6 inline-flex items-center gap-3">
+        <h1 className="mt-5 font-heading text-[44px] font-normal leading-[1.04] tracking-[-0.03em] text-ink-strong sm:text-[64px]">Go Premium</h1>
+        <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-ink-muted">Every experiment is free. Premium adds no ads, 200 AI messages a day, detailed analytics and report export. Cancel any time.</p>
+        <div className="mt-7 inline-flex items-center gap-3">
           <Segmented label="Billing interval" value={interval} onChange={(v) => { sound.play("toggle"); setInterval(v); }} options={[{ value: "month", label: "Monthly" }, { value: "year", label: "Annual" }]} />
           <AnimatePresence>
             {interval === "year" && paid?.savePaise && (
@@ -190,41 +191,40 @@ export default function Plans() {
 
       <div className="mt-10 grid gap-5 md:grid-cols-2">
         {plans.isLoading ? (
-          <><Skeleton className="h-[460px] rounded-2xl" /><Skeleton className="h-[460px] rounded-2xl" /></>
+          <><Skeleton className="h-[460px] rounded-panel" /><Skeleton className="h-[460px] rounded-panel" /></>
         ) : (
           <>
             {free && (
-              <Card className="flex flex-col p-7">
-                <div className="font-heading text-xl font-semibold">Free</div>
-                <div className="mt-3 font-heading text-4xl font-bold">₹0</div>
-                <div className="text-sm text-white/45">forever</div>
-                <ul className="mt-6 flex-1 space-y-2.5">{free.features.map((f) => <Feature key={f} text={f} />)}</ul>
-                <Button variant="secondary" className="mt-6" disabled>{current === "free" ? "Your current plan" : "Included"}</Button>
+              <Card className="flex flex-col rounded-panel p-8">
+                <div className="font-heading text-xl font-medium text-ink-strong">Free</div>
+                <div className="mt-4 font-heading text-[52px] font-normal leading-none tracking-[-0.03em] text-ink-strong">₹0</div>
+                <div className="mt-1 text-sm text-ink-muted">forever</div>
+                <ul className="mt-7 flex-1 space-y-3">{free.features.map((f) => <Feature key={f} text={f} />)}</ul>
+                <Button variant="secondary" className="mt-7" disabled>{current === "free" ? "Your current plan" : "Included"}</Button>
               </Card>
             )}
             {paid && (
-              <div className="relative rounded-2xl p-[1.5px]">
-                <span className="ls-premium-border pointer-events-none absolute inset-0 rounded-2xl" style={{ padding: 1.5 }} aria-hidden />
-                <Card className="relative flex h-full flex-col overflow-hidden rounded-2xl p-7" glow="#ffc23d">
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(500px_260px_at_100%_0%,rgba(255,194,61,.18),transparent_60%)]" />
-                  <div className="relative flex items-center justify-between">
-                    <div className="flex items-center gap-2 font-heading text-xl font-semibold text-[#ffd77a]"><Crown className="h-5 w-5" />Premium</div>
-                    <Chip tone="violet"><Sparkles className="h-3 w-3" />Most popular</Chip>
-                  </div>
-                  <div className="relative mt-3 flex items-baseline gap-2">
-                    <RollingPrice value={paid.pricePaise} />
-                    <span className="text-sm text-white/45">/ {paid.interval}</span>
-                  </div>
-                  <div className="relative text-sm text-white/45">
-                    {interval === "year" && monthly ? `${rupees(Math.round(paid.pricePaise / 12))} a month, billed yearly` : "billed monthly, incl. GST"}
-                  </div>
-                  <ul className="relative mt-6 flex-1 space-y-2.5">
-                    {(interval === "year" ? [...(monthly?.features ?? []), ...paid.features.slice(1)] : paid.features).map((f) => <Feature key={f} text={f} gold />)}
-                  </ul>
-                  <Button
-                    variant="premium"
+              /* Premium: a flat yellow colour block with charcoal text and a charcoal button. */
+              <div className="relative flex h-full flex-col overflow-hidden rounded-panel bg-tint-yellow p-8 text-[#1a1a1a]">
+                <Blob shape="cloud" color="#FFBDF9" size={220} className="absolute -right-16 -top-20" />
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-heading text-xl font-medium"><Crown className="h-5 w-5" />Premium</div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#1a1a1a] px-3 py-1 text-xs font-medium text-white"><Sparkles className="h-3 w-3" />Most popular</span>
+                </div>
+                <div className="relative mt-4 flex items-baseline gap-2">
+                  <RollingPrice value={paid.pricePaise} />
+                  <span className="text-sm text-[#1a1a1a]/70">/ {paid.interval}</span>
+                </div>
+                <div className="relative mt-1 text-sm text-[#1a1a1a]/70">
+                  {interval === "year" && monthly ? `${rupees(Math.round(paid.pricePaise / 12))} a month, billed yearly` : "billed monthly, incl. GST"}
+                </div>
+                <ul className="relative mt-7 flex-1 space-y-3">
+                  {(interval === "year" ? [...(monthly?.features ?? []), ...paid.features.slice(1)] : paid.features).map((f) => <Feature key={f} text={f} gold />)}
+                </ul>
+                <Button
+                    variant="primary"
                     size="lg"
-                    className="relative mt-6"
+                    className="relative mt-7"
                     loading={busy === paid.id}
                     disabled={current === paid.id || (live && current !== "free")}
                     icon={<Crown className="h-5 w-5" />}
@@ -232,8 +232,7 @@ export default function Plans() {
                   >
                     {current === paid.id ? "Your current plan" : current !== "free" ? (live ? "Premium is active" : "Switch plan") : `Go Premium ${interval === "year" ? "Annual" : "Monthly"}`}
                   </Button>
-                  <p className="relative mt-3 flex items-center justify-center gap-1.5 text-xs text-white/40"><ShieldCheck className="h-3.5 w-3.5" />Secure payments · GST invoice · cancel any time</p>
-                </Card>
+                <p className="relative mt-3 flex items-center justify-center gap-1.5 text-xs text-[#1a1a1a]/70"><ShieldCheck className="h-3.5 w-3.5" />Secure payments · GST invoice · cancel any time</p>
               </div>
             )}
           </>
@@ -241,19 +240,19 @@ export default function Plans() {
       </div>
 
       {invoices.data && invoices.data.length > 0 && (
-        <Card className="mt-10 p-6">
-          <h2 className="flex items-center gap-2 font-heading text-lg font-semibold"><Receipt className="h-5 w-5 text-white/60" />Billing history</h2>
-          <table className="mt-4 w-full text-sm">
-            <thead className="text-left text-xs text-white/45">
+        <Card className="mt-10 p-6 sm:p-7">
+          <CardTitle icon={<Receipt className="h-4 w-4 text-ink-muted" />}>Billing history</CardTitle>
+          <table className="mt-4 w-full text-sm text-ink-strong">
+            <thead className="text-left text-xs text-ink-muted">
               <tr><th className="pb-2 font-medium">Invoice</th><th className="pb-2 font-medium">Date</th><th className="pb-2 font-medium">Plan</th><th className="pb-2 text-right font-medium">Amount (incl. GST)</th></tr>
             </thead>
             <tbody>
               {invoices.data.map((i) => (
-                <tr key={i.id} className="border-t border-white/[0.05]">
-                  <td className="tabular py-2.5">{i.invoiceNumber}</td>
-                  <td className="py-2.5 text-white/65">{new Date(i.createdAt).toLocaleDateString()}</td>
-                  <td className="py-2.5 text-white/65">{i.plan === "premium_annual" ? "Annual" : "Monthly"}</td>
-                  <td className="tabular py-2.5 text-right">{rupees(i.amountPaise)} <span className="text-xs text-white/40">(GST {rupees(i.gstPaise)})</span></td>
+                <tr key={i.id} className="border-t border-line">
+                  <td className="tabular py-3">{i.invoiceNumber}</td>
+                  <td className="py-3 text-ink-muted">{new Date(i.createdAt).toLocaleDateString()}</td>
+                  <td className="py-3 text-ink-muted">{i.plan === "premium_annual" ? "Annual" : "Monthly"}</td>
+                  <td className="tabular py-3 text-right">{rupees(i.amountPaise)} <span className="text-xs text-ink-muted">(GST {rupees(i.gstPaise)})</span></td>
                 </tr>
               ))}
             </tbody>
@@ -274,9 +273,9 @@ export default function Plans() {
       <Modal open={!!success} onClose={() => setSuccess(null)} title="Payment successful" width={420}>
         {success && (
           <div className="p-6 text-center">
-            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#ffc23d]/20 text-[#ffd77a]"><Crown className="h-7 w-7" /></div>
-            <div className="mt-4 font-heading text-xl font-semibold">{`You're on ${planName(success)}`}</div>
-            <p className="mt-2 text-sm text-white/60">Every experiment, scenario and theme is unlocked. Your GST invoice will appear in Billing history.</p>
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-tint-yellow text-[#3d2a00]"><Crown className="h-7 w-7" /></div>
+            <div className="mt-4 font-heading text-xl font-medium text-ink-strong">{`You're on ${planName(success)}`}</div>
+            <p className="mt-2 text-sm text-ink-muted">Every experiment, scenario and theme is unlocked. Your GST invoice will appear in Billing history.</p>
             <Button variant="premium" className="mt-5 w-full" onClick={() => { setSuccess(null); navigate("/"); }}>Start exploring</Button>
           </div>
         )}
@@ -287,8 +286,8 @@ export default function Plans() {
 
 function Feature({ text, gold }: { text: string; gold?: boolean }) {
   return (
-    <li className="flex items-start gap-2.5 text-sm text-white/75">
-      <span className={cx("mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full", gold ? "bg-[#ffc23d]/20 text-[#ffd77a]" : "bg-white/10 text-white/60")}>
+    <li className={cx("flex items-start gap-2.5 text-sm", gold ? "text-[#1a1a1a]" : "text-ink")}>
+      <span className={cx("mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full", gold ? "bg-[#1a1a1a] text-tint-yellow" : "bg-line text-ink-strong")}>
         <Check className="h-3 w-3" />
       </span>
       {text}
@@ -300,7 +299,7 @@ function Feature({ text, gold }: { text: string; gold?: boolean }) {
 function RollingPrice({ value }: { value: number }) {
   const text = rupees(value);
   return (
-    <span className="flex font-heading text-5xl font-bold" aria-label={text}>
+    <span className="flex font-heading text-[52px] font-normal leading-none tracking-[-0.03em]" aria-label={text}>
       {text.split("").map((ch, i) => (
         <span key={i} className="relative inline-block overflow-hidden" aria-hidden>
           <AnimatePresence mode="popLayout" initial={false}>
@@ -341,12 +340,12 @@ function SandboxCheckout({ checkout, onClose, onPaid }: { checkout: Checkout | n
       {checkout && (
         <div className="p-5">
           <Callout tone="info" title="Test mode">This is the sandbox: no card is charged. Live payments switch on with Razorpay keys.</Callout>
-          <div className="mt-5 flex items-center justify-between rounded-lg bg-white/[0.04] p-4 ring-1 ring-inset ring-white/10">
+          <div className="mt-5 flex items-center justify-between rounded-[20px] bg-surface p-4">
             <div>
-              <div className="font-semibold">{checkout.plan === "premium_annual" ? "Premium Annual" : "Premium Monthly"}</div>
-              <div className="text-xs text-white/50">incl. 18% GST</div>
+              <div className="font-medium text-ink-strong">{checkout.plan === "premium_annual" ? "Premium Annual" : "Premium Monthly"}</div>
+              <div className="text-xs text-ink-muted">incl. 18% GST</div>
             </div>
-            <div className="tabular font-heading text-2xl font-bold">{rupees(checkout.amountPaise)}</div>
+            <div className="tabular font-heading text-2xl font-medium text-ink-strong">{rupees(checkout.amountPaise)}</div>
           </div>
           {failed && <div className="mt-3"><Callout tone="warning" title="Payment declined">Nothing was charged. Try again or use another method.</Callout></div>}
           <div className="mt-5 grid gap-2">

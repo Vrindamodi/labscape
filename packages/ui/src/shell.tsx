@@ -158,29 +158,29 @@ function ToastCard({ t, onDone }: { t: ToastItem; onDone: () => void }) {
       transition={{ type: "spring", stiffness: 420, damping: 32 }}
       onPointerEnter={() => setPaused(true)}
       onPointerLeave={() => setPaused(false)}
-      className="pointer-events-auto relative overflow-hidden rounded-lg border border-white/10 bg-[#141b2e]/95 p-3.5 pr-10 shadow-[0_20px_50px_-20px_rgba(0,0,0,.9)] backdrop-blur-xl"
-      style={{ boxShadow: `inset 3px 0 0 ${s.c}, 0 20px 50px -20px rgba(0,0,0,.9)` }}
+      className="pointer-events-auto relative overflow-hidden rounded-[20px] bg-card p-3.5 pr-10 text-ink shadow-pop ring-1 ring-inset ring-line"
     >
       <div className="flex gap-3">
-        <s.I className="mt-0.5 h-5 w-5 shrink-0" style={{ color: s.c }} aria-hidden />
+        <span className="mt-px grid h-6 w-6 shrink-0 place-items-center rounded-full" style={{ background: `${s.c}2e`, color: s.c }}>
+          <s.I className="h-4 w-4" style={{ filter: "brightness(.72) saturate(1.2)" }} aria-hidden />
+        </span>
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-white">{t.title}</div>
-          {t.body && <div className="mt-0.5 text-sm text-white/65">{t.body}</div>}
+          <div className="text-sm font-medium text-ink-strong">{t.title}</div>
+          {t.body && <div className="mt-0.5 text-sm text-ink-muted">{t.body}</div>}
           {t.action && (
             <button
               onClick={() => {
                 t.action?.onClick();
                 onDone();
               }}
-              className="mt-2 text-sm font-semibold"
-              style={{ color: s.c }}
+              className="mt-2 rounded-full bg-ink-strong px-3 py-1 text-xs font-medium text-on-ink hover:bg-ink-strong/85"
             >
               {t.action.label} →
             </button>
           )}
         </div>
       </div>
-      <button onClick={onDone} aria-label="Dismiss" className="absolute right-2 top-2 rounded p-1 text-white/40 hover:text-white">
+      <button onClick={onDone} aria-label="Dismiss" className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full text-ink-faint hover:bg-ink/[0.06] hover:text-ink">
         <X className="h-4 w-4" />
       </button>
       {/* hairline countdown */}
@@ -231,14 +231,15 @@ export function AdSlot({ placement, className }: { placement: AdPlacement; class
       aria-label="Advertisement"
       data-ad-placement={placement}
       className={cx(
-        "relative flex items-center justify-between gap-4 overflow-hidden rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-5 text-sm text-white/45",
+        "relative flex items-center justify-between gap-4 overflow-hidden rounded-card border border-dashed border-line-strong bg-card/50 px-6 text-sm text-ink-muted",
+        "dark:border-white/10 dark:bg-white/[0.02] dark:text-white/45",
         className,
       )}
       style={{ minHeight: AD_SIZES[placement].minHeight }}
     >
-      <span className="absolute left-3 top-2 text-[10px] uppercase tracking-[0.2em] text-white/30">Sponsored</span>
+      <span className="absolute left-6 top-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-muted">Sponsored</span>
       <span>Ad space · go Premium to remove ads</span>
-      <a href="/plans" className="font-semibold text-[#ffd77a] hover:underline">
+      <a href="/plans" className="shrink-0 whitespace-nowrap rounded-full bg-line px-4 py-2 font-medium text-ink transition hover:bg-ink-strong hover:text-on-ink dark:bg-transparent dark:px-0 dark:font-semibold dark:text-[#ffd77a] dark:hover:bg-transparent dark:hover:underline">
         Remove ads
       </a>
     </aside>

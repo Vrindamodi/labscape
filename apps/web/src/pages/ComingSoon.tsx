@@ -1,4 +1,4 @@
-import { Button, Card, Chip } from "@labscape/ui";
+import { Blob, Button, Card, Chip } from "@labscape/ui";
 import { ArrowLeft, Beaker, Hammer } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { NAV } from "../shell/nav";
@@ -24,17 +24,20 @@ export default function ComingSoon() {
   const Icon = item?.icon ?? Hammer;
   const title = key === "lab" ? "Experiment player" : item?.label ?? "Coming soon";
   return (
-    <div className="mx-auto max-w-xl py-10">
-      <Card className="overflow-hidden p-0 text-center">
-        <div className="relative grid h-44 place-items-center bg-[radial-gradient(400px_180px_at_50%_0%,rgba(47,128,255,.35),transparent_70%)]">
-          <div className="grid h-20 w-20 place-items-center rounded-3xl bg-white/[0.06] ring-1 ring-white/10" style={{ color: item?.color ?? "#8cbcff", boxShadow: `0 0 60px -10px ${item?.color ?? "#2f80ff"}` }}>
+    <div className="mx-auto max-w-xl py-6">
+      <Card className="overflow-hidden rounded-panel p-0 text-center">
+        {/* A flat colour band with a blob, and the section's icon on a white disc. */}
+        <div className="relative grid h-48 place-items-center overflow-hidden bg-tint-blue">
+          <Blob shape="cloud" color="#FCC934" size={220} className="absolute -left-16 -top-24" />
+          <Blob shape="hex" color="#FFBDF9" size={140} rotate={12} className="absolute -bottom-16 -right-8" />
+          <div className="relative grid h-24 w-24 place-items-center rounded-full bg-card text-ink-strong">
             <Icon className="h-10 w-10" />
           </div>
         </div>
-        <div className="p-8">
+        <div className="p-8 sm:p-10">
           <Chip tone="blue">Arriving in Part {note.part}</Chip>
-          <h1 className="mt-4 font-heading text-3xl font-bold">{title}</h1>
-          <p className="mt-2 text-white/60">{note.body}</p>
+          <h1 className="mt-5 font-heading text-[34px] font-normal tracking-[-0.02em] text-ink-strong">{title}</h1>
+          <p className="mt-2 text-ink-muted">{note.body}</p>
           <div className="mt-6 flex justify-center gap-3">
             <Link to="/"><Button variant="secondary" icon={<ArrowLeft className="h-4 w-4" />}>Dashboard</Button></Link>
             <Link to="/playground/chemistry"><Button icon={<Beaker className="h-4 w-4" />}>Try the Playground</Button></Link>

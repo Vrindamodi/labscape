@@ -1,4 +1,43 @@
 /* LABscape design tokens as CSS custom properties. Mirrors src/tokens.ts. */
+
+/*
+ * Surface tokens. The app is a warm, light "lab notebook": cream page, white cards, charcoal ink,
+ * pill controls. Anything inside [data-surface="dark"] (lab stages, simulators, pages not yet moved
+ * to the light look, celebration overlays) gets the dark set instead, so shared components built on
+ * these tokens render correctly on either surface. Values are "R G B" channel triplets so Tailwind
+ * opacity modifiers work: `bg-ink/10` -> rgb(var(--ls-ink) / 0.1).
+ */
+:root {
+  --ls-surface: 243 239 234; /* #F3EFEA page */
+  --ls-surface-sunken: 234 228 220; /* #EAE4DC wells, tracks */
+  --ls-card: 255 255 255; /* cards, popovers, inputs */
+  --ls-ink: 50 50 50; /* #323232 body text */
+  --ls-ink-strong: 26 26 26; /* #1A1A1A headings, primary buttons */
+  --ls-ink-muted: 100 97 92; /* #64615C secondary text (AA on cream and on white) */
+  --ls-ink-faint: 150 146 140; /* placeholders and decoration only */
+  --ls-line: 232 223 213; /* #E8DFD5 hairlines, soft pill fill */
+  --ls-line-strong: 221 211 199; /* #DDD3C7 active pill fill, hover */
+  --ls-on-ink: 255 255 255; /* text on an ink-filled control */
+  --ls-link: 26 94 216; /* #1A5ED8 blue text on light */
+  color-scheme: light;
+}
+
+[data-surface="dark"] {
+  --ls-surface: 11 16 32; /* #0B1020 */
+  --ls-surface-sunken: 7 11 24;
+  --ls-card: 18 24 41; /* #121829 */
+  --ls-ink: 230 233 242;
+  --ls-ink-strong: 255 255 255;
+  --ls-ink-muted: 160 170 192;
+  --ls-ink-faint: 104 114 140;
+  --ls-line: 40 47 66;
+  --ls-line-strong: 58 66 88;
+  --ls-on-ink: 11 16 32;
+  --ls-link: 140 188 255; /* #8CBCFF */
+  color-scheme: dark;
+  color: rgb(var(--ls-ink));
+}
+
 :root {
   --ls-bg-base: #0b1020;
   --ls-bg-surface: #121829;
@@ -21,8 +60,15 @@
   --ls-subject-physics: #38bdf8;
   --ls-subject-maths: #fb923c;
 
-  --ls-font-heading: "Space Grotesk", system-ui, sans-serif;
-  --ls-font-body: "Inter", system-ui, sans-serif;
+  /* Flat accent tints for blobs and tiles (light surfaces) */
+  --ls-tint-green: #48f08b;
+  --ls-tint-pink: #ffbdf9;
+  --ls-tint-blue: #5e9bff;
+  --ls-tint-yellow: #fcc934;
+  --ls-tint-peach: #f9b896;
+
+  --ls-font-heading: "DM Sans", system-ui, sans-serif;
+  --ls-font-body: "DM Sans", system-ui, sans-serif;
   --ls-font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --ls-radius-sm: 8px;
@@ -45,8 +91,6 @@
   --ls-ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
   /* Animation speed setting (0.5x-2x) scales UI durations via this multiplier. */
   --ls-anim-speed: 1;
-
-  color-scheme: dark;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -63,8 +107,14 @@
 }
 
 /* ---------------------------------------------------------------- shared effects (Part 1) */
+/* Follows the surface: a faint ink shimmer on cream, a faint white one on dark. */
 .ls-skeleton {
-  background: linear-gradient(100deg, rgb(255 255 255 / 0.04) 30%, rgb(255 255 255 / 0.09) 50%, rgb(255 255 255 / 0.04) 70%);
+  background: linear-gradient(
+    100deg,
+    rgb(var(--ls-ink) / 0.05) 30%,
+    rgb(var(--ls-ink) / 0.1) 50%,
+    rgb(var(--ls-ink) / 0.05) 70%
+  );
   background-size: 300% 100%;
   animation: ls-shimmer 1.4s linear infinite;
 }
@@ -73,8 +123,11 @@
   to { background-position: 0 0; }
 }
 
-/* XP liquid: gradient fill, slow shimmer, curved meniscus at the leading edge */
+/* XP liquid: flat blue on light; on dark, the glowing gradient with a slow shimmer */
 .ls-liquid {
+  background: linear-gradient(90deg, #2f80ff, #5e9bff);
+}
+[data-surface="dark"] .ls-liquid {
   background: linear-gradient(90deg, #2f80ff, #22d3ee 70%, #7ef3ff);
   box-shadow: 0 0 14px rgb(34 211 238 / 0.55);
 }
@@ -97,6 +150,10 @@
   border-radius: 50%;
   background: radial-gradient(circle at 30% 50%, #e9fdff, #7ef3ff 50%, transparent 72%);
   filter: blur(0.3px);
+}
+/* Progress ring glow only reads on dark surfaces */
+[data-surface="dark"] .ls-ring-glow {
+  filter: drop-shadow(0 0 6px var(--ls-ring-glow, transparent));
 }
 
 :root[data-reduced-motion="true"] .ls-skeleton,

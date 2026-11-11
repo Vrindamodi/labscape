@@ -18,9 +18,10 @@ import { useMotion } from "@labscape/motion";
 import { Button, Chip, cx, ErrorState, inputClass, Modal, Segmented, Skeleton } from "@labscape/ui";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { Atom, FlaskConical, Play, Plus, Radiation, Scale, Search, Thermometer, X } from "lucide-react";
+import { FlaskConical, Play, Plus, Radiation, Scale, Search, Thermometer, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { PageHeader } from "../components/PageHeader";
 import { api } from "../lib/api";
 
 type Mode = "category" | "trend" | "state" | "block";
@@ -100,61 +101,58 @@ export default function PeriodicTable() {
 
   return (
     <div className="mx-auto max-w-[1380px] pb-24">
-      <header className="relative mb-5 overflow-hidden rounded-2xl border border-white/[0.08] p-6 sm:p-7" style={{ background: "radial-gradient(700px 300px at 100% 0%, #7c3aed40, transparent 60%), radial-gradient(500px 260px at 0% 100%, #2f80ff30, transparent 60%), linear-gradient(160deg,#18233f,#0e1529)" }}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#a5b4fc]">
-              <Atom className="h-4 w-4" /> Resources
-            </p>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Periodic table</h1>
-            <p className="mt-1 max-w-xl text-sm text-white/65">All 118 elements. Colour them by family, trend, block or state at any temperature, open one to watch its electrons fill, and compare up to four side by side.</p>
-          </div>
+      <PageHeader
+        eyebrow="Resources"
+        title="Periodic table"
+        sub="All 118 elements. Colour them by family, trend, block or state at any temperature, open one to watch its electrons fill, and compare up to four side by side."
+        aside={
           <label className="relative w-full max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find: Fe, iron or 26" className={cx(inputClass, "pl-9")} aria-label="Find an element" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find: Fe, iron or 26" className={cx(inputClass, "pl-10")} aria-label="Find an element" />
           </label>
-        </div>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Segmented<Mode>
-            label="Colour by"
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "category", label: "Families" },
-              { value: "trend", label: "Trends" },
-              { value: "state", label: "States" },
-              { value: "block", label: "Blocks" },
-            ]}
-          />
-          {mode === "trend" && (
-            <div className="flex flex-wrap gap-1.5">
-              {(Object.keys(TRENDS) as TrendKey[]).map((k) => (
-                <button key={k} onClick={() => setTrend(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset transition", trend === k ? "bg-accent text-white ring-accent" : "text-white/65 ring-white/15 hover:text-white")}>
-                  {TRENDS[k].label}
+        }
+        className="mb-5"
+      />
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <Segmented<Mode>
+          label="Colour by"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "category", label: "Families" },
+            { value: "trend", label: "Trends" },
+            { value: "state", label: "States" },
+            { value: "block", label: "Blocks" },
+          ]}
+        />
+        {mode === "trend" && (
+          <div className="flex flex-wrap gap-1.5">
+            {(Object.keys(TRENDS) as TrendKey[]).map((k) => (
+              <button key={k} onClick={() => setTrend(k)} className={cx("rounded-full px-3 py-1.5 text-xs font-medium transition", trend === k ? "bg-ink-strong text-on-ink" : "bg-card text-ink-muted ring-1 ring-inset ring-line hover:text-ink-strong")}>
+                {TRENDS[k].label}
+              </button>
+            ))}
+          </div>
+        )}
+        {mode === "state" && (
+          <div className="flex min-w-[280px] flex-1 flex-wrap items-center gap-3">
+            <Thermometer className="h-4 w-4 text-[#C2410C]" />
+            <input type="range" min={0} max={6000} step={1} value={kelvin} onChange={(e) => setKelvin(Number(e.target.value))} className="h-1 min-w-[160px] flex-1 accent-[#ff922b]" aria-label="Temperature in kelvin" />
+            <span className="w-36 font-mono text-sm text-ink-strong">
+              {kelvin} K · {Math.round(kelvin - 273.15)} °C
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {TEMPS.map(([label, k]) => (
+                <button key={label} onClick={() => setKelvin(k)} className={cx("rounded-full px-2.5 py-1 text-[11px] font-medium transition", kelvin === k ? "bg-[#FDE7D6] text-[#9A3412]" : "bg-card text-ink-muted ring-1 ring-inset ring-line hover:text-ink-strong")}>
+                  {label}
                 </button>
               ))}
             </div>
-          )}
-          {mode === "state" && (
-            <div className="flex min-w-[280px] flex-1 flex-wrap items-center gap-3">
-              <Thermometer className="h-4 w-4 text-orange-300" />
-              <input type="range" min={0} max={6000} step={1} value={kelvin} onChange={(e) => setKelvin(Number(e.target.value))} className="h-1 min-w-[160px] flex-1 accent-[#ff922b]" aria-label="Temperature in kelvin" />
-              <span className="w-36 font-mono text-sm text-white">
-                {kelvin} K · {Math.round(kelvin - 273.15)} °C
-              </span>
-              <div className="flex flex-wrap gap-1">
-                {TEMPS.map(([label, k]) => (
-                  <button key={label} onClick={() => setKelvin(k)} className={cx("rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset", kelvin === k ? "bg-orange-400/20 text-orange-200 ring-orange-300/50" : "text-white/55 ring-white/10 hover:text-white")}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
+          </div>
+        )}
+      </div>
 
-      <div className="overflow-x-auto pb-2">
+      <div data-surface="dark" className="overflow-x-auto rounded-panel bg-[#0f1528] p-4 text-white sm:p-6">
         <div className="min-w-[980px]">
           {/* the info strip sits in the empty space above the transition metals, like a printed table's key */}
           <div ref={grid} className="relative grid grid-cols-[repeat(18,minmax(0,1fr))] gap-[5px]" style={{ gridTemplateRows: "repeat(7, minmax(0,1fr)) 14px repeat(2, minmax(0,1fr))" }} role="grid" aria-label="Periodic table">
@@ -210,12 +208,12 @@ export default function PeriodicTable() {
           </div>
         </div>
       </div>
-      <p className="mt-2 flex items-center gap-1.5 text-[11px] text-white/40">
+      <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
         <FlaskConical className="h-3 w-3" /> marks elements you can work with in a LABscape experiment. Use the arrow keys to move around the table.
       </p>
 
       {/* below lg the legend has no space inside the grid */}
-      <div className="mt-4 lg:hidden">
+      <div data-surface="dark" className="mt-4 rounded-card bg-[#0f1528] p-3 lg:hidden">
         <Legend mode={mode} trend={trend} range={range} onFocus={setFocusCat} focus={focusCat} />
       </div>
 
@@ -236,7 +234,7 @@ export default function PeriodicTable() {
 
       <AnimatePresence>
         {compare.length > 0 && (
-          <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/10 bg-[#0e1529f2] p-2 pl-4 shadow-2xl backdrop-blur">
+          <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} data-surface="dark" className="fixed bottom-24 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-[#0e1529f2] p-2 pl-4 shadow-2xl backdrop-blur lg:bottom-6">
             <Scale className="h-4 w-4 text-accent-cyan" />
             <span className="mr-1 text-xs font-semibold text-white/60">Compare</span>
             {compare.map((z) => {
@@ -257,9 +255,11 @@ export default function PeriodicTable() {
         )}
       </AnimatePresence>
 
-      <Modal open={comparing} onClose={() => setComparing(false)} title="Compare elements" width={880}>
-        <CompareTable items={compare.map((z) => elements[z - 1]!)} />
-      </Modal>
+      <div data-surface="dark" className="contents">
+        <Modal open={comparing} onClose={() => setComparing(false)} title="Compare elements" width={880}>
+          <CompareTable items={compare.map((z) => elements[z - 1]!)} />
+        </Modal>
+      </div>
     </div>
   );
 }
@@ -385,6 +385,7 @@ function Detail({ e, colour, onClose, inCompare, onCompare, reduced, onJump }: {
       <motion.aside
         role="dialog"
         aria-label={e.name}
+        data-surface="dark"
         className="fixed bottom-0 right-0 top-0 z-50 w-full max-w-[460px] overflow-y-auto border-l border-white/10 bg-[#0c1326] shadow-2xl"
         initial={reduced ? { opacity: 0 } : { x: 480 }}
         animate={reduced ? { opacity: 1 } : { x: 0 }}
