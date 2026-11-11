@@ -92,6 +92,28 @@ class SafetyControllerTest {
         }
 
         @Test
+        void aChainedRequestCarriesAnEarlierMixIntoThisVessel() throws Exception {
+            // acid added to the residue filtered out of copper sulfate + sodium hydroxide
+            String chained = """
+                    {"id":"r3","subject":"chemistry","mode":"sandbox","attemptId":"a3",
+                     "inputs":[{"ref":"hcl","amount":10,"unit":"mL"}],
+                     "bases":[{"inputs":[{"ref":"cuso4","amount":10,"unit":"mL"},{"ref":"naoh","amount":5,"unit":"mL"}],
+                               "keep":"residue","fraction":1}]}
+                    """;
+            mvc.perform(post("/v1/safety/resolve").contentType(MediaType.APPLICATION_JSON).content(chained))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.outcome").value("reaction"))
+                    .andExpect(jsonPath("$.cues[?(@.carried == true)]").isNotEmpty());
+            // nothing new added is fine when something was carried in, but "keep" must be one of the three parts
+            mvc.perform(post("/v1/safety/resolve").contentType(MediaType.APPLICATION_JSON)
+                            .content(chained.replace("\"inputs\":[{\"ref\":\"hcl\",\"amount\":10,\"unit\":\"mL\"}]", "\"inputs\":[]")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.presentation.title").value("The residue"));
+            mvc.perform(post("/v1/safety/resolve").contentType(MediaType.APPLICATION_JSON).content(chained.replace("residue", "vapour")))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
         void catalogueHidesSafetyMetadata() throws Exception {
             mvc.perform(get("/v1/playground/catalogue"))
                     .andExpect(status().isOk())

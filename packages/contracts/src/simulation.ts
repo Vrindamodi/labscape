@@ -6,6 +6,9 @@
  * Rule: engines decide WHAT happens; animation layers decide HOW it looks.
  * Nothing (colour change, bubble, precipitate...) is drawn without a cue from an engine.
  *
+ * v0.6.0 (additive): a request may carry `bases` - earlier mixes that were poured, split or filtered into
+ * this vessel before its own inputs were added - so products persist from one vessel to the next; precipitate
+ * cues may be `carried` (a solid that was already there, shown settled with no fanfare).
  * v0.5.0 (additive): `layers` cues carry optional `position` ("top" | "bottom") and `label`;
  * deposit cues may use `form: "mirror"` (silver mirror on the glass, target "vessel");
  * needs_conditions may set `focusRef` to the catalogue id that satisfies the condition (e.g. "h2so4-conc"),
@@ -38,6 +41,23 @@ export type SimulationRequest = {
     /** A flame or spark has been applied to the mixture (sticky for the vessel). */
     ignition?: boolean;
   };
+  /** v0.6: what the vessel already held when `inputs` were added. With bases, `inputs` may be empty. At most 3. */
+  bases?: SimulationBase[];
+};
+
+/**
+ * v0.6: an earlier mix and the part of it that came across. The server replays it (and whatever it was
+ * made from) with the same engine, then hands on `fraction` of the kept part: everything ("all"), only what
+ * runs through a filter paper ("filtrate") or only what stays on it ("residue"). Every safety check covers
+ * the whole chain.
+ */
+export type SimulationBase = {
+  inputs: SimulationInput[];
+  conditions?: SimulationRequest["conditions"];
+  bases?: SimulationBase[];
+  keep: "all" | "filtrate" | "residue";
+  /** Share of the kept part that was carried on, 0 < fraction <= 1. */
+  fraction: number;
 };
 
 export type SimulationInput = {
@@ -99,6 +119,8 @@ export type ObservationCue =
       settleMs: number;
       /** v0.4: "crystals" for glittering plates (e.g. lead(II) iodide); default powder. */
       form?: "powder" | "crystals";
+      /** v0.6: this solid was carried in from an earlier vessel; it did not just form. */
+      carried?: boolean;
     })
   | (CueBase & { kind: "temperature"; deltaC: number; tauMs: number })
   | (CueBase & { kind: "dissolve"; durationMs: number; fraction?: number })

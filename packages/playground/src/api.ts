@@ -1,4 +1,4 @@
-import type { ProblemDetails, SimulationRequest, SimulationResult } from "@labscape/contracts";
+import type { ProblemDetails, SimulationBase, SimulationInput, SimulationRequest, SimulationResult } from "@labscape/contracts";
 import type { CatalogueResponse, TrayItem, TryNextHint } from "./types";
 
 export class ProblemError extends Error {
@@ -58,14 +58,25 @@ export function fetchCatalogue(): Promise<CatalogueResponse> {
   return call<CatalogueResponse>("/v1/playground/catalogue");
 }
 
-function mixRequest(tray: TrayItem[], temperatureC: number, stirring: boolean, ignition: boolean): SimulationRequest {
+/** Shelf items as request inputs, one line per chemical however many times it was added. */
+export function mixInputs(tray: TrayItem[]): SimulationInput[] {
+  const m = new Map<string, SimulationInput>();
+  for (const t of tray) {
+    const cur = m.get(t.item.id);
+    m.set(t.item.id, { ref: t.item.id, amount: Math.round(((cur?.amount ?? 0) + t.amount) * 100) / 100, unit: t.item.limits.unit });
+  }
+  return [...m.values()];
+}
+
+function mixRequest(tray: TrayItem[], temperatureC: number, stirring: boolean, ignition: boolean, bases: SimulationBase[]): SimulationRequest {
   return {
     id: crypto.randomUUID(),
     subject: "chemistry",
     mode: "sandbox",
     attemptId: sessionKey(),
-    inputs: tray.map((t) => ({ ref: t.item.id, amount: t.amount, unit: t.item.limits.unit })),
+    inputs: mixInputs(tray),
     conditions: { temperatureC, stirring, ignition },
+    ...(bases.length ? { bases } : {}),
   };
 }
 
@@ -74,10 +85,12 @@ export function resolveMix(
   temperatureC: number,
   stirring: boolean,
   ignition = false,
+  /** What the vessel already held: earlier mixes poured, split or filtered into it. */
+  bases: SimulationBase[] = [],
 ): Promise<SimulationResult> {
   return call<SimulationResult>("/v1/safety/resolve", {
     method: "POST",
-    body: JSON.stringify(mixRequest(tray, temperatureC, stirring, ignition)),
+    body: JSON.stringify(mixRequest(tray, temperatureC, stirring, ignition, bases)),
   });
 }
 
@@ -91,12 +104,13 @@ export async function fetchTryNext(
   temperatureC: number,
   stirring: boolean,
   ignition = false,
+  bases: SimulationBase[] = [],
 ): Promise<TryNextHint[]> {
-  if (!tray.length) return [];
+  if (!tray.length && !bases.length) return [];
   try {
     const res = await call<{ suggestions: TryNextHint[] }>("/v1/playground/try-next", {
       method: "POST",
-      body: JSON.stringify(mixRequest(tray, temperatureC, stirring, ignition)),
+      body: JSON.stringify(mixRequest(tray, temperatureC, stirring, ignition, bases)),
     });
     return res.suggestions ?? [];
   } catch {

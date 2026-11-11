@@ -1,12 +1,12 @@
-import type { SimulationResult } from "@labscape/contracts";
-import { DockButton, DockSeparator, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type HeldKind, type PlaygroundView, type SceneCaption, type SceneInsets } from "@labscape/lab-engine";
+import type { SimulationBase, SimulationResult } from "@labscape/contracts";
+import { DockButton, DockSeparator, FILTER_FUNNEL, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type BenchBeaker, type HeldKind, type PlaygroundView, type SceneCaption, type SceneInsets } from "@labscape/lab-engine";
 import { useMotion } from "@labscape/motion";
-import { dispenseMode, fetchCatalogue, fetchTryNext, liquidMl, loadDiscoveries, loadMuted, ProblemError, resolveMix, saveDiscoveries, saveMuted, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem, type TryNextHint } from "@labscape/playground";
+import { dispenseMode, fetchCatalogue, fetchTryNext, liquidMl, loadDiscoveries, loadMuted, mixInputs, ProblemError, resolveMix, saveDiscoveries, saveMuted, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem, type TryNextHint } from "@labscape/playground";
 import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { ArrowLeft, Atom, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Atom, Filter as FilterIcon, Split, ChevronLeft, ChevronRight, Droplet, Eraser, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -61,6 +61,19 @@ const gasLevel = (ratePerS: number) => Math.max(0.2, Math.min(1, 0.2 + (Math.log
 const SOUND_CAPTION: Record<string, string> = { pop: "Squeaky pop!", "squeaky-pop": "Squeaky pop!", bang: "BANG! The gases explode", crackle: "Crackling", sizzle: "Sizzling and hissing", hiss: "Hissing", whoosh: "Whoosh!" };
 
 type LogLine = { t: number; text: string; tone?: "good" | "warn" | "bad" };
+
+/**
+ * A beaker on the bench. The one on the hot plate keeps its live contents in the studio's own state;
+ * the others wait here as they were last seen. `bases` is what was poured, split or filtered into it
+ * from earlier mixes (the server replays those), `adds` what has been added since.
+ */
+type Vessel = { id: string; name: string; adds: TrayItem[]; bases: SimulationBase[]; ignition: boolean; colour: string; opacity: number; ml: number; /** Colour of the solid sitting in it, if any. */ solid: string | null };
+const blankVessel = (id: string, name: string): Vessel => ({ id, name, adds: [], bases: [], ignition: false, colour: CLEAN, opacity: 0.05, ml: 0, solid: null });
+const isEmptyVessel = (v: Vessel) => !v.adds.length && !v.bases.length;
+const MAX_VESSELS = 4;
+const CLEAN = "#cfe6ff";
+/** Cues that leave something to see once the action is over; the rest (fizz, flames, sounds) are skipped when a beaker is only being looked at again. */
+const LASTING = new Set(["colour", "precipitate", "dissolve", "layers", "crystals", "deposit"]);
 const clock = (ms: number) => `${String(Math.floor(ms / 60000)).padStart(2, "0")}:${String(Math.floor((ms / 1000) % 60)).padStart(2, "0")}`;
 const unitLabel = (it: ShelfItem) => (it.limits.unit === "drops" ? "drops" : it.limits.unit);
 const fmt = (v: number, unit: string) => (unit === "drops" ? String(Math.round(v)) : v < 10 ? v.toFixed(1) : Math.round(v).toString());
@@ -180,6 +193,22 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [loadError, setLoadError] = useState<string | null>(null);
   const [adds, setAdds] = useState<TrayItem[]>([]);
   const tray = useMemo(() => mergeTray(adds), [adds]);
+  // Vessels: what the beaker on the plate was handed from earlier mixes, and the other beakers on the bench.
+  const [bases, setBases] = useState<SimulationBase[]>([]);
+  const basesRef = useRef<SimulationBase[]>([]);
+  const putBases = (b: SimulationBase[]) => {
+    basesRef.current = b;
+    setBases(b);
+  };
+  const [vessels, setVessels] = useState<Vessel[]>(() => [blankVessel("first", "A")]);
+  /** A beaker was just dropped onto another: where, and which two, while the student picks how much to pour. */
+  const [drop, setDrop] = useState<{ src: string; dst: string; x: number; y: number } | null>(null);
+  const [activeId, setActiveId] = useState("first");
+  /** Liquid that was carried into this beaker (the engine reports it; own additions are counted from the tray). */
+  const [carriedMl, setCarriedMl] = useState(0);
+  /** A carried solid with no liquid over it is drawn as lumps rather than as a precipitate. */
+  const carriedSolid = useRef(false);
+  const [pouring, setPouring] = useState(false);
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [plateC, setPlateC] = useState(22);
@@ -201,7 +230,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [hints, setHints] = useState<TryNextHint[]>([]);
   const hintSeq = useRef(0);
   /** The beaker as it was before the last Empty, so Undo can bring it back. */
-  const emptied = useRef<TrayItem[] | null>(null);
+  const emptied = useRef<{ adds: TrayItem[]; bases: SimulationBase[] } | null>(null);
   const [canRestore, setCanRestore] = useState(false);
   // Sound: the app-wide mute (Settings) always wins; the studio's own toggle is remembered per browser.
   const { settings } = useSettings();
@@ -237,7 +266,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const flowRef = useRef({ added: 0, tilt: 0, custom: false });
 
   const capacity = cat?.conditions.vesselCapacityMl ?? 150;
-  const levelMl = tray.reduce((a, t) => a + liquidMl(t), 0);
+  const levelMl = carriedMl + tray.reduce((a, t) => a + liquidMl(t), 0);
+  const hasContents = tray.length > 0 || bases.length > 0;
   const heldMode = held ? dispenseMode(held) : null;
 
   useEffect(() => {
@@ -312,8 +342,16 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   /** One-shot effects already shown for the current mixture: stirring or heating again must not replay a pop. */
   const played = useRef(new Set<string>());
   const applyResult = useCallback(
-    (r: SimulationResult, next: TrayItem[], firstTime: boolean) => {
-      if (firstTime) played.current.clear();
+    (r: SimulationResult, next: TrayItem[], firstTime: boolean, quiet = false) => {
+      if (firstTime) {
+        played.current.clear();
+        carriedSolid.current = false;
+      }
+      // quiet: this beaker is only being looked at again, so show how it ended up, not the show it put on
+      const say: typeof caption = quiet ? () => {} : caption;
+      const play = (cue: Parameters<typeof sound.play>[0], level?: number) => {
+        if (!quiet) sound.play(cue, level);
+      };
       setOnline(true);
       setResult(r);
       const p = r.presentation;
@@ -323,19 +361,24 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       if (temp) {
         setTargetC(temp.value);
         // Heat from a reaction leaks away: the liquid drifts back to the plate setting.
-        if (Math.abs(temp.value - plateRef.current) > 1) later(14000, () => setTargetC(plateRef.current));
+        if (quiet) setTargetC(plateRef.current);
+        else if (Math.abs(temp.value - plateRef.current) > 1) later(14000, () => setTargetC(plateRef.current));
       }
-      if (r.outcome === "reaction") setReactionPulse((n) => n + 1);
+      if (r.outcome === "reaction" && !quiet) setReactionPulse((n) => n + 1);
       setNeeds(needsOf(r));
       const base = baseColour(next);
       const solidItems = next.filter((x) => x.item.form === "solid");
-      const liquid = next.reduce((a, x) => a + liquidMl(x), 0);
+      const own = next.reduce((a, x) => a + liquidMl(x), 0);
+      const volume = r.measurements.find((m) => m.key === "volume")?.value;
+      const carriedIn = basesRef.current.length > 0;
+      if (carriedIn && volume !== undefined) setCarriedMl(Math.max(0, volume - own));
+      const liquid = carriedIn && volume !== undefined ? volume : own;
       const nameOf = (formula: string) => p?.compounds.find((x) => x.formula === formula)?.name ?? formula;
       setVisual((v) => ({
         ...v,
         colour: base.colour,
         opacity: base.opacity,
-        solid: solidItems.length ? { colour: solidItems[0]!.item.colour, amount: Math.min(1, solidItems.reduce((a, x) => a + x.amount, 0) / 5), ...(v.solid?.coat ? { coat: v.solid.coat } : {}) } : null,
+        solid: solidItems.length ? { colour: solidItems[0]!.item.colour, amount: Math.min(1, solidItems.reduce((a, x) => a + x.amount, 0) / 5), ...(v.solid?.coat ? { coat: v.solid.coat } : {}) } : carriedSolid.current ? v.solid : null,
         layer: null,
         mirror: null,
       }));
@@ -345,62 +388,77 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         const seen = played.current.has(sig);
         played.current.add(sig);
         if (seen && c.kind !== "layers") continue;
-        later(c.startMs ?? 0, () => {
+        if (quiet && !LASTING.has(c.kind)) continue;
+        later(quiet ? 0 : c.startMs ?? 0, () => {
           switch (c.kind) {
             case "colour": {
               const to = oklabToHex(c.to);
               const from = c.target === "vessel" ? lastColour : oklabToHex(c.from);
               const clear = (c.to.alpha ?? 1) < 0.12;
-              setVisual((v) => ({ ...v, colour: to, opacity: Math.max(clear ? 0.05 : v.opacity, c.to.alpha ?? 0.45), ...(colourDistance(from, to) > 2500 && liquid > 1 ? { colourBurst: { pulse: (v.colourBurst?.pulse ?? 0) + 1, colour: to } } : {}) }));
-              if (colourDistance(from, to) > 2500 && r.outcome === "reaction") caption(`Colour change: ${colourName(from)} → ${clear ? "colourless" : colourName(to)}`, { from, colour: to });
+              setVisual((v) => ({ ...v, colour: to, opacity: Math.max(clear ? 0.05 : v.opacity, c.to.alpha ?? 0.45), ...(colourDistance(from, to) > 2500 && liquid > 1 && !quiet ? { colourBurst: { pulse: (v.colourBurst?.pulse ?? 0) + 1, colour: to } } : {}) }));
+              if (colourDistance(from, to) > 2500 && r.outcome === "reaction") say(`Colour change: ${colourName(from)} → ${clear ? "colourless" : colourName(to)}`, { from, colour: to });
               lastColour = to;
               break;
             }
             case "precipitate": {
               const col = oklabToHex(c.colour);
               const crystals = c.form === "crystals";
+              if (c.carried || quiet) {
+                // already there: no cloud forming, no caption. With no liquid over it, it is a pile of solid.
+                if (c.carried && liquid <= 1) {
+                  carriedSolid.current = true;
+                  setVisual((v) => ({ ...v, solid: { colour: col, amount: Math.max(0.3, Math.min(1, c.turbidity)) } }));
+                } else setVisual((v) => ({ ...v, precipitate: { colour: col, turbidity: c.turbidity, settled: 1, form: c.form ?? "powder" } }));
+                break;
+              }
               setVisual((v) => ({ ...v, precipitate: { colour: col, turbidity: c.turbidity, settled: 0, form: c.form ?? "powder" } }));
               later(Math.min(6000, c.settleMs), () => setVisual((v) => (v.precipitate ? { ...v, precipitate: { ...v.precipitate, settled: 1 } } : v)));
-              sound.play(crystals ? "tinkle" : "drip");
-              caption(`${capitalise(colourName(col))} ${crystals ? "crystals" : "precipitate"}: ${nameOf(c.id).toLowerCase()}`, { colour: col });
-              later(Math.min(6000, c.settleMs), () => caption(`The ${colourName(col)} solid settles to the bottom`, { colour: col }, 4500));
+              play(crystals ? "tinkle" : "drip");
+              say(`${capitalise(colourName(col))} ${crystals ? "crystals" : "precipitate"}: ${nameOf(c.id).toLowerCase()}`, { colour: col });
+              later(Math.min(6000, c.settleMs), () => say(`The ${colourName(col)} solid settles to the bottom`, { colour: col }, 4500));
               break;
             }
             case "gas": {
               const level = gasLevel(c.ratePerS);
               const gasCol = c.colour ? oklabToHex(c.colour) : null;
               setVisual((v) => ({ ...v, gas: level, gasColour: gasCol, bubble: c.bubble }));
-              sound.play("fizz", level);
+              play("fizz", level);
               sound.loop("fizz", true, 0.3 + level * 0.9);
               later(Math.max(5000, Math.min(16000, c.durationMs)), () => {
                 setVisual((v) => ({ ...v, gas: 0, gasColour: null }));
                 sound.loop("fizz", false);
               });
-              caption(`${level > 0.75 ? "Vigorous fizzing" : level > 0.4 ? "Fizzing" : "A few bubbles"}: ${nameOf(c.gas).toLowerCase()}${gasCol ? ` (${colourName(gasCol)} gas)` : ""}`, gasCol ? { colour: gasCol } : {});
-              if (c.smell && !/no smell/i.test(c.smell)) caption(`Smell: ${c.smell.toLowerCase()}`, { tone: c.hazard === "toxic" ? "bad" : "info" });
+              say(`${level > 0.75 ? "Vigorous fizzing" : level > 0.4 ? "Fizzing" : "A few bubbles"}: ${nameOf(c.gas).toLowerCase()}${gasCol ? ` (${colourName(gasCol)} gas)` : ""}`, gasCol ? { colour: gasCol } : {});
+              if (c.smell && !/no smell/i.test(c.smell)) say(`Smell: ${c.smell.toLowerCase()}`, { tone: c.hazard === "toxic" ? "bad" : "info" });
               addLog(`${c.gas} gas given off${c.smell ? ` · smell: ${c.smell}` : ""}`);
               if (c.smell && !/no smell/i.test(c.smell)) showSmell(c.smell, c.colour ? oklabToHex(c.colour) : "#c8f7a5");
               if (c.hazard && c.warning) {
                 const name = p?.compounds.find((x) => x.formula === c.gas)?.name ?? c.gas;
                 setHazard({ gas: c.gas, name, level: c.hazard, warning: c.warning });
                 addLog(`${c.hazard === "toxic" ? "☠ Toxic" : c.hazard === "flammable" ? "🔥 Flammable" : "⚠ Corrosive"}: ${name}. ${c.warning}`, c.hazard === "toxic" ? "bad" : "warn");
-                if (c.hazard !== "flammable") sound.play("warn");
+                if (c.hazard !== "flammable") play("warn");
                 later(Math.max(9000, Math.min(16000, c.durationMs + 3000)), () => setHazard((h) => (h?.gas === c.gas ? null : h)));
               }
               break;
             }
             case "dissolve":
               if (c.target.startsWith("precipitate:")) {
-                later(Math.min(4000, c.durationMs), () => setVisual((v) => (v.precipitate && (c.fraction ?? 1) >= 0.99 ? { ...v, precipitate: null } : v)));
-                caption(`The ${nameOf(c.target.slice("precipitate:".length)).toLowerCase()} precipitate dissolves`);
-              } else later(Math.min(4000, c.durationMs), () => setVisual((v) => (v.solid ? { ...v, solid: (c.fraction ?? 1) >= 1 ? null : { ...v.solid, amount: v.solid.amount * (1 - (c.fraction ?? 1)) } } : v)));
+                later(quiet ? 0 : Math.min(4000, c.durationMs), () =>
+                  setVisual((v) => {
+                    const part = c.fraction ?? 1;
+                    const gone = part >= 0.99;
+                    return { ...v, precipitate: gone ? null : v.precipitate, ...(carriedSolid.current && v.solid ? { solid: gone ? null : { ...v.solid, amount: v.solid.amount * (1 - part) } } : {}) };
+                  }),
+                );
+                say(`The ${p?.compounds.find((x) => x.formula === c.target.slice("precipitate:".length))?.name?.toLowerCase() ?? "solid"} ${carriedSolid.current || basesRef.current.length ? "" : "precipitate "}dissolves`.replace("  ", " "));
+              } else later(quiet ? 0 : Math.min(4000, c.durationMs), () => setVisual((v) => (v.solid ? { ...v, solid: (c.fraction ?? 1) >= 1 ? null : { ...v.solid, amount: v.solid.amount * (1 - (c.fraction ?? 1)) } } : v)));
               break;
             case "flame": {
               const col = oklabToHex(c.colour);
               setVisual((v) => ({ ...v, flame: { colour: col, intensity: c.intensity } }));
-              sound.play("whoosh");
+              play("whoosh");
               later(Math.min(6000, c.durationMs), () => setVisual((v) => ({ ...v, flame: null })));
-              caption(`${capitalise(colourName(col))} flame`, { colour: col });
+              say(`${capitalise(colourName(col))} flame`, { colour: col });
               break;
             }
             case "light": {
@@ -408,23 +466,23 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
               setVisual((v) => ({ ...v, light: { colour: col, intensity: c.intensity } }));
               later(Math.min(5000, Math.max(700, c.durationMs)), () => setVisual((v) => ({ ...v, light: null })));
               if (c.intensity >= 0.9 && c.durationMs >= 1500) {
-                caption("Blinding white light - don't look straight at it", { colour: col, tone: "warn" });
+                say("Blinding white light - don't look straight at it", { colour: col, tone: "warn" });
                 if (!reduced) setScreenFlash((n) => n + 1);
-              } else caption(c.durationMs >= 1500 ? `Glowing ${colourName(col)}` : "A bright flash", { colour: col });
+              } else say(c.durationMs >= 1500 ? `Glowing ${colourName(col)}` : "A bright flash", { colour: col });
               break;
             }
             case "smoke": {
               const col = oklabToHex(c.colour);
               setVisual((v) => ({ ...v, smoke: { colour: col, density: c.density } }));
               later(Math.min(8000, c.durationMs), () => setVisual((v) => ({ ...v, smoke: null })));
-              caption(c.label ?? `${capitalise(colourName(col))} smoke`, { colour: col });
+              say(c.label ?? `${capitalise(colourName(col))} smoke`, { colour: col });
               break;
             }
             case "deposit": {
               const col = oklabToHex(c.colour);
               if (c.form === "mirror") {
                 setVisual((v) => ({ ...v, mirror: { colour: "#e8ecf2", pulse: (v.mirror?.pulse ?? 0) + 1 } }));
-                caption("A shiny silver mirror coats the inside of the glass", { colour: "#e8ecf2" }, 8000);
+                say("A shiny silver mirror coats the inside of the glass", { colour: "#e8ecf2" }, 8000);
                 break;
               }
               const form = c.form ?? "coating";
@@ -434,57 +492,57 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
                 return { ...v, solid: { colour: v.solid?.colour ?? "#9aa0a6", amount: Math.max(0.3, v.solid?.amount ?? 0.3), coat } };
               });
               const metal = p?.compounds.find((x) => x.state === "s" && /^[A-Z][a-z]?$/.test(x.formula))?.name?.toLowerCase() ?? "metal";
-              caption(form === "crystals" ? `Sparkling ${metal} crystals growing on the metal` : `A ${colourName(col)} coating of ${metal} grows on the metal`, { colour: col });
+              say(form === "crystals" ? `Sparkling ${metal} crystals growing on the metal` : `A ${colourName(col)} coating of ${metal} grows on the metal`, { colour: col });
               break;
             }
             case "temperature":
               setTargetC((t) => (temp ? temp.value : t + c.deltaC));
-              if (Math.abs(c.deltaC) >= 2) sound.play(c.deltaC > 0 ? "sizzle" : "freeze");
-              if (Math.abs(c.deltaC) >= 1) caption(c.deltaC > 0 ? `Getting warmer: +${c.deltaC.toFixed(1)} °C` : `Getting colder: ${c.deltaC.toFixed(1)} °C`, { colour: c.deltaC > 0 ? "#ff8a3d" : "#7cc4ff" });
+              if (Math.abs(c.deltaC) >= 2) play(c.deltaC > 0 ? "sizzle" : "freeze");
+              if (Math.abs(c.deltaC) >= 1) say(c.deltaC > 0 ? `Getting warmer: +${c.deltaC.toFixed(1)} °C` : `Getting colder: ${c.deltaC.toFixed(1)} °C`, { colour: c.deltaC > 0 ? "#ff8a3d" : "#7cc4ff" });
               break;
             case "sound": {
               const id = c.soundId;
               if (id === "squeaky-pop" || id === "pop") {
-                sound.play("squeakyPop");
+                play("squeakyPop");
                 setVisual((v) => ({ ...v, blast: { pulse: (v.blast?.pulse ?? 0) + 1, colour: "#cfe6ff", strength: 0.6 } }));
               } else if (id === "bang") {
-                sound.play("bang");
+                play("bang");
                 setVisual((v) => ({ ...v, blast: { pulse: (v.blast?.pulse ?? 0) + 1, colour: "#fff2c4", strength: 1 } }));
                 if (!reduced) setScreenFlash((n) => n + 1);
-              } else if (id === "crackle" || id === "sizzle" || id === "hiss" || id === "whoosh") sound.play(id);
-              if (SOUND_CAPTION[id]) caption(SOUND_CAPTION[id], id === "bang" ? { tone: "warn" } : {});
+              } else if (id === "crackle" || id === "sizzle" || id === "hiss" || id === "whoosh") play(id);
+              if (SOUND_CAPTION[id]) say(SOUND_CAPTION[id], id === "bang" ? { tone: "warn" } : {});
               break;
             }
             case "condense":
               setVisual((v) => ({ ...v, condense: { colour: oklabToHex(c.colour), amount: Math.max(v.condense?.amount ?? 0, c.amount), pulse: v.condense && liquid > 1 ? v.condense.pulse : (v.condense?.pulse ?? 0) + 1 } }));
-              caption(liquid > 1 ? "Steam condensing into water droplets on the glass" : "Water droplets forming on the glass", { colour: "#bfe4ff" });
+              say(liquid > 1 ? "Steam condensing into water droplets on the glass" : "Water droplets forming on the glass", { colour: "#bfe4ff" });
               break;
             case "skate":
               setVisual((v) => ({ ...v, skate: { pulse: (v.skate?.pulse ?? 0) + 1, colour: oklabToHex(c.colour), durationMs: c.durationMs } }));
-              caption("The metal melts into a ball and skates across the surface", { colour: oklabToHex(c.colour) });
+              say("The metal melts into a ball and skates across the surface", { colour: oklabToHex(c.colour) });
               break;
             case "layers":
               setVisual((v) => ({ ...v, layer: { colour: oklabToHex(c.colour), volumeMl: c.volumeMl, position: c.position ?? "top" } }));
-              caption(c.label ?? (c.position === "bottom" ? "The denser liquid sinks to the bottom as a separate layer" : "The lighter liquid floats on top as a separate layer"), { colour: oklabToHex(c.colour) });
+              say(c.label ?? (c.position === "bottom" ? "The denser liquid sinks to the bottom as a separate layer" : "The lighter liquid floats on top as a separate layer"), { colour: oklabToHex(c.colour) });
               break;
             case "crystals": {
               const col = oklabToHex(c.colour);
               setVisual((v) => ({ ...v, crystals: { colour: col, amount: c.amount, durationMs: c.durationMs, pulse: v.crystals?.colour === col ? v.crystals.pulse : (v.crystals?.pulse ?? 0) + 1 } }));
-              sound.play("tinkle");
-              caption(c.label ?? "Crystals growing", { colour: col }, 8000);
+              play("tinkle");
+              say(c.label ?? "Crystals growing", { colour: col }, 8000);
               break;
             }
             case "odour":
               addLog(`Smell: ${c.description} (waft, never sniff)`);
               showSmell(c.description, "#d9f99d");
-              caption(`Smell: ${c.description}`);
+              say(`Smell: ${c.description}`);
               break;
             default:
               break;
           }
         });
       }
-      if (p && r.outcome !== "no_reaction") addLog(p.title, r.outcome === "reaction" ? "good" : "warn");
+      if (p && r.outcome !== "no_reaction" && !quiet) addLog(p.title, r.outcome === "reaction" ? "good" : "warn");
       // Discoveries.
       const fresh = (p?.discoveryIds ?? []).filter((id) => !found[id]);
       if (fresh.length) {
@@ -496,7 +554,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         const d = cat?.discoveries.find((x) => x.id === fresh[0]);
         if (d) {
           setCelebrate(d);
-          sound.play("discover");
+          play("discover");
           later(4200, () => setCelebrate(null));
         }
       }
@@ -508,17 +566,17 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   /** Ask what would react with this beaker. Late answers for an older beaker are dropped. */
   const loadHints = useCallback((t: TrayItem[], cond: { temp: number; stir: boolean; ign: boolean }) => {
     const seq = ++hintSeq.current;
-    void fetchTryNext(t, cond.temp, cond.stir, cond.ign).then((h) => {
+    void fetchTryNext(t, cond.temp, cond.stir, cond.ign, basesRef.current).then((h) => {
       if (seq === hintSeq.current) setHints(h);
     });
   }, []);
 
   const resolve = useCallback(
-    async (next: TrayItem[], cond: { temp: number; stir: boolean; ign: boolean }, revert: () => void, fresh = true) => {
-      if (!next.length) return;
+    async (next: TrayItem[], cond: { temp: number; stir: boolean; ign: boolean }, revert: () => void, fresh = true, quiet = false) => {
+      if (!next.length && !basesRef.current.length) return;
       setBusy(true);
       try {
-        const r = await resolveMix(next, cond.temp, cond.stir, cond.ign);
+        const r = await resolveMix(next, cond.temp, cond.stir, cond.ign, basesRef.current);
         if (r.outcome === "prohibited") {
           revert();
           sound.play("deny");
@@ -532,7 +590,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           flash(r.presentation?.message ?? "That is outside the safe range.");
           return;
         }
-        applyResult(r, next, fresh);
+        applyResult(r, next, fresh, quiet);
         loadHints(next, cond);
         if (r.outcome === "needs_conditions" || r.outcome === "unsupported") flash(friendlyOutcome(r, shelfName)?.line ?? "Nothing happens yet.", "warn");
       } catch (e) {
@@ -564,7 +622,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     void resolve(mergeTray(nextAdds), { temp: plateC, stir: stirring, ign: ignition }, () => setAdds(prev));
   };
 
-  const reResolve = (cond: { temp: number; stir: boolean; ign: boolean }) => tray.length && void resolve(tray, cond, () => {}, false);
+  const reResolve = (cond: { temp: number; stir: boolean; ign: boolean }) => hasContents && void resolve(tray, cond, () => {}, false);
 
   /* ---------------------------------------------------------------- dispensing */
 
@@ -709,7 +767,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     reResolve({ temp: t, stir: stirring, ign: ignition });
   };
   const toggleStir = () => {
-    if (!tray.length) return;
+    if (!hasContents) return;
     const s = !stirring;
     setStirring(s);
     addLog(s ? "Stirrer on" : "Stirrer off");
@@ -717,7 +775,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     reResolve({ temp: plateC, stir: s, ign: ignition });
   };
   const spark = () => {
-    if (!tray.length) return;
+    if (!hasContents) return;
     setIgnition(true);
     // The button lights up only while the splint is at the mouth. `ignition` itself stays set for this
     // beaker (so stirring or heating afterwards doesn't undo the burn), but that is not a pressed button.
@@ -740,27 +798,31 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     // Straight after Empty, Undo brings the whole beaker back.
     if (!adds.length) {
       const back = emptied.current;
-      if (!back) return;
+      if (!back || hasContents) return;
       emptied.current = null;
       setCanRestore(false);
-      setAdds(back);
+      setAdds(back.adds);
+      putBases(back.bases);
       addLog("Brought the emptied beaker back");
-      void resolve(mergeTray(back), { temp: plateC, stir: false, ign: false }, () => {});
+      void resolve(mergeTray(back.adds), { temp: plateC, stir: false, ign: false }, () => {}, true, true);
       return;
     }
     const next = adds.slice(0, -1);
     setAdds(next);
     addLog("Undid the last addition");
-    if (!next.length) return empty(true);
+    if (!next.length && !bases.length) return empty(true);
     setVisual(EMPTY_VIEW);
     void resolve(mergeTray(next), { temp: plateC, stir: stirring, ign: ignition }, () => {});
   };
   const empty = (quiet = false) => {
-    if (!quiet && adds.length) {
-      emptied.current = adds;
+    if (!quiet && hasContents) {
+      emptied.current = { adds, bases };
       setCanRestore(true);
     }
     setAdds([]);
+    putBases([]);
+    setCarriedMl(0);
+    carriedSolid.current = false;
     setResult(null);
     setPh(null);
     setVisual(EMPTY_VIEW);
@@ -791,6 +853,189 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     if (held?.id !== it.id) pick(it);
   };
 
+  /* ---------------------------------------------------------------- vessels: another beaker, pour, split, filter */
+
+  const activeName = vessels.find((v) => v.id === activeId)?.name ?? "A";
+  const solidNow = visual.precipitate?.colour ?? (visual.solid && visual.solid.amount > 0.01 ? visual.solid.colour : null);
+  const hasSolidNow = solidNow !== null;
+  /** The beaker on the plate, as it would be stored. */
+  const snapshot = (): Vessel => ({ id: activeId, name: activeName, adds, bases, ignition, colour: visual.colour, opacity: visual.opacity, ml: levelMl, solid: solidNow });
+  /** Any beaker as it is right now: the one on the plate from live state, the others as last seen. */
+  const vesselNow = (id: string): Vessel | undefined => (id === activeId ? snapshot() : vessels.find((v) => v.id === id));
+  /** A beaker's contents as something the next beaker starts from: all of it, the filtrate or the residue, and what share. */
+  const baseOf = (v: Pick<Vessel, "adds" | "bases" | "ignition">, keep: SimulationBase["keep"], fraction: number): SimulationBase => ({
+    inputs: mixInputs(v.adds),
+    conditions: { temperatureC: plateC, ignition: v.ignition },
+    ...(v.bases.length ? { bases: v.bases } : {}),
+    keep,
+    fraction,
+  });
+  const nextLetter = () => "ABCDEFGH".split("").find((l) => !vessels.some((v) => v.name.split(" ")[0] === l)) ?? "X";
+  const uniqueName = (name: string) => {
+    let out = name;
+    for (let n = 2; vessels.some((v) => v.name === out); n++) out = `${name} ${n}`;
+    return out;
+  };
+
+  /** Puts a beaker on the hot plate and draws what it holds. `quiet` shows how it ended up without replaying the reaction. */
+  const show = (v: Vessel, quiet: boolean, onRefused: () => void = () => {}) => {
+    putDown();
+    setPouring(false);
+    setDrop(null);
+    setResult(null);
+    setPh(null);
+    setVisual(EMPTY_VIEW);
+    setTargetC(plateC);
+    setSmell(null);
+    setHazard(null);
+    setCaptions([]);
+    setNeeds([]);
+    hintSeq.current++;
+    setHints([]);
+    setStirring(false);
+    sound.loop("stir", false);
+    sound.loop("fizz", false);
+    emptied.current = null;
+    setCanRestore(false);
+    carriedSolid.current = false;
+    setActiveId(v.id);
+    setAdds(v.adds);
+    putBases(v.bases);
+    setIgnition(v.ignition);
+    setCarriedMl(v.bases.length ? Math.max(0, v.ml - v.adds.reduce((a, t) => a + liquidMl(t), 0)) : 0);
+    if (v.adds.length || v.bases.length) void resolve(mergeTray(v.adds), { temp: plateC, stir: false, ign: v.ignition }, onRefused, true, quiet);
+  };
+  /**
+   * Replaces the bench with `next`. If `onPlate` is given it goes on the hot plate, and the beaker that was
+   * there takes the bench spot the new one came from, so nothing else on the bench moves.
+   */
+  const setBench = (next: Vessel[], onPlate: Vessel | null, quiet: boolean, onRefused?: () => void) => {
+    const ordered = [...next];
+    if (onPlate && onPlate.id !== activeId) {
+      const from = ordered.findIndex((v) => v.id === activeId);
+      const to = ordered.findIndex((v) => v.id === onPlate.id);
+      if (from >= 0 && to >= 0) [ordered[from], ordered[to]] = [ordered[to]!, ordered[from]!];
+    }
+    setVessels(ordered);
+    if (onPlate) show(onPlate, quiet, onRefused);
+  };
+  /** If the engine refuses what an operation made (a blocked mix, an overflow), the bench goes back to how it was. */
+  const undoable = () => {
+    const mine = snapshot();
+    const before = vessels.map((v) => (v.id === mine.id ? mine : v));
+    return () => {
+      setVessels(before);
+      show(mine, true);
+    };
+  };
+  const handsFree = () => {
+    if (busy || flowing) {
+      flash("Wait for this to finish first.");
+      return false;
+    }
+    return true;
+  };
+  /** The bench with the plate beaker's stored copy brought up to date. */
+  const benchNow = () => {
+    const mine = snapshot();
+    return vessels.map((v) => (v.id === mine.id ? mine : v));
+  };
+
+  const switchTo = (id: string) => {
+    const target = vessels.find((v) => v.id === id);
+    if (!target || id === activeId || !handsFree()) return;
+    addLog(`Moved beaker ${target.name} onto the hot plate`);
+    sound.play("clink");
+    setBench(benchNow(), target, true);
+  };
+  const addVessel = () => {
+    if (vessels.length >= MAX_VESSELS) return flash(`The bench holds ${MAX_VESSELS} beakers. Remove an empty one first.`);
+    const clean = blankVessel(crypto.randomUUID(), nextLetter());
+    setVessels([...benchNow(), clean]);
+    addLog(`Put a clean beaker (${clean.name}) on the bench`);
+    sound.play("clink");
+    flash(`Beaker ${clean.name} is on the bench. Drag a beaker onto it to pour, or click it to put it on the hot plate.`, "good");
+  };
+  const removeVessel = (id: string) => setVessels((vs) => (vs.length > 1 && id !== activeId ? vs.filter((v) => v.id !== id) : vs));
+
+  /**
+   * Filters any beaker on the bench: its liquid runs through the paper and stays in that beaker as the
+   * filtrate, and the solid left on the paper goes into a new beaker as the residue.
+   */
+  const filterVessel = (srcId: string) => {
+    setDrop(null);
+    if (!handsFree()) return;
+    const src = vesselNow(srcId);
+    if (!src) return;
+    if (isEmptyVessel(src)) return flash(`Beaker ${src.name} is empty: there is nothing to filter.`);
+    if (src.ml <= 0.5) return flash(`Beaker ${src.name} has no liquid to run through the paper. Filtering separates a solid from a liquid.`);
+    if (!src.solid) return flash(`There is no solid in beaker ${src.name} to filter out: everything is dissolved.`);
+    if (vessels.length >= MAX_VESSELS) return flash("No room on the bench for the residue. Remove an empty beaker first.");
+    const back = undoable();
+    const onPlate = src.id === activeId;
+    const letter = src.name.split(" ")[0]!;
+    const residue: Vessel = { ...blankVessel(crypto.randomUUID(), uniqueName(`${letter} residue`)), bases: [baseOf(src, "residue", 1)], solid: src.solid };
+    const filtrate: Vessel = { ...blankVessel(src.id, src.name.endsWith("filtrate") ? src.name : uniqueName(`${letter} filtrate`)), bases: [baseOf(src, "filtrate", 1)], colour: src.colour, opacity: src.opacity, ml: src.ml };
+    addLog(`Filtered beaker ${src.name}: the filtrate is in "${filtrate.name}", the solid in "${residue.name}"`, "good");
+    sound.play("pour");
+    setBench([...benchNow().map((v) => (v.id === src.id ? filtrate : v)), residue], onPlate ? filtrate : null, true, back);
+    if (onPlate) caption("The liquid runs through the filter paper; the solid stays on it", {}, 7000);
+    flash(`Filtered. The solid is in beaker "${residue.name}" on the bench.`, "good");
+  };
+  const filter = () => filterVessel(activeId);
+
+  /**
+   * Pours a share of one beaker into another ("new" puts a clean beaker on the bench first). Either may be
+   * the one on the hot plate. If the receiving beaker already held something, the two mixtures meet, so it
+   * goes on the hot plate where the reaction can be watched; a plain move or split leaves the plate alone.
+   */
+  const transfer = (srcId: string, dstId: string, fraction: number) => {
+    setPouring(false);
+    setDrop(null);
+    if (srcId === dstId || !handsFree()) return;
+    const src = vesselNow(srcId);
+    if (!src) return;
+    if (isEmptyVessel(src)) return flash(`Beaker ${src.name} is empty: there is nothing to pour.`);
+    if (dstId === "new" && vessels.length >= MAX_VESSELS) return flash("No room on the bench for another beaker. Remove an empty one first.");
+    const dst = dstId === "new" ? blankVessel(crypto.randomUUID(), nextLetter()) : vesselNow(dstId);
+    if (!dst) return;
+    const all = fraction >= 1 - 1e-9;
+    const moved = src.ml * fraction;
+    if (dst.ml + moved > capacity + 1e-6) return flash(`Beaker ${dst.name} would overflow: a beaker holds ${capacity} mL.`);
+    const back = undoable();
+    const intoEmpty = isEmptyVessel(dst);
+    const got: Vessel =
+      intoEmpty && all
+        ? { ...dst, adds: src.adds, bases: src.bases, ignition: src.ignition, colour: src.colour, opacity: src.opacity, ml: src.ml, solid: src.solid }
+        : { ...dst, adds: [], bases: [...(intoEmpty ? [] : [baseOf(dst, "all", 1)]), baseOf(src, "all", fraction)], ignition: false, colour: intoEmpty ? src.colour : dst.colour, opacity: intoEmpty ? src.opacity : Math.max(dst.opacity, src.opacity), ml: dst.ml + moved, solid: dst.solid ?? src.solid };
+    const left: Vessel = all ? blankVessel(src.id, src.name) : { ...src, adds: [], bases: [baseOf(src, "all", 1 - fraction)], ignition: false, ml: src.ml - moved };
+    const list = benchNow().map((v) => (v.id === src.id ? left : v.id === got.id ? got : v));
+    const next = dstId === "new" ? [...list, got] : list;
+    addLog(`Poured ${all ? "" : `${Math.round(fraction * 100)}% of `}beaker ${src.name} into beaker ${got.name}`);
+    sound.play("pour");
+    const reacts = !intoEmpty;
+    const onPlate = reacts ? got : src.id === activeId ? left : got.id === activeId ? got : null;
+    setBench(next, onPlate, !reacts, back);
+    if (reacts && got.id !== activeId) flash(`Beaker ${got.name} is on the hot plate now, so you can watch what the two do together.`, "good");
+    else if (!reacts && !all) flash(`${Math.round(fraction * 100)}% is now in beaker ${got.name}: test each part a different way.`, "good");
+  };
+  const split = () => {
+    if (hasContents) transfer(activeId, "new", 0.5);
+  };
+  const pourInto = (id: string) => transfer(activeId, id, 1);
+  /** A beaker was dragged onto another on the bench: ask how much to pour, right where it was dropped. */
+  const onDropBeaker = (src: string, dst: string, at: { x: number; y: number }) => {
+    if (dst === FILTER_FUNNEL) return filterVessel(src);
+    const from = vesselNow(src);
+    if (!from || !handsFree()) return;
+    if (isEmptyVessel(from)) return flash(`Beaker ${from.name} is empty: there is nothing to pour.`);
+    setDrop({ src, dst, x: at.x, y: at.y });
+  };
+  const chips = vessels.map((v) =>
+    v.id === activeId ? { id: v.id, name: v.name, active: true, empty: !hasContents, ml: levelMl, solid: hasSolidNow, colour: visual.colour } : { id: v.id, name: v.name, active: false, empty: isEmptyVessel(v), ml: v.ml, solid: !!v.solid, colour: v.colour },
+  );
+  const bench: BenchBeaker[] = vessels.filter((v) => v.id !== activeId).map((v) => ({ id: v.id, name: v.name, colour: v.colour, opacity: v.opacity, levelMl: v.ml, solid: v.solid }));
+
   /* ---------------------------------------------------------------- keyboard */
 
   const keys = useRef<(e: KeyboardEvent) => void>(() => {});
@@ -798,6 +1043,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     const t = e.target as HTMLElement | null;
     const typing = !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
     if (e.key === "Escape") {
+      if (drop) return setDrop(null);
+      if (pouring) return setPouring(false);
       if (blocked) setBlocked(null);
       else if (drawer !== "shelf") setDrawer("shelf");
       else if (typing) t!.blur();
@@ -971,7 +1218,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   return (
     <div ref={rootRef} className="relative h-screen w-full overflow-hidden bg-[#0b1530] font-sans text-[#e8f0ff]">
       <div className="absolute inset-0">
-        <PlaygroundScene view={view} reducedMotion={reduced} insets={{ ...insets, bottom: insets.bottom + CAPTION_BAND }} />
+        <PlaygroundScene view={view} reducedMotion={reduced} insets={{ ...insets, bottom: insets.bottom + CAPTION_BAND }} bench={bench} plateId={activeId} onOpenBeaker={switchTo} onDropBeaker={onDropBeaker} onFunnel={() => flash("Drag a beaker onto the funnel to filter it: the liquid runs through, the solid stays on the paper.")} />
       </div>
       <AnimatePresence>
         {screenFlash > 0 && !reduced && (
@@ -989,6 +1236,34 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       {held && heldMode === "pour" && (
         <div className="absolute inset-0 z-[1] cursor-ns-resize" onPointerDown={onPadDown} onPointerMove={onPadMove} onPointerUp={onPadUp} onPointerCancel={onPadUp} aria-hidden />
       )}
+
+      {drop &&
+        (() => {
+          const from = vesselNow(drop.src);
+          const to = vesselNow(drop.dst);
+          if (!from || !to) return null;
+          const R = rootRef.current?.getBoundingClientRect();
+          const left = Math.max(8, Math.min((R?.width ?? 800) - 228, drop.x - (R?.left ?? 0) - 110));
+          const top = Math.max(84, Math.min((R?.height ?? 600) - 250, drop.y - (R?.top ?? 0) - 70));
+          return (
+            <>
+              <div className="absolute inset-0 z-[35]" onPointerDown={() => setDrop(null)} aria-hidden />
+              <Glass radius="md" className="absolute z-[36] w-[220px] p-3" style={{ left, top }} role="dialog" aria-label={`Pour beaker ${from.name} into beaker ${to.name}`}>
+                <Kicker>Pour {from.name} into {to.name}</Kicker>
+                <p className="mt-1 text-[13px] leading-snug text-[#9db2da]">How much of it?</p>
+                <div className="mt-2 grid gap-1.5">
+                  <PrimaryButton autoFocus onClick={() => transfer(drop.src, drop.dst, 1)}>
+                    All of it
+                  </PrimaryButton>
+                  <GhostButton onClick={() => transfer(drop.src, drop.dst, 0.5)}>Half (keep the rest)</GhostButton>
+                  <button type="button" onClick={() => setDrop(null)} className="h-8 rounded-lg text-[13px] font-semibold text-[#8fa6d1] hover:text-white">
+                    Cancel
+                  </button>
+                </div>
+              </Glass>
+            </>
+          );
+        })()}
 
       {/* top bar */}
       <Glass className="absolute left-2 right-2 top-3 z-20 flex h-14 items-center gap-2 px-2 sm:left-4 sm:right-4 sm:gap-3 sm:px-3">
@@ -1167,7 +1442,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
             className={cx("absolute z-10 flex", wide ? "bottom-[96px] right-4 top-[84px] w-[300px] xl:w-[344px]" : "inset-x-2 top-[76px] z-30 max-h-[calc(100%-168px)]")}
             {...(reduced ? {} : { initial: { opacity: 0, x: 16 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: 16 }, transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] } })}
           >
-            <SidePanel tab={tab} setTab={setTab} result={result} friendly={friendly} onHeat={heatTo} plateC={plateC} log={log} tray={tray} online={online} busy={busy} onClose={wide ? null : () => setInfoOpen(false)} hints={hints} found={found} items={cat?.substances ?? []} heldId={held?.id ?? null} onHint={followHint} mission={mission} missionDone={!!mission && !!found[mission.id]} onJournal={() => setDrawer("journal")} />
+            <SidePanel tab={tab} setTab={setTab} result={result} friendly={friendly} onHeat={heatTo} plateC={plateC} log={log} tray={tray} online={online} busy={busy} onClose={wide ? null : () => setInfoOpen(false)} hints={hints} found={found} items={cat?.substances ?? []} heldId={held?.id ?? null} onHint={followHint} mission={mission} missionDone={!!mission && !!found[mission.id]} onJournal={() => setDrawer("journal")} empty={!hasContents} vessel={activeName} carried={bases.map((b) => describeBase(b, shelfName))} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1192,17 +1467,34 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       )}
 
       {/* dock */}
-      <div ref={dockRef} className="absolute bottom-3 left-1/2 z-20 max-w-[calc(100%-16px)] -translate-x-1/2 overflow-x-auto [scrollbar-width:none]">
+      <div ref={dockRef} className="absolute bottom-3 left-1/2 z-20 flex max-w-[calc(100%-16px)] -translate-x-1/2 flex-col items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
+        {/* on a phone the card for the chemical in hand sits right above the dock, so the strip steps aside while something is held */}
+        {!focus && (wide || !held) && (
+          <VesselStrip
+            chips={chips}
+            pouring={pouring}
+            canAdd={vessels.length < MAX_VESSELS}
+            canFilter={hasContents && hasSolidNow && levelMl > 0.5 && !busy}
+            canSplit={hasContents && !busy}
+            canPour={hasContents && vessels.length > 1 && !busy}
+            onOpen={(id) => (pouring ? pourInto(id) : switchTo(id))}
+            onAdd={addVessel}
+            onRemove={removeVessel}
+            onFilter={filter}
+            onSplit={split}
+            onPour={() => setPouring((on) => !on)}
+          />
+        )}
         <Glass radius="xl" className="flex items-center gap-0.5 p-1.5 sm:gap-1 sm:p-2" role="toolbar" aria-label="Bench tools">
-          <DockButton icon={<RotateCw />} label="Stir" kbd="S" tone={stirring ? "on" : "default"} disabled={!tray.length} onClick={toggleStir} />
-          <DockButton icon={<Wind />} label="Swirl" tone={swirling ? "on" : "default"} disabled={!tray.length} onPointerDown={() => setSwirling(true)} onPointerUp={() => setSwirling(false)} onPointerLeave={() => setSwirling(false)} title="Hold to swirl" />
+          <DockButton icon={<RotateCw />} label="Stir" kbd="S" tone={stirring ? "on" : "default"} disabled={!hasContents} onClick={toggleStir} />
+          <DockButton icon={<Wind />} label="Swirl" tone={swirling ? "on" : "default"} disabled={!hasContents} onPointerDown={() => setSwirling(true)} onPointerUp={() => setSwirling(false)} onPointerLeave={() => setSwirling(false)} title="Hold to swirl" />
           <DockSeparator />
           <HeatButton plateC={plateC} glow={needs.includes("heat")} onHeat={heatTo} />
-          <DockButton icon={<Zap />} label="Spark" kbd="F" title="Hold a flame to the beaker (F)" tone={sparkLit ? "hot" : needs.includes("spark") ? "on" : "default"} className={needs.includes("spark") && !ignition ? "animate-pulse" : ""} disabled={!tray.length} onClick={spark} />
+          <DockButton icon={<Zap />} label="Spark" kbd="F" title="Hold a flame to the beaker (F)" tone={sparkLit ? "hot" : needs.includes("spark") ? "on" : "default"} className={needs.includes("spark") && !ignition ? "animate-pulse" : ""} disabled={!hasContents} onClick={spark} />
           <DockButton icon={<Snowflake />} label="Ice bath" kbd="I" tone={iceBath ? "on" : "default"} onClick={toggleIce} />
           <DockSeparator />
           <DockButton icon={<Undo2 />} label={!adds.length && canRestore ? "Restore" : "Undo"} kbd="Z" title={!adds.length && canRestore ? "Bring the emptied beaker back (Z)" : "Undo the last addition (Z)"} disabled={(!adds.length && !canRestore) || busy} onClick={undo} />
-          <DockButton icon={<Eraser />} label="Empty" tone="danger" disabled={!adds.length} onClick={() => empty()} />
+          <DockButton icon={<Eraser />} label="Empty" tone="danger" disabled={!hasContents} onClick={() => empty()} />
         </Glass>
       </div>
 
@@ -1234,7 +1526,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       {/* hints, notes and discoveries: centred over the free bench area */}
       <div className="pointer-events-none absolute top-[84px] z-30 flex flex-col items-center gap-2 px-2 max-lg:top-[132px]" style={freeStyle}>
         <AnimatePresence>
-          {!held && !tray.length && !focus && !shelfOpen && (
+          {!held && !hasContents && !focus && !shelfOpen && (
             <motion.div key="hint" initial={reduced ? false : { opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
               <Glass radius="md" className="flex items-center gap-2 px-3 py-2 text-[14px] font-semibold">
                 <Hand className="h-4 w-4 shrink-0 text-[#39d6ff]" /> Pick a chemical from the shelf to hold it over the beaker
@@ -1326,6 +1618,75 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ vessels */
+
+/** "Filtrate of copper(II) sulfate + sodium hydroxide": what was carried into a beaker, in words. */
+function describeBase(b: SimulationBase, nameOf: (id: string) => string | undefined): string {
+  const names = b.inputs.map((i) => nameOf(i.ref) ?? i.ref);
+  const earlier = b.bases?.length ? [...names, "an earlier mix"] : names;
+  const what = earlier.length ? earlier.join(" + ") : "an earlier mix";
+  if (b.keep === "filtrate") return `Filtrate of ${what}`;
+  if (b.keep === "residue") return `Residue (the solid) from ${what}`;
+  const share = Math.abs(b.fraction - 0.5) < 1e-6 ? "Half" : `${Math.round(b.fraction * 100)}%`;
+  return b.fraction < 1 ? `${share} of ${earlier.length > 1 ? "a mix of " : ""}${what}` : `Poured in: ${what}`;
+}
+
+type VesselChip = { id: string; name: string; active: boolean; empty: boolean; ml: number; solid: boolean; colour: string };
+
+/** The beakers on the bench and what can be done between them. Sits on top of the tool dock. */
+function VesselStrip({ chips, pouring, canAdd, canFilter, canSplit, canPour, onOpen, onAdd, onRemove, onFilter, onSplit, onPour }: { chips: VesselChip[]; pouring: boolean; canAdd: boolean; canFilter: boolean; canSplit: boolean; canPour: boolean; onOpen: (id: string) => void; onAdd: () => void; onRemove: (id: string) => void; onFilter: () => void; onSplit: () => void; onPour: () => void }) {
+  const act = "flex h-9 shrink-0 items-center gap-1.5 rounded-[10px] px-2.5 text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-35";
+  return (
+    <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5">
+      <Glass radius="md" className="flex items-center gap-1 p-1" role="group" aria-label="Beakers on the bench">
+        {chips.map((c) => {
+          const target = pouring && !c.active;
+          return (
+            <span key={c.id} className="flex items-center">
+              <button
+                type="button"
+                onClick={() => onOpen(c.id)}
+                aria-pressed={c.active}
+                aria-label={`${pouring && !c.active ? "Pour into" : c.active ? "On the hot plate:" : "Bring to the hot plate:"} beaker ${c.name}, ${c.empty ? "empty" : c.ml > 0.05 ? `${fmt(c.ml, "mL")} mL${c.solid ? " with a solid" : ""}` : "a solid, no liquid"}`}
+                className={cx(
+                  "flex h-9 items-center gap-1.5 rounded-[10px] px-2 text-[13px] font-semibold transition-colors",
+                  c.active ? "bg-[rgba(61,139,255,.3)] text-white shadow-[inset_0_0_0_1px_#6aa8ff]" : target ? "animate-pulse bg-[rgba(255,194,61,.18)] text-[#ffd98a] shadow-[inset_0_0_0_1px_#ffc23d]" : "text-[#a9bde4] hover:bg-white/[0.06] hover:text-white",
+                )}
+              >
+                <span className="relative h-4 w-3.5 shrink-0 overflow-hidden rounded-b-[4px] rounded-t-[1px] border border-[rgba(220,235,255,.55)]" aria-hidden>
+                  {!c.empty && <span className="absolute inset-x-0 bottom-0" style={{ height: `${Math.max(25, Math.min(100, (c.ml / 60) * 100))}%`, background: c.colour, opacity: 0.9 }} />}
+                  {c.solid && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/80" />}
+                </span>
+                <span className="whitespace-nowrap">{c.name}</span>
+                <span className="whitespace-nowrap text-[12px] font-medium tabular-nums opacity-70 max-sm:hidden">{c.empty ? "empty" : c.ml > 0.05 ? `${fmt(c.ml, "mL")} mL` : "solid"}</span>
+              </button>
+              {!c.active && c.empty && chips.length > 1 && !pouring && (
+                <button type="button" onClick={() => onRemove(c.id)} className="grid h-7 w-6 place-items-center rounded-md text-[#8fa6d1] hover:text-white" aria-label={`Remove empty beaker ${c.name}`} title="Take this empty beaker off the bench">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </span>
+          );
+        })}
+        <button type="button" onClick={onAdd} disabled={!canAdd || pouring} className="grid h-9 w-8 place-items-center rounded-[10px] text-[#a9bde4] hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-35" aria-label="Put another clean beaker on the bench" title="Another clean beaker">
+          <Plus className="h-4 w-4" />
+        </button>
+      </Glass>
+      <Glass radius="md" className="flex items-center gap-0.5 p-1" role="group" aria-label="Between beakers">
+        <button type="button" onClick={onFilter} disabled={!canFilter || pouring} className={cx(act, "text-[#a9bde4] hover:bg-white/[0.06] hover:text-white")} title="Filter the beaker on the hot plate (or drag any beaker onto the funnel): the liquid runs through, the solid is kept in a new beaker">
+          <FilterIcon className="h-4 w-4" /> Filter
+        </button>
+        <button type="button" onClick={onSplit} disabled={!canSplit || pouring} className={cx(act, "text-[#a9bde4] hover:bg-white/[0.06] hover:text-white")} title="Pour half into a new beaker, so each half can be tested a different way">
+          <Split className="h-4 w-4" /> Split
+        </button>
+        <button type="button" onClick={onPour} disabled={!canPour} aria-pressed={pouring} className={cx(act, pouring ? "bg-[rgba(255,194,61,.2)] text-[#ffd98a] shadow-[inset_0_0_0_1px_#ffc23d]" : "text-[#a9bde4] hover:bg-white/[0.06] hover:text-white")} title="Pour everything in this beaker into another one">
+          <ArrowRightLeft className="h-4 w-4" /> {pouring ? "Pick a beaker" : "Pour into"}
+        </button>
+      </Glass>
     </div>
   );
 }
@@ -1695,7 +2056,7 @@ function HeatButton({ plateC, glow, onHeat }: { plateC: number; glow: boolean; o
 
 /* ------------------------------------------------------------------ right panel */
 
-function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, online, busy, onClose, hints, found, items, heldId, onHint, mission, missionDone, onJournal }: { tab: Tab; setTab: (t: Tab) => void; result: SimulationResult | null; friendly: ReturnType<typeof friendlyOutcome>; onHeat: (c: number) => void; plateC: number; log: LogLine[]; tray: TrayItem[]; online: boolean | null; busy: boolean; onClose: (() => void) | null; hints: TryNextHint[]; found: Record<string, FoundDiscovery>; items: ShelfItem[]; heldId: string | null; onHint: (h: TryNextHint) => void; mission: DiscoveryDef | null; missionDone: boolean; onJournal: () => void }) {
+function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, online, busy, onClose, hints, found, items, heldId, onHint, mission, missionDone, onJournal, empty, vessel, carried }: { empty: boolean; vessel: string; carried: string[]; tab: Tab; setTab: (t: Tab) => void; result: SimulationResult | null; friendly: ReturnType<typeof friendlyOutcome>; onHeat: (c: number) => void; plateC: number; log: LogLine[]; tray: TrayItem[]; online: boolean | null; busy: boolean; onClose: (() => void) | null; hints: TryNextHint[]; found: Record<string, FoundDiscovery>; items: ShelfItem[]; heldId: string | null; onHint: (h: TryNextHint) => void; mission: DiscoveryDef | null; missionDone: boolean; onJournal: () => void }) {
   // Hints that would unlock something new in the journal come first; four is plenty to choose from.
   const fresh = (h: TryNextHint) => !!h.discoveryId && !found[h.discoveryId];
   const shown = [...hints].sort((a, b) => Number(fresh(b)) - Number(fresh(a))).slice(0, 4);
@@ -1734,7 +2095,7 @@ function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, o
           <motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
             {tab === "live" && (
               <div className="space-y-3">
-                {!tray.length ? (
+                {empty ? (
                   <div className="rounded-[14px] border border-[rgba(140,180,255,.14)] bg-[rgba(4,10,28,.45)] p-3">
                     <h3 className="font-heading text-[18px] font-bold text-white">An empty beaker</h3>
                     <p className="mt-1 text-[15px] leading-relaxed text-[#c8d6f3]">Pick something from the shelf and pour it in, or tap the + on a card to add it straight away. Then add a second chemical and see what happens.</p>
@@ -1803,7 +2164,7 @@ function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, o
                     </ul>
                   </div>
                 )}
-                {tray.length > 0 && shown.length > 0 && !busy && (
+                {!empty && shown.length > 0 && !busy && (
                   <div>
                     <Kicker>Try next</Kicker>
                     <ul className="mt-1.5 space-y-1.5">
@@ -1836,8 +2197,14 @@ function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, o
                   </div>
                 )}
                 <div>
-                  <Kicker>In the beaker</Kicker>
+                  <Kicker>In beaker {vessel}</Kicker>
                   <ul className="mt-1.5 space-y-1 text-[15px]">
+                    {carried.map((line, i) => (
+                      <li key={`carried${i}`} className="flex items-start gap-2 text-[#c8d6f3]">
+                        <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#8fa6d1]" />
+                        <span className="min-w-0 flex-1 leading-snug">{line}</span>
+                      </li>
+                    ))}
                     {tray.map((t) => (
                       <li key={t.item.id} className="flex items-center gap-2">
                         <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: t.item.colour }} />
@@ -1847,7 +2214,7 @@ function SidePanel({ tab, setTab, result, friendly, onHeat, plateC, log, tray, o
                         </span>
                       </li>
                     ))}
-                    {!tray.length && <li className="text-[#8fa6d1]">Nothing yet.</li>}
+                    {empty && <li className="text-[#8fa6d1]">Nothing yet.</li>}
                   </ul>
                 </div>
               </div>

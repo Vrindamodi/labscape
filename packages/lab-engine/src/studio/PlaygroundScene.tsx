@@ -1,5 +1,5 @@
 import { Html, OrbitControls, PerformanceMonitor } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -85,8 +85,30 @@ const fillH = (v: PlaygroundView) => Math.pow(Math.min(1, Math.max(0, v.levelMl 
 /** Pixels covered by panels on each side of the canvas: the camera frames the beaker in what is left. */
 export type SceneInsets = { left: number; right: number; top: number; bottom: number };
 
-export function PlaygroundScene({ view, reducedMotion, onBeaker, insets }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets }) {
+/** A beaker standing on the bench beside the hot plate, drawn as it was last seen. */
+export type BenchBeaker = { id: string; name: string; colour: string; opacity: number; levelMl: number; solid: string | null };
+
+/** Resting beakers are a little smaller than the one being worked on, and line up to the left of the hot plate. */
+const REST_SCALE = 0.82;
+const REST_STEP = 0.72;
+const restSlot = (i: number): [number, number, number] => [-1.14 - i * REST_STEP, 0, 0.2];
+
+/** The id `onDropBeaker` reports when a beaker is let go over the filter funnel instead of over another beaker. */
+export const FILTER_FUNNEL = "filter-funnel";
+/** The funnel stands behind the row of beakers, left of the hot plate, so it never widens the view. */
+const FUNNEL_AT: [number, number, number] = [-0.95, 0, -0.85];
+const FUNNEL_Y = 1.02;
+
+/**
+ * @param bench other beakers on the bench, in bench order. Any beaker (these, or the one on the plate) can be
+ *        dragged onto another: `onDropBeaker` is told which went onto which and where on screen it was let go.
+ *        A click without a drag on a resting beaker calls `onOpenBeaker`. Dropping a beaker on the filter
+ *        funnel reports `FILTER_FUNNEL` as what it went onto; a click on the funnel calls `onFunnel`.
+ */
+export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench = [], plateId = "plate", onOpenBeaker, onDropBeaker, onFunnel }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets; bench?: BenchBeaker[]; plateId?: string; onOpenBeaker?: (id: string) => void; onDropBeaker?: (from: string, onto: string, at: { x: number; y: number }) => void; onFunnel?: () => void }) {
   const [quality, setQuality] = useState<Quality>(() => (((navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8) < 4 ? "lite" : "high"));
+  // The camera keeps the hot plate and every resting beaker in view: the frame only widens when there is more than one beaker.
+  const frameMinX = bench.length ? restSlot(bench.length - 1)[0] - BEAKER_R * REST_SCALE - 0.16 : -FRAME_W / 2;
   return (
     <Canvas
       shadows={quality === "high"}
@@ -97,7 +119,7 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker, insets }: { vie
     >
       <PerformanceMonitor onDecline={() => setQuality("lite")} flipflops={2} />
       <Env />
-      <CameraRig focus={view.focus} pulse={view.reactionPulse} blast={view.blast?.pulse ?? 0} reducedMotion={reducedMotion} insets={insets} />
+      <CameraRig focus={view.focus} pulse={view.reactionPulse} blast={view.blast?.pulse ?? 0} reducedMotion={reducedMotion} insets={insets} minX={view.focus ? -FRAME_W / 2 : frameMinX} />
       <hemisphereLight args={["#bcd4ff", "#0b1020", 0.4]} />
       <directionalLight position={[3, 7, 4]} intensity={1.3} castShadow={quality === "high"} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} />
       <pointLight position={[-4, 3.6, -2.5]} intensity={10} color="#3a8cff" distance={12} decay={1.6} />
@@ -107,10 +129,7 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker, insets }: { vie
       {!reducedMotion && <Dust count={quality === "high" ? 220 : 80} />}
       <HotPlate plateC={view.plateC} stirring={view.stirring} />
       {view.iceBath && <IceBath reducedMotion={reducedMotion} />}
-      <group position={[0, PLATE_H, 0]} onClick={(e) => (e.stopPropagation(), onBeaker?.())}>
-        <BeakerWithContents view={view} quality={quality} reducedMotion={reducedMotion} />
-      </group>
-      <TestTubeRack />
+      <Beakers view={view} quality={quality} reducedMotion={reducedMotion} bench={view.focus ? [] : bench} plateId={plateId} funnel={!view.focus && !!onDropBeaker} onBeaker={onBeaker} onOpen={onOpenBeaker} onDrop={onDropBeaker} onFunnel={onFunnel} />
       {view.held && <Held held={view.held} view={view} quality={quality} reducedMotion={reducedMotion} />}
       {quality === "high" && (
         <EffectComposer multisampling={4}>
@@ -147,7 +166,7 @@ const FOCUS_DIR = new THREE.Vector3(0, 0.67, 2.6).normalize();
 const FRAME_W = 2.0;
 const FRAME_H = 2.45;
 
-function CameraRig({ focus, pulse, blast, reducedMotion, insets }: { focus: boolean; pulse: number; blast: number; reducedMotion: boolean; insets?: SceneInsets | undefined }) {
+function CameraRig({ focus, pulse, blast, reducedMotion, insets, minX = -FRAME_W / 2 }: { focus: boolean; pulse: number; blast: number; reducedMotion: boolean; insets?: SceneInsets | undefined; minX?: number }) {
   const { camera, size } = useThree();
   const controls = useRef<{ update: () => void } | null>(null);
   const want = useMemo(() => new THREE.Vector3(), []);
@@ -173,17 +192,22 @@ function CameraRig({ focus, pulse, blast, reducedMotion, insets }: { focus: bool
     const H = size.height;
     const fw = Math.max(160, W - left - right);
     const fh = Math.max(160, H - top - bottom);
-    const ppu = Math.min(fw / FRAME_W, fh / FRAME_H);
+    // The frame runs from the leftmost resting beaker to the bottle held on the right of the plate.
+    const frameW = FRAME_W / 2 - minX;
+    const ppu = Math.min(fw / frameW, fh / FRAME_H);
     const tan = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
-    dist.current = THREE.MathUtils.clamp(H / (ppu * 2 * tan), 3.2, 10);
-    offWant.current = { x: left + fw / 2 - W / 2, y: top + fh / 2 - H / 2 };
+    dist.current = THREE.MathUtils.clamp(H / (ppu * 2 * tan), 3.2, 12);
+    // Pixels per world unit at the plate once the distance is clamped: slides the image so the frame's middle, not the plate, is centred.
+    const scale = H / (2 * tan * dist.current);
+    const middle = (minX + FRAME_W / 2) / 2;
+    offWant.current = { x: left + fw / 2 - W / 2 - middle * scale, y: top + fh / 2 - H / 2 };
     // A resize applies at once; a panel opening glides (see useFrame).
     if (sized.current.w !== W || sized.current.h !== H) offNow.current = { ...offWant.current };
     sized.current = { w: W, h: H };
     applyOffset();
     moving.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [camera, size.width, size.height, left, right, top, bottom]);
+  }, [camera, size.width, size.height, left, right, top, bottom, minX]);
   useEffect(() => {
     moving.current = true;
   }, [focus]);
@@ -215,7 +239,7 @@ function CameraRig({ focus, pulse, blast, reducedMotion, insets }: { focus: bool
       camera.position.y += Math.cos(clock.elapsedTime * 47) * 0.004 * kick.current;
     }
   });
-  return <OrbitControls ref={controls as never} makeDefault target={[TARGET.x, TARGET.y, TARGET.z]} enablePan={false} minDistance={1.6} maxDistance={10} minPolarAngle={0.3} maxPolarAngle={1.35} enableDamping={!reducedMotion} />;
+  return <OrbitControls ref={controls as never} makeDefault target={[TARGET.x, TARGET.y, TARGET.z]} enablePan={false} minDistance={1.6} maxDistance={12} minPolarAngle={0.3} maxPolarAngle={1.35} enableDamping={!reducedMotion} />;
 }
 
 /* ------------------------------------------------------------------ ambience */
@@ -395,30 +419,264 @@ function IceBath({ reducedMotion }: { reducedMotion: boolean }) {
   );
 }
 
-function TestTubeRack() {
+/* ------------------------------------------------------------------ beakers on the bench: click one, or drag one onto another */
+
+type DragState = { id: string; x0: number; y0: number; moving: boolean };
+
+/**
+ * The beaker on the hot plate and the ones resting beside it. Each can be picked up and carried: letting it
+ * go over another beaker reports the drop (the page then asks how much to pour). A press that never moves is
+ * a click. While a beaker is being carried the camera is locked, so the bench does not spin under it.
+ */
+function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeaker, onOpen, onDrop, onFunnel }: { view: PlaygroundView; quality: Quality; reducedMotion: boolean; bench: BenchBeaker[]; plateId: string; funnel: boolean; onBeaker?: (() => void) | undefined; onOpen?: ((id: string) => void) | undefined; onDrop?: ((from: string, onto: string, at: { x: number; y: number }) => void) | undefined; onFunnel?: (() => void) | undefined }) {
+  const controls = useThree((st) => st.controls) as { enabled: boolean } | null;
+  const camera = useThree((st) => st.camera);
+  const gl = useThree((st) => st.gl);
+  const probe = useMemo(() => new THREE.Vector3(), []);
+  /**
+   * Is the pointer on the funnel stand as it appears on screen? The stand is tall and set back, so where it
+   * looks to be and where it stands on the bench are different places: this is judged in screen pixels.
+   */
+  const onFunnelStand = (clientX: number, clientY: number) => {
+    const r = gl.domElement.getBoundingClientRect();
+    const px = (y: number): [number, number] => {
+      probe.set(FUNNEL_AT[0], y, FUNNEL_AT[2]).project(camera);
+      return [r.left + ((probe.x + 1) / 2) * r.width, r.top + ((1 - probe.y) / 2) * r.height];
+    };
+    const [ax, ay] = px(0.25);
+    const [bx, by] = px(FUNNEL_Y + 0.25);
+    const len2 = (bx - ax) ** 2 + (by - ay) ** 2;
+    const t = Math.max(0, Math.min(1, ((clientX - ax) * (bx - ax) + (clientY - ay) * (by - ay)) / Math.max(1, len2)));
+    return Math.hypot(clientX - (ax + (bx - ax) * t), clientY - (ay + (by - ay) * t)) < Math.sqrt(len2) * 0.36;
+  };
+  const groups = useRef(new Map<string, THREE.Group>());
+  const drag = useRef<DragState | null>(null);
+  const overRef = useRef<string | null>(null);
+  const [over, setOver] = useState<string | null>(null);
+  const [carried, setCarried] = useState<string | null>(null);
   const glass = useGlass("lite");
-  const cols = ["#ff7ab6", "#39d6ff", "#ffd23f"];
+  const glassGeom = useMemo(() => lathe(BEAKER.profile), []);
+  const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.5), []);
+  const hit = useMemo(() => new THREE.Vector3(), []);
+  const homes = useMemo(() => {
+    const m = new Map<string, [number, number, number]>([[plateId, [0, PLATE_H, 0]]]);
+    bench.forEach((b, i) => m.set(b.id, restSlot(i)));
+    return m;
+  }, [bench, plateId]);
+  // With the funnel on the bench there is always somewhere to carry a beaker, even a lone one.
+  const canDrag = !!onDrop && (bench.length > 0 || funnel);
+
+  const release = () => {
+    drag.current = null;
+    overRef.current = null;
+    setOver(null);
+    setCarried(null);
+    if (controls) controls.enabled = true;
+  };
+  // If the scene goes away mid-drag (focus mode, a panel covering it), never leave the camera locked.
+  useEffect(() => () => {
+    if (controls) controls.enabled = true;
+  }, [controls]);
+
+  useFrame((_, dt) => {
+    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 9);
+    for (const [id, g] of groups.current) {
+      const home = homes.get(id);
+      if (!home) continue;
+      const held = drag.current?.id === id && drag.current.moving;
+      if (!held) {
+        g.position.x += (home[0] - g.position.x) * k;
+        g.position.y += (home[1] - g.position.y) * k;
+        g.position.z += (home[2] - g.position.z) * k;
+      }
+      // A carried beaker leans towards the one it would pour into.
+      const target = held && overRef.current ? (overRef.current === FILTER_FUNNEL ? FUNNEL_AT : homes.get(overRef.current)) : null;
+      const lean = target ? (target[0] < g.position.x ? 0.42 : -0.42) : 0;
+      g.rotation.z += (lean - g.rotation.z) * k;
+    }
+  });
+
+  const handlers = (id: string) => ({
+    onPointerDown: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      (e.target as unknown as Element).setPointerCapture(e.pointerId);
+      drag.current = { id, x0: e.nativeEvent.clientX, y0: e.nativeEvent.clientY, moving: false };
+      if (controls) controls.enabled = false;
+    },
+    onPointerMove: (e: ThreeEvent<PointerEvent>) => {
+      const d = drag.current;
+      if (!d || d.id !== id || !canDrag) return;
+      if (!d.moving) {
+        if (Math.hypot(e.nativeEvent.clientX - d.x0, e.nativeEvent.clientY - d.y0) < 6) return;
+        d.moving = true;
+        setCarried(id);
+      }
+      const g = groups.current.get(id);
+      if (!g || !e.ray.intersectPlane(plane, hit)) return;
+      g.position.set(THREE.MathUtils.clamp(hit.x, -4.2, 2.2), (id === plateId ? PLATE_H : 0) + 0.2, THREE.MathUtils.clamp(hit.z, -0.9, 1.3));
+      // The nearest other beaker within reach is where it would be poured.
+      let best: string | null = null;
+      let bestD = 0.7;
+      for (const [other, home] of homes) {
+        if (other === id) continue;
+        const dd = Math.hypot(g.position.x - home[0], g.position.z - home[2]);
+        if (dd < bestD) {
+          bestD = dd;
+          best = other;
+        }
+      }
+      if (funnel && onFunnelStand(e.nativeEvent.clientX, e.nativeEvent.clientY)) best = FILTER_FUNNEL;
+      if (best !== overRef.current) {
+        overRef.current = best;
+        setOver(best);
+      }
+    },
+    onPointerUp: (e: ThreeEvent<PointerEvent>) => {
+      const d = drag.current;
+      if (!d || d.id !== id) return;
+      e.stopPropagation();
+      (e.target as unknown as Element).releasePointerCapture?.(e.pointerId);
+      const onto = overRef.current;
+      release();
+      if (!d.moving) {
+        if (id === plateId) onBeaker?.();
+        else onOpen?.(id);
+      } else if (onto) onDrop?.(id, onto, { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY });
+    },
+    onPointerCancel: release,
+    onLostPointerCapture: () => {
+      if (drag.current?.id === id) release();
+    },
+    onPointerOver: () => {
+      if (canDrag || id !== plateId) document.body.style.cursor = "grab";
+    },
+    onPointerOut: () => {
+      document.body.style.cursor = "";
+    },
+  });
+  useEffect(() => () => {
+    document.body.style.cursor = "";
+  }, []);
+  const keep = (id: string) => (g: THREE.Group | null) => {
+    if (g) groups.current.set(id, g);
+    else groups.current.delete(id);
+  };
+
   return (
-    <group position={[-1.55, 0, -0.35]}>
-      <mesh position={[0, 0.25, 0]} castShadow>
-        <boxGeometry args={[0.9, 0.05, 0.28]} />
-        <meshStandardMaterial color="#a8743f" roughness={0.6} />
-      </mesh>
-      <mesh position={[0, 0.03, 0]}>
-        <boxGeometry args={[0.9, 0.05, 0.28]} />
-        <meshStandardMaterial color="#8b5e30" roughness={0.6} />
-      </mesh>
-      {cols.map((c, i) => (
-        <group key={c} position={[-0.26 + i * 0.26, 0.08, 0]}>
-          <mesh position={[0, 0.32, 0]} material={glass}>
-            <cylinderGeometry args={[0.07, 0.07, 0.64, 16, 1, true]} />
-          </mesh>
-          <mesh position={[0, 0.15, 0]}>
-            <cylinderGeometry args={[0.06, 0.06, 0.28, 16]} />
-            <meshStandardMaterial color={c} emissive={c} emissiveIntensity={0.25} transparent opacity={0.8} roughness={0.1} />
-          </mesh>
+    <>
+      <group ref={keep(plateId)} position={[0, PLATE_H, 0]} {...handlers(plateId)}>
+        <BeakerWithContents view={view} quality={quality} reducedMotion={reducedMotion} />
+        {over === plateId && <DropRing radius={BEAKER_R + 0.12} />}
+      </group>
+      {funnel && <FilterStand over={over === FILTER_FUNNEL} carrying={carried !== null} onClick={onFunnel} />}
+      {bench.map((b, i) => (
+        <group key={b.id} ref={keep(b.id)} position={restSlot(i)} {...handlers(b.id)}>
+          <group scale={REST_SCALE}>
+            <RestingBeaker b={b} capacityMl={view.capacityMl} glass={glass} glassGeom={glassGeom} />
+            {over === b.id && <DropRing radius={BEAKER_R + 0.12} />}
+          </group>
+          {carried !== b.id && (
+            <Html position={[0, BEAKER_H * REST_SCALE + 0.16, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+              <div style={{ whiteSpace: "nowrap", padding: "2px 8px", borderRadius: 9, background: over === b.id ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.85)", border: `1px solid ${over === b.id ? "#ffc23d" : "rgba(140,180,255,.3)"}`, color: over === b.id ? "#ffd98a" : "#dbe7ff", font: "600 12px Inter, system-ui, sans-serif" }}>
+                {over === b.id ? `Pour into ${b.name}` : `${b.name}${b.levelMl > 0.05 ? ` · ${b.levelMl < 10 ? b.levelMl.toFixed(1) : Math.round(b.levelMl)} mL` : b.solid ? " · solid" : " · empty"}`}
+              </div>
+            </Html>
+          )}
         </group>
       ))}
+    </>
+  );
+}
+
+/** A glowing ring on the bench under the beaker a carried one would be poured into. */
+function DropRing({ radius }: { radius: number }) {
+  return (
+    <mesh rotation-x={-Math.PI / 2} position={[0, 0.006, 0]}>
+      <ringGeometry args={[radius, radius + 0.045, 48]} />
+      <meshBasicMaterial color="#ffc23d" transparent opacity={0.9} depthWrite={false} />
+    </mesh>
+  );
+}
+
+/** A beaker that is not being worked on: glass, its liquid at the right level and colour, and any solid at the bottom. */
+function RestingBeaker({ b, capacityMl, glass, glassGeom }: { b: BenchBeaker; capacityMl: number; glass: THREE.Material; glassGeom: THREE.BufferGeometry }) {
+  const h = Math.pow(Math.min(1, Math.max(0, b.levelMl / capacityMl)), 0.62) * (BEAKER_H - 0.06);
+  return (
+    <group>
+      {h > 0.004 && (
+        <>
+          <mesh position={[0, 0.012 + h / 2, 0]} renderOrder={1}>
+            <cylinderGeometry args={[LIQ_R, LIQ_R, h, 32, 1]} />
+            <meshStandardMaterial color={b.colour} emissive={b.colour} emissiveIntensity={0.08 + b.opacity * 0.12} transparent opacity={Math.min(0.96, 0.24 + b.opacity * 0.72)} roughness={0.08} depthWrite={false} />
+          </mesh>
+          <mesh position={[0, 0.012 + h, 0]} rotation-x={-Math.PI / 2} renderOrder={2}>
+            <circleGeometry args={[LIQ_R, 32]} />
+            <meshStandardMaterial color="#ffffff" transparent opacity={0.3} roughness={0} depthWrite={false} />
+          </mesh>
+        </>
+      )}
+      {b.solid && (
+        <mesh position={[0, 0.03, 0]}>
+          <cylinderGeometry args={[LIQ_R * 0.82, LIQ_R * 0.9, 0.035, 24]} />
+          <meshStandardMaterial color={b.solid} roughness={0.9} />
+        </mesh>
+      )}
+      <mesh geometry={glassGeom} material={glass} renderOrder={3} />
+      {/* an easy thing to grab: the glass itself is thin and see-through */}
+      <mesh position={[0, BEAKER_H / 2, 0]} visible={false}>
+        <cylinderGeometry args={[BEAKER_R + 0.04, BEAKER_R + 0.04, BEAKER_H, 12]} />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * A filter funnel in a ring on a retort stand, with a folded filter paper in it. Carry a beaker to it and let
+ * go to filter that beaker: the liquid runs through, the solid stays on the paper.
+ */
+function FilterStand({ over, carrying, onClick }: { over: boolean; carrying: boolean; onClick?: (() => void) | undefined }) {
+  const glass = useGlass("lite");
+  return (
+    <group position={FUNNEL_AT} onClick={(e) => (e.stopPropagation(), onClick?.())}>
+      <mesh position={[-0.06, 0.02, 0]} castShadow>
+        <boxGeometry args={[0.56, 0.04, 0.36]} />
+        <meshStandardMaterial color="#2a3350" roughness={0.5} metalness={0.5} />
+      </mesh>
+      <mesh position={[-0.26, 0.7, 0]}>
+        <cylinderGeometry args={[0.018, 0.018, 1.36, 12]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      {/* boss and arm holding the ring */}
+      <mesh position={[-0.26, FUNNEL_Y, 0]}>
+        <boxGeometry args={[0.06, 0.06, 0.06]} />
+        <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+      </mesh>
+      <mesh position={[-0.19, FUNNEL_Y, 0]} rotation-z={Math.PI / 2}>
+        <cylinderGeometry args={[0.012, 0.012, 0.14, 8]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      <mesh position={[0, FUNNEL_Y, 0]} rotation-x={Math.PI / 2}>
+        <torusGeometry args={[0.125, 0.012, 8, 32]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      {/* the glass funnel: cone and stem */}
+      <mesh position={[0, FUNNEL_Y + 0.06, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[0.21, 0.028, 0.22, 32, 1, true]} />
+      </mesh>
+      <mesh position={[0, FUNNEL_Y - 0.17, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[0.028, 0.02, 0.24, 16, 1, true]} />
+      </mesh>
+      {/* the filter paper sitting in it */}
+      <mesh position={[0, FUNNEL_Y + 0.075, 0]}>
+        <cylinderGeometry args={[0.192, 0.012, 0.19, 32, 1, true]} />
+        <meshStandardMaterial color="#f7f3e6" emissive={over ? "#ffc23d" : "#000000"} emissiveIntensity={over ? 0.5 : 0} roughness={0.95} side={THREE.DoubleSide} />
+      </mesh>
+      {over && <DropRing radius={0.34} />}
+      <Html position={[0, FUNNEL_Y + 0.36, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+        <div style={{ whiteSpace: "nowrap", padding: "2px 8px", borderRadius: 9, background: over ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.85)", border: `1px solid ${over ? "#ffc23d" : carrying ? "rgba(255,194,61,.55)" : "rgba(140,180,255,.3)"}`, color: over ? "#ffd98a" : "#dbe7ff", font: "600 12px Inter, system-ui, sans-serif" }}>
+          {over ? "Filter it here" : "Filter funnel"}
+        </div>
+      </Html>
     </group>
   );
 }

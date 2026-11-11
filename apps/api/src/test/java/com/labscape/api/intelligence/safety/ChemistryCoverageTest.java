@@ -426,6 +426,151 @@ class ChemistryCoverageTest {
         assertThat(text(mix(22, in("naoh", 10), in("benzoic-acid", 1)))).doesNotContain("only some");
     }
 
+    // ------------------------------------------------------------------ vessels: pour, split, filter
+
+    private static List<SimulationRequest.Input> inputs(In... inputs) {
+        List<SimulationRequest.Input> list = new ArrayList<>();
+        for (In i : inputs) {
+            Substance s = CATALOGUE.find(i.ref()).orElseThrow(() -> new AssertionError("not in catalogue: " + i.ref()));
+            list.add(new SimulationRequest.Input(i.ref(), i.amount(), s.limits().unit(), null));
+        }
+        return list;
+    }
+
+    /** An earlier vessel and the part of it that was carried on. */
+    private static SimulationRequest.Base from(String keep, double fraction, List<SimulationRequest.Base> bases, In... inputs) {
+        return new SimulationRequest.Base(inputs(inputs), new SimulationRequest.Conditions(22.0, null, null, false), bases, keep, fraction);
+    }
+
+    private static SimulationRequest chained(List<SimulationRequest.Base> bases, In... inputs) {
+        return new SimulationRequest("ves-" + IDS.incrementAndGet(), "chemistry", "sandbox", "att-cov", null, null, null,
+                inputs(inputs), new SimulationRequest.Conditions(22.0, null, null, false), bases);
+    }
+
+    private SimulationResult into(List<SimulationRequest.Base> bases, In... inputs) {
+        return pipeline.resolve(chained(bases, inputs), "vessels-" + IDS.get());
+    }
+
+    private static double volume(SimulationResult r) {
+        return r(r, "volume");
+    }
+
+    @Test
+    void filteringSplitsAMixtureIntoFiltrateAndResidue() {
+        In[] mix = {in("bacl2", 10), in("na2so4", 10)};
+        assertThat(cues(mix(22, mix), "precipitate")).isNotEmpty();
+
+        SimulationResult filtrate = into(List.of(from("filtrate", 1, null, mix)));
+        assertThat(filtrate.outcome()).isEqualTo(Outcome.NO_REACTION);
+        assertThat(filtrate.presentation().title()).isEqualTo("The filtrate");
+        assertThat(cues(filtrate, "precipitate")).isEmpty();
+        assertThat(volume(filtrate)).isEqualTo(20.0);
+
+        SimulationResult residue = into(List.of(from("residue", 1, null, mix)));
+        assertThat(residue.presentation().title()).isEqualTo("The residue");
+        assertThat(volume(residue)).isEqualTo(0.0);
+        assertThat(cues(residue, "precipitate")).singleElement().satisfies(c -> {
+            assertThat(c.get("id").asText()).isEqualTo("BaSO4");
+            assertThat(c.get("carried").asBoolean()).isTrue();
+        });
+        assertThat(text(residue)).contains("barium sulfate");
+        // an insoluble salt is not touched by acid
+        assertThat(into(List.of(from("residue", 1, null, mix)), in("hcl", 10)).outcome()).isEqualTo(Outcome.NO_REACTION);
+    }
+
+    @Test
+    void filtrateAndResidueEachCarryOnReacting() {
+        // 5 mmol copper sulfate with 5 mmol hydroxide: half the copper comes out as the hydroxide, half stays dissolved
+        In[] mix = {in("cuso4", 10), in("naoh", 5)};
+        SimulationResult moreAlkali = into(List.of(from("filtrate", 1, null, mix)), in("naoh", 10));
+        assertThat(moreAlkali.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(moreAlkali.presentation().discoveryIds()).contains("copper-hydroxide");
+
+        SimulationResult acidOnResidue = into(List.of(from("residue", 1, null, mix)), in("hcl", 10));
+        assertThat(acidOnResidue.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(acidOnResidue.presentation().reactions()).anyMatch(x -> x.id().startsWith("hydroxide-acid-cu"));
+        assertThat(cues(acidOnResidue, "dissolve")).anyMatch(c -> c.get("target").asText().equals("precipitate:Cu(OH)2"));
+        assertThat(text(acidOnResidue)).contains("dissolves away");
+
+        // with no filtering, the same three chemicals in one beaker never make the solid at all: order now matters
+        assertThat(mix(22, in("cuso4", 10), in("naoh", 5), in("hcl", 10)).presentation().discoveryIds())
+                .doesNotContain("copper-hydroxide");
+    }
+
+    @Test
+    void aPrecipitateThatIsOnTheShelfBehavesLikeTheShelfChemical() {
+        In[] chalk = {in("cacl2", 10), in("na2co3", 10)};
+        assertThat(mix(22, chalk).presentation().discoveryIds()).contains("insoluble-carbonate");
+        SimulationResult fizz = into(List.of(from("residue", 1, null, chalk)), in("hcl", 10));
+        assertThat(fizz.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(fizz.presentation().discoveryIds()).contains("acid-carbonate");
+        assertThat(cues(fizz, "gas")).anyMatch(c -> c.get("gas").asText().equals("CO2"));
+
+        // copper pushed out of solution by zinc is real copper: it goes on to push silver out
+        In[] plated = {in("zn-granules", 1), in("cuso4", 10)};
+        SimulationResult silver = into(List.of(from("residue", 1, null, plated)), in("agno3", 10));
+        assertThat(silver.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(silver.presentation().discoveryIds()).contains("displacement-silver");
+    }
+
+    @Test
+    void splittingHalvesAndPouringTogetherReacts() {
+        SimulationResult half = into(List.of(from("all", 0.5, null, in("hcl", 10), in("naoh", 10))));
+        assertThat(volume(half)).isEqualTo(10.0);
+        assertThat(half.presentation().title()).isEqualTo("A share of the mixture");
+
+        SimulationResult together = into(List.of(from("all", 1, null, in("hcl", 10)), from("all", 1, null, in("naoh", 10))));
+        assertThat(together.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(together.presentation().discoveryIds()).contains("neutralisation");
+        assertThat(volume(together)).isEqualTo(20.0);
+
+        // a filtrate can be split and each half tested differently
+        var filtrate = from("filtrate", 1, null, in("bacl2", 20), in("na2so4", 2));
+        SimulationResult test = into(List.of(from("all", 0.5, List.of(filtrate))), in("agno3", 5));
+        assertThat(test.presentation().discoveryIds()).contains("silver-halide");
+        assertThat(volume(test)).isEqualTo(16.0);
+    }
+
+    @Test
+    void nothingToFilterSaysSo() {
+        SimulationResult r = into(List.of(from("residue", 1, null, in("nacl", 10), in("kbr", 10))));
+        assertThat(r.outcome()).isEqualTo(Outcome.NO_REACTION);
+        assertThat(r.presentation().title()).isEqualTo("Nothing on the filter paper");
+        assertThat(r.cues()).isEmpty();
+    }
+
+    @Test
+    void chainedVesselsKeepEverySafetyCheck() {
+        // a blocked pair stays blocked however it is brought together
+        assertThat(into(List.of(from("all", 1, null, in("bleach", 5))), in("hcl", 5)).outcome()).isEqualTo(Outcome.PROHIBITED);
+        assertThat(into(List.of(from("all", 1, null, in("bleach", 5)), from("all", 0.5, null, in("vinegar", 5)))).outcome())
+                .isEqualTo(Outcome.PROHIBITED);
+        // filtering something off does not launder it
+        assertThat(into(List.of(from("filtrate", 1, List.of(from("residue", 1, null, in("bleach", 5), in("sand", 1))))), in("hcl", 5))
+                .outcome()).isEqualTo(Outcome.PROHIBITED);
+
+        // an earlier vessel had to respect the limits too, and the running total still counts
+        assertThat(into(List.of(from("all", 0.1, null, in("hcl", 500)))).reasonCode()).isEqualTo("QTY_ABOVE_LIMIT");
+        assertThat(into(List.of(from("all", 1, null, in("hcl", 50))), in("hcl", 10)).reasonCode()).isEqualTo("QTY_ABOVE_LIMIT");
+        assertThat(into(List.of(from("all", 0.5, null, in("hcl", 50))), in("hcl", 10)).outcome()).isEqualTo(Outcome.NO_REACTION);
+        assertThat(into(List.of(from("all", 1, null, in("water", 100)), from("all", 1, null, in("tap-water", 100)))).reasonCode())
+                .isEqualTo("VESSEL_OVERFLOW");
+
+        // and a chain cannot grow without end
+        SimulationRequest.Base deep = from("all", 1, null, in("water", 10));
+        for (int i = 0; i < 8; i++) deep = from("all", 1, List.of(deep));
+        assertThat(into(List.of(deep)).reasonCode()).isEqualTo("TOO_MANY_STEPS");
+    }
+
+    @Test
+    void hintsWorkOnWhatWasCarriedIn() {
+        var residue = from("residue", 1, null, in("cacl2", 10), in("na2co3", 10));
+        List<SafetyPipeline.TryNext> hints = pipeline.tryNext(chained(List.of(residue)));
+        assertThat(hints).isNotEmpty();
+        assertThat(hints).anyMatch(h -> "add".equals(h.kind()) && "acid-carbonate".equals(h.discoveryId()));
+        assertThat(pipeline.tryNext(chained(List.of(from("all", 1, null, in("bleach", 5)))))).noneMatch(h -> "hcl".equals(h.ref()));
+    }
+
     // ------------------------------------------------------------------ the sweep
 
     @Test
