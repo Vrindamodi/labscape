@@ -161,11 +161,12 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
 
   return (
     <div>
-      <div className="mb-4 text-center">
-        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-cyan">Your first experiment</div>
-        <h1 className="mt-1 font-heading text-3xl font-bold tracking-tight">Welcome to the lab bench</h1>
+      <div className="mb-6 text-center">
+        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted">Your first experiment</div>
+        <h1 className="mt-2 font-heading text-[34px] font-normal leading-tight tracking-[-0.02em] text-ink-strong sm:text-[48px]">Welcome to the lab bench</h1>
       </div>
-      <div ref={stage} className="relative grid gap-4 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,#121a30,#0c1224)] p-4 sm:p-6 lg:grid-cols-[1fr_300px]">
+      {/* The bench is a lab visual drawn for dark: it stays a dark card on the light onboarding page. */}
+      <div ref={stage} data-surface="dark" className="relative grid gap-4 overflow-hidden rounded-panel bg-[linear-gradient(180deg,#121a30,#0c1224)] p-4 text-white sm:p-6 lg:grid-cols-[1fr_300px]">
         {/* bench */}
         <div className="relative h-[380px] overflow-hidden rounded-xl bg-[radial-gradient(500px_260px_at_50%_100%,rgba(47,128,255,.18),transparent),linear-gradient(180deg,#16213d,#0f172e)] sm:h-[420px]">
           <div className="absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,#1d2a4a,#141d36)] shadow-[inset_0_1px_0_rgba(255,255,255,.08)]" />

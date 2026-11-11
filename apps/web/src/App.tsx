@@ -40,17 +40,14 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // Part 4 route, lazy so its assets only load on the playground (performance budget).
 const ChemistryPlaygroundRoute = lazy(() => import("./routes/playground/ChemistryPlaygroundRoute"));
 
-/** Screens outside the shell that still use the original dark styling. */
-const DARK_OUTSIDE_SHELL = ["/welcome", "/onboarding", "/login", "/signup", "/forgot-password", "/reset-password"];
-
 /**
- * The shell is light. Full-screen labs and the screens outside the shell are still dark, so they
- * mark the whole document as a dark surface (body colour, portals and toasts follow).
+ * The app is light, including the welcome, sign-in and onboarding screens. Full-screen labs are
+ * dark, so while one is open the whole document is marked as a dark surface (body colour, portals
+ * and toasts follow).
  */
 function RootSurface() {
   const { fullscreen } = useShell();
-  const { pathname } = useLocation();
-  const dark = fullscreen || DARK_OUTSIDE_SHELL.includes(pathname);
+  const dark = fullscreen;
   useLayoutEffect(() => {
     const root = document.documentElement;
     if (dark) root.dataset.surface = "dark";

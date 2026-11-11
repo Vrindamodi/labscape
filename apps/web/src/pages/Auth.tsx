@@ -1,5 +1,5 @@
 import { sound } from "@labscape/audio";
-import { Button, Callout, cx, Field, inputClass } from "@labscape/ui";
+import { Blob, Button, Callout, cx, Field, inputClass } from "@labscape/ui";
 import { motion } from "framer-motion";
 import { ArrowLeft, LogIn, Mail, UserPlus } from "lucide-react";
 import { useState } from "react";
@@ -62,9 +62,11 @@ export default function Auth({ mode }: { mode: Mode }) {
   }[mode];
 
   return (
-    <div className="relative grid min-h-full place-items-center overflow-hidden bg-[radial-gradient(900px_600px_at_50%_-10%,rgba(47,128,255,.25),transparent_60%),#070b18] px-4 py-10">
-      <div className="opacity-60">
-        <MoleculeField count={60} />
+    <div className="relative grid min-h-full place-items-center overflow-hidden bg-surface px-4 py-10">
+      <Blob shape="cloud" color="#48F08B" size={420} className="absolute -right-40 -top-44 hidden md:block" />
+      <Blob shape="hex" color="#FFBDF9" size={260} rotate={14} className="absolute -bottom-24 -left-20 hidden md:block" />
+      <div className="opacity-35 sm:opacity-70">
+        <MoleculeField count={45} tone="light" />
       </div>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -76,9 +78,9 @@ export default function Auth({ mode }: { mode: Mode }) {
           <LogoMark size={34} />
           <Wordmark size={22} />
         </Link>
-        <div className="rounded-2xl border border-white/10 bg-[#121a2e]/85 p-6 shadow-[0_40px_120px_-40px_rgba(0,0,0,.9)] backdrop-blur-xl sm:p-8">
-          <h1 className="font-heading text-2xl font-bold tracking-tight">{title}</h1>
-          <p className="mt-1 text-sm text-white/55">{sub}</p>
+        <div className="rounded-panel bg-card p-6 shadow-pop sm:p-8">
+          <h1 className="font-heading text-[30px] font-normal leading-tight tracking-[-0.02em] text-ink-strong">{title}</h1>
+          <p className="mt-1 text-sm text-ink-muted">{sub}</p>
           {sent ? (
             <div className="mt-6">
               <Callout tone="success" title="Check your inbox">
@@ -93,7 +95,7 @@ export default function Auth({ mode }: { mode: Mode }) {
                     <input className={inputClass} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} autoComplete="name" required minLength={2} />
                   </Field>
                   <div>
-                    <span className="mb-1.5 block text-sm font-medium text-white/80">Age</span>
+                    <span className="mb-1.5 block text-sm font-medium text-ink">Age</span>
                     <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Age range">
                       {[
                         ["under_13", "Under 13"],
@@ -106,7 +108,7 @@ export default function Auth({ mode }: { mode: Mode }) {
                           role="radio"
                           aria-checked={form.ageBand === v}
                           onClick={() => setForm({ ...form, ageBand: v ?? "" })}
-                          className={cx("h-10 rounded-md text-sm font-semibold transition", form.ageBand === v ? "bg-accent text-white" : "bg-white/[0.05] text-white/70 ring-1 ring-inset ring-white/10")}
+                          className={cx("h-10 rounded-full text-sm font-medium transition", form.ageBand === v ? "bg-ink-strong text-on-ink" : "bg-surface text-ink ring-1 ring-inset ring-line hover:bg-line")}
                         >
                           {l}
                         </button>
@@ -134,13 +136,13 @@ export default function Auth({ mode }: { mode: Mode }) {
                 </Field>
               )}
               {mode === "signup" && minor && (
-                <label className="flex items-start gap-2.5 rounded-md bg-white/[0.04] p-3 text-sm text-white/70">
+                <label className="flex items-start gap-2.5 rounded-[16px] bg-surface p-3 text-sm text-ink">
                   <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#2f80ff]" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })} />
                   A parent or guardian is here and agrees to me creating an account.
                 </label>
               )}
               {error && (
-                <p role="alert" className="rounded-md bg-state-danger/10 px-3 py-2 text-sm text-[#ff9b9b] ring-1 ring-inset ring-state-danger/30">
+                <p role="alert" className="rounded-[14px] bg-[#FDE3E0] px-3 py-2 text-sm text-[#B3261E]">
                   {error}
                 </p>
               )}
@@ -155,18 +157,18 @@ export default function Auth({ mode }: { mode: Mode }) {
                 {{ login: "Sign in", signup: "Create account", forgot: "Send reset link", reset: "Save password" }[mode]}
               </Button>
               {mode === "login" && me?.guest && (
-                <p className="text-center text-xs text-white/45">Your guest progress will be merged into this account.</p>
+                <p className="text-center text-xs text-ink-muted">Your guest progress will be merged into this account.</p>
               )}
             </form>
           )}
           <div className="mt-6 flex items-center justify-between text-sm">
             {mode === "login" ? (
               <>
-                <Link to="/forgot-password" className="text-white/55 hover:text-white">Forgot password?</Link>
-                <Link to="/onboarding" className="font-semibold text-accent-cyan hover:underline">New here? Get started</Link>
+                <Link to="/forgot-password" className="text-ink-muted hover:text-ink-strong">Forgot password?</Link>
+                <Link to="/onboarding" className="font-medium text-link hover:underline">New here? Get started</Link>
               </>
             ) : (
-              <Link to="/login" className="flex items-center gap-1.5 text-white/55 hover:text-white">
+              <Link to="/login" className="flex items-center gap-1.5 text-ink-muted hover:text-ink-strong">
                 <ArrowLeft className="h-4 w-4" /> {mode === "signup" ? "I already have an account" : "Back to sign in"}
               </Link>
             )}

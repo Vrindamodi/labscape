@@ -5,7 +5,7 @@ import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode 
  * Welcome background: molecules, atoms and equation glyphs in 3 depth layers drifting on 12-30 s
  * loops, with pointer parallax up to 12 px per layer, capped at 30 fps. Static under reduced motion.
  */
-export function MoleculeField({ count = 100 }: { count?: number }) {
+export function MoleculeField({ count = 100, tone = "dark" }: { count?: number; tone?: "dark" | "light" }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const { reduced } = useMotion();
 
@@ -26,7 +26,9 @@ export function MoleculeField({ count = 100 }: { count?: number }) {
     window.addEventListener("resize", resize);
 
     const GLYPHS = ["H₂O", "CO₂", "NaCl", "F=ma", "E=mc²", "π", "∫", "pH", "λ", "Δ", "sin θ", "O₂", "CH₄", "∑", "√x"];
-    const COLORS = ["#2F80FF", "#22D3EE", "#8B5CF6", "#2DD4BF", "#FB923C", "#E879F9"];
+    const light = tone === "light";
+    // Light: the flat accent tints (no glow), so the field reads as soft confetti on cream.
+    const COLORS = light ? ["#5E9BFF", "#48F08B", "#FFBDF9", "#FCC934", "#F9B896", "#C9B8FF"] : ["#2F80FF", "#22D3EE", "#8B5CF6", "#2DD4BF", "#FB923C", "#E879F9"];
     type Item = { layer: 0 | 1 | 2; x: number; y: number; r: number; kind: "atom" | "molecule" | "glyph"; text: string; color: string; period: number; phase: number; ax: number; ay: number; rot: number };
     const items: Item[] = Array.from({ length: count }, (_, i) => {
       const layer = (i % 3) as 0 | 1 | 2;
@@ -63,18 +65,25 @@ export function MoleculeField({ count = 100 }: { count?: number }) {
         const par = (it.layer + 1) * 4; // up to 12 px
         const x = it.x * w + Math.sin(k) * it.ax - px * par;
         const y = it.y * h + Math.cos(k * 0.8) * it.ay - py * par;
-        const alpha = [0.18, 0.32, 0.55][it.layer] ?? 0.3;
+        const alpha = (light ? [0.35, 0.55, 0.85] : [0.18, 0.32, 0.55])[it.layer] ?? 0.3;
         ctx.globalAlpha = alpha;
         if (it.kind === "glyph") {
-          ctx.fillStyle = it.color;
+          // On cream the tints are too pale for text, so glyphs are drawn in ink.
+          ctx.fillStyle = light ? "#64615C" : it.color;
           ctx.font = `600 ${10 + it.layer * 5}px "JetBrains Mono", monospace`;
           ctx.fillText(it.text, x, y);
           continue;
         }
-        const glow = ctx.createRadialGradient(x - it.r * 0.3, y - it.r * 0.3, 0, x, y, it.r);
-        glow.addColorStop(0, "#ffffff");
-        glow.addColorStop(0.35, it.color);
-        glow.addColorStop(1, `${it.color}00`);
+        let glow: CanvasGradient | string;
+        if (light) {
+          glow = it.color;
+        } else {
+          const g = ctx.createRadialGradient(x - it.r * 0.3, y - it.r * 0.3, 0, x, y, it.r);
+          g.addColorStop(0, "#ffffff");
+          g.addColorStop(0.35, it.color);
+          g.addColorStop(1, `${it.color}00`);
+          glow = g;
+        }
         if (it.kind === "molecule") {
           const ang = it.rot + k * 0.2;
           const d = it.r * 1.9;
@@ -87,7 +96,7 @@ export function MoleculeField({ count = 100 }: { count?: number }) {
             ctx.moveTo(x, y);
             ctx.lineTo(bx, by);
             ctx.stroke();
-            ctx.fillStyle = "#e6f0ff";
+            ctx.fillStyle = light ? it.color : "#e6f0ff";
             ctx.beginPath();
             ctx.arc(bx, by, it.r * 0.55, 0, Math.PI * 2);
             ctx.fill();
@@ -116,7 +125,7 @@ export function MoleculeField({ count = 100 }: { count?: number }) {
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
     };
-  }, [count, reduced]);
+  }, [count, reduced, tone]);
 
   return <canvas ref={ref} aria-hidden className="pointer-events-none absolute inset-0 h-full w-full" />;
 }

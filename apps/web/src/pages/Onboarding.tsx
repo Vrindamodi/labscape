@@ -1,6 +1,6 @@
 import { sound } from "@labscape/audio";
 import { useMotion } from "@labscape/motion";
-import { Button, Callout, cx, Field, inputClass } from "@labscape/ui";
+import { Blob, Button, Callout, cx, Field, inputClass } from "@labscape/ui";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -107,9 +107,11 @@ export default function Onboarding() {
     (step === "preference" && !!answers.preference);
 
   return (
-    <div className="relative flex min-h-full flex-col overflow-hidden bg-[radial-gradient(900px_600px_at_50%_-10%,rgba(47,128,255,.22),transparent_60%),#070b18]">
-      <div className="opacity-50">
-        <MoleculeField count={50} />
+    <div className="relative flex min-h-full flex-col overflow-hidden bg-surface">
+      <Blob shape="cloud" color="#48F08B" size={420} className="absolute -right-44 -top-52 hidden md:block" />
+      <Blob shape="pebble" color="#FCC934" size={240} className="absolute -bottom-24 -left-16 hidden md:block" />
+      <div className="opacity-30 sm:opacity-60">
+        <MoleculeField count={40} tone="light" />
       </div>
       <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
         <LogoMark size={30} />
@@ -119,10 +121,9 @@ export default function Onboarding() {
             <motion.span
               key={s}
               layout
-              className={cx("h-2 rounded-full", i <= index ? "bg-accent" : "bg-white/15")}
+              className={cx("h-2 rounded-full", i <= index ? "bg-ink-strong" : "bg-ink/15")}
               animate={{ width: i === index ? 28 : 8 }}
               transition={{ type: "spring", stiffness: 500, damping: 32 }}
-              style={{ boxShadow: i === index ? "0 0 12px #2f80ff" : undefined }}
             />
           ))}
         </div>
@@ -156,7 +157,7 @@ export default function Onboarding() {
                   }
                 />
                 <button
-                  className="mx-auto mt-4 block text-sm font-semibold text-accent-cyan hover:underline"
+                  className="mx-auto mt-5 block rounded-full bg-line px-4 py-2 text-sm font-medium text-ink transition hover:bg-ink-strong hover:text-on-ink"
                   onClick={() => setAnswers((a) => ({ ...a, interests: ["chemistry", "physics", "maths"] }))}
                 >
                   All three, please
@@ -212,8 +213,8 @@ export default function Onboarding() {
 function Question({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
   return (
     <div>
-      <h1 className="text-center font-heading text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
-      <p className="mt-2 text-center text-white/55">{sub}</p>
+      <h1 className="text-center font-heading text-[34px] font-normal leading-tight tracking-[-0.02em] text-ink-strong sm:text-[48px]">{title}</h1>
+      <p className="mt-3 text-center text-ink-muted">{sub}</p>
       <div className="mt-8">{children}</div>
     </div>
   );
@@ -232,12 +233,12 @@ function ChoiceGrid({
   cols: 2 | 3;
   multi?: boolean;
 }) {
-  const colors: Record<string, string> = { chemistry: "#2DD4BF", physics: "#38BDF8", maths: "#FB923C" };
+  const colors: Record<string, string> = { chemistry: "#48F08B", physics: "#5E9BFF", maths: "#FCC934" };
   return (
     <div role={multi ? "group" : "radiogroup"} className={cx("grid gap-3", cols === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
       {items.map(([v, label, sub, Icon]) => {
         const on = selected.includes(v);
-        const c = colors[v] ?? "#2F80FF";
+        const c = colors[v] ?? "#C9D7F2";
         return (
           <motion.button
             key={v}
@@ -249,17 +250,16 @@ function ChoiceGrid({
               onPick(v);
             }}
             className={cx(
-              "relative flex items-center gap-4 rounded-xl border p-4 text-left transition-colors duration-fast sm:flex-col sm:items-start",
-              on ? "bg-white/[0.07]" : "border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.05]",
+              "relative flex items-center gap-4 rounded-card bg-card p-5 text-left transition duration-fast sm:flex-col sm:items-start",
+              on ? "ring-2 ring-inset ring-ink-strong" : "hover:shadow-lift",
             )}
-            style={on ? { borderColor: `${c}`, boxShadow: `0 0 0 1px ${c}, 0 0 32px -8px ${c}` } : {}}
           >
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg" style={{ background: `${c}22`, color: c }}>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-[#1a1a1a]" style={{ background: c }}>
               <Icon className="h-5 w-5" />
             </span>
             <span>
-              <span className="block font-heading font-semibold">{label}</span>
-              <span className="block text-sm text-white/55">{sub}</span>
+              <span className="block font-heading text-[17px] font-medium text-ink-strong">{label}</span>
+              <span className="block text-sm text-ink-muted">{sub}</span>
             </span>
             <AnimatePresence>
               {on && (
@@ -267,11 +267,10 @@ function ChoiceGrid({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  className="absolute right-3 top-3 grid h-6 w-6 place-items-center rounded-full"
-                  style={{ background: c }}
+                  className="absolute right-3 top-3 grid h-6 w-6 place-items-center rounded-full bg-ink-strong"
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                    <motion.path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#06101f" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.25 }} />
+                    <motion.path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.25 }} />
                   </svg>
                 </motion.span>
               )}
@@ -313,11 +312,11 @@ function AccountStep({
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="text-center font-heading text-3xl font-bold tracking-tight sm:text-4xl">Save your lab spot</h1>
-      <p className="mt-2 text-center text-white/55">Create an account to keep your XP everywhere, or jump in as a guest.</p>
+      <h1 className="text-center font-heading text-[34px] font-normal leading-tight tracking-[-0.02em] text-ink-strong sm:text-[48px]">Save your lab spot</h1>
+      <p className="mt-3 text-center text-ink-muted">Create an account to keep your XP everywhere, or jump in as a guest.</p>
 
-      <div className="mt-8 rounded-xl border border-white/10 bg-[#121a2e]/80 p-5 backdrop-blur-xl">
-        <div className="text-sm font-medium text-white/80">How old are you?</div>
+      <div className="mt-8 rounded-panel bg-card p-6 shadow-pop">
+        <div className="text-sm font-medium text-ink">How old are you?</div>
         <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Age range">
           {[
             ["under_13", "Under 13"],
@@ -329,7 +328,7 @@ function AccountStep({
               role="radio"
               aria-checked={age === v}
               onClick={() => setAge(v ?? null)}
-              className={cx("h-11 rounded-md text-sm font-semibold transition", age === v ? "bg-accent text-white shadow-[0_0_20px_-4px_#2f80ff]" : "bg-white/[0.05] text-white/70 ring-1 ring-inset ring-white/10 hover:bg-white/[0.08]")}
+              className={cx("h-11 rounded-full text-sm font-medium transition", age === v ? "bg-ink-strong text-on-ink" : "bg-surface text-ink ring-1 ring-inset ring-line hover:bg-line")}
             >
               {l}
             </button>
@@ -357,7 +356,7 @@ function AccountStep({
               <Button block size="lg" variant="ghost" loading={busy === "guest"} icon={<UserRound className="h-5 w-5" />} onClick={() => run("guest", onGuest)}>
                 Continue as guest
               </Button>
-              <p className="text-center text-xs text-white/40">Guest progress is kept and merges into an account later.</p>
+              <p className="text-center text-xs text-ink-muted">Guest progress is kept and merges into an account later.</p>
             </motion.div>
           )}
           {age && mode === "email" && (
@@ -382,22 +381,22 @@ function AccountStep({
                 <input className={inputClass} type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" required minLength={8} />
               </Field>
               {minor && (
-                <label className="flex items-start gap-2.5 rounded-md bg-white/[0.04] p-3 text-sm text-white/70">
+                <label className="flex items-start gap-2.5 rounded-[16px] bg-surface p-3 text-sm text-ink">
                   <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#2f80ff]" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })} />
                   A parent or guardian is here and agrees to me creating a LABscape account.
                 </label>
               )}
-              {error && <p role="alert" className="text-sm text-[#ff9b9b]">{error}</p>}
+              {error && <p role="alert" className="text-sm text-[#B3261E]">{error}</p>}
               <Button block size="lg" type="submit" loading={busy === "email"} icon={<Check className="h-5 w-5" />}>
                 Create account
               </Button>
-              <button type="button" onClick={() => setMode("choose")} className="block w-full text-center text-sm text-white/50 hover:text-white">
+              <button type="button" onClick={() => setMode("choose")} className="block w-full text-center text-sm text-ink-muted hover:text-ink-strong">
                 Other options
               </button>
             </motion.form>
           )}
         </AnimatePresence>
-        {error && mode === "choose" && <p role="alert" className="mt-3 text-sm text-[#ff9b9b]">{error}</p>}
+        {error && mode === "choose" && <p role="alert" className="mt-3 text-sm text-[#B3261E]">{error}</p>}
       </div>
     </div>
   );
