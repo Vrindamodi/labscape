@@ -10,7 +10,7 @@ export default function Assistant() {
           <Sparkles className="h-4 w-4" /> Labs
         </p>
         <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white">Science assistant</h1>
-        <p className="mt-1 text-sm text-white/60">Answers come from LABscape's reviewed lessons and its chemistry engine. It never guesses what a mixture makes, and it won't help with anything harmful.</p>
+        <p className="mt-1 text-sm text-white/60">Ask about an idea in chemistry, physics or maths, or about the experiment on your bench. What a mixture makes always comes from LABscape's chemistry engine, never a guess, and it won't help with anything harmful.</p>
       </header>
       <div className="min-h-0 flex-1 rounded-2xl bg-white/[0.03] p-4 ring-1 ring-inset ring-white/[0.08]">
         <AssistantDock />

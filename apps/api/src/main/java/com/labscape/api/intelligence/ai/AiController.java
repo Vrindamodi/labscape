@@ -49,14 +49,15 @@ public class AiController {
     private final ObjectMapper mapper;
 
     public AiController(AiGuard guard, AiTutor tutor, Entitlements entitlements, JdbcClient db, ObjectMapper mapper,
-            @Value("${labscape.ai.anthropic-api-key:}") String apiKey, @Value("${labscape.ai.model:claude-opus-5-5}") String modelName) {
+            @Value("${labscape.ai.gemini-api-key:}") String apiKey, @Value("${labscape.ai.model:gemini-3.8-flash}") String modelName,
+            @Value("${labscape.ai.thinking:low}") String thinking, @Value("${labscape.ai.base-url:}") String baseUrl) {
         this.guard = guard;
         this.tutor = tutor;
         this.entitlements = entitlements;
         this.db = db;
         this.mapper = mapper;
         ChatModel grounded = new GroundedTutorModel(tutor);
-        this.model = apiKey == null || apiKey.isBlank() ? grounded : new AnthropicChatModel(mapper, apiKey, modelName, grounded);
+        this.model = apiKey == null || apiKey.isBlank() ? grounded : new GeminiChatModel(mapper, apiKey, modelName, thinking, baseUrl, grounded);
     }
 
     /** Everything both variants share: limits, logging, the guard and the facts. */

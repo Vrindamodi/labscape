@@ -7,7 +7,7 @@ Already built (Day 1, see `part-4-3-day-plan.md`): the safety engine (`/v1/safet
 ## Decisions
 
 1. **AI provider stays swappable.** `/v1/ai/chat` streams over SSE from a `ChatModel` interface:
-   - **Anthropic adapter**: used when `ANTHROPIC_API_KEY` is set. The model is configurable; the default is the current Claude model.
+   - **Gemini adapter**: used when `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) is set. The model is configurable with `AI_MODEL`; the default is `gemini-3.8-flash`.
    - **Built-in grounded tutor**: a deterministic offline answerer for when no key is set, and for tests. It composes answers only from retrieval over reviewed content and the `LabContext`.
 
    Both sit behind the same guard, grounding rule, tools and limits, so safety does not depend on which model is used. (The plan lists the provider as an open decision; this keeps it open.)

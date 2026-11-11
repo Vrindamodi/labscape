@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AiTutor {
 
-    public enum Intent { NEXT_STEP, WHY, MIX, SIMPLER, FORMULA, RECOMMEND, MISTAKE, CONCEPT }
+    public enum Intent { NEXT_STEP, WHY, MIX, SIMPLER, FORMULA, RECOMMEND, MISTAKE, CONCEPT, SMALLTALK }
 
     public record Source(String title, String url, String type) {}
 
@@ -53,6 +53,26 @@ public class AiTutor {
     private static final Pattern FORMULA = Pattern.compile("\\bformula\\b|equation for|how (do i|to) calculate|work out the");
     private static final Pattern RECOMMEND = Pattern.compile("what (should|can) i try|recommend|suggest (an|another|a)|another experiment|what else");
     private static final Pattern MISTAKE = Pattern.compile("what did i do wrong|my mistake|why (did|was) i (lose|marked|penali)|deviation|why did i lose");
+    private static final Pattern GREETING = Pattern.compile("^(hi+|hello+|hey+|hiya|yo|namaste|hola|good (morning|afternoon|evening))( there| labscape| assistant)?[!.\\s]*$");
+    private static final Pattern THANKS = Pattern.compile("^(thanks|thank you|thankyou|thx|ty|cheers|great|cool|nice|ok|okay|got it)( a lot| so much| very much)?[!.\\s]*$");
+    private static final Pattern ABOUT = Pattern.compile("^((who|what) are you|what can you (do|help( me)?( with)?)|what do you (do|know)|how (do|can) you (work|help)( me)?|help|are you (an? )?(ai|robot|bot|human|real|person))[!?.\\s]*$");
+    /** Asking outright what substances make together: an answer may only come from the engine or a general lesson. */
+    private static final Pattern MIXING = Pattern.compile("\\b(mix|mixes|mixing|mixed|react|reacts|reacting|reacted|combine|combines|combining|combined)\\b");
+
+    /** What a question about an idea may be answered from: never a protocol step, which only makes sense on the bench. */
+    private static final Set<String> CONCEPT_SOURCES = Set.of("glossary", "formula", "element", "equipment", "experiment", "explanation");
+
+    public static final String NOT_COVERED = "I don't have a LABscape lesson that answers that, so I won't guess.";
+
+    /** Everyday names for things in the chemistry catalogue. */
+    private static final Map<String, String> COMMON_NAMES = Map.ofEntries(Map.entry("acetic acid", "ethanoic-acid"), Map.entry("bicarbonate of soda", "baking-soda"),
+            Map.entry("bicarb", "baking-soda"), Map.entry("sodium bicarbonate", "nahco3"), Map.entry("caustic soda", "naoh"), Map.entry("lye", "naoh"),
+            Map.entry("bleach", "bleach"), Map.entry("salt water", "nacl"), Map.entry("muriatic acid", "hcl"), Map.entry("water", "water"));
+
+    /** Bracketed parts of a catalogue name that describe it rather than name it. */
+    private static final Set<String> NOT_A_NAME = Set.of("dilute", "concentrated", "white", "blackboard", "freshly made", "ammonia", "saturated fat");
+
+    private record Named(String phrase, Substance substance) {}
 
     private final Retrieval retrieval;
     private final LibraryCatalogue catalogue;
@@ -60,6 +80,7 @@ public class AiTutor {
     private final SafetyPipeline safety;
     private final EmergencyCoach coach;
     private final Catalogue substances = Catalogue.load();
+    private final List<Named> named = names(substances);
 
     public AiTutor(Retrieval retrieval, LibraryCatalogue catalogue, LabEngineRuntime engine, SafetyPipeline safety, EmergencyCoach coach) {
         this.coach = coach;
@@ -80,7 +101,8 @@ public class AiTutor {
     }
 
     public static Intent intent(String message) {
-        String m = message.toLowerCase(Locale.ROOT);
+        String m = message.toLowerCase(Locale.ROOT).trim();
+        if (GREETING.matcher(m).find() || THANKS.matcher(m).find() || ABOUT.matcher(m).find()) return Intent.SMALLTALK;
         if (SIMPLER.matcher(m).find()) return Intent.SIMPLER;
         if (MISTAKE.matcher(m).find()) return Intent.MISTAKE;
         if (NEXT.matcher(m).find()) return Intent.NEXT_STEP;
@@ -91,20 +113,50 @@ public class AiTutor {
         return Intent.CONCEPT;
     }
 
-    /** Allowlisted substances named in the question, by name or formula (longest names first). */
-    List<Substance> substancesIn(String message) {
-        String lower = " " + message.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9() ]", " ") + " ";
-        List<Substance> found = new ArrayList<>();
-        List<Substance> all = new ArrayList<>(substances.all());
-        all.sort(Comparator.comparingInt((Substance s) -> -s.name().length()));
-        for (Substance s : all) {
-            String name = s.name().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9() ]", " ").trim();
-            boolean byName = name.length() > 2 && lower.contains(" " + name + " ");
-            boolean byFormula = s.formula() != null && s.formula().length() > 1 && Pattern.compile("(?<![A-Za-z])" + Pattern.quote(s.formula()) + "(?![a-z])").matcher(message).find();
-            if ((byName || byFormula) && found.stream().noneMatch(f -> f.id().equals(s.id()) || f.formula() != null && f.formula().equals(s.formula()))) {
-                found.add(s);
-                lower = lower.replace(" " + name + " ", " ");
+    private static String plain(String s) {
+        return s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9() ]", " ").replaceAll("\\s+", " ").trim();
+    }
+
+    /**
+     * Every phrase a learner might use for a catalogue substance: its full name, the name without its
+     * brackets ("Vinegar (white)" is vinegar, "Copper(II) sulfate" is copper sulfate), a bracketed
+     * second name ("Propanone (acetone)") and a few everyday names. Longest first.
+     */
+    private static List<Named> names(Catalogue catalogue) {
+        List<Named> out = new ArrayList<>();
+        Map<String, Substance> byId = new LinkedHashMap<>();
+        for (Substance s : catalogue.all()) {
+            byId.putIfAbsent(s.id(), s);
+            Set<String> phrases = new java.util.LinkedHashSet<>();
+            phrases.add(plain(s.name()));
+            phrases.add(plain(s.name().replaceAll("\\s*\\([^)]*\\)", " ")));
+            Matcher m = Pattern.compile("\\(([^)]*)\\)").matcher(s.name());
+            while (m.find()) {
+                String inner = plain(m.group(1));
+                if (inner.matches("[a-z][a-z -]{4,}") && !NOT_A_NAME.contains(inner)) phrases.add(inner);
             }
+            for (String phrase : phrases) if (phrase.length() > 2) out.add(new Named(phrase, s));
+        }
+        COMMON_NAMES.forEach((phrase, id) -> {
+            if (byId.containsKey(id)) out.add(new Named(phrase, byId.get(id)));
+        });
+        out.sort(Comparator.comparingInt((Named n) -> -n.phrase().length()));
+        return out;
+    }
+
+    /** Allowlisted substances named in the question, by any of their names or by formula (longest names first). */
+    List<Substance> substancesIn(String message) {
+        String lower = " " + plain(message) + " ";
+        List<Substance> found = new ArrayList<>();
+        for (Named n : named) {
+            Substance s = n.substance();
+            if (!lower.contains(" " + n.phrase() + " ")) continue;
+            lower = lower.replace(" " + n.phrase() + " ", "  ");
+            if (found.stream().noneMatch(f -> f.id().equals(s.id()) || f.formula() != null && f.formula().equals(s.formula()))) found.add(s);
+        }
+        for (Substance s : substances.all()) {
+            boolean byFormula = s.formula() != null && s.formula().length() > 1 && Pattern.compile("(?<![A-Za-z])" + Pattern.quote(s.formula()) + "(?![a-z])").matcher(message).find();
+            if (byFormula && found.stream().noneMatch(f -> f.id().equals(s.id()) || f.formula() != null && f.formula().equals(s.formula()))) found.add(s);
         }
         return found;
     }
@@ -117,6 +169,7 @@ public class AiTutor {
         // inside the emergency simulator the assistant is a safety coach, grounded in the scenario
         if (coach.handles(context)) return coach.facts(message, context, level);
         Intent intent = intent(message);
+        if (intent == Intent.SMALLTALK) return smallTalk(message, level);
         if (intent == Intent.SIMPLER && previousUserMessage != null && !previousUserMessage.isBlank()) {
             Facts f = analyse(previousUserMessage, context, "beginner", null, user);
             List<String> shorter = f.points().stream().map(AiTutor::firstSentence).limit(2).toList();
@@ -183,16 +236,26 @@ public class AiTutor {
                 }
             }
             case MIX -> {
-                return mix(message, level, title, user);
+                // "add", "pour" and "what happens" also turn up in questions about ideas; only a named
+                // substance or an explicit "mix X with Y" is a question for the chemistry engine
+                String asked = message.toLowerCase(Locale.ROOT);
+                if (!substancesIn(message).isEmpty() || THINGS.matcher(asked).find()) return mix(message, level, title, user);
+                if (MIXING.matcher(asked).find()) {
+                    // substances the catalogue does not hold ("chlorine reacts with ammonia"): unless the glossary
+                    // has the general idea ("acids react with metals"), this is an unmodelled mixture, said as such
+                    var general = retrieval.search(message, null, 1, Set.of("glossary"));
+                    // every word of the question has to be in that entry: a near miss names things it does not cover
+                    if (general.isEmpty() || !answers(general.get(0)) || general.get(0).coverage() < 0.85) return mix(message, level, title, user);
+                }
             }
             case FORMULA -> {
-                var hits = retrieval.search(message + (title == null ? "" : " " + title), 1, Set.of("formula"));
-                if (!hits.isEmpty()) {
+                var hits = retrieval.search(message, title, 1, Set.of("formula"));
+                if (!hits.isEmpty() && hits.get(0).coverage() >= 0.5) {
                     var d = hits.get(0).doc();
                     points.add("**" + d.title() + "**: " + d.text());
                     sources.add(new Source(d.title(), d.url(), d.type()));
                     actions.add(new Action("openFormula", d.id().substring("formula:".length()), "Open " + d.title()));
-                    return facts(intent, level, title, points, null, sources, actions, new Grounding("content", null, true), null);
+                    return facts(intent, level, title, points, level.equals("beginner") ? null : retrieval.latex(d.id()), sources, actions, new Grounding("content", null, true), null);
                 }
             }
             case RECOMMEND -> {
@@ -223,22 +286,71 @@ public class AiTutor {
             }
             default -> { }
         }
-        // concepts: the best reviewed passages
-        var hits = retrieval.search(message + (title == null ? "" : " " + title), 3, null);
-        if (hits.isEmpty() || hits.get(0).score() < 1.5) {
-            points.add("I'm not sure about that one. I answer only from LABscape's reviewed lessons, so I'd rather not guess. Try asking about an experiment, an element, a formula or a piece of equipment.");
+        // ideas: the entry that is actually about the question, or an honest "not covered"
+        List<Retrieval.Hit> hits = retrieval.search(message, title, 4, CONCEPT_SOURCES);
+        if (hits.isEmpty() || !answers(hits.get(0))) {
+            points.add(NOT_COVERED);
+            points.add("I can explain core ideas in chemistry, physics and maths, walk you through an experiment, find a formula, element or piece of equipment, "
+                    + "or tell you what the chemistry engine predicts for a mixture. Try rephrasing, or ask about one of those.");
+            actions.add(new Action("open", "/library", "Open the Library"));
             return facts(intent, level, title, points, null, sources, actions, new Grounding("none", null, true), null);
         }
-        int depth = level.equals("beginner") ? 1 : level.equals("school") ? 2 : 3;
-        for (int i = 0; i < Math.min(depth == 1 ? 1 : 2, hits.size()); i++) {
-            var d = hits.get(i).doc();
-            String text = depth == 1 ? firstSentence(d.text()) + " " + secondSentence(d.text()) : d.text();
-            points.add("**" + d.title() + "**: " + text.trim());
-            sources.add(new Source(d.title(), d.url(), d.type()));
-            if (d.type().equals("formula")) actions.add(new Action("openFormula", d.id().substring("formula:".length()), "Open " + d.title()));
-            else actions.add(new Action("open", d.url(), "Open " + d.title()));
+        boolean beginner = level.equals("beginner");
+        Retrieval.Hit top = hits.get(0);
+        equation = cite(top.doc(), beginner, points, sources, actions);
+        if (!beginner) for (Retrieval.Hit h : hits.subList(1, hits.size())) {
+            // a second entry only when it is nearly as good a match and about something else
+            if (!answers(h) || h.score() < 0.75 * top.score() || sameThing(h.doc(), top.doc())) continue;
+            cite(h.doc(), false, points, sources, actions);
+            break;
         }
-        return facts(intent, level, title, points, null, sources, actions, new Grounding("content", null, true), null);
+        return facts(intent, level, title, points, equation, sources, actions, new Grounding("content", null, true), null);
+    }
+
+    /** A hit answers the question when it matches well and holds most of what was asked, not one stray word. */
+    private static boolean answers(Retrieval.Hit h) {
+        return h.score() >= 1.5 && h.coverage() >= 0.6;
+    }
+
+    private static boolean sameThing(Retrieval.Doc a, Retrieval.Doc b) {
+        return a.title().equalsIgnoreCase(b.title()) || a.url() != null && a.url().equals(b.url());
+    }
+
+    /** Adds one entry as a point with its source and "open" action; returns the display LaTeX that goes with it. */
+    private String cite(Retrieval.Doc d, boolean beginner, List<String> points, List<Source> sources, List<Action> actions) {
+        String easy = retrieval.simple(d.id());
+        String text = !beginner ? d.text() : easy != null ? easy : firstSentence(d.text()) + " " + secondSentence(d.text());
+        points.add("**" + d.title() + "**: " + text.trim());
+        if (d.url() != null) {
+            sources.add(new Source(d.title(), d.url(), d.type()));
+            if (d.url().startsWith("/formulas?f=")) actions.add(new Action("openFormula", d.url().substring("/formulas?f=".length()), d.type().equals("formula") ? "Open " + d.title() : "Open the formula"));
+            else actions.add(new Action("open", d.url(), d.type().equals("glossary") ? openLabel(d.url()) : "Open " + d.title()));
+        }
+        return beginner ? null : retrieval.latex(d.id());
+    }
+
+    private static String openLabel(String url) {
+        if (url.startsWith("/playground")) return "Try it in the Playground";
+        if (url.startsWith("/periodic-table")) return "Open the periodic table";
+        if (url.startsWith("/equipment")) return "Open the equipment guide";
+        if (url.startsWith("/library/") || url.startsWith("/lab/")) return "Open the experiment";
+        return "Open";
+    }
+
+    /** Greetings, thanks and "what can you do": say what the assistant is for, with questions to try. */
+    private Facts smallTalk(String message, String level) {
+        String m = message.toLowerCase(Locale.ROOT).trim();
+        List<String> points = new ArrayList<>();
+        List<Action> actions = new ArrayList<>();
+        if (THANKS.matcher(m).find()) points.add("You're welcome! Ask me anything else about your experiment, or about an idea in chemistry, physics or maths.");
+        else {
+            points.add(GREETING.matcher(m).find() ? "Hello! I'm LABscape's science assistant." : "I'm LABscape's science assistant.");
+            points.add("I can explain core ideas in chemistry, physics and maths, walk you through the experiment on your bench, tell you what LABscape's chemistry engine "
+                    + "predicts for a mixture, and find a formula, element or piece of equipment.");
+            points.add("Try: \"What is a mole?\", \"Explain Ohm's law\", \"What happens if I mix vinegar and baking soda?\" or \"Recommend an experiment\".");
+            actions.add(new Action("open", "/library", "Open the Library"));
+        }
+        return facts(Intent.SMALLTALK, level, null, points, null, List.of(), actions, new Grounding("none", null, true), null);
     }
 
     private static Facts facts(Intent intent, String level, String title, List<String> points, String eq, List<Source> sources, List<Action> actions, Grounding g, String fixed) {

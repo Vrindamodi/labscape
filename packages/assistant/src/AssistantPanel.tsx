@@ -130,6 +130,7 @@ export function AssistantPanel({
         },
         abort.current.signal,
       );
+      patch((m) => (m.streaming ? (m.text ? { ...m, streaming: false } : { ...m, text: "No answer came back. Try again.", streaming: false, error: true }) : m));
       if (speak && ttsAvailable && full) {
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(speakable(full)));
@@ -357,7 +358,7 @@ function tex(src: string, display: boolean) {
 
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /(\$[^$\n]+\$|\*\*[^*]+\*\*)/g;
+  const re = /(\$[^$\n]+\$|\*\*[^*]+\*\*|`[^`\n]+`)/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let k = 0;
@@ -365,6 +366,7 @@ function inline(text: string): ReactNode[] {
     if (m.index > last) out.push(text.slice(last, m.index));
     const tok = m[0];
     if (tok.startsWith("$")) out.push(<span key={k++} dangerouslySetInnerHTML={{ __html: tex(tok.slice(1, -1), false) }} />);
+    else if (tok.startsWith("`")) out.push(<code key={k++} className="rounded bg-white/10 px-1 font-mono text-[0.9em]">{tok.slice(1, -1)}</code>);
     else out.push(<strong key={k++} className="font-semibold text-white">{tok.slice(2, -2)}</strong>);
     last = m.index + tok.length;
   }
@@ -372,28 +374,68 @@ function inline(text: string): ReactNode[] {
   return out;
 }
 
-/** Paragraphs, "- " lists, **bold**, $inline$ and $$display$$ maths (display maths shows once complete). */
+const BULLET = /^\s*[-*•]\s+/;
+const NUMBERED = /^\s*\d+[.)]\s+/;
+
+/**
+ * Paragraphs, "- " and "1." lists (also straight after a line of text), "# " headings shown as bold
+ * lines, **bold**, `code`, $inline$ and $$display$$ maths (display maths shows once complete).
+ */
 export function Rich({ text, streaming }: { text: string; streaming?: boolean }) {
   const blocks = text.split(/\n\n+/);
-  return (
-    <div className="space-y-2 leading-relaxed">
-      {blocks.map((b, i) => {
-        const display = /^\$\$([\s\S]*)\$\$$/.exec(b.trim());
-        if (display) return <div key={i} className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: tex(display[1]!, true) }} />;
-        if (b.trim().startsWith("$$") && streaming) return <div key={i} className="text-white/40">…</div>;
-        if (b.trim().startsWith("- "))
-          return (
-            <ul key={i} className="list-disc space-y-1 pl-4">
-              {b
-                .split(/\n/)
-                .filter((l) => l.trim())
-                .map((l, j) => (
-                  <li key={j}>{inline(l.replace(/^- /, ""))}</li>
-                ))}
-            </ul>
+  const out: ReactNode[] = [];
+  blocks.forEach((b, i) => {
+    const display = /^\$\$([\s\S]*)\$\$$/.exec(b.trim());
+    if (display) {
+      out.push(<div key={i} className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: tex(display[1]!, true) }} />);
+      return;
+    }
+    if (b.trim().startsWith("$$") && streaming) {
+      out.push(<div key={i} className="text-white/40">…</div>);
+      return;
+    }
+    // runs of list lines become lists; everything between them stays a paragraph
+    let para: string[] = [];
+    let items: string[] = [];
+    let ordered = false;
+    let n = 0;
+    const flush = () => {
+      if (para.length) out.push(<p key={`${i}p${n++}`}>{inline(para.join(" "))}</p>);
+      if (items.length) {
+        const List = ordered ? "ol" : "ul";
+        out.push(
+          <List key={`${i}l${n++}`} className={`${ordered ? "list-decimal" : "list-disc"} space-y-1 pl-5`}>
+            {items.map((l, j) => (
+              <li key={j}>{inline(l)}</li>
+            ))}
+          </List>,
+        );
+      }
+      para = [];
+      items = [];
+    };
+    for (const line of b.split(/\n/)) {
+      if (!line.trim()) continue;
+      const bullet = BULLET.test(line);
+      const numbered = !bullet && NUMBERED.test(line);
+      if (bullet || numbered) {
+        if (para.length || (items.length && ordered !== numbered)) flush();
+        ordered = numbered;
+        items.push(line.replace(bullet ? BULLET : NUMBERED, ""));
+      } else {
+        if (items.length) flush();
+        const heading = /^#{1,6}\s+(.*)$/.exec(line.trim());
+        if (heading) {
+          flush();
+          out.push(
+            <p key={`${i}h${n++}`} className="font-semibold text-white">
+              {inline(heading[1]!.replace(/\*\*/g, ""))}
+            </p>,
           );
-        return <p key={i}>{inline(b)}</p>;
-      })}
-    </div>
-  );
+        } else para.push(line.trim());
+      }
+    }
+    flush();
+  });
+  return <div className="space-y-2 leading-relaxed">{out}</div>;
 }
