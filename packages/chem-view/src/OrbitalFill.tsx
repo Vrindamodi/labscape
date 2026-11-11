@@ -77,36 +77,36 @@ export function OrbitalFill({ z, reducedMotion = false }: { z: number; reducedMo
           const hot = settled && movedNames.has(name);
           return (
             <div key={name} className="flex items-center gap-2">
-              <span className={`w-7 text-right font-mono text-[11px] font-bold ${hot ? "text-amber-300" : "text-white/55"}`}>{name}</span>
+              <span className={`w-7 text-right font-mono text-[11px] font-bold ${hot ? "text-[#B45309] dark:text-amber-300" : "text-ink-muted dark:text-white/55"}`}>{name}</span>
               <div className="flex gap-[3px]">
                 {boxes.map((b, i) => (
                   <span
                     key={i}
-                    className={`grid h-6 w-6 place-items-center rounded-[5px] text-[13px] leading-none ring-1 ring-inset transition-colors duration-300 ${hot ? "bg-amber-400/15 ring-amber-300/70" : b ? "bg-accent/15 ring-accent/45" : "ring-white/10"}`}
+                    className={`grid h-6 w-6 place-items-center rounded-[5px] text-[13px] leading-none ring-1 ring-inset transition-colors duration-300 ${hot ? "bg-amber-400/20 ring-amber-500/60 dark:bg-amber-400/15 dark:ring-amber-300/70" : b ? "bg-accent/15 ring-accent/45" : "ring-ink/15 dark:ring-white/10"}`}
                   >
-                    <span className="font-bold text-[#cfe3ff]">{b === 2 ? "⇅" : b === 1 ? "↑" : ""}</span>
+                    <span className="font-bold text-[#1A4FB8] dark:text-[#cfe3ff]">{b === 2 ? "⇅" : b === 1 ? "↑" : ""}</span>
                   </span>
                 ))}
               </div>
-              {hot && <span className="text-[10px] font-bold uppercase tracking-wide text-amber-300">{conf.moved.find(([s]) => s === name)![1] > 0 ? "gains" : "gives"}</span>}
+              {hot && <span className="text-[10px] font-bold uppercase tracking-wide text-[#B45309] dark:text-amber-300">{conf.moved.find(([s]) => s === name)![1] > 0 ? "gains" : "gives"}</span>}
             </div>
           );
         })}
-        {firstShown > 0 && <p className="pl-9 text-[11px] text-white/40">[{conf.core}] core below</p>}
+        {firstShown > 0 && <p className="pl-9 text-[11px] text-ink-muted dark:text-white/40">[{conf.core}] core below</p>}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button onClick={play} className="rounded-full px-3 py-1 text-xs font-semibold text-[#8cbcff] ring-1 ring-inset ring-accent/40 hover:bg-accent/10">
+        <button onClick={play} className="rounded-full px-3 py-1 text-xs font-semibold text-link ring-1 ring-inset ring-accent/40 hover:bg-accent/10">
           Replay filling
         </button>
-        <span className="font-mono text-sm text-white/85">{settled ? configText(conf) : `${step} / ${z} electrons`}</span>
+        <span className="font-mono text-sm text-ink-strong dark:text-white/85">{settled ? configText(conf) : `${step} / ${z} electrons`}</span>
       </div>
       {settled && conf.predicted && (
-        <div className="mt-3 rounded-lg bg-amber-400/[0.08] p-3 text-xs leading-relaxed text-amber-100/90 ring-1 ring-inset ring-amber-300/25">
-          <b className="text-amber-200">Exception.</b> The Madelung rule predicts{" "}
+        <div className="mt-3 rounded-lg bg-[#FDF0CC] p-3 text-xs leading-relaxed text-[#5c3d00] ring-1 ring-inset ring-[#F3D98C] dark:bg-amber-400/[0.08] dark:text-amber-100/90 dark:ring-amber-300/25">
+          <b className="text-[#7A5200] dark:text-amber-200">Exception.</b> The Madelung rule predicts{" "}
           <span className="font-mono">{conf.predicted.filter((s) => conf.moved.some(([m]) => m === subshellName(s))).map((s) => `${subshellName(s)}${sup(s.electrons)}`).join(" ")}</span>, but measurements show the electrons above. {reason(z, conf.moved)}
         </div>
       )}
-      {conf.isPredicted && <p className="mt-2 text-[11px] text-white/45">No atom of this element has lived long enough to measure; this configuration is a prediction.</p>}
+      {conf.isPredicted && <p className="mt-2 text-[11px] text-ink-muted dark:text-white/45">No atom of this element has lived long enough to measure; this configuration is a prediction.</p>}
     </div>
   );
 }
