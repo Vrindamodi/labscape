@@ -133,7 +133,8 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench =
       {view.held && <Held held={view.held} view={view} quality={quality} reducedMotion={reducedMotion} />}
       {quality === "high" && (
         <EffectComposer multisampling={4}>
-          <Bloom mipmapBlur luminanceThreshold={0.72} luminanceSmoothing={0.2} intensity={0.85} radius={0.7} />
+          {/* only what is lit from within (flames, the hot plate, sparks) blooms; a white solid or the filter paper does not */}
+          <Bloom mipmapBlur luminanceThreshold={0.92} luminanceSmoothing={0.12} intensity={0.6} radius={0.7} />
           <Vignette eskil={false} offset={0.22} darkness={0.62} />
         </EffectComposer>
       )}
@@ -690,7 +691,6 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
   const liquidMat = useRef<THREE.MeshPhysicalMaterial>(null);
   const surface = useRef<THREE.Mesh>(null);
   const surfaceMat = useRef<THREE.MeshPhysicalMaterial>(null);
-  const glow = useRef<THREE.PointLight>(null);
   const group = useRef<THREE.Group>(null);
   const colour = useMemo(() => new THREE.Color(), []);
   const level = useRef(0);
@@ -721,13 +721,12 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
       liquidMat.current.color.lerp(colour, k);
       liquidMat.current.attenuationColor.lerp(colour, k);
       liquidMat.current.opacity += (Math.min(0.96, 0.2 + view.opacity * 0.76) - liquidMat.current.opacity) * k;
-      // Strongly coloured liquids glow a little under bloom.
+      // Strongly coloured liquids glow a little. The glow is the liquid's own: a light placed in the
+      // beaker shows up as a bright ball reflected in the glass and burns out a pale precipitate.
       liquidMat.current.emissive.lerp(colour, k);
       liquidMat.current.emissiveIntensity = 0.08 + view.opacity * 0.12;
     }
     if (surfaceMat.current) surfaceMat.current.color.lerp(colour.clone().lerp(new THREE.Color("#ffffff"), 0.55), k);
-    if (glow.current) glow.current.intensity += ((view.levelMl > 1 ? 0.6 + view.opacity * 1.2 : 0) - glow.current.intensity) * k;
-    if (glow.current) glow.current.color.lerp(colour, k);
     if (frost.current) frost.current.opacity += ((view.iceBath ? 0.5 : view.liquidC < 12 ? 0.3 : 0) - frost.current.opacity) * (1 - Math.exp(-dt * 0.6));
     if (group.current && view.swirling && !reducedMotion) {
       group.current.position.x = Math.cos(t * 9) * 0.025;
@@ -744,7 +743,6 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
   const steamy = view.levelMl > 1 && view.liquidC > 55;
   return (
     <group ref={group}>
-      <pointLight ref={glow} position={[0, 0.25, 0]} intensity={0} distance={1.4} decay={2} />
       <mesh ref={liquid} position={[0, 0.012, 0]} renderOrder={1}>
         <cylinderGeometry args={[LIQ_R, LIQ_R, 1, 48, 1]} />
         <meshPhysicalMaterial ref={liquidMat} color="#cfe6ff" emissive="#000000" transparent opacity={0.3} roughness={0.05} clearcoat={0.8} ior={1.33} attenuationColor="#cfe6ff" attenuationDistance={0.6} depthWrite={false} />
