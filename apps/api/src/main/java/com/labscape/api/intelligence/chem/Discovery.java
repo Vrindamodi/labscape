@@ -194,6 +194,8 @@ public record Discovery(String id, String name, String type, String clue) {
                     "Heat a green powder strongly and it turns black."),
             new Discovery("flame-test", "Flame tests", "physical",
                     "Different metals colour a flame differently."),
+            new Discovery("crystallisation", "Crystals from a solution", "physical",
+                    "Boil a clear solution dry and see what the water was hiding."),
             new Discovery("catalase", "Catalase", "catalysis",
                     "Something living makes peroxide foam."),
             new Discovery("chromate-precipitates", "Chromate precipitates", "precipitation",

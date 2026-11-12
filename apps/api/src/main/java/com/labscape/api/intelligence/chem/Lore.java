@@ -223,6 +223,7 @@ public final class Lore {
             Map.entry("iodine-clock", "In an iodine clock nothing seems to happen until the reducing agent runs out - then the colour appears at once."),
             Map.entry("metal-halogen", "Zinc and iodine react in water to make zinc iodide - used in some rechargeable batteries."),
             Map.entry("nitric-acid-metal", "Nitric acid dissolves copper and silver but not gold - the origin of the phrase 'acid test'."),
+            Map.entry("crystallisation", "Sea salt is still made this way: sea water is run into shallow pans and left for the sun to evaporate the water."),
             Map.entry("thermal-decomposition", "Limestone is heated in kilns to make quicklime - the first step in making cement."),
             Map.entry("flame-test", "Fireworks get their colours from metal ions: strontium red, sodium yellow, barium green, copper blue-green."),
             Map.entry("catalase", "One catalase molecule can break down millions of hydrogen peroxide molecules every second."),

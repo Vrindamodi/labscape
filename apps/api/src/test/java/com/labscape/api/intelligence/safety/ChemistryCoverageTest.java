@@ -657,4 +657,252 @@ class ChemistryCoverageTest {
     private static double mid(Substance s) {
         return Math.round((s.limits().min() + s.limits().max()) / 4 * 100) / 100.0;
     }
+
+    // ------------------------------------------------------------------ the evaporating basin and strong heating
+
+    private static final SimulationRequest.Conditions BOIL_DRY = new SimulationRequest.Conditions(22.0, null, null, false, true);
+    private static final SimulationRequest.Conditions ROAST = new SimulationRequest.Conditions(22.0, null, null, true, false);
+
+    /** An earlier vessel that had something done to the whole of it (boiled dry, heated strongly) before being carried on. */
+    private static SimulationRequest.Base step(SimulationRequest.Conditions done, List<SimulationRequest.Base> bases, In... inputs) {
+        return new SimulationRequest.Base(inputs(inputs), done, bases, "all", 1);
+    }
+
+    private SimulationResult boilDry(List<SimulationRequest.Base> bases, In... inputs) {
+        return pipeline.resolve(new SimulationRequest("dry-" + IDS.incrementAndGet(), "chemistry", "sandbox", "att-cov", null, null, null,
+                inputs(inputs), BOIL_DRY, bases), "basin-" + IDS.get());
+    }
+
+    private SimulationResult roast(List<SimulationRequest.Base> bases, In... inputs) {
+        return pipeline.resolve(new SimulationRequest("hot-" + IDS.incrementAndGet(), "chemistry", "sandbox", "att-cov", null, null, null,
+                inputs(inputs), ROAST, bases), "basin-" + IDS.get());
+    }
+
+    private static List<String> residue(SimulationResult r) {
+        List<String> names = new ArrayList<>();
+        for (JsonNode c : cues(r, "evaporate")) c.get("residue").forEach(x -> names.add(x.get("name").asText()));
+        return names;
+    }
+
+    @Test
+    void boilingSaltWaterDryLeavesTheSaltAndWaterBringsItBack() {
+        In[] brine = {in("nacl", 20)};
+        SimulationResult dry = boilDry(null, brine);
+        assertThat(dry.outcome()).isEqualTo(Outcome.NO_REACTION);
+        assertThat(residue(dry)).containsExactly("sodium chloride");
+        assertThat(volume(dry)).isZero();
+        assertThat(dry.presentation().discoveryIds()).contains("crystallisation");
+        assertThat(text(dry)).contains("white crystals of sodium chloride");
+
+        // the vessel afterwards: dry crystals, nothing else
+        SimulationResult after = into(List.of(step(BOIL_DRY, null, brine)));
+        assertThat(after.presentation().title()).isEqualTo("What the water left behind");
+        assertThat(cues(after, "precipitate")).isNotEmpty();
+        assertThat(volume(after)).isZero();
+
+        // water in: the same salt solution as before
+        SimulationResult back = into(List.of(step(BOIL_DRY, null, brine)), in("water", 20));
+        assertThat(volume(back)).isEqualTo(20.0);
+        ChemistryEngine.State again = ENGINE.run(ENGINE.run(null, portions(brine), 100, false, true).state(), portions(in("water", 20)), 22, false).state();
+        assertThat(again.mol().get("Na+")).isCloseTo(0.02, org.assertj.core.data.Offset.offset(1e-9));
+        assertThat(again.mol().get("Cl-")).isCloseTo(0.02, org.assertj.core.data.Offset.offset(1e-9));
+        assertThat(again.hasSolid()).isFalse();
+    }
+
+    private static List<Portion> portions(In... inputs) {
+        List<Portion> out = new ArrayList<>();
+        for (In i : inputs) out.add(new Portion(CATALOGUE.find(i.ref()).orElseThrow(), i.amount()));
+        return out;
+    }
+
+    @Test
+    void neutralisingExactlyThenBoilingDryMakesTheSalt() {
+        SimulationResult dry = boilDry(null, in("hcl", 20), in("naoh", 20));
+        assertThat(residue(dry)).containsExactly("sodium chloride");
+        // a salt the shelf does not stock still comes out, and still goes back
+        SimulationResult nitrate = boilDry(null, in("agno3", 10), in("nacl", 10));
+        assertThat(residue(nitrate)).contains("sodium nitrate");
+    }
+
+    @Test
+    void mixturesThatMustNotGoOverAFlameAreRefusedNotBlocked() {
+        record Case(String code, In... inputs) {}
+        List<Case> cases = List.of(
+                new Case("EVAPORATE_ACID", in("hcl", 20)),
+                new Case("EVAPORATE_ACID", in("h2so4", 20), in("naoh", 5)),
+                new Case("EVAPORATE_FLAMMABLE", in("ethanol", 10), in("water", 20)),
+                new Case("EVAPORATE_FLAMMABLE", in("ethanol", 10)),
+                new Case("EVAPORATE_TOXIC_FUMES", in("ammonia", 20)),
+                new Case("EVAPORATE_TOXIC_FUMES", in("bleach", 10)),
+                new Case("EVAPORATE_UNSAFE_RESIDUE", in("tollens", 5)),
+                new Case("EVAPORATE_NO_WATER", in("table-salt", 2)));
+        for (Case c : cases) {
+            SimulationResult r = boilDry(null, c.inputs());
+            assertThat(r.outcome()).as(c.code()).isEqualTo(Outcome.PROCEDURE_MISMATCH);
+            assertThat(r.reasonCode()).isEqualTo(c.code());
+            assertThat(cues(r, "evaporate")).isEmpty();
+            // nothing was boiled: carried on, it is the same mixture it was
+            ChemistryEngine.Result same = ENGINE.run(null, portions(c.inputs()), 100, false, true);
+            ChemistryEngine.Result plain = ENGINE.run(null, portions(c.inputs()), 100, false, false);
+            assertThat(same.state().liquidMl()).isEqualTo(plain.state().liquidMl());
+            assertThat(same.state().parked()).isEmpty();
+        }
+        // ammonium nitrate is never left to dry over a flame, however it got there
+        assertThat(boilDry(null, in("nh4no3", 2), in("water", 20)).reasonCode()).isEqualTo("EVAPORATE_UNSAFE_RESIDUE");
+        // and the hot plate's own limit is where it was: only the basin goes past 90 °C
+        assertThat(mix(100, in("nacl", 20)).reasonCode()).isEqualTo("TEMP_OUT_OF_RANGE");
+    }
+
+    @Test
+    void blueCrystalsComeOutGoWhiteWhenRoastedAndBlueAgainWithWater() {
+        In[] solution = {in("cuso4", 20)};
+        SimulationResult dry = boilDry(null, solution);
+        assertThat(residue(dry)).containsExactly("copper(II) sulfate");
+        assertThat(text(dry)).contains("blue crystals of copper(ii) sulfate");
+
+        List<SimulationRequest.Base> crystals = List.of(step(BOIL_DRY, null, solution));
+        SimulationResult roasted = roast(crystals);
+        assertThat(roasted.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(roasted.presentation().reactions()).anyMatch(x -> x.type().equals("dehydration"));
+
+        // the white powder is carried on, and water turns it blue again
+        List<SimulationRequest.Base> white = List.of(step(ROAST, crystals));
+        SimulationResult powder = into(white);
+        assertThat(powder.presentation().title()).isEqualTo("After strong heating");
+        assertThat(cues(powder, "precipitate")).isNotEmpty();
+        SimulationResult wet = into(white, in("water", 20));
+        assertThat(wet.presentation().reactions()).anyMatch(x -> x.id().equals("hydration-copper-sulfate"));
+        ChemistryEngine.State end = ENGINE.run(ENGINE.run(ENGINE.run(null, portions(solution), 100, false, true).state(), List.of(), 22, true).state(),
+                portions(in("water", 20)), 22, false).state();
+        assertThat(end.mol().get("Cu^2+")).isCloseTo(0.01, org.assertj.core.data.Offset.offset(1e-9));
+    }
+
+    @Test
+    void whatStrongHeatingLeavesIsCarriedOn() {
+        // copper carbonate roasts to black copper oxide, which then dissolves in warm acid like the oxide off the shelf
+        List<SimulationRequest.Base> black = List.of(step(ROAST, null, in("cuco3-powder", 1)));
+        ChemistryEngine.State oxide = ENGINE.run(null, portions(in("cuco3-powder", 1)), 22, true).state();
+        assertThat(oxide.solids()).containsKey("CuO");
+        assertThat(oxide.mol()).doesNotContainKey("CuCO3(s)");
+        SimulationResult inAcid = pipeline.resolve(new SimulationRequest("acid-" + IDS.incrementAndGet(), "chemistry", "sandbox", "att-cov",
+                null, null, null, inputs(in("h2so4", 20)), new SimulationRequest.Conditions(60.0, null, null, false), black), "basin-" + IDS.get());
+        assertThat(inAcid.outcome()).isEqualTo(Outcome.REACTION);
+        assertThat(inAcid.presentation().discoveryIds()).contains("acid-oxide");
+        assertThat(cues(inAcid, "gas")).as("no carbonate left to fizz").isEmpty();
+        // baking soda leaves washing soda, which still fizzes with acid, but only half as much carbonate is there
+        ChemistryEngine.State soda = ENGINE.run(null, portions(in("baking-soda", 1.68)), 22, true).state();
+        assertThat(soda.solids().get("Na2CO3")).isCloseTo(0.01, org.assertj.core.data.Offset.offset(1e-5));
+    }
+
+    @Test
+    void dryCrystalsStillColourAFlameAndStayOnAFilterPaper() {
+        List<SimulationRequest.Base> dried = List.of(step(BOIL_DRY, null, in("srcl2", 10)));
+        SimulationResult flame = roast(List.of(new SimulationRequest.Base(List.of(), new SimulationRequest.Conditions(22.0, null, null, false),
+                dried, "all", 0.02)));
+        assertThat(flame.presentation().reactions()).anyMatch(x -> x.id().startsWith("flame-test-"));
+        ChemistryEngine.State st = ENGINE.run(null, portions(in("srcl2", 10)), 100, false, true).state();
+        assertThat(st.part("filtrate", 1).isEmpty()).isTrue();
+        assertThat(st.part("residue", 0.5).parked().get("Sr^2+")).isCloseTo(0.0025, org.assertj.core.data.Offset.offset(1e-9));
+    }
+
+    @Test
+    void tapWaterLeavesLimescaleAndSugarLeavesSyrup() {
+        SimulationResult tap = boilDry(null, in("tap-water", 100));
+        assertThat(text(tap)).contains("limescale");
+        SimulationResult sugar = boilDry(null, in("sucrose", 20));
+        assertThat(text(sugar)).contains("syrup");
+        assertThat(sugar.presentation().discoveryIds()).doesNotContain("crystallisation");
+        assertThat(text(boilDry(null, in("water", 20)))).contains("nothing at all is left");
+        assertThat(into(List.of(step(BOIL_DRY, null, in("water", 20)))).presentation().title()).isEqualTo("Nothing left behind");
+    }
+
+    /**
+     * Every water-based bottle on the shelf, on its own and with a few common partners, goes in the basin.
+     * Each is either refused and left exactly as it was, or ends with no liquid and nothing dissolved; and
+     * adding the water back never loses or invents a metal ion.
+     */
+    @Test
+    void everySolutionOnTheShelfCanGoInTheBasin() {
+        List<String> metals = List.of("Na+", "K+", "Li+", "Ag+", "Ca^2+", "Mg^2+", "Ba^2+", "Sr^2+", "Zn^2+", "Pb^2+", "Al^3+", "Cu^2+",
+                "Fe^2+", "Fe^3+", "Mn^2+", "Co^2+", "Ni^2+", "Cr^3+");
+        List<Substance> partners = List.of("water", "naoh", "hcl", "nacl", "na2co3", "h2so4", "ammonia", "cuso4", "agno3", "bacl2", "sucrose",
+                "nh4cl", "kmno4", "kno3-solution", "k2cr2o7", "milk", "na-ethanoate").stream()
+                .map(id -> CATALOGUE.find(id).orElseThrow()).toList();
+        List<Substance> solutions = CATALOGUE.all().stream().filter(s -> !s.isElement() && !s.isSolid() && !s.isGas() && s.aqueous()).toList();
+        assertThat(solutions.size()).isGreaterThan(80);
+        int dried = 0, refused = 0;
+        for (Substance a : solutions) {
+            for (Substance b : partners) {
+                List<Substance> picks = a.id().equals(b.id()) || "water".equals(b.id()) ? List.of(a) : List.of(a, b);
+                if (RULES.match(picks).isPresent()) continue;
+                List<Portion> portions = picks.stream().map(x -> new Portion(x, mid(x))).toList();
+                String what = picks.stream().map(Substance::id).toList().toString();
+                ChemistryEngine.Result plain = ENGINE.run(null, portions, 100, false, false);
+                if (plain.kind() == Kind.UNSUPPORTED) continue;
+                ChemistryEngine.Result r = ENGINE.run(null, portions, 100, false, true);
+                ChemistryEngine.State st = r.state();
+                if (r.kind() == Kind.PROCEDURE_MISMATCH && r.reasonCode().startsWith("EVAPORATE_")) {
+                    refused++;
+                    assertThat(st.liquidMl()).as(what).isEqualTo(plain.state().liquidMl());
+                    assertThat(st.mol()).as(what).isEqualTo(plain.state().mol());
+                    continue;
+                }
+                dried++;
+                assertThat(st.liquidMl()).as(what).isZero();
+                assertThat(st.mol().keySet()).as(what + ": nothing dissolved without water").isEqualTo(st.solidKeys());
+                assertThat(st.portions()).as(what).allMatch(x -> x.substance().isSolid() || x.substance().isElement());
+                // an oxidiser is never left dry on something it can burn
+                boolean oxidiser = st.parked().keySet().stream().anyMatch(k -> java.util.Set.of("NO3-", "MnO4-", "Cr2O7^2-", "CrO4^2-", "IO3-").contains(k))
+                        || st.solids().keySet().stream().anyMatch(f -> f.matches(".*(NO3|MnO4|Cr2O7|CrO4|IO3).*"));
+                boolean fuel = st.parked().keySet().stream().anyMatch(k -> k.startsWith("org:") || k.equals("NH4+") || k.equals("CH3COO-")
+                        || k.equals("starch") || k.equals("SCN-")) || st.solids().keySet().stream().anyMatch(f -> f.contains("NH4"));
+                assertThat(oxidiser && fuel).as(what + ": oxidiser dried with fuel").isFalse();
+                if (st.isEmpty()) continue; // nothing was dissolved: the basin is simply empty
+                // the dry residue can be worked on: shown as it is, roasted, and wetted again
+                assertThat(ENGINE.run(st, List.of(), 22, false).state()).as(what).isNotNull();
+                assertThat(ENGINE.run(st, List.of(), 22, true).state()).as(what).isNotNull();
+                ChemistryEngine.State wet = ENGINE.run(st, List.of(new Portion(CATALOGUE.find("water").orElseThrow(), 50)), 22, false).state();
+                assertThat(wet).as(what).isNotNull();
+                assertThat(wet.parked()).as(what + ": water takes the crystals back up").isEmpty();
+                for (String metal : metals) {
+                    double before = plain.state().mol().getOrDefault(metal, 0.0);
+                    double now = wet.mol().getOrDefault(metal, 0.0);
+                    // (a solid that was already there may give up a little more of itself to fresh water: that is not inventing)
+                    if (!plain.state().hasSolid()) assertThat(now).as(what + " " + metal + " is not invented").isLessThanOrEqualTo(before + 1e-9);
+                    // whatever is not back in solution is sitting there as a solid, not lost
+                    if (!wet.hasSolid()) assertThat(now).as(what + " " + metal + " is not lost").isCloseTo(before, org.assertj.core.data.Offset.offset(1e-9));
+                }
+            }
+        }
+        System.out.println("Basin sweep: " + dried + " boiled dry, " + refused + " refused");
+        assertThat(dried).isGreaterThan(300);
+        assertThat(refused).isGreaterThan(50);
+    }
+
+    @Test
+    void aDriedOxidiserIsHeldToTheRulesForTheSolid() {
+        // in solution these are allowed, as they always were
+        assertThat(mix(22, in("kno3-solution", 10), in("sucrose", 10)).outcome()).isNotEqualTo(Outcome.PROHIBITED);
+        // boiled dry they would be an oxidiser sitting on fuel: refused with the reason, and not counted as a blocked mix
+        In[][] pairs = {{in("kmno4", 10), in("sucrose", 10)}, {in("kno3-solution", 10), in("glucose", 10)}, {in("k2cr2o7", 10), in("nh4cl", 10)},
+                {in("agno3", 10), in("sucrose", 10)}, {in("cuno32", 10), in("milk", 10)}, {in("k2cro4", 10), in("nh42so4", 10)},
+                {in("kno3-solution", 10), in("kscn", 10)}, {in("kno3-solution", 10), in("na-ethanoate", 10)}, {in("kio3", 10), in("sucrose", 10)},
+                {in("kmno4", 10), in("h2so4", 10), in("feso4", 10)}};
+        for (In[] pair : pairs) {
+            SimulationResult r = boilDry(null, pair);
+            assertThat(r.outcome()).as(pair[0].ref() + " + " + pair[1].ref()).isEqualTo(Outcome.PROCEDURE_MISMATCH);
+            assertThat(r.reasonCode()).as(pair[0].ref() + " + " + pair[1].ref()).startsWith("EVAPORATE_");
+        }
+        // on its own an oxidiser can be crystallised, like the jar of it on the shelf...
+        List<SimulationRequest.Base> nitre = List.of(step(BOIL_DRY, null, in("kno3-solution", 10)));
+        assertThat(residue(boilDry(null, in("kno3-solution", 10)))).containsExactly("potassium nitrate");
+        assertThat(into(nitre).outcome()).isEqualTo(Outcome.NO_REACTION);
+        // ...and then nothing that burns may be added to it, exactly as for the jar
+        assertThat(mix(22, in("kno3", 1), in("sugar", 1)).outcome()).isEqualTo(Outcome.PROHIBITED);
+        assertThat(into(nitre, in("sugar", 1)).outcome()).isEqualTo(Outcome.PROHIBITED);
+        assertThat(into(List.of(step(BOIL_DRY, null, in("kmno4", 10))), in("glycerol", 5)).outcome()).isEqualTo(Outcome.PROHIBITED);
+        assertThat(into(List.of(step(BOIL_DRY, null, in("kmno4", 10))), in("mg-ribbon", 0.5)).outcome()).isEqualTo(Outcome.PROHIBITED);
+        // water is fine
+        assertThat(into(nitre, in("water", 20)).outcome()).isNotEqualTo(Outcome.PROHIBITED);
+    }
 }

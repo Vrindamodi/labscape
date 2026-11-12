@@ -52,7 +52,15 @@ public class SafetyRuleBook {
 
     /** First rule whose tags are all present across the mixture. */
     public Optional<Rule> match(Collection<Substance> mixture) {
-        Set<String> tags = new HashSet<>();
+        return match(mixture, Set.of());
+    }
+
+    /**
+     * @param also tags the mixture has taken on beyond those of its ingredients: an oxidiser that went in
+     *        as a solution and was then boiled dry is a solid oxidiser from then on
+     */
+    public Optional<Rule> match(Collection<Substance> mixture, Set<String> also) {
+        Set<String> tags = new HashSet<>(also);
         for (Substance s : mixture) {
             if (s.tags() != null) tags.addAll(s.tags());
         }

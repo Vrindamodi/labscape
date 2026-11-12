@@ -1,12 +1,12 @@
 import type { GasTests, SimulationBase, SimulationResult } from "@labscape/contracts";
-import { BUNSEN_BURNER, DockButton, DockSeparator, FILTER_FUNNEL, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type BenchBeaker, type HeldKind, type PlaygroundView, type SceneCaption, type SceneInsets } from "@labscape/lab-engine";
+import { BASIN_MS, BUNSEN_BURNER, DockButton, DockSeparator, EVAPORATING_BASIN, FILTER_FUNNEL, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type BenchBeaker, type HeldKind, type PlaygroundView, type SceneCaption, type SceneInsets } from "@labscape/lab-engine";
 import { useMotion } from "@labscape/motion";
 import { dispenseMode, fetchCatalogue, fetchTryNext, liquidMl, loadDiscoveries, loadMuted, mixInputs, ProblemError, resolveMix, saveDiscoveries, saveMuted, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem, type TryNextHint } from "@labscape/playground";
 import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { ArrowLeft, ArrowRightLeft, Atom, Bookmark, Filter as FilterIcon, Split, ChevronLeft, ChevronRight, Droplet, Eraser, Flame, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkle, Sparkles, Star, TestTube, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Atom, Bookmark, CookingPot, Filter as FilterIcon, Split, ChevronLeft, ChevronRight, Droplet, Eraser, Flame, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkle, Sparkles, Star, TestTube, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -237,6 +237,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   const [sparkLit, setSparkLit] = useState(0);
   const [flameTest, setFlameTest] = useState<{ pulse: number; colour: string | null; from: string } | null>(null);
   const [glowSplint, setGlowSplint] = useState<{ pulse: number; result: "relights" | "out" | "none" } | null>(null);
+  const [basin, setBasin] = useState<NonNullable<PlaygroundView["basin"]> | null>(null);
   const [litmus, setLitmus] = useState<{ pulse: number; blue: "red" | "white" | "none"; red: "blue" | "white" | "none" } | null>(null);
   const [drawer, setDrawer] = useState<"shelf" | "table" | "journal">("shelf");
   /** What the engine says is worth trying next with this beaker (shelf items and bench tools). */
@@ -1178,10 +1179,95 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
       setBusy(false);
     }
   };
+  /** Journal entries a result unlocked that are new to this student, celebrated once whatever showed them has been seen. */
+  const credit = (ids: string[], equationLatex: string, afterMs: number) => {
+    const fresh = ids.filter((id) => !found[id]);
+    if (!fresh.length) return;
+    const nextFound = { ...found };
+    fresh.forEach((id) => (nextFound[id] = { at: Date.now(), equationLatex }));
+    setFound(nextFound);
+    saveDiscoveries(nextFound);
+    onDiscoveries?.(fresh);
+    const d = cat?.discoveries.find((x) => x.id === fresh[0]);
+    if (!d) return;
+    later(afterMs, () => {
+      setCelebrate(d);
+      sound.play("discover");
+    });
+    later(afterMs + 4200, () => setCelebrate(null));
+  };
+  /**
+   * The evaporating basin over its own burner. A vessel with water in it is boiled dry: the water goes and
+   * what was dissolved is left. A dry solid is heated strongly instead, far hotter than the hot plate gets.
+   * Either way it is a step of its own: what is left is what that vessel holds from then on.
+   */
+  const heatInBasin = async (srcId: string) => {
+    setDrop(null);
+    if (!handsFree()) return;
+    const v = vesselNow(srcId);
+    if (!v || isEmptyVessel(v)) return flash("Put something in the beaker first, then take it to the evaporating basin.");
+    if (online === false) return flash("The safety engine is offline, so nothing can be heated right now.", "bad");
+    const wet = v.ml > 0.01;
+    const back = undoable();
+    const kind = kindOf(v);
+    setBusy(true);
+    try {
+      const r = await resolveMix(mergeTray(v.adds), plateC, false, wet ? v.ignition : true, v.bases, wet);
+      const pres = r.presentation;
+      const said = [pres?.message, ...(pres?.observations ?? [])].filter((x): x is string => !!x);
+      const boiled = r.cues.find((c) => c.kind === "evaporate");
+      if (r.outcome === "prohibited" || r.outcome === "out_of_range" || r.outcome === "unsupported" || r.outcome === "procedure_mismatch" || (wet && !boiled)) {
+        sound.play("warn");
+        addLog(`${capitalise(kind)} ${v.name} stayed off the burner`, "warn");
+        return flash(pres?.message ?? "That can't go over the burner.", "warn");
+      }
+      // what the heat does to a solid shows as its colour changing
+      const turned = [...r.cues].reverse().find((c) => c.kind === "colour" && c.target !== "vessel");
+      const changes = wet || r.outcome === "reaction";
+      const left = boiled && boiled.kind === "evaporate" ? boiled.residue : [];
+      const residue = wet ? (left[0] ? oklabToHex(left[0].colour) : v.solid) : turned && turned.kind === "colour" ? oklabToHex(turned.to) : v.solid;
+      const step: SimulationBase = {
+        inputs: mixInputs(v.adds),
+        conditions: { temperatureC: plateC, ignition: wet ? v.ignition : true, ...(wet ? { evaporate: true } : {}) },
+        ...(v.bases.length ? { bases: v.bases } : {}),
+        keep: "all",
+        fraction: 1,
+      };
+      if (changes) {
+        // the engine follows a mixture through only so many steps: find out before anything is tipped into the basin
+        const after = await resolveMix([], plateC, false, false, [step]);
+        if (after.outcome === "out_of_range" || after.outcome === "prohibited") return flash(after.presentation?.message ?? "That can't go over the burner.", "warn");
+      }
+      const ms = reduced ? 0 : BASIN_MS[wet ? "boil" : "roast"];
+      setBasin((b) => ({ pulse: (b?.pulse ?? 0) + 1, mode: wet ? "boil" : "roast", from: v.id, liquid: wet ? v.colour : null, solid: wet ? null : (v.solid ?? "#e6e6e2"), residue, steam: wet || r.cues.some((c) => c.kind === "condense" || c.kind === "gas" || c.kind === "smoke") }));
+      sound.play("sizzle");
+      if (wet) {
+        const line = said.find((x) => x.startsWith("The water boils away")) ?? "The water boils away as steam.";
+        if (!reduced) caption("The solution boils in the basin, and the water leaves as steam", { colour: "#eaf6ff" }, ms - 1600);
+        later(Math.max(0, ms - 1500), () => caption(line, left[0] ? { colour: oklabToHex(left[0].colour) } : {}, 8000));
+        addLog(`Boiled ${kind} ${v.name} dry in the evaporating basin: ${left.length ? `${left.map((x) => x.name).join(", ")} left behind` : "nothing was left"}`, "good");
+      } else {
+        const line = (r.outcome === "reaction" ? pres?.message : said.find((x) => /heat|hot|flame/i.test(x))) ?? "Nothing changes: it just gets very hot.";
+        later(Math.max(0, ms - 3200), () => caption(line, residue ? { colour: residue } : {}, 8000));
+        addLog(`Heated ${kind} ${v.name} strongly in the basin${r.outcome === "reaction" && pres ? `: ${pres.title}` : ": no change"}`, r.outcome === "reaction" ? "good" : undefined);
+      }
+      credit(pres?.discoveryIds ?? [], pres?.reactions[0]?.equationLatex ?? "", ms);
+      if (!changes) return;
+      // water with nothing in it leaves a clean, empty vessel, not a vessel that holds an empty step
+      const next: Vessel = { ...blankVessel(v.id, v.name), ...(v.tube ? { tube: true } : {}), ...(wet && !left.length && !v.solid ? {} : { bases: [step], solid: residue }) };
+      setBench(benchNow().map((x) => (x.id === v.id ? next : x)), v.id === activeId ? next : null, true, back);
+    } catch (e) {
+      if (e instanceof ProblemError && e.status === 429) flash(e.problem.detail ?? "Slow down: too many blocked mixes. Try again shortly.", "bad");
+      else flash("The burner could not be used just now.", "bad");
+    } finally {
+      setBusy(false);
+    }
+  };
   /** A beaker was dragged onto another on the bench: ask how much to pour, right where it was dropped. */
   const onDropBeaker = (src: string, dst: string, at: { x: number; y: number }) => {
     if (dst === FILTER_FUNNEL) return filterVessel(src);
     if (dst === BUNSEN_BURNER) return void flameTestOf(src);
+    if (dst === EVAPORATING_BASIN) return void heatInBasin(src);
     const from = vesselNow(src);
     if (!from || !handsFree()) return;
     if (isEmptyVessel(from)) return flash(`Beaker ${from.name} is empty: there is nothing to pour.`);
@@ -1229,6 +1315,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         return void flameTestOf(activeId);
       case "g":
         return glowTest();
+      case "b":
+        return void heatInBasin(activeId);
       case "l":
         return litmusTest();
       case "i":
@@ -1279,6 +1367,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     vessel: activeTube ? "tube" : "beaker",
     glowSplint,
     litmus,
+    basin,
     held: held
       ? {
           kind: (heldMode === "pour" ? (burette ? "burette" : "bottle") : heldMode) as HeldKind,
@@ -1389,7 +1478,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   return (
     <div ref={rootRef} className="relative h-screen w-full overflow-hidden bg-[#0b1530] font-sans text-[#e8f0ff]">
       <div className="absolute inset-0">
-        <PlaygroundScene view={view} reducedMotion={reduced} insets={{ ...insets, bottom: insets.bottom + CAPTION_BAND }} bench={bench} plateId={activeId} onOpenBeaker={switchTo} onDropBeaker={onDropBeaker} onBurner={() => void flameTestOf(activeId)} onFunnel={() => flash("Drag a beaker onto the funnel to filter it: the liquid runs through, the solid stays on the paper.")} />
+        <PlaygroundScene view={view} reducedMotion={reduced} insets={{ ...insets, bottom: insets.bottom + CAPTION_BAND }} bench={bench} plateId={activeId} onOpenBeaker={switchTo} onDropBeaker={onDropBeaker} onBasin={() => void heatInBasin(activeId)} onBurner={() => void flameTestOf(activeId)} onFunnel={() => flash("Drag a beaker onto the funnel to filter it: the liquid runs through, the solid stays on the paper.")} />
       </div>
       <AnimatePresence>
         {screenFlash > 0 && !reduced && (
@@ -1679,6 +1768,7 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           <HeatButton plateC={plateC} glow={needs.includes("heat")} onHeat={heatTo} />
           <DockButton icon={<Zap />} label="Spark" kbd="F" title="Hold a flame to the beaker (F)" tone={sparkLit ? "hot" : needs.includes("spark") ? "on" : "default"} className={needs.includes("spark") && !ignition ? "animate-pulse" : ""} disabled={!hasContents} onClick={spark} />
           <DockButton icon={<Flame />} label="Flame test" kbd="T" title="Take a sample into the Bunsen flame on a wire loop (T)" disabled={!hasContents} onClick={() => void flameTestOf(activeId)} />
+          <DockButton icon={<CookingPot />} label={levelMl > 0.01 ? "Boil dry" : "Heat hard"} kbd="B" title={levelMl > 0.01 ? "Boil the water away in the evaporating basin, to get back what is dissolved (B)" : "Heat the dry solid strongly in the basin over the Bunsen burner (B)"} disabled={!hasContents} onClick={() => void heatInBasin(activeId)} />
           <DockButton icon={<Sparkle />} label="Glow splint" kbd="G" title="Hold a glowing splint in the mouth: it relights in oxygen (G)" disabled={!hasContents} onClick={glowTest} />
           <DockButton icon={<Bookmark />} label="Litmus" kbd="L" title="Hold damp red and blue litmus papers over the mouth to test the gas coming off (L)" disabled={!hasContents} onClick={litmusTest} />
           <DockButton icon={<Snowflake />} label="Ice bath" kbd="I" tone={iceBath ? "on" : "default"} onClick={toggleIce} />

@@ -51,6 +51,12 @@ interface MixtureOps {
 
     void dissolveSolid(String speciesKey, double startMs, long durationMs);
 
+    /** Leaves a dissolvable species in the dry solid: it is not in solution, and goes back into it when water is added. */
+    void park(String key, double mol);
+
+    /** The species sitting in dry crystals (see {@link #park}). */
+    Set<String> driedKeys();
+
     String solidTarget(String speciesKey);
 
     /** Moles of a solid species put in at the start. */

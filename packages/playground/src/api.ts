@@ -68,14 +68,14 @@ export function mixInputs(tray: TrayItem[]): SimulationInput[] {
   return [...m.values()];
 }
 
-function mixRequest(tray: TrayItem[], temperatureC: number, stirring: boolean, ignition: boolean, bases: SimulationBase[]): SimulationRequest {
+function mixRequest(tray: TrayItem[], temperatureC: number, stirring: boolean, ignition: boolean, bases: SimulationBase[], evaporate = false): SimulationRequest {
   return {
     id: crypto.randomUUID(),
     subject: "chemistry",
     mode: "sandbox",
     attemptId: sessionKey(),
     inputs: mixInputs(tray),
-    conditions: { temperatureC, stirring, ignition },
+    conditions: { temperatureC, stirring, ignition, ...(evaporate ? { evaporate: true } : {}) },
     ...(bases.length ? { bases } : {}),
   };
 }
@@ -87,10 +87,12 @@ export function resolveMix(
   ignition = false,
   /** What the vessel already held: earlier mixes poured, split or filtered into it. */
   bases: SimulationBase[] = [],
+  /** Once it has all reacted, boil the vessel dry over a burner (an evaporating basin). */
+  evaporate = false,
 ): Promise<SimulationResult> {
   return call<SimulationResult>("/v1/safety/resolve", {
     method: "POST",
-    body: JSON.stringify(mixRequest(tray, temperatureC, stirring, ignition, bases)),
+    body: JSON.stringify(mixRequest(tray, temperatureC, stirring, ignition, bases, evaporate)),
   });
 }
 

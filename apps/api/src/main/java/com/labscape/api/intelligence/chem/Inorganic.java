@@ -1116,57 +1116,68 @@ final class Inorganic {
 
     // ================================================================================== heat and flame
 
+    /**
+     * @param leaves what is left in the vessel for each mole heated, so the next step can carry on from it:
+     *        "s:CuO=1" a solid by formula, "k:CuSO4(anh)=1" a species of its own, "p:Fe^2+=1" an ion sitting
+     *        in the dry solid until water is added
+     */
     record Decomposition(String key, String name, String equation, String fromHex, String toHex, String gas, double gasPer,
-            String text, String discovery, boolean hotPlateEnough) {}
+            String text, String discovery, boolean hotPlateEnough, List<String> leaves) {}
+
+    static {
+        Lore.register("K2MnO4", "Potassium manganate(VI)", "#1f3a24");
+        Lore.register("KNO2", "Potassium nitrite", "#f6f2d8");
+        Lore.register("char", "Carbon (char)", "#2a1a0e");
+    }
 
     static final List<Decomposition> DECOMPOSITIONS = List.of(
             new Decomposition("CuCO3(s)", "copper(II) carbonate", "CuCO3(s) -> CuO(s) + CO2(g)", "#4fa58a", "#1e1e22", "CO2", 1,
                     "The green powder turns black (copper(II) oxide) as carbon dioxide is driven off - it would turn limewater milky.",
-                    "thermal-decomposition", false),
+                    "thermal-decomposition", false, List.of("s:CuO=1")),
             new Decomposition("ZnCO3(s)", "zinc carbonate", "ZnCO3(s) -> ZnO(s) + CO2(g)", "#f6f6f2", "#f2e05a", "CO2", 1,
                     "The white powder gives off carbon dioxide and turns yellow while hot - zinc oxide, which goes white again on cooling.",
-                    "thermal-decomposition", false),
+                    "thermal-decomposition", false, List.of("s:ZnO=1")),
             new Decomposition("MgCO3(s)", "magnesium carbonate", "MgCO3(s) -> MgO(s) + CO2(g)", "#f6f6f2", "#fbfbf8", "CO2", 1,
-                    "The powder slowly gives off carbon dioxide, leaving white magnesium oxide.", "thermal-decomposition", false),
+                    "The powder slowly gives off carbon dioxide, leaving white magnesium oxide.", "thermal-decomposition", false, List.of("s:MgO=1")),
             new Decomposition("CaCO3(s)", "calcium carbonate", "CaCO3(s) -> CaO(s) + CO2(g)", "#f6f6f2", "#fffbe8", "CO2", 0.1,
                     "Only the edges change: calcium carbonate needs about 900 °C. With strong heating it glows brightly (limelight) and a little "
-                            + "quicklime forms.", "thermal-decomposition", false),
+                            + "quicklime forms.", "thermal-decomposition", false, List.of("s:CaO=1")),
             new Decomposition("NaHCO3(s)", "sodium hydrogencarbonate", "2 NaHCO3(s) -> Na2CO3(s) + H2O(g) + CO2(g)", "#fbfbf8", "#fbfbf8",
                     "CO2", 0.5, "The powder gives off carbon dioxide and steam - this is what makes cakes rise in the oven.",
-                    "thermal-decomposition", true),
+                    "thermal-decomposition", true, List.of("s:Na2CO3=0.5")),
             new Decomposition("CuSO4·5H2O(s)", "copper(II) sulfate crystals", "CuSO4·5H2O(s) -> CuSO4(s) + 5 H2O(g)", "#2f86dc",
                     "#eef0ee", "H2O", 5, "The blue crystals crumble to a white powder as the water of crystallisation steams off. Add water "
-                            + "back and it turns blue and hot again - a reversible reaction.", "dehydration", false),
+                            + "back and it turns blue and hot again - a reversible reaction.", "dehydration", false, List.of("k:CuSO4(anh)=1")),
             new Decomposition("CoCl2·6H2O(s)", "cobalt(II) chloride crystals", "CoCl2·6H2O(s) -> CoCl2(s) + 6 H2O(g)", "#c0466e",
-                    "#3b5fc8", "H2O", 6, "The pink crystals turn blue as they lose their water.", "dehydration", false),
+                    "#3b5fc8", "H2O", 6, "The pink crystals turn blue as they lose their water.", "dehydration", false, List.of("k:CoCl2(anh)=1")),
             new Decomposition("FeSO4·7H2O(s)", "iron(II) sulfate crystals", "FeSO4·7H2O(s) -> FeSO4(s) + 7 H2O(g)", "#a9d6a0",
                     "#f2f2ea", "H2O", 7, "The green crystals lose their water and turn white; much stronger heating would break them down "
-                            + "further into red-brown iron(III) oxide.", "dehydration", false),
+                            + "further into red-brown iron(III) oxide.", "dehydration", false, List.of("p:Fe^2+=1", "p:SO4^2-=1")),
             new Decomposition("ZnSO4·7H2O(s)", "zinc sulfate crystals", "ZnSO4·7H2O(s) -> ZnSO4(s) + 7 H2O(g)", "#f6f6f2", "#fbfbf8",
-                    "H2O", 7, "The crystals melt in their own water, steam, and leave a white powder.", "dehydration", false),
+                    "H2O", 7, "The crystals melt in their own water, steam, and leave a white powder.", "dehydration", false, List.of("p:Zn^2+=1", "p:SO4^2-=1")),
             new Decomposition("MgSO4(s)", "Epsom salt", "MgSO4·7H2O(s) -> MgSO4(s) + 7 H2O(g)", "#fbfbf8", "#fbfbf8", "H2O", 7,
-                    "Steam comes off the crystals and they turn to a dry white powder.", "dehydration", false),
+                    "Steam comes off the crystals and they turn to a dry white powder.", "dehydration", false, List.of("k:MgSO4(s)=1")),
             new Decomposition("KMnO4(s)", "potassium manganate(VII)", "2 KMnO4(s) -> K2MnO4(s) + MnO2(s) + O2(g)", "#3a1040", "#1f2a1f",
                     "O2", 0.5, "The purple-black crystals crackle and spit as oxygen is released (it would relight a glowing splint), "
-                            + "leaving a dark green-black residue.", "thermal-decomposition", false),
+                            + "leaving a dark green-black residue.", "thermal-decomposition", false, List.of("s:MnO2=0.5", "s:K2MnO4=0.5")),
             new Decomposition("KNO3(s)", "potassium nitrate", "2 KNO3(s) -> 2 KNO2(s) + O2(g)", "#fbfbf8", "#f6f2d8", "O2", 0.5,
-                    "The crystals melt into a clear liquid and slowly give off oxygen.", "thermal-decomposition", false),
+                    "The crystals melt into a clear liquid and slowly give off oxygen.", "thermal-decomposition", false, List.of("s:KNO2=1")),
             new Decomposition("NH4Cl(s)", "ammonium chloride", "NH4Cl(s) -> NH3(g) + HCl(g)", "#fbfbf8", "#fbfbf8", "white-smoke", 1,
                     "The white solid seems to vanish: it splits into ammonia and hydrogen chloride, which recombine as white smoke "
-                            + "and re-form the solid on the cooler glass higher up.", "thermal-decomposition", false),
+                            + "and re-form the solid on the cooler glass higher up.", "thermal-decomposition", false, List.of("k:NH4Cl(s)=1")),
             new Decomposition("Ca(OH)2(s)", "calcium hydroxide", "Ca(OH)2(s) -> CaO(s) + H2O(g)", "#f4f4f2", "#fbfbf8", "H2O", 1,
-                    "Steam is driven off, leaving quicklime.", "thermal-decomposition", false),
+                    "Steam is driven off, leaving quicklime.", "thermal-decomposition", false, List.of("s:CaO=1")),
             new Decomposition("Mg(OH)2(s)", "magnesium hydroxide", "Mg(OH)2(s) -> MgO(s) + H2O(g)", "#f4f4f2", "#fbfbf8", "H2O", 1,
-                    "Steam is driven off, leaving white magnesium oxide.", "thermal-decomposition", false),
+                    "Steam is driven off, leaving white magnesium oxide.", "thermal-decomposition", false, List.of("s:MgO=1")),
             new Decomposition("Na2S2O3·5H2O(s)", "sodium thiosulfate crystals", "Na2S2O3·5H2O(s) -> Na2S2O3(s) + 5 H2O(l)", "#fbfbf8",
-                    "#f4f6f8", "H2O", 5, "The crystals melt in their own water of crystallisation at only 48 °C.", "dehydration", true),
+                    "#f4f6f8", "H2O", 5, "The crystals melt in their own water of crystallisation at only 48 °C.", "dehydration", true, List.of("p:Na+=2", "p:S2O3^2-=1")),
             new Decomposition("org:sucrose", "sugar", "C12H22O11(s) -> 12 C(s) + 11 H2O(g)", "#fbfbf8", "#2a1a0e", "H2O", 11,
                     "The sugar melts, turns golden-brown caramel (smell of toffee), then chars to black carbon as steam is driven off.",
-                    "thermal-decomposition", false),
+                    "thermal-decomposition", false, List.of("s:char=12")),
             new Decomposition("org:glucose", "glucose", "C6H12O6(s) -> 6 C(s) + 6 H2O(g)", "#fbfbf8", "#2a1a0e", "H2O", 6,
-                    "The glucose melts, caramelises and finally chars black.", "thermal-decomposition", false),
+                    "The glucose melts, caramelises and finally chars black.", "thermal-decomposition", false, List.of("s:char=6")),
             new Decomposition("starch(s)", "starch", "(C6H10O5)n(s) -> 6n C(s) + 5n H2O(g)", "#fbfbf8", "#2a1a0e", "H2O", 5,
-                    "The starch browns and chars, with a smell of burnt toast.", "thermal-decomposition", false));
+                    "The starch browns and chars, with a smell of burnt toast.", "thermal-decomposition", false, List.of("s:char=6")));
 
     static void heat(MixtureOps m) {
         boolean dry = m.aqMl() <= 0 && m.organicMl() <= 0;
@@ -1184,7 +1195,7 @@ final class Inorganic {
             if (!m.has(d.key()) || m.solidTarget(d.key()) == null) continue;
             if (!flame && !d.hotPlateEnough()) {
                 m.pending("NEEDS_STRONG_HEAT", "spark", "The hot plate only reaches 90 °C - " + d.name()
-                        + " needs strong heating in a Bunsen flame. Use the flame tool to heat it strongly.");
+                        + " needs strong heating in a Bunsen flame. Heat it in the basin over the burner, or hold a flame to it.");
                 continue;
             }
             if ("NH4NO3(s)".equals(d.key())) continue;
@@ -1226,6 +1237,16 @@ final class Inorganic {
                 l.put("colour", Colour.hex("#fff6e0", 1).toJson());
                 l.put("intensity", 0.6);
                 l.put("durationMs", 4000);
+            }
+            for (String leaf : d.leaves()) {
+                int eq = leaf.lastIndexOf('=');
+                String what = leaf.substring(2, eq);
+                double made = n * Double.parseDouble(leaf.substring(eq + 1));
+                switch (leaf.charAt(0)) {
+                    case 's' -> m.product(what, made, "s");
+                    case 'k' -> m.add(what, made);
+                    default -> m.park(what, made);
+                }
             }
             m.reaction("decompose-" + d.key().replaceAll("[^A-Za-z0-9]", "").toLowerCase(Locale.ROOT), "Heating " + d.name(),
                     d.discovery().equals("dehydration") ? "dehydration" : "decomposition", Latex.eq(d.equation(), "heat"), d.discovery(), n);
@@ -1328,6 +1349,7 @@ final class Inorganic {
         String[][] ions = {{"Na+", "Na", "orange-yellow"}, {"Li+", "Li", "crimson-red"}, {"Sr^2+", "Sr", "bright red"},
                 {"Ca^2+", "Ca", "brick-red"}, {"Cu^2+", "Cu", "blue-green"}, {"Ba^2+", "Ba", "apple-green"}, {"K+", "K", "lilac"}};
         Set<String> keys = m.keys();
+        keys.addAll(m.driedKeys());
         for (Portion p : m.portions()) {
             Substance s = p.substance();
             if (s.isSolid() && !s.isElement()) {

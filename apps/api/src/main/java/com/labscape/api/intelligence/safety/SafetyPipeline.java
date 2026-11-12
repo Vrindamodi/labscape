@@ -35,6 +35,8 @@ public class SafetyPipeline {
 
     public static final double MIN_TEMP_C = 5;
     public static final double MAX_TEMP_C = 90;
+    /** A solution boiling dry over a burner. Only the evaporate condition reaches it: the hot plate stops at {@link #MAX_TEMP_C}. */
+    public static final double BOIL_C = 100;
     public static final double DEFAULT_TEMP_C = 22;
     public static final double VESSEL_CAPACITY_ML = 150;
 
@@ -77,7 +79,7 @@ public class SafetyPipeline {
         // 2. Allowlist: every substance is catalogued and every quantity is within its limits. A chained request
         //    (bases: earlier mixes poured, split or filtered into this vessel) is checked all the way down.
         Tree tree = new Tree();
-        List<Portion> portions = walk(req.inputs(), req.bases(), 1, 0, tree);
+        List<Portion> portions = walk(req.inputs(), req.bases(), 1, 0, evaporate(req.conditions()), tree);
         Map<String, Double> totals = new LinkedHashMap<>();
         for (Portion p : portions) totals.merge(p.substance().id(), p.amount(), Double::sum);
 
@@ -94,6 +96,17 @@ public class SafetyPipeline {
         Duration remaining = guard.remainingCooldown(session);
         if (!remaining.isZero()) throw new SafetyExceptions.Cooldown(remaining);
         Optional<SafetyRuleBook.Rule> rule = rules.match(tree.substances);
+        if (rule.isEmpty() && !tree.driedTags.isEmpty()) {
+            // An oxidiser that was boiled dry is a solid oxidiser now, and is held to the same rules as the one in the jar.
+            Optional<SafetyRuleBook.Rule> dry = rules.match(tree.substances, tree.driedTags);
+            if (dry.isPresent() && evaporate(req.conditions())) {
+                // It has not been dried yet: say why it must not be, without counting it as a blocked mix.
+                SimulationResult result = unsafeToDry(req.id());
+                audit(session, req, result, dry.get().id(), false, tree.summary);
+                return result;
+            }
+            rule = dry;
+        }
         if (rule.isPresent()) {
             boolean flagged = guard.recordProhibited(session);
             SimulationResult result = prohibited(req.id());
@@ -104,6 +117,7 @@ public class SafetyPipeline {
         // 4. Reaction lookup, 5. outcome resolution. Earlier vessels are replayed first; what they hand on is
         //    where this one starts.
         boolean ignition = req.conditions() != null && Boolean.TRUE.equals(req.conditions().ignition());
+        boolean evaporate = evaporate(req.conditions());
         SimulationResult result;
         try {
             ChemistryEngine.State carried = carry(req.bases());
@@ -114,7 +128,7 @@ public class SafetyPipeline {
             } else if (how != null && portions.isEmpty() && (carried == null || carried.isEmpty())) {
                 result = nothingCameAcross(req.id(), how);
             } else {
-                ChemistryEngine.Result r = engine.run(carried, portions, temperature, ignition);
+                ChemistryEngine.Result r = engine.run(carried, portions, evaporate ? BOIL_C : temperature, ignition, evaporate);
                 result = toResult(req.id(), r, portions, how);
             }
         } catch (Unmodelled e) {
@@ -137,6 +151,8 @@ public class SafetyPipeline {
         /** Catalogue id -> the amount that is effectively in this vessel, after every split along the way. */
         final Map<String, Double> effective = new LinkedHashMap<>();
         final List<String> summary = new ArrayList<>();
+        /** Rule tags the mixture has taken on by being boiled dry (see {@link #driedTags}). */
+        final java.util.Set<String> driedTags = new java.util.HashSet<>();
         int stages;
         boolean tooLong;
         /** An earlier stage that used more or less of something than its validated range. */
@@ -144,8 +160,15 @@ public class SafetyPipeline {
         boolean outOfRangeAbove;
     }
 
-    /** How the contents of this vessel got here, for the wording of the result. */
-    private record Carried(String keep, double fraction, int sources) {}
+    /**
+     * How the contents of this vessel got here, for the wording of the result. {@code step} is what was done to
+     * the whole of one earlier mixture before it was carried on: "dry" (boiled dry), "heated" (heated strongly), or null.
+     */
+    private record Carried(String keep, double fraction, int sources, String step) {}
+
+    private static boolean evaporate(SimulationRequest.Conditions c) {
+        return c != null && Boolean.TRUE.equals(c.evaporate());
+    }
 
     private static final class Unmodelled extends RuntimeException {
         final transient ChemistryEngine.Result result;
@@ -167,7 +190,7 @@ public class SafetyPipeline {
 
     /** Resolves one stage's inputs against the catalogue and records the whole tree beneath it. Returns that stage's portions. */
     private List<Portion> walk(List<SimulationRequest.Input> inputs, List<SimulationRequest.Base> bases, double share, int depth,
-            Tree tree) {
+            boolean dried, Tree tree) {
         tree.stages++;
         if (tree.stages > MAX_STAGES || depth > MAX_DEPTH) {
             tree.tooLong = true;
@@ -180,6 +203,7 @@ public class SafetyPipeline {
             if (!s.limits().unit().equals(in.unit())) throw new SafetyExceptions.UnitMismatch(in.ref(), s.limits().unit());
             portions.add(new Portion(s, in.amount()));
             tree.substances.add(s);
+            if (dried) tree.driedTags.addAll(driedTags(s));
             tree.effective.merge(s.id(), in.amount() * share, Double::sum);
             stage.merge(s.id(), in.amount(), Double::sum);
             tree.summary.add(">".repeat(depth) + in.ref() + ":" + in.amount() + in.unit());
@@ -196,11 +220,39 @@ public class SafetyPipeline {
         }
         if (bases != null) {
             for (SimulationRequest.Base b : bases) {
-                tree.summary.add(">".repeat(depth + 1) + "[" + b.keep() + " x" + b.fraction() + "]");
-                walk(b.inputs(), b.bases(), share * b.fraction(), depth + 1, tree);
+                // what was done to the earlier mixture changes what it hands on, so it belongs in the trail (and the cache key)
+                SimulationRequest.Conditions c = b.conditions();
+                String done = (c != null && c.temperatureC() != null && Math.round(c.temperatureC()) != Math.round(DEFAULT_TEMP_C)
+                        ? " " + Math.round(c.temperatureC()) + "C" : "")
+                        + (c != null && Boolean.TRUE.equals(c.ignition()) ? " lit" : "") + (evaporate(c) ? " dry" : "");
+                tree.summary.add(">".repeat(depth + 1) + "[" + b.keep() + " x" + b.fraction() + done + "]");
+                // boiling a vessel dry dries everything that had gone into it before
+                walk(b.inputs(), b.bases(), share * b.fraction(), depth + 1, dried || evaporate(c), tree);
             }
         }
         return portions;
+    }
+
+    /**
+     * What a solution counts as once it has been boiled dry. The rule book tells a solid oxidiser (the crystals
+     * in the jar) from its solution, which is far tamer; dried, the solution is the solid.
+     */
+    private static java.util.Set<String> driedTags(Substance s) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (s.species() == null) return out;
+        for (String k : s.species().keySet()) {
+            if ("NO3-".equals(k)) out.add("nitrate_oxidiser");
+            if ("MnO4-".equals(k) || "Cr2O7^2-".equals(k) || "CrO4^2-".equals(k) || "IO3-".equals(k)) out.add("strong_oxidiser_solid");
+        }
+        return out;
+    }
+
+    private static SimulationResult unsafeToDry(String requestId) {
+        return new SimulationResult(requestId, Outcome.PROCEDURE_MISMATCH, "EVAPORATE_UNSAFE_RESIDUE", null, null, null,
+                List.of(), List.of(), List.of(), Fidelity.APPROXIMATE, List.of(),
+                new Presentation(OutcomeCopy.MISMATCH_TITLE, "This would leave an oxidiser as a dry solid, together with something "
+                        + "it reacts with violently. A solution of it is safe to work with; the dry mixture is not, so it stays off the burner.",
+                        List.of(), List.of(), "heater", null, List.of(), List.of(), List.of(), List.of()));
     }
 
     /** Replays the earlier vessels and adds up the parts of them that were poured or filtered into this one. */
@@ -219,7 +271,8 @@ public class SafetyPipeline {
             } else {
                 double t = b.conditions() != null && b.conditions().temperatureC() != null ? b.conditions().temperatureC() : DEFAULT_TEMP_C;
                 boolean ign = b.conditions() != null && Boolean.TRUE.equals(b.conditions().ignition());
-                ChemistryEngine.Result r = engine.run(inner, portions, Math.max(MIN_TEMP_C, Math.min(MAX_TEMP_C, t)), ign);
+                boolean dry = evaporate(b.conditions());
+                ChemistryEngine.Result r = engine.run(inner, portions, dry ? BOIL_C : Math.max(MIN_TEMP_C, Math.min(MAX_TEMP_C, t)), ign, dry);
                 if (r.state() == null) throw new Unmodelled(r);
                 after = r.state();
             }
@@ -232,7 +285,11 @@ public class SafetyPipeline {
     private static Carried describe(List<SimulationRequest.Base> bases) {
         if (bases == null || bases.isEmpty()) return null;
         SimulationRequest.Base first = bases.get(0);
-        return bases.size() == 1 ? new Carried(first.keep(), first.fraction(), 1) : new Carried("all", 1, bases.size());
+        if (bases.size() > 1) return new Carried("all", 1, bases.size(), null);
+        boolean whole = "all".equals(first.keep()) && first.fraction() >= 1 - 1e-9;
+        String step = !whole ? null : evaporate(first.conditions()) ? "dry"
+                : first.conditions() != null && Boolean.TRUE.equals(first.conditions().ignition()) ? "heated" : null;
+        return new Carried(first.keep(), first.fraction(), 1, step);
     }
 
     private static double liquidMl(List<Portion> portions) {
@@ -254,8 +311,10 @@ public class SafetyPipeline {
     /** Filtering a clear solution, or keeping the liquid from a dry solid: an honest "nothing here". */
     private static SimulationResult nothingCameAcross(String requestId, Carried how) {
         boolean residue = "residue".equals(how.keep());
-        String title = residue ? "Nothing on the filter paper" : "Nothing came through";
-        String line = residue ? "There was no solid to catch: everything in that mixture was dissolved, so it all ran through the filter paper."
+        boolean dry = "dry".equals(how.step());
+        String title = dry ? "Nothing left behind" : residue ? "Nothing on the filter paper" : "Nothing came through";
+        String line = dry ? "The water boiled away and left nothing behind: there was nothing dissolved in it."
+                : residue ? "There was no solid to catch: everything in that mixture was dissolved, so it all ran through the filter paper."
                 : "There was no liquid to pour or filter, so this vessel is still empty.";
         return new SimulationResult(requestId, Outcome.NO_REACTION, "NO_OBSERVABLE_REACTION", null, null, null,
                 List.of(), List.of(), List.of(new SimulationResult.Measurement("temperature", DEFAULT_TEMP_C, "°C"),
@@ -270,7 +329,7 @@ public class SafetyPipeline {
     private Optional<SimulationResult> checkRanges(SimulationRequest req, Map<String, Double> totals, Tree tree) {
         if (tree.tooLong) {
             return Optional.of(outOfRange(req.id(), "TOO_MANY_STEPS",
-                    "This mixture has been poured, split and filtered too many times to follow. Start a fresh one.", null));
+                    "This mixture has been poured, split, filtered and heated too many times to follow. Start a fresh one.", null));
         }
         if (tree.outOfRange != null) {
             Substance s = tree.outOfRange;
@@ -353,7 +412,7 @@ public class SafetyPipeline {
         Tree tree = new Tree();
         List<Portion> portions;
         try {
-            portions = walk(req.inputs(), req.bases(), 1, 0, tree);
+            portions = walk(req.inputs(), req.bases(), 1, 0, false, tree);
         } catch (SafetyExceptions.NotInCatalogue | SafetyExceptions.UnitMismatch e) {
             return List.of();
         }
@@ -366,7 +425,7 @@ public class SafetyPipeline {
         if (cached != null) return cached;
         List<TryNext> out;
         try {
-            out = computeTryNext(carry(req.bases()), tree.substances, portions, temperature, ignition);
+            out = computeTryNext(carry(req.bases()), tree.substances, tree.driedTags, portions, temperature, ignition);
         } catch (Unmodelled | TooFull e) {
             out = List.of();
         }
@@ -374,9 +433,9 @@ public class SafetyPipeline {
         return out;
     }
 
-    private List<TryNext> computeTryNext(ChemistryEngine.State carried, List<Substance> mixture, List<Portion> portions,
-            double temperature, boolean ignition) {
-        if (rules.match(mixture).isPresent()) return List.of();
+    private List<TryNext> computeTryNext(ChemistryEngine.State carried, List<Substance> mixture, java.util.Set<String> driedTags,
+            List<Portion> portions, double temperature, boolean ignition) {
+        if (rules.match(mixture, driedTags).isPresent()) return List.of();
         if (portions.isEmpty() && (carried == null || carried.isEmpty())) return List.of();
         ChemistryEngine.Result base = engine.run(carried, portions, temperature, ignition);
         if (base.kind() == ChemistryEngine.Kind.UNSUPPORTED) return List.of();
@@ -419,7 +478,7 @@ public class SafetyPipeline {
                 trial.add(new Portion(cand, amount));
                 List<Substance> trialMix = new ArrayList<>(mixture);
                 trialMix.add(cand);
-                if (rules.match(trialMix).isPresent()) continue;
+                if (rules.match(trialMix, driedTags).isPresent()) continue;
                 ChemistryEngine.Reaction x = fresh(engine.run(carried, trial, temperature, ignition), seen, baseToxic).orElse(null);
                 if (x == null) continue;
                 boolean indicator = "indicator".equals(x.type());
@@ -498,6 +557,8 @@ public class SafetyPipeline {
     /** Says what the student actually saw when nothing chemical happened, instead of one fixed "no reaction" line. */
     private static String noReactionTitle(ChemistryEngine.Result r, List<Portion> portions, Carried how) {
         if (how != null && portions.isEmpty() && r.reactions().isEmpty()) {
+            if ("dry".equals(how.step())) return "What the water left behind";
+            if ("heated".equals(how.step())) return "After strong heating";
             return "residue".equals(how.keep()) ? "The residue" : "filtrate".equals(how.keep()) ? "The filtrate"
                     : how.sources() > 1 ? "Poured together - no reaction" : how.fraction() < 1 ? "A share of the mixture" : "Poured across";
         }
@@ -579,8 +640,18 @@ public class SafetyPipeline {
         if (st != null) {
             st.solids().keySet().forEach(f -> solids.add(Lore.lower(Lore.name(f))));
             st.solidKeys().forEach(k -> solids.add(Lore.lower(Lore.name(k.replace("(s)", "").replace("(anh)", "")))));
+            solids.addAll(st.dryCrystals());
         }
         String named = solids.isEmpty() ? "" : " (" + String.join(", ", solids.stream().distinct().limit(3).toList()) + ")";
+        if ("dry".equals(how.step())) {
+            return solids.isEmpty() ? "The water was boiled away, and nothing was left behind."
+                    : "This is what was left in the evaporating basin when the water had boiled away" + named
+                            + ". Add water and what dissolved before dissolves again.";
+        }
+        if ("heated".equals(how.step())) {
+            return solids.isEmpty() ? "This was heated strongly, and nothing solid is left."
+                    : "This is what strong heating left behind" + named + ". Add something to it to test it.";
+        }
         if ("residue".equals(how.keep())) {
             return "This is the residue: the solid" + named + " that stayed on the filter paper. Add something to it to test it.";
         }

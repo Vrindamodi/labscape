@@ -59,6 +59,13 @@ export type PlaygroundView = {
    * end up the colours given ("none" leaves a paper as it was, "white" is bleached).
    */
   glowSplint?: { pulse: number; result: "relights" | "out" | "none" } | null;
+  /**
+   * The evaporating basin on its tripod. Each new `pulse` plays one heating of what vessel `from` held:
+   * "boil" tips in a solution of colour `liquid` and boils it away, leaving `residue` (null when nothing is
+   * left); "roast" heats a dry solid of colour `solid` strongly until it is `residue`. `steam` puts steam or
+   * fumes over it. While it plays, the vessel it came from is drawn empty; `BASIN_MS` says how long that is.
+   */
+  basin?: { pulse: number; mode: "boil" | "roast"; from: string; liquid: string | null; solid: string | null; residue: string | null; steam: boolean } | null;
   litmus?: { pulse: number; blue: "red" | "white" | "none"; red: "blue" | "white" | "none" } | null;
   focus: boolean;
 
@@ -139,6 +146,15 @@ const FUNNEL_Y = 1.02;
 
 /** The id `onDropBeaker` reports when a beaker is let go over the Bunsen burner. */
 export const BUNSEN_BURNER = "bunsen-burner";
+/** What a beaker is dropped on to be heated in the evaporating basin: boiled dry if it holds a solution, heated strongly if it holds a dry solid. */
+export const EVAPORATING_BASIN = "evaporating-basin";
+/** The basin stands on a tripod and gauze over a burner of its own, at the back of the bench on the right. */
+const BASIN_AT: [number, number, number] = [0.66, 0, -0.92];
+const GAUZE_Y = 0.8;
+const BASIN_S = 0.6;
+const BASIN = KINDS.evaporating_basin;
+/** How long each heating takes on the bench before what is left goes back in its vessel (ms). */
+export const BASIN_MS = { boil: 6400, roast: 5200 } as const;
 /** The burner stands behind the hot plate, between it and the funnel: in view, and clear of a bottle held on the right. */
 const BURNER_AT: [number, number, number] = [-0.5, 0, -0.95];
 /** Height of the top of the burner's barrel, where the flame sits. */
@@ -153,8 +169,9 @@ const LOOP_OUT = 4.4;
  *        A click without a drag on a resting beaker calls `onOpenBeaker`. Dropping a beaker on the filter
  *        funnel reports `FILTER_FUNNEL` as what it went onto; a click on the funnel calls `onFunnel`.
  *        Dropping one on the Bunsen burner reports `BUNSEN_BURNER`; a click on the burner calls `onBurner`.
+ *        Dropping one on the evaporating basin reports `EVAPORATING_BASIN`; a click on it calls `onBasin`.
  */
-export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench = [], plateId = "plate", onOpenBeaker, onDropBeaker, onFunnel, onBurner }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets; bench?: BenchBeaker[]; plateId?: string; onOpenBeaker?: (id: string) => void; onDropBeaker?: (from: string, onto: string, at: { x: number; y: number }) => void; onFunnel?: () => void; onBurner?: () => void }) {
+export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench = [], plateId = "plate", onOpenBeaker, onDropBeaker, onFunnel, onBurner, onBasin }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets; bench?: BenchBeaker[]; plateId?: string; onOpenBeaker?: (id: string) => void; onDropBeaker?: (from: string, onto: string, at: { x: number; y: number }) => void; onFunnel?: () => void; onBurner?: () => void; onBasin?: () => void }) {
   const [quality, setQuality] = useState<Quality>(() => (((navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8) < 4 ? "lite" : "high"));
   // The camera keeps the hot plate and every resting beaker in view: the frame only widens when there is more than one beaker.
   const resting = bench.filter((b) => !b.tube).length;
@@ -180,7 +197,7 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench =
       {!reducedMotion && <Dust count={quality === "high" ? 220 : 80} />}
       <HotPlate plateC={view.plateC} stirring={view.stirring} />
       {view.iceBath && <IceBath reducedMotion={reducedMotion} />}
-      <Beakers view={view} quality={quality} reducedMotion={reducedMotion} bench={view.focus ? [] : bench} plateId={plateId} funnel={!view.focus && !!onDropBeaker} onBeaker={onBeaker} onOpen={onOpenBeaker} onDrop={onDropBeaker} onFunnel={onFunnel} onBurner={onBurner} />
+      <Beakers view={view} quality={quality} reducedMotion={reducedMotion} bench={view.focus ? [] : bench} plateId={plateId} funnel={!view.focus && !!onDropBeaker} onBeaker={onBeaker} onOpen={onOpenBeaker} onDrop={onDropBeaker} onFunnel={onFunnel} onBurner={onBurner} onBasin={onBasin} />
       {view.held && <Held held={view.held} view={view} quality={quality} reducedMotion={reducedMotion} />}
       {quality === "high" && (
         <EffectComposer multisampling={4}>
@@ -480,7 +497,7 @@ type DragState = { id: string; x0: number; y0: number; moving: boolean };
  * go over another beaker reports the drop (the page then asks how much to pour). A press that never moves is
  * a click. While a beaker is being carried the camera is locked, so the bench does not spin under it.
  */
-function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeaker, onOpen, onDrop, onFunnel, onBurner }: { view: PlaygroundView; quality: Quality; reducedMotion: boolean; bench: BenchBeaker[]; plateId: string; funnel: boolean; onBeaker?: (() => void) | undefined; onOpen?: ((id: string) => void) | undefined; onDrop?: ((from: string, onto: string, at: { x: number; y: number }) => void) | undefined; onFunnel?: (() => void) | undefined; onBurner?: (() => void) | undefined }) {
+function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeaker, onOpen, onDrop, onFunnel, onBurner, onBasin }: { view: PlaygroundView; quality: Quality; reducedMotion: boolean; bench: BenchBeaker[]; plateId: string; funnel: boolean; onBeaker?: (() => void) | undefined; onOpen?: ((id: string) => void) | undefined; onDrop?: ((from: string, onto: string, at: { x: number; y: number }) => void) | undefined; onFunnel?: (() => void) | undefined; onBurner?: (() => void) | undefined; onBasin?: (() => void) | undefined }) {
   const controls = useThree((st) => st.controls) as { enabled: boolean } | null;
   const camera = useThree((st) => st.camera);
   const gl = useThree((st) => st.gl);
@@ -523,6 +540,19 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
   }, [beakers, tubes, plateId]);
   // With the funnel on the bench there is always somewhere to carry a beaker, even a lone one.
   const canDrag = !!onDrop && (bench.length > 0 || funnel);
+  // What a vessel held is in the basin while it is being heated there: the vessel stands empty until it comes back.
+  const [inBasin, setInBasin] = useState<string | null>(null);
+  const basinPulse = view.basin?.pulse ?? 0;
+  const basinSeen = useRef(basinPulse);
+  useEffect(() => {
+    if (!view.basin || basinPulse === basinSeen.current) return;
+    basinSeen.current = basinPulse;
+    setInBasin(view.basin.from);
+    const t = setTimeout(() => setInBasin(null), reducedMotion ? 0 : BASIN_MS[view.basin.mode]);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [basinPulse]);
+  const plateView = useMemo(() => (inBasin === plateId ? { ...view, levelMl: 0, precipitate: null, solid: null, crystals: null } : view), [inBasin, plateId, view]);
 
   const release = () => {
     drag.current = null;
@@ -548,7 +578,7 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
         g.position.z += (home[2] - g.position.z) * k;
       }
       // A carried beaker leans towards the one it would pour into.
-      const target = held && overRef.current ? (overRef.current === FILTER_FUNNEL ? FUNNEL_AT : overRef.current === BUNSEN_BURNER ? BURNER_AT : homes.get(overRef.current)) : null;
+      const target = held && overRef.current ? (overRef.current === FILTER_FUNNEL ? FUNNEL_AT : overRef.current === BUNSEN_BURNER ? BURNER_AT : overRef.current === EVAPORATING_BASIN ? BASIN_AT : homes.get(overRef.current)) : null;
       const lean = target ? (target[0] < g.position.x ? 0.42 : -0.42) : 0;
       g.rotation.z += (lean - g.rotation.z) * k;
     }
@@ -585,6 +615,7 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
       }
       if (funnel && onStanding(FUNNEL_AT, 0.25, FUNNEL_Y + 0.25, 0.36, e.nativeEvent.clientX, e.nativeEvent.clientY)) best = FILTER_FUNNEL;
       else if (funnel && onStanding(BURNER_AT, 0, BURNER_H + 0.4, 0.42, e.nativeEvent.clientX, e.nativeEvent.clientY)) best = BUNSEN_BURNER;
+      else if (funnel && onStanding(BASIN_AT, 0.1, GAUZE_Y + 0.3, 0.36, e.nativeEvent.clientX, e.nativeEvent.clientY)) best = EVAPORATING_BASIN;
       if (best !== overRef.current) {
         overRef.current = best;
         setOver(best);
@@ -625,7 +656,7 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
     <>
       <group ref={keep(plateId)} position={[0, PLATE_H, 0]} {...handlers(plateId)}>
         <group scale={narrow ? [TUBE_SX, 1, TUBE_SX] : 1}>
-          <BeakerWithContents view={view} quality={quality} reducedMotion={reducedMotion} />
+          <BeakerWithContents view={plateView} quality={quality} reducedMotion={reducedMotion} />
         </group>
         {over === plateId && <DropRing radius={narrow ? BEAKER_R * TUBE_SX + 0.1 : BEAKER_R + 0.12} />}
         <GlowSplint test={view.glowSplint ?? null} narrow={narrow} reducedMotion={reducedMotion} />
@@ -634,7 +665,7 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
       {rack && <TubeRack x={rackCentre(beakers.length)} />}
       {tubes.map((b, i) => (
         <group key={b.id} ref={keep(b.id)} position={rackHole(beakers.length, b.hole ?? i)} {...handlers(b.id)}>
-          <RestingTube b={b} glass={glass} />
+          <RestingTube b={inBasin === b.id ? { ...b, levelMl: 0, solid: null } : b} glass={glass} />
           {over === b.id && <DropRing radius={TUBE_R + 0.06} />}
           {carried !== b.id && (
             <Html position={[0, TUBE_H + 0.13, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
@@ -647,10 +678,11 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
       ))}
       {funnel && <FilterStand over={over === FILTER_FUNNEL} carrying={carried !== null} onClick={onFunnel} />}
       {funnel && <BunsenBurner test={view.flameTest ?? null} from={view.flameTest ? (homes.get(view.flameTest.from) ?? homes.get(plateId)!) : null} over={over === BUNSEN_BURNER} carrying={carried !== null} reducedMotion={reducedMotion} onClick={onBurner} />}
+      {funnel && <BasinStand heating={view.basin ?? null} over={over === EVAPORATING_BASIN} carrying={carried !== null} reducedMotion={reducedMotion} onClick={onBasin} />}
       {beakers.map((b, i) => (
         <group key={b.id} ref={keep(b.id)} position={restSlot(i)} {...handlers(b.id)}>
           <group scale={REST_SCALE}>
-            <RestingBeaker b={b} capacityMl={b.capacityMl ?? view.capacityMl} glass={glass} glassGeom={glassGeom} />
+            <RestingBeaker b={inBasin === b.id ? { ...b, levelMl: 0, solid: null } : b} capacityMl={b.capacityMl ?? view.capacityMl} glass={glass} glassGeom={glassGeom} />
             {over === b.id && <DropRing radius={BEAKER_R + 0.12} />}
           </group>
           {carried !== b.id && (
@@ -1051,6 +1083,173 @@ function BunsenBurner({ test, from, over, carrying, reducedMotion, onClick }: { 
         </mesh>
       </group>
     </>
+  );
+}
+
+const lerp = (a: number, b: number, f: number) => a + (b - a) * Math.max(0, Math.min(1, f));
+const ease = (f: number) => {
+  const x = Math.max(0, Math.min(1, f));
+  return x * x * (3 - 2 * x);
+};
+/** Where the lumps of residue sit in the bottom of the basin: [x, z, size]. */
+const BASIN_LUMPS: [number, number, number][] = [[0, 0, 1.1], [0.05, 0.02, 0.9], [-0.045, 0.03, 1], [0.02, -0.05, 0.85], [-0.03, -0.04, 0.95], [0.075, -0.03, 0.7], [-0.08, -0.01, 0.75], [0.01, 0.07, 0.8], [0.06, 0.065, 0.6], [-0.06, 0.07, 0.65]];
+
+/**
+ * The evaporating basin: a porcelain dish on a tripod and gauze, over a Bunsen burner of its own. Carry a
+ * beaker to it (or click it). A solution is tipped in and boiled until the water has gone and only what was
+ * dissolved is left; a dry solid is heated strongly, far hotter than the hot plate can make it.
+ */
+function BasinStand({ heating, over, carrying, reducedMotion, onClick }: { heating: NonNullable<PlaygroundView["basin"]> | null; over: boolean; carrying: boolean; reducedMotion: boolean; onClick?: (() => void) | undefined }) {
+  const dish = useMemo(() => lathe(BASIN.profile), []);
+  const outer = useRef<THREE.Mesh>(null);
+  const inner = useRef<THREE.Mesh>(null);
+  const liquid = useRef<THREE.Mesh>(null);
+  const lumps = useRef<THREE.Group>(null);
+  const steam = useRef<THREE.Group>(null);
+  const glow = useRef<THREE.MeshStandardMaterial>(null);
+  const seen = useRef(heating?.pulse ?? 0);
+  const started = useRef(-1);
+  const from = useMemo(() => new THREE.Color(), []);
+  const to = useMemo(() => new THREE.Color(), []);
+  const mixed = useMemo(() => new THREE.Color(), []);
+
+  useFrame(({ clock }, dt) => {
+    const t = clock.elapsedTime;
+    if (heating && heating.pulse !== seen.current) {
+      seen.current = heating.pulse;
+      started.current = t;
+    }
+    const mode = heating?.mode ?? "boil";
+    const total = BASIN_MS[mode] / 1000;
+    // with reduced motion the heating is over at once: only what is left is shown, for as long as it would have taken
+    const raw = started.current < 0 ? Infinity : t - started.current;
+    const age = reducedMotion && raw < total ? total - 0.01 : raw;
+    const playing = age < total + 0.6;
+    const hot = playing && age > 0.3 && age < total - 1;
+    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 6);
+    const flicker = reducedMotion ? 1 : 1 + Math.sin(t * 19) * 0.06 + Math.sin(t * 31) * 0.04;
+    // the flame: low and quiet until something is on the gauze, then roaring and spreading under it
+    if (outer.current) {
+      const roar = hot ? (mode === "roast" ? 1.55 : 1.3) : 0.62;
+      outer.current.scale.y += (roar - outer.current.scale.y) * k;
+      outer.current.scale.x = outer.current.scale.z = 0.8 + (outer.current.scale.y - 0.62) * 0.75;
+      outer.current.position.y = BURNER_H + 0.16 * outer.current.scale.y * flicker;
+    }
+    if (inner.current) inner.current.scale.y = flicker * (hot ? 1.2 : 0.7);
+    if (glow.current) glow.current.emissiveIntensity += ((hot && mode === "roast" ? 0.5 : 0) - glow.current.emissiveIntensity) * k;
+
+    // boiling: tipped in, then the level falls until there is none
+    const l = liquid.current;
+    if (l) {
+      const level = mode === "boil" && playing && heating?.liquid ? (age < 0.5 ? ease(age / 0.5) : 1 - ease((age - 0.6) / (total - 2.2))) : 0;
+      l.visible = level > 0.02;
+      if (l.visible) {
+        const boil = reducedMotion || age < 0.8 ? 0 : Math.sin(t * 23) * 0.004;
+        l.position.y = lerp(9, 24, level) * U + boil;
+        const r = lerp(30, 40.5, level) * U * 0.94;
+        l.scale.set(r, r, 1);
+        (l.material as THREE.MeshStandardMaterial).color.set(heating?.liquid ?? "#cfe6ff");
+      }
+    }
+    // what is left: crystals growing as the last of the water goes, or a solid changing colour in the heat
+    const g = lumps.current;
+    if (g) {
+      const gone = Math.max(0, (age - total) / 0.5);
+      let size = 0;
+      if (playing && heating) {
+        if (mode === "boil") size = heating.residue ? ease((age - (total - 3.2)) / 2) : 0;
+        else size = heating.solid || heating.residue ? ease(age / 0.4) : 0;
+        size *= 1 - Math.min(1, gone);
+        const start = mode === "roast" ? (heating.solid ?? heating.residue) : heating.residue;
+        const end = heating.residue ?? start;
+        if (start && end) mixed.copy(from.set(start)).lerp(to.set(end), mode === "roast" ? ease((age - 1.2) / 2.4) : 1);
+      }
+      g.visible = size > 0.01;
+      g.scale.setScalar(Math.max(0.001, size));
+      if (g.visible) g.children.forEach((c) => ((c as THREE.Mesh).material as THREE.MeshStandardMaterial).color.copy(mixed));
+    }
+    if (steam.current) steam.current.visible = !reducedMotion && playing && !!heating?.steam && age > 0.9 && age < total - 0.7;
+  });
+
+  return (
+    <group position={BASIN_AT} onClick={(e) => (e.stopPropagation(), onClick?.())}>
+      {/* the burner: base, barrel, collar and hose */}
+      <mesh position={[0, 0.02, 0]} castShadow>
+        <cylinderGeometry args={[0.15, 0.17, 0.04, 28]} />
+        <meshStandardMaterial color="#2a3350" roughness={0.45} metalness={0.6} />
+      </mesh>
+      <mesh position={[0, BURNER_H / 2 + 0.02, 0]} castShadow>
+        <cylinderGeometry args={[0.032, 0.036, BURNER_H - 0.04, 20]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.1, 0]}>
+        <cylinderGeometry args={[0.046, 0.046, 0.07, 20]} />
+        <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+      </mesh>
+      <mesh position={[0.2, 0.05, -0.12]} rotation-z={Math.PI / 2} rotation-y={0.55}>
+        <cylinderGeometry args={[0.016, 0.016, 0.5, 10]} />
+        <meshStandardMaterial color="#b3472e" roughness={0.8} />
+      </mesh>
+      <mesh ref={outer} position={[0, BURNER_H + 0.1, 0]} scale={[0.8, 0.62, 0.8]} renderOrder={5}>
+        <coneGeometry args={[0.055, 0.32, 20, 1, true]} />
+        <meshBasicMaterial color="#4aa8ff" transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh ref={inner} position={[0, BURNER_H + 0.07, 0]} renderOrder={6}>
+        <coneGeometry args={[0.026, 0.14, 16, 1, true]} />
+        <meshBasicMaterial color="#cfeaff" transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      {/* the tripod: a ring on three splayed legs */}
+      <mesh position={[0, GAUZE_Y - 0.012, 0]} rotation-x={Math.PI / 2} castShadow>
+        <torusGeometry args={[0.24, 0.013, 8, 36]} />
+        <meshStandardMaterial color="#3b4252" metalness={0.75} roughness={0.35} />
+      </mesh>
+      {[0, 1, 2].map((i) => {
+        const a = (i / 3) * Math.PI * 2 + Math.PI / 6;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 0.275, (GAUZE_Y - 0.012) / 2, Math.sin(a) * 0.275]} rotation={[Math.sin(a) * 0.088, 0, -Math.cos(a) * 0.088]} castShadow>
+            <cylinderGeometry args={[0.012, 0.012, GAUZE_Y, 8]} />
+            <meshStandardMaterial color="#3b4252" metalness={0.75} roughness={0.35} />
+          </mesh>
+        );
+      })}
+      {/* wire gauze with its ceramic centre, which glows a little when the flame is roaring */}
+      <mesh position={[0, GAUZE_Y, 0]}>
+        <boxGeometry args={[0.56, 0.006, 0.56, 9, 1, 9]} />
+        <meshStandardMaterial color="#9aa3b2" metalness={0.6} roughness={0.5} wireframe />
+      </mesh>
+      <mesh position={[0, GAUZE_Y + 0.004, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[0.15, 28]} />
+        <meshStandardMaterial ref={glow} color="#e4e2da" emissive="#ff6a2a" emissiveIntensity={0} roughness={0.9} />
+      </mesh>
+      {/* the porcelain basin and what is in it */}
+      <group position={[0, GAUZE_Y + 0.006, 0]} scale={BASIN_S}>
+        <mesh geometry={dish} castShadow>
+          <meshStandardMaterial color="#cfccc2" roughness={0.6} metalness={0} side={THREE.DoubleSide} />
+        </mesh>
+        <mesh ref={liquid} rotation-x={-Math.PI / 2} visible={false} renderOrder={2}>
+          <circleGeometry args={[1, 36]} />
+          <meshStandardMaterial color="#cfe6ff" transparent opacity={0.78} roughness={0.15} />
+        </mesh>
+        {/* heaped up towards the rim, so it can be seen from the front of the bench */}
+        <group ref={lumps} position={[0, 0.215, 0]} visible={false}>
+          {BASIN_LUMPS.map(([x, z, sz], i) => (
+            <mesh key={i} position={[x * 2.6, 0.07 - Math.hypot(x, z) * 0.9 + (i % 3) * 0.012, z * 2.6]} rotation={[i * 0.9, i * 1.7, i * 0.5]}>
+              <icosahedronGeometry args={[0.085 * sz, 0]} />
+              <meshStandardMaterial color="#f4f6f8" roughness={0.55} flatShading />
+            </mesh>
+          ))}
+        </group>
+      </group>
+      <group ref={steam} visible={false}>
+        <Puffs colour="#f2f7ff" y0={GAUZE_Y + 0.2} rise={1.1} spread={0.2} count={14} opacity={0.5} speed={0.34} size={0.12} reducedMotion={reducedMotion} />
+      </group>
+      {over && <DropRing radius={0.36} />}
+      <Html position={[0, GAUZE_Y + 0.52, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+        <div style={{ whiteSpace: "nowrap", padding: "2px 8px", borderRadius: 9, background: over ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.85)", border: `1px solid ${over ? "#ffc23d" : carrying ? "rgba(255,194,61,.55)" : "rgba(140,180,255,.3)"}`, color: over ? "#ffd98a" : "#dbe7ff", font: "600 12px Inter, system-ui, sans-serif" }}>
+          {over ? "Heat it here" : "Evaporating basin"}
+        </div>
+      </Html>
+    </group>
   );
 }
 

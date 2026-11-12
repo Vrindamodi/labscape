@@ -39,7 +39,15 @@ public record SimulationRequest(
             @NotBlank String unit,
             Double concentrationM) {}
 
-    public record Conditions(Double temperatureC, Double pressureKPa, Boolean stirring, Boolean ignition) {}
+    /**
+     * @param evaporate once everything in the vessel has reacted, it goes over a burner until all the water has
+     *        boiled away (an evaporating basin). This is the only way to go past the hot plate's 90 °C.
+     */
+    public record Conditions(Double temperatureC, Double pressureKPa, Boolean stirring, Boolean ignition, Boolean evaporate) {
+        public Conditions(Double temperatureC, Double pressureKPa, Boolean stirring, Boolean ignition) {
+            this(temperatureC, pressureKPa, stirring, ignition, null);
+        }
+    }
 
     /**
      * An earlier mix and the part of it that came across: all of it, only what ran through a filter paper

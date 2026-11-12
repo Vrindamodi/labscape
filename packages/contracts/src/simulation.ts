@@ -6,6 +6,10 @@
  * Rule: engines decide WHAT happens; animation layers decide HOW it looks.
  * Nothing (colour change, bubble, precipitate...) is drawn without a cue from an engine.
  *
+ * v0.8.0 (additive): the `evaporate` condition boils a vessel dry over a burner once everything in it has
+ * reacted (an evaporating basin); it answers with an `evaporate` cue naming the residue, or with a procedure
+ * mismatch (reason code `EVAPORATE_...`) when the mixture must not go over a flame. Dry crystals carried on
+ * through `bases` dissolve again when water is added, and what strong heating leaves is carried on too.
  * v0.7.0 (additive): `gas` cues may carry `tests`, how the gas answers a lit splint, a glowing splint and
  * damp red and blue litmus.
  * v0.6.0 (additive): a request may carry `bases` - earlier mixes that were poured, split or filtered into
@@ -42,6 +46,11 @@ export type SimulationRequest = {
     stirring?: boolean;
     /** A flame or spark has been applied to the mixture (sticky for the vessel). */
     ignition?: boolean;
+    /**
+     * v0.8: once everything has reacted, the vessel goes over a burner until all the water has boiled away.
+     * The only way past the hot plate's 90 °C; `temperatureC` is ignored for that stage.
+     */
+    evaporate?: boolean;
   };
   /** v0.6: what the vessel already held when `inputs` were added. With bases, `inputs` may be empty. At most 3. */
   bases?: SimulationBase[];
@@ -165,7 +174,9 @@ export type ObservationCue =
   | (CueBase & { kind: "odour"; description: string })
   | (CueBase & { kind: "sound"; soundId: string })
   /** v0.4: crystals growing out of a solution as it evaporates or cools. */
-  | (CueBase & { kind: "crystals"; colour: Oklab; amount: number; durationMs: number; label?: string });
+  | (CueBase & { kind: "crystals"; colour: Oklab; amount: number; durationMs: number; label?: string })
+  /** v0.8: the water (`volumeMl` of it) boils away; `residue` is what it leaves, most first. `amount` is 0..1, how much to draw. */
+  | (CueBase & { kind: "evaporate"; durationMs: number; volumeMl: number; residue: { id: string; name: string; colour: Oklab; amount: number }[] });
 
 export type ReactionSummary = {
   id: string;
