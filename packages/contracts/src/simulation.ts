@@ -6,6 +6,8 @@
  * Rule: engines decide WHAT happens; animation layers decide HOW it looks.
  * Nothing (colour change, bubble, precipitate...) is drawn without a cue from an engine.
  *
+ * v0.7.0 (additive): `gas` cues may carry `tests`, how the gas answers a lit splint, a glowing splint and
+ * damp red and blue litmus.
  * v0.6.0 (additive): a request may carry `bases` - earlier mixes that were poured, split or filtered into
  * this vessel before its own inputs were added - so products persist from one vessel to the next; precipitate
  * cues may be `carried` (a solid that was already there, shown settled with no fanfare).
@@ -51,6 +53,13 @@ export type SimulationRequest = {
  * runs through a filter paper ("filtrate") or only what stays on it ("residue"). Every safety check covers
  * the whole chain.
  */
+/**
+ * One standard gas test. `result` is what it shows: "pop", "brighter", "out" or "relights" for a splint, the
+ * colour a damp litmus paper ends up ("red", "blue", or "white" when bleached), or "none" when nothing changes.
+ */
+export type GasTest = { result: "pop" | "brighter" | "out" | "relights" | "red" | "blue" | "white" | "none"; note: string };
+export type GasTests = { litSplint: GasTest; glowingSplint: GasTest; blueLitmus: GasTest; redLitmus: GasTest };
+
 export type SimulationBase = {
   inputs: SimulationInput[];
   conditions?: SimulationRequest["conditions"];
@@ -110,6 +119,8 @@ export type ObservationCue =
       hazard?: "toxic" | "corrosive" | "flammable";
       /** One-line safety warning to show with the hazard. */
       warning?: string;
+      /** How the gas answers the standard tests, when the engine knows (v0.7.0). */
+      tests?: GasTests;
     })
   | (CueBase & {
       kind: "precipitate";

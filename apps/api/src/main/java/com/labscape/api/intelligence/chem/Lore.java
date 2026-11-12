@@ -57,6 +57,50 @@ public final class Lore {
             Map.entry("NH3", "Ammonia stings the eyes and lungs. Waft, never sniff."),
             Map.entry("H2", "Hydrogen is highly flammable - keep flames away until you mean to test it."));
 
+    /**
+     * How a gas answers the standard school tests. `result` is what the test shows ("pop", "brighter", "out",
+     * "relights", or the colour a damp litmus paper ends up: "red", "blue" or "white" for bleached; "none"
+     * when nothing changes) and `note` says it in a sentence.
+     */
+    public record GasTest(String result, String note) {}
+
+    public record GasTests(GasTest litSplint, GasTest glowingSplint, GasTest blueLitmus, GasTest redLitmus) {}
+
+    private static GasTest none(String note) {
+        return new GasTest("none", note);
+    }
+
+    private static GasTests acidic(String name, String strength) {
+        return new GasTests(none("A lit splint is not the test for " + name + "."), none("The glow just fades: " + name + " does not relight it."),
+                new GasTest("red", "Damp blue litmus turns red: " + name + " is " + strength + " acidic gas."),
+                none("Damp red litmus stays red: " + name + " is acidic, not alkaline."));
+    }
+
+    public static final Map<String, GasTests> GAS_TESTS = Map.ofEntries(
+            Map.entry("H2", new GasTests(new GasTest("pop", "A lit splint makes it burn with a squeaky pop - the test for hydrogen."),
+                    none("The glowing splint does not relight: only oxygen does that."),
+                    none("Damp blue litmus stays blue: hydrogen is neutral."), none("Damp red litmus stays red: hydrogen is neutral."))),
+            Map.entry("O2", new GasTests(new GasTest("brighter", "A lit splint burns more brightly in oxygen."),
+                    new GasTest("relights", "The glowing splint bursts back into flame - the test for oxygen."),
+                    none("Damp blue litmus stays blue: oxygen is neutral."), none("Damp red litmus stays red: oxygen is neutral."))),
+            Map.entry("CO2", new GasTests(new GasTest("out", "A lit splint goes out: carbon dioxide does not let things burn."),
+                    new GasTest("out", "The glow dies: carbon dioxide puts it out."),
+                    new GasTest("red", "Damp blue litmus slowly turns pinkish-red: carbon dioxide is a weakly acidic gas. (Its own test is turning limewater milky.)"),
+                    none("Damp red litmus stays red: carbon dioxide is weakly acidic, not alkaline."))),
+            Map.entry("Cl2", new GasTests(none("A lit splint is not the test for chlorine."), none("The glowing splint does not relight: only oxygen does that."),
+                    new GasTest("white", "Damp blue litmus turns red, then is bleached white - the test for chlorine."),
+                    new GasTest("white", "Damp red litmus is bleached white by the chlorine."))),
+            Map.entry("NH3", new GasTests(none("A lit splint is not the test for ammonia."), none("The glow just fades: ammonia does not relight it."),
+                    none("Damp blue litmus stays blue: ammonia is alkaline, not acidic."),
+                    new GasTest("blue", "Damp red litmus turns blue - ammonia is the only common alkaline gas."))),
+            Map.entry("SO2", acidic("sulfur dioxide", "an")),
+            Map.entry("HCl", acidic("hydrogen chloride", "a strongly")),
+            Map.entry("HBr", acidic("hydrogen bromide", "a strongly")),
+            Map.entry("NO2", acidic("nitrogen dioxide", "an")),
+            Map.entry("H2S", acidic("hydrogen sulfide", "a weakly")),
+            Map.entry("NO", new GasTests(none("A lit splint is not the test for nitrogen monoxide."), none("The glowing splint does not relight: only oxygen does that."),
+                    none("Damp blue litmus stays blue: nitrogen monoxide is neutral."), none("Damp red litmus stays red: nitrogen monoxide is neutral."))));
+
     private static final Map<String, String> NAMES = new ConcurrentHashMap<>(Map.ofEntries(
             Map.entry("H2O", "Water"), Map.entry("H2", "Hydrogen gas"), Map.entry("O2", "Oxygen gas"),
             Map.entry("CO2", "Carbon dioxide"), Map.entry("CO", "Carbon monoxide"), Map.entry("SO2", "Sulfur dioxide"),

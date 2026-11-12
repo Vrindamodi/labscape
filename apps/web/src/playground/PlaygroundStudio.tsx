@@ -1,4 +1,4 @@
-import type { SimulationBase, SimulationResult } from "@labscape/contracts";
+import type { GasTests, SimulationBase, SimulationResult } from "@labscape/contracts";
 import { BUNSEN_BURNER, DockButton, DockSeparator, FILTER_FUNNEL, Glass, GhostButton, Kicker, oklabToHex, PlaygroundScene, PrimaryButton, Segmented, SquareButton, TiltGauge, type BenchBeaker, type HeldKind, type PlaygroundView, type SceneCaption, type SceneInsets } from "@labscape/lab-engine";
 import { useMotion } from "@labscape/motion";
 import { dispenseMode, fetchCatalogue, fetchTryNext, liquidMl, loadDiscoveries, loadMuted, mixInputs, ProblemError, resolveMix, saveDiscoveries, saveMuted, sound, type CatalogueResponse, type DiscoveryDef, type FoundDiscovery, type ShelfItem, type TrayItem, type TryNextHint } from "@labscape/playground";
@@ -6,7 +6,7 @@ import { cx } from "@labscape/ui";
 import { AnimatePresence, motion } from "framer-motion";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { ArrowLeft, ArrowRightLeft, Atom, Filter as FilterIcon, Split, ChevronLeft, ChevronRight, Droplet, Eraser, Flame, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkles, Star, TestTube, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Atom, Bookmark, Filter as FilterIcon, Split, ChevronLeft, ChevronRight, Droplet, Eraser, Flame, FlaskConical, Hand, Info, Maximize2, Minimize2, Minus, MoveDown, Plus, RotateCw, Search, ShieldAlert, ShieldCheck, Snowflake, Sparkle, Sparkles, Star, TestTube, Thermometer, Trophy, Undo2, Volume2, VolumeX, Wind, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -236,6 +236,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
   /** The spark pulse the Spark button is still lit for (0 = not lit). */
   const [sparkLit, setSparkLit] = useState(0);
   const [flameTest, setFlameTest] = useState<{ pulse: number; colour: string | null; from: string } | null>(null);
+  const [glowSplint, setGlowSplint] = useState<{ pulse: number; result: "relights" | "out" | "none" } | null>(null);
+  const [litmus, setLitmus] = useState<{ pulse: number; blue: "red" | "white" | "none"; red: "blue" | "white" | "none" } | null>(null);
   const [drawer, setDrawer] = useState<"shelf" | "table" | "journal">("shelf");
   /** What the engine says is worth trying next with this beaker (shelf items and bench tools). */
   const [hints, setHints] = useState<TryNextHint[]>([]);
@@ -836,7 +838,44 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     later(2400, () => setSparkLit((v) => (v === n ? 0 : v)));
     sound.play("spark");
     addLog("Held a lit splint to the mouth");
+    const lit = gasesNow().map((g) => g.tests.litSplint).find((t) => t.result === "out" || t.result === "brighter");
+    if (lit) later(reduced ? 0 : 700, () => caption(lit.note));
     reResolve({ temp: plateC, stir: stirring, ign: true });
+  };
+  /** The gases this mixture gives off, each with how it answers the standard tests (the engine says, not the page). */
+  const gasesNow = (): { gas: string; tests: GasTests }[] => {
+    const seen = new Map<string, GasTests>();
+    for (const c of result?.cues ?? []) if (c.kind === "gas" && c.tests && !seen.has(c.gas)) seen.set(c.gas, c.tests);
+    return [...seen].map(([gas, tests]) => ({ gas, tests }));
+  };
+  const shownAfter = (f: () => void) => later(reduced ? 0 : 900, f);
+  /** A glowing splint in the mouth of the vessel: it relights in oxygen. */
+  const glowTest = () => {
+    if (!hasContents || !handsFree()) return;
+    const gases = gasesNow();
+    const hit = gases.find((g) => g.tests.glowingSplint.result === "relights") ?? gases.find((g) => g.tests.glowingSplint.result === "out") ?? gases[0];
+    const got = hit?.tests.glowingSplint.result;
+    const outcome = got === "relights" || got === "out" ? got : "none";
+    setGlowSplint((t) => ({ pulse: (t?.pulse ?? 0) + 1, result: outcome }));
+    sound.play("spark", 0.4);
+    const note = hit ? hit.tests.glowingSplint.note : "Nothing is being given off, so the splint just goes on glowing.";
+    shownAfter(() => caption(note, outcome === "relights" ? { colour: "#ffb04a" } : {}));
+    addLog(`Glowing splint: ${note}`, outcome === "relights" ? "good" : undefined);
+  };
+  /** Damp red and blue litmus papers held over the vessel: acidic gases redden the blue one, ammonia blues the red one, chlorine bleaches both. */
+  const litmusTest = () => {
+    if (!hasContents || !handsFree()) return;
+    const gases = gasesNow();
+    const bluePaper = gases.find((g) => g.tests.blueLitmus.result === "white") ?? gases.find((g) => g.tests.blueLitmus.result === "red");
+    const redPaper = gases.find((g) => g.tests.redLitmus.result === "white") ?? gases.find((g) => g.tests.redLitmus.result === "blue");
+    const blueTo = bluePaper?.tests.blueLitmus.result;
+    const redTo = redPaper?.tests.redLitmus.result;
+    setLitmus((t) => ({ pulse: (t?.pulse ?? 0) + 1, blue: blueTo === "white" || blueTo === "red" ? blueTo : "none", red: redTo === "white" || redTo === "blue" ? redTo : "none" }));
+    sound.play("clink", 0.3);
+    const notes = [bluePaper?.tests.blueLitmus.note, redPaper && redPaper !== bluePaper ? redPaper.tests.redLitmus.note : undefined].filter((n): n is string => !!n);
+    const say = notes.length ? notes : [gases.length ? "Neither paper changes: the gas coming off is neutral." : "Neither paper changes: no gas is coming off."];
+    shownAfter(() => say.forEach((n) => caption(n, bluePaper ? { colour: blueTo === "white" ? "#f4f1ea" : "#d8524a" } : redPaper ? { colour: "#3f6fd8" } : {})));
+    say.forEach((n) => addLog(`Damp litmus: ${n}`, notes.length ? "good" : undefined));
   };
   const toggleIce = () => {
     if (iceBath) return heatTo(22);
@@ -1188,6 +1227,10 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
         return spark();
       case "t":
         return void flameTestOf(activeId);
+      case "g":
+        return glowTest();
+      case "l":
+        return litmusTest();
       case "i":
         return toggleIce();
       case "z":
@@ -1234,6 +1277,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
     captions,
     flameTest,
     vessel: activeTube ? "tube" : "beaker",
+    glowSplint,
+    litmus,
     held: held
       ? {
           kind: (heldMode === "pour" ? (burette ? "burette" : "bottle") : heldMode) as HeldKind,
@@ -1634,6 +1679,8 @@ export function PlaygroundStudio({ onDiscoveries }: { onDiscoveries?: (ids: stri
           <HeatButton plateC={plateC} glow={needs.includes("heat")} onHeat={heatTo} />
           <DockButton icon={<Zap />} label="Spark" kbd="F" title="Hold a flame to the beaker (F)" tone={sparkLit ? "hot" : needs.includes("spark") ? "on" : "default"} className={needs.includes("spark") && !ignition ? "animate-pulse" : ""} disabled={!hasContents} onClick={spark} />
           <DockButton icon={<Flame />} label="Flame test" kbd="T" title="Take a sample into the Bunsen flame on a wire loop (T)" disabled={!hasContents} onClick={() => void flameTestOf(activeId)} />
+          <DockButton icon={<Sparkle />} label="Glow splint" kbd="G" title="Hold a glowing splint in the mouth: it relights in oxygen (G)" disabled={!hasContents} onClick={glowTest} />
+          <DockButton icon={<Bookmark />} label="Litmus" kbd="L" title="Hold damp red and blue litmus papers over the mouth to test the gas coming off (L)" disabled={!hasContents} onClick={litmusTest} />
           <DockButton icon={<Snowflake />} label="Ice bath" kbd="I" tone={iceBath ? "on" : "default"} onClick={toggleIce} />
           <DockSeparator />
           <DockButton icon={<Undo2 />} label={!adds.length && canRestore ? "Restore" : "Undo"} kbd="Z" title={!adds.length && canRestore ? "Bring the emptied beaker back (Z)" : "Undo the last addition (Z)"} disabled={(!adds.length && !canRestore) || busy} onClick={undo} />

@@ -498,6 +498,35 @@ class ChemistryCoverageTest {
     }
 
     @Test
+    void everyGasComesWithItsStandardTests() {
+        // oxygen relights a glowing splint
+        JsonNode oxygen = cues(mix(22, in("h2o2", 20), in("mno2-powder", 0.5)), "gas").stream().filter(c -> c.get("gas").asText().equals("O2")).findFirst().orElseThrow();
+        assertThat(oxygen.at("/tests/glowingSplint/result").asText()).isEqualTo("relights");
+        assertThat(oxygen.at("/tests/blueLitmus/result").asText()).isEqualTo("none");
+        // hydrogen pops with a lit splint and leaves a glowing one alone
+        JsonNode hydrogen = cues(mix(22, in("hcl", 20), in("mg-ribbon", 0.2)), "gas").stream().filter(c -> c.get("gas").asText().equals("H2")).findFirst().orElseThrow();
+        assertThat(hydrogen.at("/tests/litSplint/result").asText()).isEqualTo("pop");
+        assertThat(hydrogen.at("/tests/glowingSplint/result").asText()).isEqualTo("none");
+        // carbon dioxide puts a splint out and is weakly acidic
+        JsonNode co2 = cues(mix(22, in("hcl", 20), in("caco3-chips", 2)), "gas").stream().filter(c -> c.get("gas").asText().equals("CO2")).findFirst().orElseThrow();
+        assertThat(co2.at("/tests/litSplint/result").asText()).isEqualTo("out");
+        assertThat(co2.at("/tests/blueLitmus/result").asText()).isEqualTo("red");
+        assertThat(co2.at("/tests/redLitmus/result").asText()).isEqualTo("none");
+        assertThat(co2.at("/tests/blueLitmus/note").asText()).contains("carbon dioxide");
+        // every gas the engine can name a test for says something for all four tests
+        com.labscape.api.intelligence.chem.Lore.GAS_TESTS.forEach((gas, t) -> {
+            assertThat(com.labscape.api.intelligence.chem.Lore.GASES).as(gas).containsKey(gas);
+            for (var test : List.of(t.litSplint(), t.glowingSplint(), t.blueLitmus(), t.redLitmus())) {
+                assertThat(test.result()).as(gas).isIn("pop", "brighter", "out", "relights", "red", "blue", "white", "none");
+                assertThat(test.note()).as(gas).isNotBlank();
+            }
+            // litmus results are colours; splint results are not
+            assertThat(t.blueLitmus().result()).as(gas).isIn("red", "white", "none");
+            assertThat(t.redLitmus().result()).as(gas).isIn("blue", "white", "none");
+        });
+    }
+
+    @Test
     void aPrecipitateThatIsOnTheShelfBehavesLikeTheShelfChemical() {
         In[] chalk = {in("cacl2", 10), in("na2co3", 10)};
         assertThat(mix(22, chalk).presentation().discoveryIds()).contains("insoluble-carbonate");

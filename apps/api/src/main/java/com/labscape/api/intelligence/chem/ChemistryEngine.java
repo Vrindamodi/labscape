@@ -482,6 +482,9 @@ public class ChemistryEngine {
                 c.put("hazard", hazard);
                 c.put("warning", Lore.GAS_WARNING.get(gas));
             }
+            // how it answers a splint or damp litmus, so the bench can show the test without guessing
+            Lore.GasTests tests = Lore.GAS_TESTS.get(gas);
+            if (tests != null) c.put("tests", tests);
         }
 
         @Override

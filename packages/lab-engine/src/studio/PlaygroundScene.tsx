@@ -53,6 +53,13 @@ export type PlaygroundView = {
   flameTest?: { pulse: number; colour: string | null; from: string } | null;
   /** What stands on the hot plate: a beaker, or a test tube (tall, narrow, small). */
   vessel?: "beaker" | "tube";
+  /**
+   * Gas tests held at the mouth of the vessel. Each new `pulse` plays one: a glowing splint that bursts back
+   * into flame, goes out or just keeps glowing; and a pair of damp litmus papers, one blue and one red, that
+   * end up the colours given ("none" leaves a paper as it was, "white" is bleached).
+   */
+  glowSplint?: { pulse: number; result: "relights" | "out" | "none" } | null;
+  litmus?: { pulse: number; blue: "red" | "white" | "none"; red: "blue" | "white" | "none" } | null;
   focus: boolean;
 
   /* ---- optional extras: every one may be left out ---- */
@@ -621,6 +628,8 @@ function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeake
           <BeakerWithContents view={view} quality={quality} reducedMotion={reducedMotion} />
         </group>
         {over === plateId && <DropRing radius={narrow ? BEAKER_R * TUBE_SX + 0.1 : BEAKER_R + 0.12} />}
+        <GlowSplint test={view.glowSplint ?? null} narrow={narrow} reducedMotion={reducedMotion} />
+        <LitmusPapers test={view.litmus ?? null} reducedMotion={reducedMotion} />
       </group>
       {rack && <TubeRack x={rackCentre(beakers.length)} />}
       {tubes.map((b, i) => (
@@ -804,6 +813,132 @@ function FilterStand({ over, carrying, onClick }: { over: boolean; carrying: boo
           {over ? "Filter it here" : "Filter funnel"}
         </div>
       </Html>
+    </group>
+  );
+}
+
+/** How long a gas test stays at the mouth of the vessel, and when its result shows. */
+const GAS_TEST_S = 4.2;
+const GAS_TEST_SHOWS = 0.9;
+
+/**
+ * The glowing-splint test: a splint that has been blown out, still glowing at its tip, is held in the mouth
+ * of the vessel. In oxygen it bursts back into flame; a gas that will not let things burn kills the glow.
+ */
+function GlowSplint({ test, narrow, reducedMotion }: { test: NonNullable<PlaygroundView["glowSplint"]> | null; narrow: boolean; reducedMotion: boolean }) {
+  const group = useRef<THREE.Group>(null);
+  const ember = useRef<THREE.MeshStandardMaterial>(null);
+  const flame = useRef<THREE.Group>(null);
+  const seen = useRef(test?.pulse ?? 0);
+  const started = useRef(-1);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (test && test.pulse !== seen.current) {
+      seen.current = test.pulse;
+      started.current = t;
+    }
+    const age = started.current < 0 ? Infinity : t - started.current;
+    const on = age < GAS_TEST_S;
+    const g = group.current;
+    if (!g) return;
+    g.visible = on;
+    if (!on) return;
+    const inT = Math.min(1, age / 0.35);
+    const outT = Math.max(0, (age - (GAS_TEST_S - 0.4)) / 0.4);
+    const k = reducedMotion ? 1 : (1 - Math.pow(1 - inT, 3)) * (1 - outT);
+    g.position.set((narrow ? 0.02 : 0.06) + (1 - k) * 0.9, BEAKER_H + 0.04 + (1 - k) * 0.35, 0.02);
+    const shown = reducedMotion || age >= GAS_TEST_SHOWS;
+    const result = test?.result ?? "none";
+    // the ember breathes while it glows; it dies in a gas that puts it out, and is lost in the flame when it relights
+    if (ember.current) ember.current.emissiveIntensity = shown && result === "out" ? Math.max(0, 2 - (age - GAS_TEST_SHOWS) * 4) : 1.8 + (reducedMotion ? 0 : Math.sin(t * 6) * 0.5);
+    if (flame.current) {
+      const lit = shown && result === "relights";
+      flame.current.visible = lit;
+      if (lit) {
+        const grow = reducedMotion ? 1 : Math.min(1, (age - GAS_TEST_SHOWS) / 0.25);
+        flame.current.scale.set(grow * (1 + (reducedMotion ? 0 : Math.sin(age * 31) * 0.1)), grow * (1 + (reducedMotion ? 0 : Math.sin(age * 23) * 0.2)), grow);
+      }
+    }
+  });
+  return (
+    <group ref={group} visible={false}>
+      <mesh position={[0.32, 0.06, 0]} rotation-z={Math.PI / 2 - 0.35}>
+        <cylinderGeometry args={[0.012, 0.012, 0.7, 8]} />
+        <meshStandardMaterial color="#c9955a" roughness={0.8} />
+      </mesh>
+      <mesh position={[0.01, -0.005, 0]}>
+        <sphereGeometry args={[0.02, 10, 8]} />
+        <meshStandardMaterial ref={ember} color="#2a1408" emissive="#ff5a1a" emissiveIntensity={1.8} toneMapped={false} />
+      </mesh>
+      <group ref={flame} position={[0, 0.02, 0]} visible={false}>
+        {[1, 0.6].map((sc, i) => (
+          <mesh key={sc} position={[0, 0.07 * sc, 0]}>
+            <coneGeometry args={[0.04 * sc, 0.16 * sc, 16, 1, true]} />
+            <meshBasicMaterial color={i ? "#fff3c4" : "#ff9a2e"} transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+}
+
+const PAPER = { blue: new THREE.Color("#3f6fd8"), red: new THREE.Color("#d8524a"), white: new THREE.Color("#f4f1ea") };
+
+/**
+ * Damp litmus papers held over the mouth of the vessel, one blue and one red. An acidic gas turns the blue one
+ * red, an alkaline gas turns the red one blue, and chlorine bleaches them (the blue one goes red on its way).
+ */
+function LitmusPapers({ test, reducedMotion }: { test: NonNullable<PlaygroundView["litmus"]> | null; reducedMotion: boolean }) {
+  const group = useRef<THREE.Group>(null);
+  const blue = useRef<THREE.MeshStandardMaterial>(null);
+  const red = useRef<THREE.MeshStandardMaterial>(null);
+  const seen = useRef(test?.pulse ?? 0);
+  const started = useRef(-1);
+  const mixed = useMemo(() => new THREE.Color(), []);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (test && test.pulse !== seen.current) {
+      seen.current = test.pulse;
+      started.current = t;
+    }
+    const age = started.current < 0 ? Infinity : t - started.current;
+    const on = age < GAS_TEST_S + 0.6;
+    const g = group.current;
+    if (!g) return;
+    g.visible = on;
+    if (!on) return;
+    const inT = Math.min(1, age / 0.35);
+    const outT = Math.max(0, (age - (GAS_TEST_S + 0.2)) / 0.4);
+    const k = reducedMotion ? 1 : (1 - Math.pow(1 - inT, 3)) * (1 - outT);
+    g.position.set(0, BEAKER_H + 0.17 + (1 - k) * 0.5, 0);
+    // how far the change has gone: 0 before it shows, 1 once it is complete
+    const f = reducedMotion ? 1 : Math.max(0, Math.min(1, (age - GAS_TEST_SHOWS) / 1.1));
+    if (blue.current) {
+      const to = test?.blue ?? "none";
+      // bleaching passes through red first: the gas is acidic before it bleaches
+      if (to === "white") blue.current.color.copy(f < 0.5 ? mixed.copy(PAPER.blue).lerp(PAPER.red, f * 2) : mixed.copy(PAPER.red).lerp(PAPER.white, (f - 0.5) * 2));
+      else blue.current.color.copy(mixed.copy(PAPER.blue).lerp(to === "red" ? PAPER.red : PAPER.blue, f));
+    }
+    if (red.current) {
+      const to = test?.red ?? "none";
+      red.current.color.copy(mixed.copy(PAPER.red).lerp(to === "blue" ? PAPER.blue : to === "white" ? PAPER.white : PAPER.red, f));
+    }
+  });
+  return (
+    <group ref={group} visible={false}>
+      {/* the tweezers holding the two strips */}
+      <mesh position={[0.2, 0.13, 0]} rotation-z={Math.PI / 2 - 0.25}>
+        <cylinderGeometry args={[0.006, 0.006, 0.42, 6]} />
+        <meshStandardMaterial color="#c0c7d4" metalness={0.9} roughness={0.3} />
+      </mesh>
+      <mesh position={[-0.032, 0, 0]}>
+        <boxGeometry args={[0.05, 0.2, 0.004]} />
+        <meshStandardMaterial ref={blue} color="#3f6fd8" roughness={0.9} />
+      </mesh>
+      <mesh position={[0.032, 0, 0]}>
+        <boxGeometry args={[0.05, 0.2, 0.004]} />
+        <meshStandardMaterial ref={red} color="#d8524a" roughness={0.9} />
+      </mesh>
     </group>
   );
 }
