@@ -76,8 +76,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const register = useCallback((r: Registration) => post<Me>("/v1/auth/register", { ...r, timezone: tz() }).then(after), [after]);
   const logout = useCallback(async () => {
     await post("/v1/auth/logout").catch(() => {});
-    qc.clear();
+    // Null "me" in place before dropping the rest: clear() would detach the mounted "me" query and keep
+    // the old user on screen, so the welcome screen bounced straight back into the app.
     qc.setQueryData(["me"], null);
+    qc.removeQueries({ predicate: (x) => x.queryKey[0] !== "me" });
   }, [qc]);
 
   const meRef = useRef<Me | null | undefined>(q.data);
