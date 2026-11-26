@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { patch } from "../lib/api";
 import { useSession } from "../lib/session";
 import { DEFAULT_SETTINGS, useSettings } from "../lib/settings";
+import { CardTitle, PageHeader } from "../components/PageHeader";
 
 export default function Settings() {
   const { settings, update } = useSettings();
@@ -14,12 +15,9 @@ export default function Settings() {
 
   return (
     <div className="mx-auto max-w-[820px] space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="mt-1 text-white/55">Make LABscape comfortable for you. Changes save automatically.</p>
-      </div>
+      <PageHeader title="Settings" sub="Make LABscape comfortable for you. Changes save automatically." className="mb-2" />
 
-      <Section icon={<Eye className="h-5 w-5 text-accent-cyan" />} title="Motion and display">
+      <Section icon={<Eye className="h-4 w-4 text-link" />} title="Motion and display">
         <Row label="Animation speed" hint="Scales interface animations. Lab simulation speed is set inside each lab.">
           <div className="flex items-center gap-3">
             <input
@@ -32,7 +30,7 @@ export default function Settings() {
               className="w-40 accent-[#2f80ff]"
               aria-label="Animation speed"
             />
-            <span className="tabular w-12 text-sm">{settings.animationSpeed}×</span>
+            <span className="tabular w-12 text-sm text-ink-strong">{settings.animationSpeed}×</span>
           </div>
         </Row>
         <Row label="Reduced motion" hint="System follows your device setting.">
@@ -46,12 +44,12 @@ export default function Settings() {
         </Row>
       </Section>
 
-      <Section icon={<Accessibility className="h-5 w-5 text-[#7ee2a2]" />} title="Accessibility">
+      <Section icon={<Accessibility className="h-4 w-4 text-[#1E8E3E]" />} title="Accessibility">
         <Row label="Colour-blind palette" hint="Status colours always come with an icon and a label too.">
           <select
             value={settings.palette}
             onChange={(e) => update({ palette: e.target.value as typeof settings.palette })}
-            className="h-9 rounded-md border border-white/10 bg-[#0f1628] px-3 text-sm"
+            className="h-10 rounded-full border border-line bg-surface px-4 text-sm text-ink-strong outline-none transition hover:border-line-strong focus:border-accent/70"
             aria-label="Colour-blind palette"
           >
             <option value="none">Default</option>
@@ -68,7 +66,7 @@ export default function Settings() {
         </Row>
       </Section>
 
-      <Section icon={<Volume2 className="h-5 w-5 text-[#c4b1ff]" />} title="Sound">
+      <Section icon={<Volume2 className="h-4 w-4 text-[#6D28D9]" />} title="Sound">
         <Row label="Mute everything">
           <Switch label="Mute" checked={settings.muted} onChange={(v) => update({ muted: v })} />
         </Row>
@@ -90,7 +88,7 @@ export default function Settings() {
       </Section>
 
       {me && (
-        <Section icon={<Shield className="h-5 w-5 text-[#ffd77a]" />} title="Privacy">
+        <Section icon={<Shield className="h-4 w-4 text-[#9A6B00]" />} title="Privacy">
           <Row label="Hide me from leaderboards" hint={me.minor ? "Under-18 accounts already appear by username only." : undefined}>
             <Switch
               label="Hide me from leaderboards"
@@ -105,16 +103,16 @@ export default function Settings() {
         </Section>
       )}
 
-      <Section icon={<Keyboard className="h-5 w-5 text-white/60" />} title="Keyboard">
-        <div className="grid gap-2 text-sm sm:grid-cols-2">
+      <Section icon={<Keyboard className="h-4 w-4 text-ink-muted" />} title="Keyboard">
+        <div className="grid gap-2 py-3 text-sm sm:grid-cols-2">
           {[
             [["Ctrl", "K"], "Search anything"],
             [["?"], "Show a lab's shortcuts"],
             [["Space"], "Hold to pour (in labs)"],
             [["Esc"], "Close dialogs"],
           ].map(([keys, l]) => (
-            <div key={String(l)} className="flex items-center justify-between rounded-md bg-white/[0.03] px-3 py-2">
-              <span className="text-white/70">{l as string}</span>
+            <div key={String(l)} className="flex items-center justify-between rounded-[16px] bg-surface px-4 py-2.5">
+              <span className="text-ink">{l as string}</span>
               <span className="flex gap-1">{(keys as string[]).map((k) => <Kbd key={k}>{k}</Kbd>)}</span>
             </div>
           ))}
@@ -130,19 +128,19 @@ export default function Settings() {
 
 function Section({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
-    <Card className="p-6">
-      <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">{icon}{title}</h2>
-      <div className="mt-4 divide-y divide-white/[0.05]">{children}</div>
+    <Card className="p-6 sm:p-7">
+      <CardTitle icon={icon}>{title}</CardTitle>
+      <div className="mt-3 divide-y divide-line">{children}</div>
     </Card>
   );
 }
 
 function Row({ label, hint, children }: { label: string; hint?: string | undefined; children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 py-3.5">
+    <div className="flex flex-wrap items-center justify-between gap-3 py-4">
       <div>
-        <div className="text-sm font-medium">{label}</div>
-        {hint && <div className="text-xs text-white/45">{hint}</div>}
+        <div className="text-sm font-medium text-ink-strong">{label}</div>
+        {hint && <div className="mt-0.5 text-xs text-ink-muted">{hint}</div>}
       </div>
       {children}
     </div>
@@ -154,7 +152,7 @@ function Slider({ label, value, onChange, onRelease }: { label: string; value: n
     <Row label={label}>
       <div className="flex items-center gap-3">
         <input type="range" min={0} max={1} step={0.05} value={value} onChange={(e) => onChange(Number(e.target.value))} onPointerUp={onRelease} className="w-40 accent-[#8b5cf6]" aria-label={`${label} volume`} />
-        <span className="tabular w-10 text-right text-sm text-white/60">{Math.round(value * 100)}</span>
+        <span className="tabular w-10 text-right text-sm text-ink-muted">{Math.round(value * 100)}</span>
       </div>
     </Row>
   );

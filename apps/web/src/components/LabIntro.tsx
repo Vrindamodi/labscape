@@ -161,11 +161,12 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
 
   return (
     <div>
-      <div className="mb-4 text-center">
-        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-cyan">Your first experiment</div>
-        <h1 className="mt-1 font-heading text-3xl font-bold tracking-tight">Welcome to the lab bench</h1>
+      <div className="mb-6 text-center">
+        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted">Your first experiment</div>
+        <h1 className="mt-2 font-heading text-[34px] font-normal leading-tight tracking-[-0.02em] text-ink-strong sm:text-[48px]">Welcome to the lab bench</h1>
       </div>
-      <div ref={stage} className="relative grid gap-4 overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,#121a30,#0c1224)] p-4 sm:p-6 lg:grid-cols-[1fr_300px]">
+      {/* The bench is a lab visual drawn for dark: it stays a dark card on the light onboarding page. */}
+      <div ref={stage} data-surface="dark" className="relative grid gap-4 overflow-hidden rounded-panel bg-[linear-gradient(180deg,#121a30,#0c1224)] p-4 text-white sm:p-6 lg:grid-cols-[1fr_300px]">
         {/* bench */}
         <div className="relative h-[380px] overflow-hidden rounded-xl bg-[radial-gradient(500px_260px_at_50%_100%,rgba(47,128,255,.18),transparent),linear-gradient(180deg,#16213d,#0f172e)] sm:h-[420px]">
           <div className="absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,#1d2a4a,#141d36)] shadow-[inset_0_1px_0_rgba(255,255,255,.08)]" />
@@ -233,7 +234,7 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
                 </radialGradient>
               </defs>
               <g clipPath="url(#li-clip)">
-                <motion.rect x="0" width="180" animate={{ y: 212 - fillPct * 230, height: fillPct * 230 + 10 }} transition={{ duration: 0.1 }} fill={dyed ? tint : "rgba(120,180,255,.35)"} />
+                <motion.rect x="0" width="180" initial={false} animate={{ y: 212 - fillPct * 230, height: fillPct * 230 + 10 }} transition={{ duration: 0.1 }} fill={dyed ? tint : "rgba(120,180,255,.35)"} />
                 {/* dye streaks before mixing */}
                 {drops.map((t, i) => (
                   <motion.ellipse
@@ -245,7 +246,7 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
                     fill="url(#li-dye)"
                   />
                 ))}
-                {level > 0 && <motion.ellipse cx="90" animate={{ cy: 212 - fillPct * 230 }} rx="66" ry="5" fill="rgba(255,255,255,.35)" />}
+                {level > 0 && <motion.ellipse cx="90" initial={false} animate={{ cy: 212 - fillPct * 230 }} rx="66" ry="5" fill="rgba(255,255,255,.35)" />}
               </g>
               <path d="M18 14 H162 M24 14 V196 Q24 212 40 212 H140 Q156 212 156 196 V14" fill="none" stroke="rgba(220,235,255,.8)" strokeWidth="3" strokeLinecap="round" />
               {[40, 80, 120, 160].map((y, i) => (
@@ -367,6 +368,7 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
                   <motion.rect
                     rx="16"
                     fill="black"
+                    initial={false}
                     animate={{ x: hole.x, y: hole.y, width: hole.w, height: hole.h }}
                     transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 160, damping: 24 }}
                   />
@@ -378,6 +380,7 @@ export function LabIntro({ onFinish }: { onFinish: () => void | Promise<void> })
                 fill="none"
                 stroke="#22d3ee"
                 strokeWidth="2"
+                initial={false}
                 animate={{ x: hole.x, y: hole.y, width: hole.w, height: hole.h }}
                 transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 160, damping: 24 }}
                 style={{ filter: "drop-shadow(0 0 8px #22d3ee)" }}

@@ -31,6 +31,7 @@ public class ChemistryEngine {
 
     public ChemistryEngine(Catalogue catalogue) {
         this.catalogue = catalogue;
+        this.shelfSalts = shelfSalts(catalogue);
     }
 
     public enum Kind { REACTION, NO_REACTION, NEEDS_CONDITIONS, PROCEDURE_MISMATCH, UNSUPPORTED }
@@ -65,10 +66,90 @@ public class ChemistryEngine {
             List<String> reasons,
             List<Product> products,
             List<Measurement> measurements,
-            String unsupportedMessage) {
+            String unsupportedMessage,
+            State state) {
 
         public List<Reaction> chemical() {
             return reactions.stream().filter(r -> !"physical".equals(r.type())).toList();
+        }
+    }
+
+    /**
+     * What a vessel holds once a mix has settled: enough to pour it into another vessel, or filter it,
+     * and carry on from there. {@code mol} is every species still present; the ones named in
+     * {@code solidKeys} are undissolved solids. {@code solids} are solids with no species of their own
+     * (precipitates, metal deposits, ash), formula to mol. {@code parked} is what was dissolved when the
+     * water was boiled away: the ions (and anything else) sitting in the dry crystals, species to mol,
+     * which go straight back into solution when water is added. {@code portions} are the shelf items that
+     * went in, scaled to the share that is here, kept for the rules that look things up by ingredient.
+     */
+    public record State(Map<String, Double> mol, java.util.Set<String> solidKeys, Map<String, Double> solids,
+            Map<String, Double> parked, double aqMl, double organicMl, List<Portion> portions, Colour colour) {
+
+        public boolean isEmpty() {
+            return mol.isEmpty() && solids.isEmpty() && parked.isEmpty();
+        }
+
+        public double liquidMl() {
+            return aqMl + organicMl;
+        }
+
+        /** The salts sitting in the dry crystals, by name, most plentiful pairing first. */
+        public List<String> dryCrystals() {
+            return Evaporation.pair(parked, List.of()).stream().map(Evaporation.Salt::name).toList();
+        }
+
+        public boolean hasSolid() {
+            return !solids.isEmpty() || !solidKeys.isEmpty() || !parked.isEmpty();
+        }
+
+        /**
+         * The share of this mixture that goes on to the next vessel.
+         *
+         * @param keep "all", "filtrate" (what runs through the filter paper) or "residue" (what stays on it)
+         */
+        public State part(String keep, double fraction) {
+            double f = clamp(fraction, 0, 1);
+            boolean liquid = !"residue".equals(keep);
+            boolean solid = !"filtrate".equals(keep);
+            Map<String, Double> m = new LinkedHashMap<>();
+            java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+            mol.forEach((k, v) -> {
+                boolean isSolid = solidKeys.contains(k);
+                if (isSolid ? !solid : !liquid) return;
+                m.put(k, v * f);
+                if (isSolid) keys.add(k);
+            });
+            Map<String, Double> s = new LinkedHashMap<>();
+            if (solid) solids.forEach((k, v) -> s.put(k, v * f));
+            // dry crystals are a solid: they stay on the filter paper
+            Map<String, Double> dry = new LinkedHashMap<>();
+            if (solid) parked.forEach((k, v) -> dry.put(k, v * f));
+            List<Portion> ps = new ArrayList<>();
+            for (Portion p : portions) {
+                Substance sub = p.substance();
+                boolean solidPortion = sub.isSolid() || sub.isElement() && "liquid".equals(sub.form());
+                if (!liquid && !solidPortion) continue;
+                ps.add(new Portion(sub, p.amount() * f));
+            }
+            return new State(m, keys, s, dry, liquid ? aqMl * f : 0, liquid ? organicMl * f : 0, ps, liquid ? colour : null);
+        }
+
+        /** Two mixtures poured into one vessel. */
+        public State plus(State other) {
+            Map<String, Double> m = new LinkedHashMap<>(mol);
+            other.mol.forEach((k, v) -> m.merge(k, v, Double::sum));
+            java.util.Set<String> keys = new java.util.LinkedHashSet<>(solidKeys);
+            keys.addAll(other.solidKeys);
+            Map<String, Double> s = new LinkedHashMap<>(solids);
+            other.solids.forEach((k, v) -> s.merge(k, v, Double::sum));
+            Map<String, Double> dry = new LinkedHashMap<>(parked);
+            other.parked.forEach((k, v) -> dry.merge(k, v, Double::sum));
+            List<Portion> ps = new ArrayList<>(portions);
+            ps.addAll(other.portions);
+            Colour c = colour == null ? other.colour : other.colour == null ? colour
+                    : Colour.blend(List.of(colour, other.colour), List.of(Math.max(liquidMl(), 1e-6), Math.max(other.liquidMl(), 1e-6)));
+            return new State(m, keys, s, dry, aqMl + other.aqMl, organicMl + other.organicMl, merge(ps), c);
         }
     }
 
@@ -78,8 +159,56 @@ public class ChemistryEngine {
 
     /** @param ignition a flame or spark has been applied to the mixture */
     public Result run(List<Portion> portions, double temperatureC, boolean ignition) {
+        return run(null, portions, temperatureC, ignition);
+    }
+
+    /**
+     * @param base what the vessel already holds from an earlier mix (poured in, filtered, or split), or null for
+     *        an empty vessel. The new portions are added to it and every rule runs on the combined contents.
+     */
+    public Result run(State base, List<Portion> portions, double temperatureC, boolean ignition) {
+        return run(base, portions, temperatureC, ignition, false);
+    }
+
+    /**
+     * @param evaporate once everything has reacted, the vessel goes over a burner until all the water has
+     *        boiled away. What was dissolved is left as dry crystals; a mixture that must not be boiled dry
+     *        (still acidic, flammable, giving off toxic fumes) comes back as a procedure mismatch, unchanged.
+     */
+    public Result run(State base, List<Portion> portions, double temperatureC, boolean ignition, boolean evaporate) {
         Latex.resetRecent();
-        return new Run(merge(portions), temperatureC, ignition).execute();
+        return new Run(base == null || base.isEmpty() ? null : base, merge(portions), temperatureC, ignition, evaporate).execute();
+    }
+
+    /**
+     * Shelf solids that simply fall apart into one kind of cation and one kind of anion in water, as
+     * "cation|anion" to the species key of the solid. Boiled dry, those two ions come back as that same
+     * shelf chemical, so the crystals do everything the bottle on the shelf does.
+     */
+    private final Map<String, String> shelfSalts;
+
+    private static Map<String, String> shelfSalts(Catalogue catalogue) {
+        Map<String, Map<String, Double>> dissolving = new LinkedHashMap<>();
+        dissolving.put("CuSO4·5H2O(s)", Map.of("Cu^2+", 1.0, "SO4^2-", 1.0));
+        dissolving.put("KNO3(s)", Map.of("K+", 1.0, "NO3-", 1.0));
+        dissolving.put("KMnO4(s)", Map.of("K+", 1.0, "MnO4-", 1.0));
+        dissolving.putAll(Run.SOLUBLE_SOLIDS);
+        Phases.SOLUBLE.forEach((k, sol) -> dissolving.putIfAbsent(k, sol.ions()));
+        Map<String, String> out = new LinkedHashMap<>();
+        dissolving.forEach((key, ions) -> {
+            if (ions.size() != 2 || !key.endsWith("(s)")) return;
+            String cation = ions.keySet().stream().filter(Evaporation.CATIONS::containsKey).findFirst().orElse(null);
+            String anion = ions.keySet().stream().filter(Evaporation.ANIONS::containsKey).findFirst().orElse(null);
+            if (cation == null || anion == null) return;
+            Evaporation.Ion c = Evaporation.CATIONS.get(cation);
+            Evaporation.Ion a = Evaporation.ANIONS.get(anion);
+            int g = Latex.gcd(c.charge(), a.charge());
+            // one formula unit of the solid must be exactly one formula unit of the salt
+            if (Math.abs(ions.get(cation) - a.charge() / g) > 1e-9 || Math.abs(ions.get(anion) - c.charge() / g) > 1e-9) return;
+            if (catalogue.solidFor(key.substring(0, key.length() - 3)).isEmpty()) return;
+            out.putIfAbsent(cation + "|" + anion, key);
+        });
+        return java.util.Collections.unmodifiableMap(out);
     }
 
     private static List<Portion> merge(List<Portion> portions) {
@@ -93,10 +222,25 @@ public class ChemistryEngine {
     // ------------------------------------------------------------------------------------------
 
     private final class Run implements MixtureOps {
+        /** Everything in the vessel: what was carried in (scaled to the share that came) plus what is added now. */
         final List<Portion> portions;
+        /** Only what is added in this stage. */
+        final List<Portion> fresh;
+        final State base;
+        final java.util.Set<String> denseLiquidKeys = new java.util.HashSet<>();
         final double tempC;
         final double tf;
         final boolean ignition;
+        /** The vessel goes over a burner at the end until the water has all boiled away. */
+        final boolean evaporate;
+        /** It did: there is no liquid left, only what the water was carrying. */
+        boolean boiledDry;
+        /** Dissolved species sitting in dry crystals, waiting for water. */
+        final Map<String, Double> parked = new LinkedHashMap<>();
+        /** Shelf solids that came out of solution when it was boiled dry: formula to mol. */
+        final Map<String, Double> dried = new LinkedHashMap<>();
+        /** Formulas listed as products only so they can be named: they are carried on as parked ions, not as solids. */
+        final java.util.Set<String> namedOnly = new java.util.HashSet<>();
         double gasMl;
         boolean bleached;
         final Map<String, Double> mol = new LinkedHashMap<>();
@@ -123,15 +267,28 @@ public class ChemistryEngine {
         final Map<String, Double> pptFormed = new LinkedHashMap<>();
         int reactionIndex = 0;
 
-        Run(List<Portion> portions, double tempC, boolean ignition) {
-            this.portions = portions;
+        Run(State base, List<Portion> fresh, double tempC, boolean ignition, boolean evaporate) {
+            this.base = base;
+            this.fresh = fresh;
             this.tempC = tempC;
             this.ignition = ignition;
+            this.evaporate = evaporate;
             this.tf = Math.pow(2.0, (tempC - 25.0) / 10.0);
+            if (base == null) {
+                this.portions = fresh;
+            } else {
+                List<Portion> all = new ArrayList<>(base.portions());
+                seed(base, all);
+                all.addAll(fresh);
+                this.portions = merge(all);
+            }
             for (Portion p : portions) {
                 Substance s = p.substance();
                 if (s.acid() != null) hadAcid = true;
                 if (s.base() != null || s.carbonate() != null && !s.isSolid()) hadBase = true;
+            }
+            for (Portion p : fresh) {
+                Substance s = p.substance();
                 if (s.isGas()) {
                     gasMl += p.amount();
                     double n = p.amount() / RTP_ML_PER_MOL;
@@ -145,6 +302,7 @@ public class ChemistryEngine {
                         add(k, coef * n);
                         solidTarget.put(k, "solid:" + s.id());
                         solidInitial.merge(k, coef * n, Double::sum);
+                        denseLiquidKeys.add(k);
                     });
                     continue;
                 }
@@ -161,6 +319,157 @@ public class ChemistryEngine {
                 if (s.aqueous()) aqMl += ml; else organicMl += ml;
                 s.species().forEach((k, molarity) -> add(k, molarity * ml / 1000.0));
             }
+        }
+
+        // ---------------------------------------------------------------- carried in from an earlier vessel
+
+        /** Starts this run from what an earlier mix left behind, instead of from an empty vessel. */
+        void seed(State b, List<Portion> all) {
+            aqMl = b.aqMl();
+            organicMl = b.organicMl();
+            b.mol().forEach(mol::put);
+            b.parked().forEach((k, v) -> parked.merge(k, v, Double::sum));
+            for (String key : b.solidKeys()) {
+                double n = b.mol().getOrDefault(key, 0.0);
+                if (n <= EPS) continue;
+                String formula = bare(key);
+                // Drawn as a settled solid: the page only draws shelf solids that were added in this stage.
+                solidTarget.put(key, "precipitate:" + formula);
+                solidInitial.put(key, n);
+                String hex = b.portions().stream().map(Portion::substance).filter(s -> s.species().containsKey(key))
+                        .map(Substance::colour).findFirst().orElse(null);
+                carriedCue(formula, n, hex);
+            }
+            b.solids().forEach((formula, n) -> {
+                if (n <= EPS) return;
+                // A precipitate that is also on the shelf (chalk, magnesium oxide, copper...) becomes that chemical,
+                // so everything the shelf version does, the one made here does too.
+                Substance shelf = catalogue.solidFor(formula).orElse(null);
+                if (shelf != null && shelf.molarMass() != null) {
+                    String key = formula + "(s)";
+                    add(key, n);
+                    solidTarget.putIfAbsent(key, "precipitate:" + formula);
+                    solidInitial.merge(key, n, Double::sum);
+                    all.add(new Portion(shelf, n * shelf.molarMass()));
+                    carriedCue(formula, n, Lore.colour(formula) != null ? Lore.colour(formula) : shelf.colour());
+                } else {
+                    precipitates.merge(formula, n, Double::sum);
+                    carriedCue(formula, n, Lore.colour(formula));
+                }
+            });
+        }
+
+        void carriedCue(String formula, double n, String hex) {
+            Map<String, Object> c = cue("precipitate", "vessel", 0);
+            c.put("id", formula);
+            c.put("colour", Colour.hex(hex == null ? "#e6e6e2" : hex, 0.95).toJson());
+            c.put("turbidity", round(clamp(n / Math.max(litres(), 0.02) * 30, 0.12, 0.92), 3));
+            c.put("settleMs", 0);
+            c.put("carried", true);
+        }
+
+        /**
+         * Precipitated hydroxides and carbonates that have no shelf form still dissolve when acid is added to
+         * them later (copper(II) hydroxide on a filter paper, say). Only solids carried in can be here this early.
+         */
+        void carriedSolidsWithAcid() {
+            if (base == null || aqMl <= 0) return;
+            for (Hydroxide h : HYDROXIDES) {
+                double n = precipitates.getOrDefault(h.solid(), 0.0);
+                if (n <= EPS || acidAvailable() <= EPS) continue;
+                double[] t = consumeAcid(h.charge() * n);
+                double e = (t[0] + t[1]) / h.charge();
+                if (e <= EPS) continue;
+                precipitates.merge(h.solid(), -e, Double::sum);
+                add(h.cation(), e);
+                product("H2O", h.charge() * e, "l");
+                heatJ += 40_000 * h.charge() * e;
+                long start = nextStart();
+                Map<String, Object> c = cue("dissolve", "precipitate:" + h.solid(), start);
+                c.put("durationMs", 3000L);
+                c.put("fraction", round(e / n, 3));
+                reaction("hydroxide-acid-" + h.symbol().toLowerCase(Locale.ROOT) + h.charge(),
+                        elementName(h.symbol()) + " hydroxide dissolves in acid", "neutralisation",
+                        Latex.eq(h.solid() + "(s) + " + coef(h.charge()) + "H^+ -> " + ion(h.symbol(), h.charge()) + " + "
+                                + coef(h.charge()) + "H2O(l)"),
+                        null, e);
+                observations.add("The " + h.colourWord() + " solid " + (e >= n - EPS ? "dissolves away" : "partly dissolves")
+                        + " as the acid neutralises it: an insoluble base still reacts with an acid to make a salt and water.");
+            }
+            for (Ppt p : INSOLUBLE) {
+                if (!"CO3^2-".equals(p.anion())) continue;
+                double n = precipitates.getOrDefault(p.solid(), 0.0);
+                if (n <= EPS || acidAvailable() <= EPS) continue;
+                int cations = p.cCharge() == 1 ? 2 : 1;
+                double[] t = consumeAcid(2 * n);
+                double e = (t[0] + t[1]) / 2;
+                if (e <= EPS) continue;
+                precipitates.merge(p.solid(), -e, Double::sum);
+                add(p.cation(), cations * e);
+                product("H2O", e, "l");
+                long start = nextStart();
+                gas("CO2", e, "vessel", 1.0, "medium", start);
+                Map<String, Object> c = cue("dissolve", "precipitate:" + p.solid(), start);
+                c.put("durationMs", 3500L);
+                c.put("fraction", round(e / n, 3));
+                String sym = p.cation().replaceAll("[\\^0-9+]", "");
+                reaction("carbonate-acid-" + p.solid().toLowerCase(Locale.ROOT), p.name() + " fizzes in acid", "gas",
+                        Latex.eq(p.solid() + "(s) + 2 H^+ -> " + coef(cations) + ion(sym, p.cCharge()) + " + CO2(g) + H2O(l)"),
+                        "acid-carbonate", e);
+                observations.add("The " + p.word() + " solid fizzes and " + (e >= n - EPS ? "disappears" : "shrinks")
+                        + ": like every carbonate, " + p.name().toLowerCase(Locale.ROOT) + " gives carbon dioxide with an acid.");
+            }
+        }
+
+        private static String coef(int n) {
+            return n == 1 ? "" : n + " ";
+        }
+
+        private static String ion(String symbol, int charge) {
+            return symbol + (charge == 1 ? "^+" : "^" + charge + "+");
+        }
+
+        /** What this run leaves in the vessel, for the next stage to start from. */
+        State state(Colour endColour) {
+            Map<String, Double> held = new LinkedHashMap<>();
+            java.util.Set<String> solidKeys = new java.util.LinkedHashSet<>();
+            mol.forEach((k, v) -> {
+                if (v <= EPS || k.endsWith("(g)")) return;
+                held.put(k, v);
+                if (isSolidKey(k)) solidKeys.add(k);
+            });
+            Map<String, Double> solids = new LinkedHashMap<>();
+            precipitates.forEach((k, v) -> { if (v > EPS) solids.put(k, v); });
+            for (Product p : products.values()) {
+                if (!"s".equals(p.phase()) || p.mol() <= EPS || precipitates.containsKey(p.formula())) continue;
+                if ("CuSO4·5H2O".equals(p.formula()) && (aqMl > 0 || boiledDry)) continue; // it dissolved: the ions are in mol
+                if (dried.containsKey(p.formula()) || namedOnly.contains(p.formula())) continue; // counted below, once
+                solids.merge(p.formula(), p.mol(), Double::sum);
+            }
+            dried.forEach((k, v) -> { if (v > EPS) solids.merge(k, v, Double::sum); });
+            Map<String, Double> dry = new LinkedHashMap<>();
+            parked.forEach((k, v) -> { if (v > EPS) dry.put(k, v); });
+            List<Portion> kept = portions.stream().filter(p -> !p.substance().isGas() && (!boiledDry || staysWhenDry(p))).toList();
+            return new State(held, solidKeys, solids, dry, aqMl, organicMl, kept, aqMl > 0 ? endColour : null);
+        }
+
+        /**
+         * Boiled dry, the liquids that went in are gone, and so is any shelf solid that dissolved completely:
+         * if it came back out as crystals, it is carried on as that solid, not as the ingredient.
+         */
+        boolean staysWhenDry(Portion p) {
+            Substance s = p.substance();
+            if (s.isElement() && "liquid".equals(s.form())) return true;
+            if (!s.isSolid()) return false;
+            return s.species().keySet().stream().anyMatch(k -> isSolidKey(k) && get(k) > EPS);
+        }
+
+        boolean isSolidKey(String k) {
+            return k.endsWith("(s)") || k.endsWith("(anh)") || "org:wax".equals(k) || denseLiquidKeys.contains(k);
+        }
+
+        static String bare(String key) {
+            return key.replace("(s)", "").replace("(anh)", "");
         }
 
         // ---------------------------------------------------------------- bookkeeping
@@ -185,6 +494,12 @@ public class ChemistryEngine {
             return out;
         }
         @Override public Map<String, Double> precipitates() { return precipitates; }
+        @Override public void park(String key, double n) { if (n > 0) parked.merge(key, n, Double::sum); }
+        @Override public java.util.Set<String> driedKeys() {
+            java.util.Set<String> out = new java.util.LinkedHashSet<>();
+            parked.forEach((k, v) -> { if (v > EPS) out.add(k); });
+            return out;
+        }
         @Override public double solidInitial(String key) { return solidInitial.getOrDefault(key, 0.0); }
         @Override public List<String> reasons() { return reasons; }
         @Override public boolean presentTag(String tag) {
@@ -257,6 +572,9 @@ public class ChemistryEngine {
                 c.put("hazard", hazard);
                 c.put("warning", Lore.GAS_WARNING.get(gas));
             }
+            // how it answers a splint or damp litmus, so the bench can show the test without guessing
+            Lore.GasTests tests = Lore.GAS_TESTS.get(gas);
+            if (tests != null) c.put("tests", tests);
         }
 
         @Override
@@ -326,10 +644,11 @@ public class ChemistryEngine {
             String gap = coverage();
             if (gap != null) {
                 return new Result(Kind.UNSUPPORTED, "NOT_MODELLED", List.of(), List.of(), List.of(), List.of(),
-                        List.of(), List.of(), List.of(), List.of(), gap);
+                        List.of(), List.of(), List.of(), List.of(), gap, null);
             }
             Colour startColour = startColour();
 
+            rewet();
             physical();
             Phases.dissolve(this);
             ElementRules.apply(this);
@@ -337,6 +656,7 @@ public class ChemistryEngine {
             Inorganic.early(this);
             neutralise();
             carbonates();
+            carriedSolidsWithAcid();
             Inorganic.afterAcidBase(this);
             Phases.acidCrystals(this);
             metalsWithAcid();
@@ -372,7 +692,185 @@ public class ChemistryEngine {
 
             double ph = ph();
             indicators(ph);
-            return finish(startColour, ph);
+            if (evaporate) boilDry(ph);
+            return finish(startColour, boiledDry ? Double.NaN : ph);
+        }
+
+        // ---------------------------------------------------------------- dry crystals and water
+
+        /**
+         * Crystals left by boiling a solution dry are drawn as a solid. If there is water in the vessel now,
+         * they dissolve straight back into it: everything that was parked in them is in solution again.
+         */
+        void rewet() {
+            if (parked.isEmpty()) return;
+            List<Evaporation.Salt> salts = Evaporation.pair(parked, List.of());
+            for (Evaporation.Salt salt : salts) {
+                Lore.register(salt.formula(), capitalise(salt.name()), salt.hex());
+                carriedCue(salt.formula(), salt.mol(), salt.hex());
+            }
+            boolean syrup = parked.entrySet().stream().anyMatch(e -> Evaporation.syrup(e.getKey()) && e.getValue() > 1e-5);
+            if (syrup) carriedCue("syrup", 0.01, Evaporation.SYRUP_HEX);
+            if (aqMl <= 0) return;
+            parked.forEach(this::add);
+            parked.clear();
+            for (Evaporation.Salt salt : salts) redissolveCue(salt.formula());
+            if (syrup) redissolveCue("syrup");
+            if (!salts.isEmpty() || syrup) {
+                observations.add("The dry " + (salts.isEmpty() ? "residue dissolves" : "crystals dissolve") + " again as the water goes in: "
+                        + "boiling the water away did not change what was dissolved in it.");
+            }
+        }
+
+        void redissolveCue(String id) {
+            Map<String, Object> c = cue("dissolve", "precipitate:" + id, 0);
+            c.put("durationMs", 2600L);
+            c.put("fraction", 1.0);
+        }
+
+        static String capitalise(String text) {
+            return text.isEmpty() ? text : Character.toUpperCase(text.charAt(0)) + text.substring(1);
+        }
+
+        /**
+         * The evaporating basin: everything has reacted, and now the water is boiled away over a burner.
+         * Volatile things leave with the steam, pairs of ions come out as crystals of their salt, and anything
+         * else that was dissolved stays behind in the residue until water is added again.
+         */
+        void boilDry(double ph) {
+            String[] no = Evaporation.refusal(this, ph);
+            if (no != null) {
+                mismatches.add(new Mismatch(no[0], no[1]));
+                return;
+            }
+            double waterMl = aqMl;
+            List<Map<String, Object>> residue = new ArrayList<>();
+            List<String> left = new ArrayList<>();
+
+            // Hard water: boiling drives carbon dioxide out of the hydrogencarbonate, and limescale is left.
+            for (Ppt p : INSOLUBLE) {
+                if (!"CO3^2-".equals(p.anion()) || p.cCharge() != 2) continue;
+                double e = Math.min(get(p.cation()), get("HCO3-") / 2);
+                if (e <= Evaporation.TRACE) continue;
+                take(p.cation(), e);
+                take("HCO3-", 2 * e);
+                precipitates.merge(p.solid(), e, Double::sum);
+                product(p.solid(), e, "s");
+                residue.add(residueEntry(p.solid(), p.name().toLowerCase(Locale.ROOT), p.hex(), e));
+                left.add("a " + p.word() + " crust of " + p.name().toLowerCase(Locale.ROOT)
+                        + ("CaCO3".equals(p.solid()) ? " (limescale, the same thing that furs up a kettle)" : ""));
+            }
+
+            // A trace of a volatile acid goes off with the steam, and so does every dissolved gas.
+            for (String anion : Evaporation.VOLATILE_ACID_ANIONS) {
+                double t = Math.min(get("H+"), get(anion));
+                if (t <= 0) continue;
+                take("H+", t);
+                take(anion, t);
+            }
+            boolean ammonia = get("NH3") > 1e-4;
+            boolean vinegar = get("CH3COOH") > 1e-4;
+            for (String k : new ArrayList<>(mol.keySet())) if (Evaporation.volatileKey(k) && !isSolidKey(k)) mol.remove(k);
+
+            // Everything still dissolved comes out of solution.
+            Map<String, Double> dissolved = new LinkedHashMap<>();
+            mol.forEach((k, v) -> { if (v > EPS && !isSolidKey(k)) dissolved.put(k, v); });
+            new ArrayList<>(mol.keySet()).forEach(k -> { if (!isSolidKey(k)) mol.remove(k); });
+            Map<String, String> shelf = shelfSalts;
+            double crystals = 0;
+            for (Evaporation.Salt salt : Evaporation.pair(dissolved, new ArrayList<>(shelf.keySet()))) {
+                dissolved.merge(salt.cation().key(), -salt.mol() * salt.cations(), Double::sum);
+                dissolved.merge(salt.anion().key(), -salt.mol() * salt.anions(), Double::sum);
+                String shelfKey = shelf.get(salt.cation().key() + "|" + salt.anion().key());
+                Substance bottle = shelfKey == null ? null : catalogue.solidFor(bare(shelfKey)).orElse(null);
+                String formula;
+                String hex;
+                if (bottle != null) {
+                    // the same chemical as the bottle on the shelf: carried on as that solid
+                    formula = bare(shelfKey);
+                    hex = bottle.colour() != null ? bottle.colour() : salt.hex();
+                    dried.merge(formula, salt.mol(), Double::sum);
+                } else {
+                    formula = salt.formula();
+                    hex = salt.hex();
+                    parked.merge(salt.cation().key(), salt.mol() * salt.cations(), Double::sum);
+                    parked.merge(salt.anion().key(), salt.mol() * salt.anions(), Double::sum);
+                    namedOnly.add(formula);
+                    Lore.register(formula, capitalise(salt.name()), hex);
+                }
+                product(formula, salt.mol(), "s");
+                crystals += salt.mol();
+                residue.add(residueEntry(formula, salt.name(), hex, salt.mol()));
+                left.add(colourOf(hex) + " crystals of " + salt.name());
+            }
+            // What is left over (ions with no partner, sugars, dyes, complexes) stays in the residue, exactly as much as there was.
+            boolean syrup = false;
+            boolean other = false;
+            for (Map.Entry<String, Double> e : dissolved.entrySet()) {
+                if (e.getValue() <= EPS) continue;
+                parked.merge(e.getKey(), e.getValue(), Double::sum);
+                if (Evaporation.syrup(e.getKey()) && e.getValue() > 1e-5) syrup = true;
+                else if (e.getValue() > 1e-4 && !e.getKey().startsWith("ind:")) other = true;
+            }
+            if (syrup) {
+                residue.add(residueEntry("syrup", "sugar syrup", Evaporation.SYRUP_HEX, 0.01));
+                left.add("a sticky golden syrup that browns at the edges (sugar does not crystallise cleanly when it is boiled dry: it starts to caramelise)");
+            } else if (other && left.isEmpty()) {
+                residue.add(residueEntry("residue", "dried residue", "#e2ddd0", 0.005));
+                left.add("a thin, dull film of dried residue");
+            }
+
+            aqMl = 0;
+            boiledDry = true;
+            Map<String, Object> c = cue("evaporate", "vessel", 0);
+            c.put("durationMs", 9000L);
+            c.put("volumeMl", round(waterMl, 1));
+            c.put("residue", residue);
+            reaction("evaporate-to-dryness", "Evaporating to dryness", "physical",
+                    "\\text{solution} \\xrightarrow{\\text{heat}} \\text{crystals} + \\text{steam}",
+                    crystals > Evaporation.TRACE ? "crystallisation" : null, Math.max(crystals, 1e-6));
+            if (left.isEmpty()) {
+                observations.add("The water boils away as steam and nothing at all is left behind: there was nothing dissolved in it.");
+            } else {
+                String list = left.size() == 1 ? left.get(0)
+                        : String.join(", ", left.subList(0, left.size() - 1)) + " and " + left.get(left.size() - 1);
+                observations.add("The water boils away as steam, leaving " + list + " in the basin.");
+                if (crystals > Evaporation.TRACE) {
+                    observations.add("Evaporating separates a dissolved solid from the water it was dissolved in. It is a physical change: "
+                            + "add water and the crystals dissolve again.");
+                }
+            }
+            if (ammonia) observations.add("The sharp smell of ammonia comes off with the steam: dissolved gases leave long before the water has gone.");
+            if (vinegar) observations.add("The steam smells of vinegar: ethanoic acid boils away with the water.");
+        }
+
+        Map<String, Object> residueEntry(String formula, String name, String hex, double n) {
+            Map<String, Object> r = new LinkedHashMap<>();
+            r.put("id", formula);
+            r.put("name", name);
+            r.put("colour", Colour.hex(hex, 1).toJson());
+            r.put("amount", round(clamp(n * 60, 0.15, 1), 2));
+            return r;
+        }
+
+        /** A plain word for a crystal's colour, from its hue: what a student would write in their notes. */
+        static String colourOf(String hex) {
+            int v;
+            try {
+                v = Integer.parseInt(hex.substring(1), 16);
+            } catch (RuntimeException e) {
+                return "white";
+            }
+            double r = ((v >> 16) & 255) / 255.0, g = ((v >> 8) & 255) / 255.0, b = (v & 255) / 255.0;
+            double max = Math.max(r, Math.max(g, b)), min = Math.min(r, Math.min(g, b));
+            double light = (max + min) / 2, spread = max - min;
+            double sat = spread < 1e-9 ? 0 : spread / (1 - Math.abs(2 * light - 1));
+            if (sat < 0.18 || light > 0.9) return light > 0.75 ? "white" : light < 0.25 ? "black" : "grey";
+            double hue = max == r ? ((g - b) / spread + 6) % 6 : max == g ? (b - r) / spread + 2 : (r - g) / spread + 4;
+            hue *= 60;
+            String name = hue < 18 || hue >= 345 ? "red" : hue < 42 ? (light < 0.5 ? "brown" : "orange") : hue < 68 ? "yellow"
+                    : hue < 165 ? "green" : hue < 195 ? "blue-green" : hue < 255 ? "blue" : hue < 300 ? "purple" : "pink";
+            return light < 0.22 ? "dark " + name : light > 0.72 ? "pale " + name : name;
         }
 
         /**
@@ -399,7 +897,11 @@ public class ChemistryEngine {
         Colour startColour() {
             List<Colour> cs = new ArrayList<>();
             List<Double> ws = new ArrayList<>();
-            for (Portion p : portions) {
+            if (base != null && base.colour() != null && base.aqMl() > 0) {
+                cs.add(base.colour());
+                ws.add(base.aqMl() * (0.15 + base.colour().alpha()));
+            }
+            for (Portion p : fresh) {
                 Substance s = p.substance();
                 if (s.isSolid() || s.isGas() || s.isElement()) continue;
                 String mix = s.waterMiscibility();
@@ -742,6 +1244,7 @@ public class ChemistryEngine {
                 Substance s = p.substance();
                 Substance.MetalInfo m = s.metal();
                 String key = m.symbol() + "(s)";
+                if (base != null && !has(key)) continue;
                 if (m.acidRate() <= 0) {
                     boolean nitric = presentTag("nitric_acid") && m.e0() < 0.96;
                     if (hadAcid && !nitric) {
@@ -1433,6 +1936,18 @@ public class ChemistryEngine {
                 ppt("Mg^2+", "F-", "MgF2", "#f7f7f5", 62.3, null, "Magnesium fluoride", "white"),
                 ppt("Ca^2+", "St-", "Ca(C17H35COO)2", "#f4f2ea", 607.0, "soap-scum", "Calcium stearate (scum)", "greyish-white"),
                 ppt("Mg^2+", "St-", "Mg(C17H35COO)2", "#f4f2ea", 591.2, "soap-scum", "Magnesium stearate (scum)", "greyish-white"),
+                // Any metal ion with a charge of 2+ or 3+ does to soap what hard water does.
+                ppt("Ba^2+", "St-", "Ba(C17H35COO)2", "#f4f2ea", 704.3, "soap-scum", "Barium stearate (scum)", "greyish-white"),
+                ppt("Sr^2+", "St-", "Sr(C17H35COO)2", "#f4f2ea", 654.6, "soap-scum", "Strontium stearate (scum)", "greyish-white"),
+                ppt("Zn^2+", "St-", "Zn(C17H35COO)2", "#f4f2ea", 632.3, "soap-scum", "Zinc stearate (scum)", "greyish-white"),
+                ppt("Pb^2+", "St-", "Pb(C17H35COO)2", "#f1efe6", 774.1, "soap-scum", "Lead(II) stearate (scum)", "greyish-white"),
+                ppt("Al^3+", "St-", "Al(C17H35COO)3", "#f4f2ea", 877.4, "soap-scum", "Aluminium stearate (scum)", "greyish-white"),
+                ppt("Cu^2+", "St-", "Cu(C17H35COO)2", "#7fc4c0", 630.5, "soap-scum", "Copper(II) stearate (scum)", "blue-green"),
+                ppt("Fe^2+", "St-", "Fe(C17H35COO)2", "#c9c39a", 622.8, "soap-scum", "Iron(II) stearate (scum)", "dirty greenish"),
+                ppt("Fe^3+", "St-", "Fe(C17H35COO)3", "#c98a4a", 906.3, "soap-scum", "Iron(III) stearate (scum)", "orange-brown"),
+                ppt("Ni^2+", "St-", "Ni(C17H35COO)2", "#a9d6a0", 625.7, "soap-scum", "Nickel(II) stearate (scum)", "pale green"),
+                ppt("Co^2+", "St-", "Co(C17H35COO)2", "#c9a0c0", 625.9, "soap-scum", "Cobalt(II) stearate (scum)", "pinkish"),
+                ppt("Mn^2+", "St-", "Mn(C17H35COO)2", "#efe2dc", 621.9, "soap-scum", "Manganese(II) stearate (scum)", "off-white"),
                 // Sparingly soluble: only the excess over the solubility product comes out.
                 ppt("Ca^2+", "SO4^2-", "CaSO4", "#f6f6f4", 136.1, "calcium-sulfate", "Calcium sulfate", "faint white", 4.9e-5),
                 ppt("Pb^2+", "Cl-", "PbCl2", "#f6f6f4", 278.1, null, "Lead(II) chloride", "white", 1.7e-5),
@@ -1501,8 +2016,11 @@ public class ChemistryEngine {
                         : p.ksp() > 0 ? "A " + p.word() + " precipitate of " + p.name().toLowerCase(Locale.ROOT)
                                 + " slowly appears - it is only sparingly soluble."
                         : p.discovery() != null && p.discovery().equals("soap-scum")
-                                ? "A greyish-white scum forms instead of a lather: the calcium and magnesium ions in hard water "
-                                        + "turn soap into insoluble " + p.name().toLowerCase(Locale.ROOT) + "."
+                                ? ("Ca^2+".equals(p.cation()) || "Mg^2+".equals(p.cation())
+                                        ? "A greyish-white scum forms instead of a lather: the calcium and magnesium ions in hard water "
+                                                + "turn soap into insoluble " + p.name().toLowerCase(Locale.ROOT) + "."
+                                        : "A " + p.word() + " scum forms instead of a lather: just like the ions in hard water, these metal "
+                                                + "ions turn soap into insoluble " + p.name().toLowerCase(Locale.ROOT) + ".")
                         : p.discovery() != null && p.discovery().equals("chemical-garden")
                                 ? "A " + p.word() + " gelatinous " + p.name().toLowerCase(Locale.ROOT)
                                         + " forms - in a chemical garden it grows up in branching towers."
@@ -1724,7 +2242,7 @@ public class ChemistryEngine {
                 c.put("durationMs", 6000);
                 observations.add("Steam rises off the hot liquid and condenses into droplets of water on the cooler glass above it.");
             }
-            if (aqMl > 0 && tempC >= 80) {
+            if (aqMl > 0 && tempC >= 80 && !evaporate) {
                 for (String[] s : CRYSTAL_SALTS) {
                     if (molar(s[0]) < 0.02 || molar(s[1]) < 0.02) continue;
                     Map<String, Object> c = cue("crystals", "vessel", 2500);
@@ -1892,7 +2410,11 @@ public class ChemistryEngine {
             ms.add(new Measurement("volume", round(liquidMl, 1), "mL"));
 
             List<String> finalReasons = new ArrayList<>(reasons);
-            if (kind == Kind.NO_REACTION) {
+            if (kind == Kind.NO_REACTION && base != null) {
+                if (!fresh.isEmpty() && finalReasons.isEmpty() && observations.isEmpty()) {
+                    finalReasons.add("Nothing new forms when this is added: the particles just mix with what was already here.");
+                }
+            } else if (kind == Kind.NO_REACTION) {
                 if (portions.size() == 1) {
                     finalReasons.add("There's only one substance here - nothing for it to react with.");
                 } else if (finalReasons.isEmpty()) {
@@ -1914,7 +2436,7 @@ public class ChemistryEngine {
             return new Result(kind, reasonCode, kind == Kind.REACTION ? reactions
                     : reactions.stream().filter(r -> "physical".equals(r.type())).toList(),
                     finalCues, kind == Kind.REACTION || kind == Kind.NO_REACTION ? observations : List.of(),
-                    pending, mismatches, finalReasons, productList, ms, null);
+                    pending, mismatches, finalReasons, productList, ms, null, state(endColour));
         }
 
         /** Plain-language description of a mixture in which nothing chemical happens. */
@@ -1955,6 +2477,7 @@ public class ChemistryEngine {
             addColour(cs, ws, "OCl-", "#eef5b8", 0.3);
             addColour(cs, ws, "Cl2", "#cfe35a", 30);
             addColour(cs, ws, "Br2", "#d0661a", 40);
+            addColour(cs, ws, "OBr-", "#f2d84a", 6);
             addColour(cs, ws, "Ni^2+", "#5fbf6a", 6);
             addColour(cs, ws, "Co^2+", "#e58fb0", 8);
             // Chromium(III) is violet as the sulfate, green once chloride ions join it.

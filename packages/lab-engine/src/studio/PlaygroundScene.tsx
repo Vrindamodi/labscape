@@ -1,5 +1,5 @@
 import { Html, OrbitControls, PerformanceMonitor } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -8,7 +8,7 @@ import { Backdrop, BenchTop, lathe, useGlass, type Quality } from "../bench/Benc
 import { KINDS } from "../engine/equipment";
 
 /** How the substance in hand is dispensed. */
-export type HeldKind = "bottle" | "dropper" | "spatula" | "gas";
+export type HeldKind = "bottle" | "dropper" | "spatula" | "gas" | "burette";
 
 /**
  * Everything the open-playground bench shows. The scene only draws; what happens chemically comes
@@ -44,7 +44,29 @@ export type PlaygroundView = {
   reactionPulse: number;
   sparkPulse: number;
   /** What is in hand and how it is being used. */
-  held: { kind: HeldKind; colour: string; capColour: string; tiltDeg: number; flowing: boolean; label: string } | null;
+  /** `fill` (0..1) is how full a burette still is; other tools ignore it. */
+  held: { kind: HeldKind; colour: string; capColour: string; tiltDeg: number; flowing: boolean; label: string; fill?: number } | null;
+  /**
+   * A flame test: each new `pulse` sends the wire loop from beaker `from` into the burner's flame, which burns
+   * `colour` while the loop is in it (null: the flame stays blue).
+   */
+  flameTest?: { pulse: number; colour: string | null; from: string } | null;
+  /** What stands on the hot plate: a beaker, or a test tube (tall, narrow, small). */
+  vessel?: "beaker" | "tube";
+  /**
+   * Gas tests held at the mouth of the vessel. Each new `pulse` plays one: a glowing splint that bursts back
+   * into flame, goes out or just keeps glowing; and a pair of damp litmus papers, one blue and one red, that
+   * end up the colours given ("none" leaves a paper as it was, "white" is bleached).
+   */
+  glowSplint?: { pulse: number; result: "relights" | "out" | "none" } | null;
+  /**
+   * The evaporating basin on its tripod. Each new `pulse` plays one heating of what vessel `from` held:
+   * "boil" tips in a solution of colour `liquid` and boils it away, leaving `residue` (null when nothing is
+   * left); "roast" heats a dry solid of colour `solid` strongly until it is `residue`. `steam` puts steam or
+   * fumes over it. While it plays, the vessel it came from is drawn empty; `BASIN_MS` says how long that is.
+   */
+  basin?: { pulse: number; mode: "boil" | "roast"; from: string; liquid: string | null; solid: string | null; residue: string | null; steam: boolean } | null;
+  litmus?: { pulse: number; blue: "red" | "white" | "none"; red: "blue" | "white" | "none" } | null;
   focus: boolean;
 
   /* ---- optional extras: every one may be left out ---- */
@@ -85,8 +107,76 @@ const fillH = (v: PlaygroundView) => Math.pow(Math.min(1, Math.max(0, v.levelMl 
 /** Pixels covered by panels on each side of the canvas: the camera frames the beaker in what is left. */
 export type SceneInsets = { left: number; right: number; top: number; bottom: number };
 
-export function PlaygroundScene({ view, reducedMotion, onBeaker, insets }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets }) {
+/** A beaker standing on the bench beside the hot plate, drawn as it was last seen. */
+export type BenchBeaker = {
+  id: string;
+  name: string;
+  colour: string;
+  opacity: number;
+  levelMl: number;
+  solid: string | null;
+  /** How much it holds when full (the hot-plate vessel's capacity if left out). */
+  capacityMl?: number;
+  /** A test tube standing in the rack, and which of the rack's holes it is in (0 is the leftmost). */
+  tube?: boolean;
+  hole?: number;
+};
+
+/** Resting beakers are a little smaller than the one being worked on, and line up to the left of the hot plate. */
+const REST_SCALE = 0.82;
+const REST_STEP = 0.72;
+const restSlot = (i: number): [number, number, number] => [-1.14 - i * REST_STEP, 0, 0.2];
+
+/** The test-tube rack stands at the far end of the row of resting beakers. */
+const RACK_HOLES = 6;
+const HOLE_STEP = 0.15;
+const RACK_W = RACK_HOLES * HOLE_STEP + 0.1;
+const TUBE_R = 0.05;
+const TUBE_H = 0.5;
+/** A test tube on the hot plate is drawn as the beaker made this much narrower. */
+const TUBE_SX = 0.4;
+const rackCentre = (beakers: number) => restSlot(beakers)[0] + BEAKER_R * REST_SCALE - RACK_W / 2;
+const rackHole = (beakers: number, hole: number): [number, number, number] => [rackCentre(beakers) + (hole - (RACK_HOLES - 1) / 2) * HOLE_STEP, 0, 0.2];
+
+/** The id `onDropBeaker` reports when a beaker is let go over the filter funnel instead of over another beaker. */
+export const FILTER_FUNNEL = "filter-funnel";
+/** The funnel stands behind the row of beakers, left of the hot plate, so it never widens the view. */
+const FUNNEL_AT: [number, number, number] = [-0.95, 0, -0.85];
+const FUNNEL_Y = 1.02;
+
+/** The id `onDropBeaker` reports when a beaker is let go over the Bunsen burner. */
+export const BUNSEN_BURNER = "bunsen-burner";
+/** What a beaker is dropped on to be heated in the evaporating basin: boiled dry if it holds a solution, heated strongly if it holds a dry solid. */
+export const EVAPORATING_BASIN = "evaporating-basin";
+/** The basin stands on a tripod and gauze over a burner of its own, at the back of the bench on the right. */
+const BASIN_AT: [number, number, number] = [0.66, 0, -0.92];
+const GAUZE_Y = 0.8;
+const BASIN_S = 0.6;
+const BASIN = KINDS.evaporating_basin;
+/** How long each heating takes on the bench before what is left goes back in its vessel (ms). */
+export const BASIN_MS = { boil: 6400, roast: 5200 } as const;
+/** The burner stands behind the hot plate, between it and the funnel: in view, and clear of a bottle held on the right. */
+const BURNER_AT: [number, number, number] = [-0.5, 0, -0.95];
+/** Height of the top of the burner's barrel, where the flame sits. */
+const BURNER_H = 0.42;
+/** Seconds into a flame test at which the loop reaches the flame, and at which it is taken out again. */
+const LOOP_IN = 1.1;
+const LOOP_OUT = 4.4;
+
+/**
+ * @param bench other beakers on the bench, in bench order. Any beaker (these, or the one on the plate) can be
+ *        dragged onto another: `onDropBeaker` is told which went onto which and where on screen it was let go.
+ *        A click without a drag on a resting beaker calls `onOpenBeaker`. Dropping a beaker on the filter
+ *        funnel reports `FILTER_FUNNEL` as what it went onto; a click on the funnel calls `onFunnel`.
+ *        Dropping one on the Bunsen burner reports `BUNSEN_BURNER`; a click on the burner calls `onBurner`.
+ *        Dropping one on the evaporating basin reports `EVAPORATING_BASIN`; a click on it calls `onBasin`.
+ */
+export function PlaygroundScene({ view, reducedMotion, onBeaker, insets, bench = [], plateId = "plate", onOpenBeaker, onDropBeaker, onFunnel, onBurner, onBasin }: { view: PlaygroundView; reducedMotion: boolean; onBeaker?: () => void; insets?: SceneInsets; bench?: BenchBeaker[]; plateId?: string; onOpenBeaker?: (id: string) => void; onDropBeaker?: (from: string, onto: string, at: { x: number; y: number }) => void; onFunnel?: () => void; onBurner?: () => void; onBasin?: () => void }) {
   const [quality, setQuality] = useState<Quality>(() => (((navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8) < 4 ? "lite" : "high"));
+  // The camera keeps the hot plate and every resting beaker in view: the frame only widens when there is more than one beaker.
+  const resting = bench.filter((b) => !b.tube).length;
+  const rack = view.vessel === "tube" || bench.some((b) => b.tube);
+  const frameMinX = rack ? rackCentre(resting) - RACK_W / 2 - 0.16 : resting ? restSlot(resting - 1)[0] - BEAKER_R * REST_SCALE - 0.16 : -FRAME_W / 2;
   return (
     <Canvas
       shadows={quality === "high"}
@@ -97,7 +187,7 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker, insets }: { vie
     >
       <PerformanceMonitor onDecline={() => setQuality("lite")} flipflops={2} />
       <Env />
-      <CameraRig focus={view.focus} pulse={view.reactionPulse} blast={view.blast?.pulse ?? 0} reducedMotion={reducedMotion} insets={insets} />
+      <CameraRig focus={view.focus} pulse={view.reactionPulse} blast={view.blast?.pulse ?? 0} reducedMotion={reducedMotion} insets={insets} minX={view.focus ? -FRAME_W / 2 : frameMinX} />
       <hemisphereLight args={["#bcd4ff", "#0b1020", 0.4]} />
       <directionalLight position={[3, 7, 4]} intensity={1.3} castShadow={quality === "high"} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} />
       <pointLight position={[-4, 3.6, -2.5]} intensity={10} color="#3a8cff" distance={12} decay={1.6} />
@@ -107,14 +197,12 @@ export function PlaygroundScene({ view, reducedMotion, onBeaker, insets }: { vie
       {!reducedMotion && <Dust count={quality === "high" ? 220 : 80} />}
       <HotPlate plateC={view.plateC} stirring={view.stirring} />
       {view.iceBath && <IceBath reducedMotion={reducedMotion} />}
-      <group position={[0, PLATE_H, 0]} onClick={(e) => (e.stopPropagation(), onBeaker?.())}>
-        <BeakerWithContents view={view} quality={quality} reducedMotion={reducedMotion} />
-      </group>
-      <TestTubeRack />
+      <Beakers view={view} quality={quality} reducedMotion={reducedMotion} bench={view.focus ? [] : bench} plateId={plateId} funnel={!view.focus && !!onDropBeaker} onBeaker={onBeaker} onOpen={onOpenBeaker} onDrop={onDropBeaker} onFunnel={onFunnel} onBurner={onBurner} onBasin={onBasin} />
       {view.held && <Held held={view.held} view={view} quality={quality} reducedMotion={reducedMotion} />}
       {quality === "high" && (
         <EffectComposer multisampling={4}>
-          <Bloom mipmapBlur luminanceThreshold={0.72} luminanceSmoothing={0.2} intensity={0.85} radius={0.7} />
+          {/* only what is lit from within (flames, the hot plate, sparks) blooms; a white solid or the filter paper does not */}
+          <Bloom mipmapBlur luminanceThreshold={0.92} luminanceSmoothing={0.12} intensity={0.6} radius={0.7} />
           <Vignette eskil={false} offset={0.22} darkness={0.62} />
         </EffectComposer>
       )}
@@ -147,7 +235,7 @@ const FOCUS_DIR = new THREE.Vector3(0, 0.67, 2.6).normalize();
 const FRAME_W = 2.0;
 const FRAME_H = 2.45;
 
-function CameraRig({ focus, pulse, blast, reducedMotion, insets }: { focus: boolean; pulse: number; blast: number; reducedMotion: boolean; insets?: SceneInsets | undefined }) {
+function CameraRig({ focus, pulse, blast, reducedMotion, insets, minX = -FRAME_W / 2 }: { focus: boolean; pulse: number; blast: number; reducedMotion: boolean; insets?: SceneInsets | undefined; minX?: number }) {
   const { camera, size } = useThree();
   const controls = useRef<{ update: () => void } | null>(null);
   const want = useMemo(() => new THREE.Vector3(), []);
@@ -173,17 +261,22 @@ function CameraRig({ focus, pulse, blast, reducedMotion, insets }: { focus: bool
     const H = size.height;
     const fw = Math.max(160, W - left - right);
     const fh = Math.max(160, H - top - bottom);
-    const ppu = Math.min(fw / FRAME_W, fh / FRAME_H);
+    // The frame runs from the leftmost resting beaker to the bottle held on the right of the plate.
+    const frameW = FRAME_W / 2 - minX;
+    const ppu = Math.min(fw / frameW, fh / FRAME_H);
     const tan = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
-    dist.current = THREE.MathUtils.clamp(H / (ppu * 2 * tan), 3.2, 10);
-    offWant.current = { x: left + fw / 2 - W / 2, y: top + fh / 2 - H / 2 };
+    dist.current = THREE.MathUtils.clamp(H / (ppu * 2 * tan), 3.2, 12);
+    // Pixels per world unit at the plate once the distance is clamped: slides the image so the frame's middle, not the plate, is centred.
+    const scale = H / (2 * tan * dist.current);
+    const middle = (minX + FRAME_W / 2) / 2;
+    offWant.current = { x: left + fw / 2 - W / 2 - middle * scale, y: top + fh / 2 - H / 2 };
     // A resize applies at once; a panel opening glides (see useFrame).
     if (sized.current.w !== W || sized.current.h !== H) offNow.current = { ...offWant.current };
     sized.current = { w: W, h: H };
     applyOffset();
     moving.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [camera, size.width, size.height, left, right, top, bottom]);
+  }, [camera, size.width, size.height, left, right, top, bottom, minX]);
   useEffect(() => {
     moving.current = true;
   }, [focus]);
@@ -215,7 +308,7 @@ function CameraRig({ focus, pulse, blast, reducedMotion, insets }: { focus: bool
       camera.position.y += Math.cos(clock.elapsedTime * 47) * 0.004 * kick.current;
     }
   });
-  return <OrbitControls ref={controls as never} makeDefault target={[TARGET.x, TARGET.y, TARGET.z]} enablePan={false} minDistance={1.6} maxDistance={10} minPolarAngle={0.3} maxPolarAngle={1.35} enableDamping={!reducedMotion} />;
+  return <OrbitControls ref={controls as never} makeDefault target={[TARGET.x, TARGET.y, TARGET.z]} enablePan={false} minDistance={1.6} maxDistance={12} minPolarAngle={0.3} maxPolarAngle={1.35} enableDamping={!reducedMotion} />;
 }
 
 /* ------------------------------------------------------------------ ambience */
@@ -395,30 +488,767 @@ function IceBath({ reducedMotion }: { reducedMotion: boolean }) {
   );
 }
 
-function TestTubeRack() {
+/* ------------------------------------------------------------------ beakers on the bench: click one, or drag one onto another */
+
+type DragState = { id: string; x0: number; y0: number; moving: boolean };
+
+/**
+ * The beaker on the hot plate and the ones resting beside it. Each can be picked up and carried: letting it
+ * go over another beaker reports the drop (the page then asks how much to pour). A press that never moves is
+ * a click. While a beaker is being carried the camera is locked, so the bench does not spin under it.
+ */
+function Beakers({ view, quality, reducedMotion, bench, plateId, funnel, onBeaker, onOpen, onDrop, onFunnel, onBurner, onBasin }: { view: PlaygroundView; quality: Quality; reducedMotion: boolean; bench: BenchBeaker[]; plateId: string; funnel: boolean; onBeaker?: (() => void) | undefined; onOpen?: ((id: string) => void) | undefined; onDrop?: ((from: string, onto: string, at: { x: number; y: number }) => void) | undefined; onFunnel?: (() => void) | undefined; onBurner?: (() => void) | undefined; onBasin?: (() => void) | undefined }) {
+  const controls = useThree((st) => st.controls) as { enabled: boolean } | null;
+  const camera = useThree((st) => st.camera);
+  const gl = useThree((st) => st.gl);
+  const probe = useMemo(() => new THREE.Vector3(), []);
+  /**
+   * Is the pointer on something that stands at `at` and reaches from `low` to `high`, as it appears on screen?
+   * The funnel stand and the burner are set back, so where they look to be and where they stand on the bench
+   * are different places: this is judged in screen pixels.
+   */
+  const onStanding = (at: [number, number, number], low: number, high: number, reach: number, clientX: number, clientY: number) => {
+    const r = gl.domElement.getBoundingClientRect();
+    const px = (y: number): [number, number] => {
+      probe.set(at[0], y, at[2]).project(camera);
+      return [r.left + ((probe.x + 1) / 2) * r.width, r.top + ((1 - probe.y) / 2) * r.height];
+    };
+    const [ax, ay] = px(low);
+    const [bx, by] = px(high);
+    const len2 = (bx - ax) ** 2 + (by - ay) ** 2;
+    const t = Math.max(0, Math.min(1, ((clientX - ax) * (bx - ax) + (clientY - ay) * (by - ay)) / Math.max(1, len2)));
+    return Math.hypot(clientX - (ax + (bx - ax) * t), clientY - (ay + (by - ay) * t)) < Math.sqrt(len2) * reach;
+  };
+  const groups = useRef(new Map<string, THREE.Group>());
+  const drag = useRef<DragState | null>(null);
+  const overRef = useRef<string | null>(null);
+  const [over, setOver] = useState<string | null>(null);
+  const [carried, setCarried] = useState<string | null>(null);
   const glass = useGlass("lite");
-  const cols = ["#ff7ab6", "#39d6ff", "#ffd23f"];
+  const glassGeom = useMemo(() => lathe(BEAKER.profile), []);
+  const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.5), []);
+  const hit = useMemo(() => new THREE.Vector3(), []);
+  const beakers = useMemo(() => bench.filter((b) => !b.tube), [bench]);
+  const tubes = useMemo(() => bench.filter((b) => b.tube), [bench]);
+  const narrow = view.vessel === "tube";
+  const rack = narrow || tubes.length > 0;
+  const homes = useMemo(() => {
+    const m = new Map<string, [number, number, number]>([[plateId, [0, PLATE_H, 0]]]);
+    beakers.forEach((b, i) => m.set(b.id, restSlot(i)));
+    tubes.forEach((b, i) => m.set(b.id, rackHole(beakers.length, b.hole ?? i)));
+    return m;
+  }, [beakers, tubes, plateId]);
+  // With the funnel on the bench there is always somewhere to carry a beaker, even a lone one.
+  const canDrag = !!onDrop && (bench.length > 0 || funnel);
+  // What a vessel held is in the basin while it is being heated there: the vessel stands empty until it comes back.
+  const [inBasin, setInBasin] = useState<string | null>(null);
+  const basinPulse = view.basin?.pulse ?? 0;
+  const basinSeen = useRef(basinPulse);
+  useEffect(() => {
+    if (!view.basin || basinPulse === basinSeen.current) return;
+    basinSeen.current = basinPulse;
+    setInBasin(view.basin.from);
+    const t = setTimeout(() => setInBasin(null), reducedMotion ? 0 : BASIN_MS[view.basin.mode]);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [basinPulse]);
+  const plateView = useMemo(() => (inBasin === plateId ? { ...view, levelMl: 0, precipitate: null, solid: null, crystals: null } : view), [inBasin, plateId, view]);
+
+  const release = () => {
+    drag.current = null;
+    overRef.current = null;
+    setOver(null);
+    setCarried(null);
+    if (controls) controls.enabled = true;
+  };
+  // If the scene goes away mid-drag (focus mode, a panel covering it), never leave the camera locked.
+  useEffect(() => () => {
+    if (controls) controls.enabled = true;
+  }, [controls]);
+
+  useFrame((_, dt) => {
+    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 9);
+    for (const [id, g] of groups.current) {
+      const home = homes.get(id);
+      if (!home) continue;
+      const held = drag.current?.id === id && drag.current.moving;
+      if (!held) {
+        g.position.x += (home[0] - g.position.x) * k;
+        g.position.y += (home[1] - g.position.y) * k;
+        g.position.z += (home[2] - g.position.z) * k;
+      }
+      // A carried beaker leans towards the one it would pour into.
+      const target = held && overRef.current ? (overRef.current === FILTER_FUNNEL ? FUNNEL_AT : overRef.current === BUNSEN_BURNER ? BURNER_AT : overRef.current === EVAPORATING_BASIN ? BASIN_AT : homes.get(overRef.current)) : null;
+      const lean = target ? (target[0] < g.position.x ? 0.42 : -0.42) : 0;
+      g.rotation.z += (lean - g.rotation.z) * k;
+    }
+  });
+
+  const handlers = (id: string) => ({
+    onPointerDown: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      (e.target as unknown as Element).setPointerCapture(e.pointerId);
+      drag.current = { id, x0: e.nativeEvent.clientX, y0: e.nativeEvent.clientY, moving: false };
+      if (controls) controls.enabled = false;
+    },
+    onPointerMove: (e: ThreeEvent<PointerEvent>) => {
+      const d = drag.current;
+      if (!d || d.id !== id || !canDrag) return;
+      if (!d.moving) {
+        if (Math.hypot(e.nativeEvent.clientX - d.x0, e.nativeEvent.clientY - d.y0) < 6) return;
+        d.moving = true;
+        setCarried(id);
+      }
+      const g = groups.current.get(id);
+      if (!g || !e.ray.intersectPlane(plane, hit)) return;
+      g.position.set(THREE.MathUtils.clamp(hit.x, -4.2, 2.2), (id === plateId ? PLATE_H : 0) + 0.2, THREE.MathUtils.clamp(hit.z, -0.9, 1.3));
+      // The nearest other beaker within reach is where it would be poured.
+      let best: string | null = null;
+      let bestD = 0.7;
+      for (const [other, home] of homes) {
+        if (other === id) continue;
+        const dd = Math.hypot(g.position.x - home[0], g.position.z - home[2]);
+        if (dd < bestD) {
+          bestD = dd;
+          best = other;
+        }
+      }
+      if (funnel && onStanding(FUNNEL_AT, 0.25, FUNNEL_Y + 0.25, 0.36, e.nativeEvent.clientX, e.nativeEvent.clientY)) best = FILTER_FUNNEL;
+      else if (funnel && onStanding(BURNER_AT, 0, BURNER_H + 0.4, 0.42, e.nativeEvent.clientX, e.nativeEvent.clientY)) best = BUNSEN_BURNER;
+      else if (funnel && onStanding(BASIN_AT, 0.1, GAUZE_Y + 0.3, 0.36, e.nativeEvent.clientX, e.nativeEvent.clientY)) best = EVAPORATING_BASIN;
+      if (best !== overRef.current) {
+        overRef.current = best;
+        setOver(best);
+      }
+    },
+    onPointerUp: (e: ThreeEvent<PointerEvent>) => {
+      const d = drag.current;
+      if (!d || d.id !== id) return;
+      e.stopPropagation();
+      (e.target as unknown as Element).releasePointerCapture?.(e.pointerId);
+      const onto = overRef.current;
+      release();
+      if (!d.moving) {
+        if (id === plateId) onBeaker?.();
+        else onOpen?.(id);
+      } else if (onto) onDrop?.(id, onto, { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY });
+    },
+    onPointerCancel: release,
+    onLostPointerCapture: () => {
+      if (drag.current?.id === id) release();
+    },
+    onPointerOver: () => {
+      if (canDrag || id !== plateId) document.body.style.cursor = "grab";
+    },
+    onPointerOut: () => {
+      document.body.style.cursor = "";
+    },
+  });
+  useEffect(() => () => {
+    document.body.style.cursor = "";
+  }, []);
+  const keep = (id: string) => (g: THREE.Group | null) => {
+    if (g) groups.current.set(id, g);
+    else groups.current.delete(id);
+  };
+
   return (
-    <group position={[-1.55, 0, -0.35]}>
-      <mesh position={[0, 0.25, 0]} castShadow>
-        <boxGeometry args={[0.9, 0.05, 0.28]} />
-        <meshStandardMaterial color="#a8743f" roughness={0.6} />
-      </mesh>
-      <mesh position={[0, 0.03, 0]}>
-        <boxGeometry args={[0.9, 0.05, 0.28]} />
-        <meshStandardMaterial color="#8b5e30" roughness={0.6} />
-      </mesh>
-      {cols.map((c, i) => (
-        <group key={c} position={[-0.26 + i * 0.26, 0.08, 0]}>
-          <mesh position={[0, 0.32, 0]} material={glass}>
-            <cylinderGeometry args={[0.07, 0.07, 0.64, 16, 1, true]} />
-          </mesh>
-          <mesh position={[0, 0.15, 0]}>
-            <cylinderGeometry args={[0.06, 0.06, 0.28, 16]} />
-            <meshStandardMaterial color={c} emissive={c} emissiveIntensity={0.25} transparent opacity={0.8} roughness={0.1} />
-          </mesh>
+    <>
+      <group ref={keep(plateId)} position={[0, PLATE_H, 0]} {...handlers(plateId)}>
+        <group scale={narrow ? [TUBE_SX, 1, TUBE_SX] : 1}>
+          <BeakerWithContents view={plateView} quality={quality} reducedMotion={reducedMotion} />
+        </group>
+        {over === plateId && <DropRing radius={narrow ? BEAKER_R * TUBE_SX + 0.1 : BEAKER_R + 0.12} />}
+        <GlowSplint test={view.glowSplint ?? null} narrow={narrow} reducedMotion={reducedMotion} />
+        <LitmusPapers test={view.litmus ?? null} reducedMotion={reducedMotion} />
+      </group>
+      {rack && <TubeRack x={rackCentre(beakers.length)} />}
+      {tubes.map((b, i) => (
+        <group key={b.id} ref={keep(b.id)} position={rackHole(beakers.length, b.hole ?? i)} {...handlers(b.id)}>
+          <RestingTube b={inBasin === b.id ? { ...b, levelMl: 0, solid: null } : b} glass={glass} />
+          {over === b.id && <DropRing radius={TUBE_R + 0.06} />}
+          {carried !== b.id && (
+            <Html position={[0, TUBE_H + 0.13, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+              <div style={{ whiteSpace: "nowrap", padding: over === b.id ? "2px 8px" : "1px 5px", borderRadius: 8, background: over === b.id ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.8)", border: `1px solid ${over === b.id ? "#ffc23d" : "rgba(140,180,255,.25)"}`, color: over === b.id ? "#ffd98a" : "#dbe7ff", font: `600 ${over === b.id ? 12 : 10}px Inter, system-ui, sans-serif` }}>
+                {over === b.id ? `Pour into ${b.name}` : b.name}
+              </div>
+            </Html>
+          )}
         </group>
       ))}
+      {funnel && <FilterStand over={over === FILTER_FUNNEL} carrying={carried !== null} onClick={onFunnel} />}
+      {funnel && <BunsenBurner test={view.flameTest ?? null} from={view.flameTest ? (homes.get(view.flameTest.from) ?? homes.get(plateId)!) : null} over={over === BUNSEN_BURNER} carrying={carried !== null} reducedMotion={reducedMotion} onClick={onBurner} />}
+      {funnel && <BasinStand heating={view.basin ?? null} over={over === EVAPORATING_BASIN} carrying={carried !== null} reducedMotion={reducedMotion} onClick={onBasin} />}
+      {beakers.map((b, i) => (
+        <group key={b.id} ref={keep(b.id)} position={restSlot(i)} {...handlers(b.id)}>
+          <group scale={REST_SCALE}>
+            <RestingBeaker b={inBasin === b.id ? { ...b, levelMl: 0, solid: null } : b} capacityMl={b.capacityMl ?? view.capacityMl} glass={glass} glassGeom={glassGeom} />
+            {over === b.id && <DropRing radius={BEAKER_R + 0.12} />}
+          </group>
+          {carried !== b.id && (
+            <Html position={[0, BEAKER_H * REST_SCALE + 0.16, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+              <div style={{ whiteSpace: "nowrap", padding: "2px 8px", borderRadius: 9, background: over === b.id ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.85)", border: `1px solid ${over === b.id ? "#ffc23d" : "rgba(140,180,255,.3)"}`, color: over === b.id ? "#ffd98a" : "#dbe7ff", font: "600 12px Inter, system-ui, sans-serif" }}>
+                {over === b.id ? `Pour into ${b.name}` : `${b.name}${b.levelMl > 0.05 ? ` · ${b.levelMl < 10 ? b.levelMl.toFixed(1) : Math.round(b.levelMl)} mL` : b.solid ? " · solid" : " · empty"}`}
+              </div>
+            </Html>
+          )}
+        </group>
+      ))}
+    </>
+  );
+}
+
+/** A glowing ring on the bench under the beaker a carried one would be poured into. */
+function DropRing({ radius }: { radius: number }) {
+  return (
+    <mesh rotation-x={-Math.PI / 2} position={[0, 0.006, 0]}>
+      <ringGeometry args={[radius, radius + 0.045, 48]} />
+      <meshBasicMaterial color="#ffc23d" transparent opacity={0.9} depthWrite={false} />
+    </mesh>
+  );
+}
+
+/** A beaker that is not being worked on: glass, its liquid at the right level and colour, and any solid at the bottom. */
+function RestingBeaker({ b, capacityMl, glass, glassGeom }: { b: BenchBeaker; capacityMl: number; glass: THREE.Material; glassGeom: THREE.BufferGeometry }) {
+  const h = Math.pow(Math.min(1, Math.max(0, b.levelMl / capacityMl)), 0.62) * (BEAKER_H - 0.06);
+  return (
+    <group>
+      {h > 0.004 && (
+        <>
+          <mesh position={[0, 0.012 + h / 2, 0]} renderOrder={1}>
+            <cylinderGeometry args={[LIQ_R, LIQ_R, h, 32, 1]} />
+            <meshStandardMaterial color={b.colour} emissive={b.colour} emissiveIntensity={0.08 + b.opacity * 0.12} transparent opacity={Math.min(0.96, 0.24 + b.opacity * 0.72)} roughness={0.08} depthWrite={false} />
+          </mesh>
+          <mesh position={[0, 0.012 + h, 0]} rotation-x={-Math.PI / 2} renderOrder={2}>
+            <circleGeometry args={[LIQ_R, 32]} />
+            <meshStandardMaterial color="#ffffff" transparent opacity={0.3} roughness={0} depthWrite={false} />
+          </mesh>
+        </>
+      )}
+      {b.solid && (
+        <mesh position={[0, 0.03, 0]}>
+          <cylinderGeometry args={[LIQ_R * 0.82, LIQ_R * 0.9, 0.035, 24]} />
+          <meshStandardMaterial color={b.solid} roughness={0.9} />
+        </mesh>
+      )}
+      <mesh geometry={glassGeom} material={glass} renderOrder={3} />
+      {/* an easy thing to grab: the glass itself is thin and see-through */}
+      <mesh position={[0, BEAKER_H / 2, 0]} visible={false}>
+        <cylinderGeometry args={[BEAKER_R + 0.04, BEAKER_R + 0.04, BEAKER_H, 12]} />
+      </mesh>
+    </group>
+  );
+}
+
+/** A test tube standing in the rack: glass, what is in it, and any solid at the bottom. */
+function RestingTube({ b, glass }: { b: BenchBeaker; glass: THREE.Material }) {
+  const inner = TUBE_R * 0.84;
+  const h = Math.min(1, Math.max(0, b.levelMl / (b.capacityMl ?? 20))) * (TUBE_H - 0.08);
+  const y0 = 0.03 + TUBE_R;
+  return (
+    <group>
+      {h > 0.004 && (
+        <mesh position={[0, y0 + h / 2, 0]} renderOrder={1}>
+          <cylinderGeometry args={[inner, inner, h, 16]} />
+          <meshStandardMaterial color={b.colour} emissive={b.colour} emissiveIntensity={0.08 + b.opacity * 0.12} transparent opacity={Math.min(0.96, 0.3 + b.opacity * 0.66)} roughness={0.08} depthWrite={false} />
+        </mesh>
+      )}
+      {b.solid && (
+        <mesh position={[0, y0 + 0.012, 0]}>
+          <cylinderGeometry args={[inner, inner * 0.8, 0.035, 12]} />
+          <meshStandardMaterial color={b.solid} roughness={0.9} />
+        </mesh>
+      )}
+      <mesh position={[0, y0 + (TUBE_H - TUBE_R) / 2, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[TUBE_R, TUBE_R, TUBE_H - TUBE_R, 20, 1, true]} />
+      </mesh>
+      <mesh position={[0, y0, 0]} rotation-x={Math.PI} material={glass} renderOrder={3}>
+        <sphereGeometry args={[TUBE_R, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      </mesh>
+      {/* an easy thing to grab: the glass itself is thin and see-through */}
+      <mesh position={[0, 0.03 + TUBE_H / 2, 0]} visible={false}>
+        <cylinderGeometry args={[TUBE_R + 0.025, TUBE_R + 0.025, TUBE_H, 8]} />
+      </mesh>
+    </group>
+  );
+}
+
+/** A wooden test-tube rack: a base, a shelf the tubes pass through, and the two ends that hold it up. */
+function TubeRack({ x }: { x: number }) {
+  return (
+    <group position={[x, 0, 0.2]}>
+      <mesh position={[0, 0.015, 0]} castShadow>
+        <boxGeometry args={[RACK_W, 0.03, 0.24]} />
+        <meshStandardMaterial color="#8a6a45" roughness={0.8} />
+      </mesh>
+      {/* the shelf is two rails, so the tubes between them stay in view */}
+      {[-0.085, 0.085].map((z) => (
+        <mesh key={z} position={[0, 0.3, z]}>
+          <boxGeometry args={[RACK_W, 0.022, 0.05]} />
+          <meshStandardMaterial color="#8a6a45" roughness={0.8} />
+        </mesh>
+      ))}
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[side * (RACK_W / 2 - 0.015), 0.16, 0]}>
+          <boxGeometry args={[0.03, 0.3, 0.24]} />
+          <meshStandardMaterial color="#7a5c3b" roughness={0.8} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * A filter funnel in a ring on a retort stand, with a folded filter paper in it. Carry a beaker to it and let
+ * go to filter that beaker: the liquid runs through, the solid stays on the paper.
+ */
+function FilterStand({ over, carrying, onClick }: { over: boolean; carrying: boolean; onClick?: (() => void) | undefined }) {
+  const glass = useGlass("lite");
+  return (
+    <group position={FUNNEL_AT} onClick={(e) => (e.stopPropagation(), onClick?.())}>
+      <mesh position={[-0.06, 0.02, 0]} castShadow>
+        <boxGeometry args={[0.56, 0.04, 0.36]} />
+        <meshStandardMaterial color="#2a3350" roughness={0.5} metalness={0.5} />
+      </mesh>
+      <mesh position={[-0.26, 0.7, 0]}>
+        <cylinderGeometry args={[0.018, 0.018, 1.36, 12]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      {/* boss and arm holding the ring */}
+      <mesh position={[-0.26, FUNNEL_Y, 0]}>
+        <boxGeometry args={[0.06, 0.06, 0.06]} />
+        <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+      </mesh>
+      <mesh position={[-0.19, FUNNEL_Y, 0]} rotation-z={Math.PI / 2}>
+        <cylinderGeometry args={[0.012, 0.012, 0.14, 8]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      <mesh position={[0, FUNNEL_Y, 0]} rotation-x={Math.PI / 2}>
+        <torusGeometry args={[0.125, 0.012, 8, 32]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      {/* the glass funnel: cone and stem */}
+      <mesh position={[0, FUNNEL_Y + 0.06, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[0.21, 0.028, 0.22, 32, 1, true]} />
+      </mesh>
+      <mesh position={[0, FUNNEL_Y - 0.17, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[0.028, 0.02, 0.24, 16, 1, true]} />
+      </mesh>
+      {/* the filter paper sitting in it */}
+      <mesh position={[0, FUNNEL_Y + 0.075, 0]}>
+        <cylinderGeometry args={[0.192, 0.012, 0.19, 32, 1, true]} />
+        <meshStandardMaterial color="#f7f3e6" emissive={over ? "#ffc23d" : "#000000"} emissiveIntensity={over ? 0.5 : 0} roughness={0.95} side={THREE.DoubleSide} />
+      </mesh>
+      {over && <DropRing radius={0.34} />}
+      <Html position={[0, FUNNEL_Y + 0.36, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+        <div style={{ whiteSpace: "nowrap", padding: "2px 8px", borderRadius: 9, background: over ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.85)", border: `1px solid ${over ? "#ffc23d" : carrying ? "rgba(255,194,61,.55)" : "rgba(140,180,255,.3)"}`, color: over ? "#ffd98a" : "#dbe7ff", font: "600 12px Inter, system-ui, sans-serif" }}>
+          {over ? "Filter it here" : "Filter funnel"}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+/** How long a gas test stays at the mouth of the vessel, and when its result shows. */
+const GAS_TEST_S = 4.2;
+const GAS_TEST_SHOWS = 0.9;
+
+/**
+ * The glowing-splint test: a splint that has been blown out, still glowing at its tip, is held in the mouth
+ * of the vessel. In oxygen it bursts back into flame; a gas that will not let things burn kills the glow.
+ */
+function GlowSplint({ test, narrow, reducedMotion }: { test: NonNullable<PlaygroundView["glowSplint"]> | null; narrow: boolean; reducedMotion: boolean }) {
+  const group = useRef<THREE.Group>(null);
+  const ember = useRef<THREE.MeshStandardMaterial>(null);
+  const flame = useRef<THREE.Group>(null);
+  const seen = useRef(test?.pulse ?? 0);
+  const started = useRef(-1);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (test && test.pulse !== seen.current) {
+      seen.current = test.pulse;
+      started.current = t;
+    }
+    const age = started.current < 0 ? Infinity : t - started.current;
+    const on = age < GAS_TEST_S;
+    const g = group.current;
+    if (!g) return;
+    g.visible = on;
+    if (!on) return;
+    const inT = Math.min(1, age / 0.35);
+    const outT = Math.max(0, (age - (GAS_TEST_S - 0.4)) / 0.4);
+    const k = reducedMotion ? 1 : (1 - Math.pow(1 - inT, 3)) * (1 - outT);
+    g.position.set((narrow ? 0.02 : 0.06) + (1 - k) * 0.9, BEAKER_H + 0.04 + (1 - k) * 0.35, 0.02);
+    const shown = reducedMotion || age >= GAS_TEST_SHOWS;
+    const result = test?.result ?? "none";
+    // the ember breathes while it glows; it dies in a gas that puts it out, and is lost in the flame when it relights
+    if (ember.current) ember.current.emissiveIntensity = shown && result === "out" ? Math.max(0, 2 - (age - GAS_TEST_SHOWS) * 4) : 1.8 + (reducedMotion ? 0 : Math.sin(t * 6) * 0.5);
+    if (flame.current) {
+      const lit = shown && result === "relights";
+      flame.current.visible = lit;
+      if (lit) {
+        const grow = reducedMotion ? 1 : Math.min(1, (age - GAS_TEST_SHOWS) / 0.25);
+        flame.current.scale.set(grow * (1 + (reducedMotion ? 0 : Math.sin(age * 31) * 0.1)), grow * (1 + (reducedMotion ? 0 : Math.sin(age * 23) * 0.2)), grow);
+      }
+    }
+  });
+  return (
+    <group ref={group} visible={false}>
+      <mesh position={[0.32, 0.06, 0]} rotation-z={Math.PI / 2 - 0.35}>
+        <cylinderGeometry args={[0.012, 0.012, 0.7, 8]} />
+        <meshStandardMaterial color="#c9955a" roughness={0.8} />
+      </mesh>
+      <mesh position={[0.01, -0.005, 0]}>
+        <sphereGeometry args={[0.02, 10, 8]} />
+        <meshStandardMaterial ref={ember} color="#2a1408" emissive="#ff5a1a" emissiveIntensity={1.8} toneMapped={false} />
+      </mesh>
+      <group ref={flame} position={[0, 0.02, 0]} visible={false}>
+        {[1, 0.6].map((sc, i) => (
+          <mesh key={sc} position={[0, 0.07 * sc, 0]}>
+            <coneGeometry args={[0.04 * sc, 0.16 * sc, 16, 1, true]} />
+            <meshBasicMaterial color={i ? "#fff3c4" : "#ff9a2e"} transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+}
+
+const PAPER = { blue: new THREE.Color("#3f6fd8"), red: new THREE.Color("#d8524a"), white: new THREE.Color("#f4f1ea") };
+
+/**
+ * Damp litmus papers held over the mouth of the vessel, one blue and one red. An acidic gas turns the blue one
+ * red, an alkaline gas turns the red one blue, and chlorine bleaches them (the blue one goes red on its way).
+ */
+function LitmusPapers({ test, reducedMotion }: { test: NonNullable<PlaygroundView["litmus"]> | null; reducedMotion: boolean }) {
+  const group = useRef<THREE.Group>(null);
+  const blue = useRef<THREE.MeshStandardMaterial>(null);
+  const red = useRef<THREE.MeshStandardMaterial>(null);
+  const seen = useRef(test?.pulse ?? 0);
+  const started = useRef(-1);
+  const mixed = useMemo(() => new THREE.Color(), []);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (test && test.pulse !== seen.current) {
+      seen.current = test.pulse;
+      started.current = t;
+    }
+    const age = started.current < 0 ? Infinity : t - started.current;
+    const on = age < GAS_TEST_S + 0.6;
+    const g = group.current;
+    if (!g) return;
+    g.visible = on;
+    if (!on) return;
+    const inT = Math.min(1, age / 0.35);
+    const outT = Math.max(0, (age - (GAS_TEST_S + 0.2)) / 0.4);
+    const k = reducedMotion ? 1 : (1 - Math.pow(1 - inT, 3)) * (1 - outT);
+    g.position.set(0, BEAKER_H + 0.17 + (1 - k) * 0.5, 0);
+    // how far the change has gone: 0 before it shows, 1 once it is complete
+    const f = reducedMotion ? 1 : Math.max(0, Math.min(1, (age - GAS_TEST_SHOWS) / 1.1));
+    if (blue.current) {
+      const to = test?.blue ?? "none";
+      // bleaching passes through red first: the gas is acidic before it bleaches
+      if (to === "white") blue.current.color.copy(f < 0.5 ? mixed.copy(PAPER.blue).lerp(PAPER.red, f * 2) : mixed.copy(PAPER.red).lerp(PAPER.white, (f - 0.5) * 2));
+      else blue.current.color.copy(mixed.copy(PAPER.blue).lerp(to === "red" ? PAPER.red : PAPER.blue, f));
+    }
+    if (red.current) {
+      const to = test?.red ?? "none";
+      red.current.color.copy(mixed.copy(PAPER.red).lerp(to === "blue" ? PAPER.blue : to === "white" ? PAPER.white : PAPER.red, f));
+    }
+  });
+  return (
+    <group ref={group} visible={false}>
+      {/* the tweezers holding the two strips */}
+      <mesh position={[0.2, 0.13, 0]} rotation-z={Math.PI / 2 - 0.25}>
+        <cylinderGeometry args={[0.006, 0.006, 0.42, 6]} />
+        <meshStandardMaterial color="#c0c7d4" metalness={0.9} roughness={0.3} />
+      </mesh>
+      <mesh position={[-0.032, 0, 0]}>
+        <boxGeometry args={[0.05, 0.2, 0.004]} />
+        <meshStandardMaterial ref={blue} color="#3f6fd8" roughness={0.9} />
+      </mesh>
+      <mesh position={[0.032, 0, 0]}>
+        <boxGeometry args={[0.05, 0.2, 0.004]} />
+        <meshStandardMaterial ref={red} color="#d8524a" roughness={0.9} />
+      </mesh>
+    </group>
+  );
+}
+
+const BURNER_BLUE = new THREE.Color("#4aa8ff");
+
+/**
+ * A lit Bunsen burner. Carry a beaker to it (or click it) for a flame test: a wire loop takes a little of the
+ * beaker's contents into the flame, and the flame burns the colour of the metal in it.
+ */
+function BunsenBurner({ test, from, over, carrying, reducedMotion, onClick }: { test: NonNullable<PlaygroundView["flameTest"]> | null; from: [number, number, number] | null; over: boolean; carrying: boolean; reducedMotion: boolean; onClick?: (() => void) | undefined }) {
+  const outer = useRef<THREE.Mesh>(null);
+  const inner = useRef<THREE.Mesh>(null);
+  const loop = useRef<THREE.Group>(null);
+  // a test that was already over when the burner came into view is not played again
+  const seen = useRef(test?.pulse ?? 0);
+  const started = useRef(-1);
+  const colour = useMemo(() => new THREE.Color(), []);
+  const top: [number, number, number] = [BURNER_AT[0], BURNER_H + 0.16, BURNER_AT[2]];
+
+  useFrame(({ clock }, dt) => {
+    const t = clock.elapsedTime;
+    if (test && test.pulse !== seen.current) {
+      seen.current = test.pulse;
+      started.current = t;
+    }
+    const age = started.current < 0 ? Infinity : t - started.current;
+    const inFlame = age >= (reducedMotion ? 0 : LOOP_IN) && age < LOOP_OUT;
+    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 7);
+    const flicker = reducedMotion ? 1 : 1 + Math.sin(t * 17) * 0.05 + Math.sin(t * 29) * 0.03;
+    if (outer.current) {
+      const m = outer.current.material as THREE.MeshBasicMaterial;
+      m.color.lerp(inFlame && test?.colour ? colour.set(test.colour) : BURNER_BLUE, k);
+      // a coloured flame is taller and fuller than the quiet blue one
+      const grow = inFlame && test?.colour ? 1.35 : 1;
+      outer.current.scale.x += (grow - outer.current.scale.x) * k;
+      outer.current.scale.z = outer.current.scale.x;
+      outer.current.scale.y = (outer.current.scale.y + (grow - outer.current.scale.y) * k) * 1;
+      outer.current.position.y = BURNER_H + 0.16 * outer.current.scale.y * flicker;
+    }
+    if (inner.current) inner.current.scale.y = flicker;
+    const g = loop.current;
+    if (g) {
+      const src = from ?? [0, PLATE_H, 0];
+      const above: [number, number, number] = [src[0], src[1] + BEAKER_H + 0.3, src[2]];
+      const dipped: [number, number, number] = [src[0], src[1] + 0.1, src[2]];
+      g.visible = age < LOOP_OUT + 0.5;
+      if (g.visible) {
+        const mix = (a: [number, number, number], b: [number, number, number], f: number) => {
+          const e = f * f * (3 - 2 * f);
+          g.position.set(a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, a[2] + (b[2] - a[2]) * e);
+        };
+        if (reducedMotion || age >= LOOP_IN) mix(top, [top[0], top[1] + 0.5, top[2]], age < LOOP_OUT ? 0 : Math.min(1, (age - LOOP_OUT) / 0.5));
+        else if (age < 0.4) mix(above, dipped, age / 0.4);
+        else if (age < 0.7) mix(dipped, above, (age - 0.4) / 0.3);
+        else mix(above, top, (age - 0.7) / (LOOP_IN - 0.7));
+      }
+    }
+  });
+
+  return (
+    <>
+      <group position={BURNER_AT} onClick={(e) => (e.stopPropagation(), onClick?.())}>
+        {/* base, barrel, collar with its air hole, and the gas hose trailing off the back of the bench */}
+        <mesh position={[0, 0.02, 0]} castShadow>
+          <cylinderGeometry args={[0.15, 0.17, 0.04, 28]} />
+          <meshStandardMaterial color="#2a3350" roughness={0.45} metalness={0.6} />
+        </mesh>
+        <mesh position={[0, BURNER_H / 2 + 0.02, 0]} castShadow>
+          <cylinderGeometry args={[0.032, 0.036, BURNER_H - 0.04, 20]} />
+          <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+        </mesh>
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[0.046, 0.046, 0.07, 20]} />
+          <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+        </mesh>
+        <mesh position={[0.2, 0.05, -0.12]} rotation-z={Math.PI / 2} rotation-y={0.55}>
+          <cylinderGeometry args={[0.016, 0.016, 0.5, 10]} />
+          <meshStandardMaterial color="#b3472e" roughness={0.8} />
+        </mesh>
+        {/* the flame: a pale inner cone inside an outer one that takes the colour of the test */}
+        <mesh ref={outer} position={[0, BURNER_H + 0.16, 0]} renderOrder={5}>
+          <coneGeometry args={[0.055, 0.32, 20, 1, true]} />
+          <meshBasicMaterial color="#4aa8ff" transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+        </mesh>
+        <mesh ref={inner} position={[0, BURNER_H + 0.08, 0]} renderOrder={6}>
+          <coneGeometry args={[0.026, 0.16, 16, 1, true]} />
+          <meshBasicMaterial color="#cfeaff" transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+        </mesh>
+        {over && <DropRing radius={0.26} />}
+        <Html position={[0, BURNER_H + 0.5, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+          <div style={{ whiteSpace: "nowrap", padding: "2px 8px", borderRadius: 9, background: over ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.85)", border: `1px solid ${over ? "#ffc23d" : carrying ? "rgba(255,194,61,.55)" : "rgba(140,180,255,.3)"}`, color: over ? "#ffd98a" : "#dbe7ff", font: "600 12px Inter, system-ui, sans-serif" }}>
+            {over ? "Flame-test it here" : "Bunsen burner"}
+          </div>
+        </Html>
+      </group>
+      {/* the nichrome wire loop: a handle, a wire and the small loop that carries the sample */}
+      <group ref={loop} visible={false}>
+        <mesh position={[0.135, 0.37, 0]} rotation-z={-0.35}>
+          <cylinderGeometry args={[0.02, 0.02, 0.3, 10]} />
+          <meshStandardMaterial color="#e6dcc2" roughness={0.7} />
+        </mesh>
+        <mesh position={[0.045, 0.125, 0]} rotation-z={-0.35}>
+          <cylinderGeometry args={[0.007, 0.007, 0.26, 6]} />
+          <meshStandardMaterial color="#dfe5f0" metalness={0.7} roughness={0.3} />
+        </mesh>
+        <mesh>
+          <torusGeometry args={[0.03, 0.007, 8, 18]} />
+          <meshStandardMaterial color="#dfe5f0" metalness={0.7} roughness={0.3} />
+        </mesh>
+      </group>
+    </>
+  );
+}
+
+const lerp = (a: number, b: number, f: number) => a + (b - a) * Math.max(0, Math.min(1, f));
+const ease = (f: number) => {
+  const x = Math.max(0, Math.min(1, f));
+  return x * x * (3 - 2 * x);
+};
+/** Where the lumps of residue sit in the bottom of the basin: [x, z, size]. */
+const BASIN_LUMPS: [number, number, number][] = [[0, 0, 1.1], [0.05, 0.02, 0.9], [-0.045, 0.03, 1], [0.02, -0.05, 0.85], [-0.03, -0.04, 0.95], [0.075, -0.03, 0.7], [-0.08, -0.01, 0.75], [0.01, 0.07, 0.8], [0.06, 0.065, 0.6], [-0.06, 0.07, 0.65]];
+
+/**
+ * The evaporating basin: a porcelain dish on a tripod and gauze, over a Bunsen burner of its own. Carry a
+ * beaker to it (or click it). A solution is tipped in and boiled until the water has gone and only what was
+ * dissolved is left; a dry solid is heated strongly, far hotter than the hot plate can make it.
+ */
+function BasinStand({ heating, over, carrying, reducedMotion, onClick }: { heating: NonNullable<PlaygroundView["basin"]> | null; over: boolean; carrying: boolean; reducedMotion: boolean; onClick?: (() => void) | undefined }) {
+  const dish = useMemo(() => lathe(BASIN.profile), []);
+  const outer = useRef<THREE.Mesh>(null);
+  const inner = useRef<THREE.Mesh>(null);
+  const liquid = useRef<THREE.Mesh>(null);
+  const lumps = useRef<THREE.Group>(null);
+  const steam = useRef<THREE.Group>(null);
+  const glow = useRef<THREE.MeshStandardMaterial>(null);
+  const seen = useRef(heating?.pulse ?? 0);
+  const started = useRef(-1);
+  const from = useMemo(() => new THREE.Color(), []);
+  const to = useMemo(() => new THREE.Color(), []);
+  const mixed = useMemo(() => new THREE.Color(), []);
+
+  useFrame(({ clock }, dt) => {
+    const t = clock.elapsedTime;
+    if (heating && heating.pulse !== seen.current) {
+      seen.current = heating.pulse;
+      started.current = t;
+    }
+    const mode = heating?.mode ?? "boil";
+    const total = BASIN_MS[mode] / 1000;
+    // with reduced motion the heating is over at once: only what is left is shown, for as long as it would have taken
+    const raw = started.current < 0 ? Infinity : t - started.current;
+    const age = reducedMotion && raw < total ? total - 0.01 : raw;
+    const playing = age < total + 0.6;
+    const hot = playing && age > 0.3 && age < total - 1;
+    const k = reducedMotion ? 1 : 1 - Math.exp(-dt * 6);
+    const flicker = reducedMotion ? 1 : 1 + Math.sin(t * 19) * 0.06 + Math.sin(t * 31) * 0.04;
+    // the flame: low and quiet until something is on the gauze, then roaring and spreading under it
+    if (outer.current) {
+      const roar = hot ? (mode === "roast" ? 1.55 : 1.3) : 0.62;
+      outer.current.scale.y += (roar - outer.current.scale.y) * k;
+      outer.current.scale.x = outer.current.scale.z = 0.8 + (outer.current.scale.y - 0.62) * 0.75;
+      outer.current.position.y = BURNER_H + 0.16 * outer.current.scale.y * flicker;
+    }
+    if (inner.current) inner.current.scale.y = flicker * (hot ? 1.2 : 0.7);
+    if (glow.current) glow.current.emissiveIntensity += ((hot && mode === "roast" ? 0.5 : 0) - glow.current.emissiveIntensity) * k;
+
+    // boiling: tipped in, then the level falls until there is none
+    const l = liquid.current;
+    if (l) {
+      const level = mode === "boil" && playing && heating?.liquid ? (age < 0.5 ? ease(age / 0.5) : 1 - ease((age - 0.6) / (total - 2.2))) : 0;
+      l.visible = level > 0.02;
+      if (l.visible) {
+        const boil = reducedMotion || age < 0.8 ? 0 : Math.sin(t * 23) * 0.004;
+        l.position.y = lerp(9, 24, level) * U + boil;
+        const r = lerp(30, 40.5, level) * U * 0.94;
+        l.scale.set(r, r, 1);
+        (l.material as THREE.MeshStandardMaterial).color.set(heating?.liquid ?? "#cfe6ff");
+      }
+    }
+    // what is left: crystals growing as the last of the water goes, or a solid changing colour in the heat
+    const g = lumps.current;
+    if (g) {
+      const gone = Math.max(0, (age - total) / 0.5);
+      let size = 0;
+      if (playing && heating) {
+        if (mode === "boil") size = heating.residue ? ease((age - (total - 3.2)) / 2) : 0;
+        else size = heating.solid || heating.residue ? ease(age / 0.4) : 0;
+        size *= 1 - Math.min(1, gone);
+        const start = mode === "roast" ? (heating.solid ?? heating.residue) : heating.residue;
+        const end = heating.residue ?? start;
+        if (start && end) mixed.copy(from.set(start)).lerp(to.set(end), mode === "roast" ? ease((age - 1.2) / 2.4) : 1);
+      }
+      g.visible = size > 0.01;
+      g.scale.setScalar(Math.max(0.001, size));
+      if (g.visible) g.children.forEach((c) => ((c as THREE.Mesh).material as THREE.MeshStandardMaterial).color.copy(mixed));
+    }
+    if (steam.current) steam.current.visible = !reducedMotion && playing && !!heating?.steam && age > 0.9 && age < total - 0.7;
+  });
+
+  return (
+    <group position={BASIN_AT} onClick={(e) => (e.stopPropagation(), onClick?.())}>
+      {/* the burner: base, barrel, collar and hose */}
+      <mesh position={[0, 0.02, 0]} castShadow>
+        <cylinderGeometry args={[0.15, 0.17, 0.04, 28]} />
+        <meshStandardMaterial color="#2a3350" roughness={0.45} metalness={0.6} />
+      </mesh>
+      <mesh position={[0, BURNER_H / 2 + 0.02, 0]} castShadow>
+        <cylinderGeometry args={[0.032, 0.036, BURNER_H - 0.04, 20]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.1, 0]}>
+        <cylinderGeometry args={[0.046, 0.046, 0.07, 20]} />
+        <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+      </mesh>
+      <mesh position={[0.2, 0.05, -0.12]} rotation-z={Math.PI / 2} rotation-y={0.55}>
+        <cylinderGeometry args={[0.016, 0.016, 0.5, 10]} />
+        <meshStandardMaterial color="#b3472e" roughness={0.8} />
+      </mesh>
+      <mesh ref={outer} position={[0, BURNER_H + 0.1, 0]} scale={[0.8, 0.62, 0.8]} renderOrder={5}>
+        <coneGeometry args={[0.055, 0.32, 20, 1, true]} />
+        <meshBasicMaterial color="#4aa8ff" transparent opacity={0.7} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh ref={inner} position={[0, BURNER_H + 0.07, 0]} renderOrder={6}>
+        <coneGeometry args={[0.026, 0.14, 16, 1, true]} />
+        <meshBasicMaterial color="#cfeaff" transparent opacity={0.85} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      {/* the tripod: a ring on three splayed legs */}
+      <mesh position={[0, GAUZE_Y - 0.012, 0]} rotation-x={Math.PI / 2} castShadow>
+        <torusGeometry args={[0.24, 0.013, 8, 36]} />
+        <meshStandardMaterial color="#3b4252" metalness={0.75} roughness={0.35} />
+      </mesh>
+      {[0, 1, 2].map((i) => {
+        const a = (i / 3) * Math.PI * 2 + Math.PI / 6;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 0.275, (GAUZE_Y - 0.012) / 2, Math.sin(a) * 0.275]} rotation={[Math.sin(a) * 0.088, 0, -Math.cos(a) * 0.088]} castShadow>
+            <cylinderGeometry args={[0.012, 0.012, GAUZE_Y, 8]} />
+            <meshStandardMaterial color="#3b4252" metalness={0.75} roughness={0.35} />
+          </mesh>
+        );
+      })}
+      {/* wire gauze with its ceramic centre, which glows a little when the flame is roaring */}
+      <mesh position={[0, GAUZE_Y, 0]}>
+        <boxGeometry args={[0.56, 0.006, 0.56, 9, 1, 9]} />
+        <meshStandardMaterial color="#9aa3b2" metalness={0.6} roughness={0.5} wireframe />
+      </mesh>
+      <mesh position={[0, GAUZE_Y + 0.004, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[0.15, 28]} />
+        <meshStandardMaterial ref={glow} color="#e4e2da" emissive="#ff6a2a" emissiveIntensity={0} roughness={0.9} />
+      </mesh>
+      {/* the porcelain basin and what is in it */}
+      <group position={[0, GAUZE_Y + 0.006, 0]} scale={BASIN_S}>
+        <mesh geometry={dish} castShadow>
+          <meshStandardMaterial color="#cfccc2" roughness={0.6} metalness={0} side={THREE.DoubleSide} />
+        </mesh>
+        <mesh ref={liquid} rotation-x={-Math.PI / 2} visible={false} renderOrder={2}>
+          <circleGeometry args={[1, 36]} />
+          <meshStandardMaterial color="#cfe6ff" transparent opacity={0.78} roughness={0.15} />
+        </mesh>
+        {/* heaped up towards the rim, so it can be seen from the front of the bench */}
+        <group ref={lumps} position={[0, 0.215, 0]} visible={false}>
+          {BASIN_LUMPS.map(([x, z, sz], i) => (
+            <mesh key={i} position={[x * 2.6, 0.07 - Math.hypot(x, z) * 0.9 + (i % 3) * 0.012, z * 2.6]} rotation={[i * 0.9, i * 1.7, i * 0.5]}>
+              <icosahedronGeometry args={[0.085 * sz, 0]} />
+              <meshStandardMaterial color="#f4f6f8" roughness={0.55} flatShading />
+            </mesh>
+          ))}
+        </group>
+      </group>
+      <group ref={steam} visible={false}>
+        <Puffs colour="#f2f7ff" y0={GAUZE_Y + 0.2} rise={1.1} spread={0.2} count={14} opacity={0.5} speed={0.34} size={0.12} reducedMotion={reducedMotion} />
+      </group>
+      {over && <DropRing radius={0.36} />}
+      <Html position={[0, GAUZE_Y + 0.52, 0]} center zIndexRange={[8, 0]} style={{ pointerEvents: "none" }}>
+        <div style={{ whiteSpace: "nowrap", padding: "2px 8px", borderRadius: 9, background: over ? "rgba(60,44,6,.92)" : "rgba(8,16,40,.85)", border: `1px solid ${over ? "#ffc23d" : carrying ? "rgba(255,194,61,.55)" : "rgba(140,180,255,.3)"}`, color: over ? "#ffd98a" : "#dbe7ff", font: "600 12px Inter, system-ui, sans-serif" }}>
+          {over ? "Heat it here" : "Evaporating basin"}
+        </div>
+      </Html>
     </group>
   );
 }
@@ -432,7 +1262,6 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
   const liquidMat = useRef<THREE.MeshPhysicalMaterial>(null);
   const surface = useRef<THREE.Mesh>(null);
   const surfaceMat = useRef<THREE.MeshPhysicalMaterial>(null);
-  const glow = useRef<THREE.PointLight>(null);
   const group = useRef<THREE.Group>(null);
   const colour = useMemo(() => new THREE.Color(), []);
   const level = useRef(0);
@@ -463,13 +1292,12 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
       liquidMat.current.color.lerp(colour, k);
       liquidMat.current.attenuationColor.lerp(colour, k);
       liquidMat.current.opacity += (Math.min(0.96, 0.2 + view.opacity * 0.76) - liquidMat.current.opacity) * k;
-      // Strongly coloured liquids glow a little under bloom.
+      // Strongly coloured liquids glow a little. The glow is the liquid's own: a light placed in the
+      // beaker shows up as a bright ball reflected in the glass and burns out a pale precipitate.
       liquidMat.current.emissive.lerp(colour, k);
       liquidMat.current.emissiveIntensity = 0.08 + view.opacity * 0.12;
     }
     if (surfaceMat.current) surfaceMat.current.color.lerp(colour.clone().lerp(new THREE.Color("#ffffff"), 0.55), k);
-    if (glow.current) glow.current.intensity += ((view.levelMl > 1 ? 0.6 + view.opacity * 1.2 : 0) - glow.current.intensity) * k;
-    if (glow.current) glow.current.color.lerp(colour, k);
     if (frost.current) frost.current.opacity += ((view.iceBath ? 0.5 : view.liquidC < 12 ? 0.3 : 0) - frost.current.opacity) * (1 - Math.exp(-dt * 0.6));
     if (group.current && view.swirling && !reducedMotion) {
       group.current.position.x = Math.cos(t * 9) * 0.025;
@@ -486,7 +1314,6 @@ function BeakerWithContents({ view, quality, reducedMotion }: { view: Playground
   const steamy = view.levelMl > 1 && view.liquidC > 55;
   return (
     <group ref={group}>
-      <pointLight ref={glow} position={[0, 0.25, 0]} intensity={0} distance={1.4} decay={2} />
       <mesh ref={liquid} position={[0, 0.012, 0]} renderOrder={1}>
         <cylinderGeometry args={[LIQ_R, LIQ_R, 1, 48, 1]} />
         <meshPhysicalMaterial ref={liquidMat} color="#cfe6ff" emissive="#000000" transparent opacity={0.3} roughness={0.05} clearcoat={0.8} ior={1.33} attenuationColor="#cfe6ff" attenuationDistance={0.6} depthWrite={false} />
@@ -1485,6 +2312,12 @@ function Thermometer({ c, target, reducedMotion }: { c: number; target: number; 
 const REAGENT = KINDS.reagent_bottle;
 const BOTTLE_H = 125 * U;
 const BOTTLE_S = 0.5;
+/** A dropper's length from the pivot it is held by down to its tip. */
+const DROPPER_L = 0.32;
+/** A burette: the graduated tube above its tap, and the tap and jet below it. */
+const BURETTE_L = 0.86;
+const BURETTE_R = 0.03;
+const BURETTE_JET = 0.16;
 
 function Held({ held, view, quality, reducedMotion }: { held: NonNullable<PlaygroundView["held"]>; view: PlaygroundView; quality: Quality; reducedMotion: boolean }) {
   const glass = useGlass(quality);
@@ -1493,8 +2326,34 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
   const tilt = useRef(0);
   const appear = useRef(0);
   const liquidTop = PLATE_H + 0.012 + fillH(view);
-  // The mouth sits just above and outside the rim; the body hangs below it and swings out as it tilts.
-  const mouth = useMemo(() => new THREE.Vector3(BEAKER_R + 0.16, PLATE_H + BEAKER_H + 0.2, 0.05), []);
+  const rim = PLATE_H + BEAKER_H;
+  // A bottle's mouth sits just above and outside the rim; the body hangs below it and swings out as it
+  // tilts, and the stream arcs in. A dropper and a spatula let go straight down, so they are held over
+  // the opening instead: anything they drop has to land inside the glass.
+  // over a test tube the opening is much smaller, so everything is held closer to the middle
+  const narrow = view.vessel === "tube";
+  const sx = narrow ? TUBE_SX : 1;
+  const mouth = useMemo(
+    () =>
+      held.kind === "dropper"
+        ? new THREE.Vector3(narrow ? -0.06 : BEAKER_R * 0.3, rim + 0.12 + DROPPER_L, narrow ? 0 : 0.05)
+        : held.kind === "spatula"
+          ? new THREE.Vector3(BEAKER_R * 0.35 * sx, rim + 0.16, narrow ? 0 : 0.05)
+          : held.kind === "burette"
+            ? new THREE.Vector3(BEAKER_R * 0.3 * sx, rim + 0.08, 0)
+            : new THREE.Vector3(BEAKER_R * sx + 0.16, rim + 0.2, narrow ? 0.02 : 0.05),
+    [held.kind, rim, narrow, sx],
+  );
+  // Where drops and grains leave the tool: the dropper's tip swings out a little as it tilts; the
+  // spatula's heap sits just under the point it turns about.
+  const lean = (held.tiltDeg * Math.PI) / 180;
+  const tip =
+    held.kind === "dropper"
+      ? new THREE.Vector3(mouth.x + DROPPER_L * Math.sin(lean), mouth.y - DROPPER_L * Math.cos(lean), mouth.z)
+      : held.kind === "burette"
+        ? mouth
+        : new THREE.Vector3(mouth.x, mouth.y - 0.05, mouth.z);
+  const clamped = held.kind === "burette";
   useFrame(({ clock }, dt) => {
     const g = pivot.current;
     if (!g) return;
@@ -1503,8 +2362,9 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
     const ka = reducedMotion ? 1 : 1 - Math.exp(-dt * 5.5);
     tilt.current += ((held.tiltDeg * Math.PI) / 180 - tilt.current) * kt;
     appear.current += (1 - appear.current) * ka;
-    g.rotation.z = tilt.current + (reducedMotion || held.flowing ? 0 : Math.sin(clock.elapsedTime * 1.4) * 0.02);
-    g.position.set(mouth.x + (1 - appear.current) * 0.8, mouth.y + (1 - appear.current) * 0.3 + (held.flowing || reducedMotion ? 0 : Math.sin(clock.elapsedTime * 1.1) * 0.012), mouth.z);
+    // a burette is clamped: it neither tilts nor sways in the hand
+    g.rotation.z = clamped ? 0 : tilt.current + (reducedMotion || held.flowing ? 0 : Math.sin(clock.elapsedTime * 1.4) * 0.02);
+    g.position.set(mouth.x + (1 - appear.current) * 0.8, mouth.y + (1 - appear.current) * 0.3 + (clamped || held.flowing || reducedMotion ? 0 : Math.sin(clock.elapsedTime * 1.1) * 0.012), mouth.z);
   });
 
   const h = BOTTLE_H * BOTTLE_S;
@@ -1530,9 +2390,9 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
           </group>
         )}
         {held.kind === "dropper" && (
-          <group position={[0, -0.32, 0]}>
-            <mesh position={[0, 0.16, 0]} material={glass}>
-              <cylinderGeometry args={[0.025, 0.012, 0.32, 16]} />
+          <group position={[0, -DROPPER_L, 0]}>
+            <mesh position={[0, DROPPER_L / 2, 0]} material={glass}>
+              <cylinderGeometry args={[0.025, 0.012, DROPPER_L, 16]} />
             </mesh>
             <mesh position={[0, 0.1, 0]}>
               <cylinderGeometry args={[0.02, 0.011, 0.16, 16]} />
@@ -1556,6 +2416,7 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
             </mesh>
           </group>
         )}
+        {held.kind === "burette" && <Burette colour={held.colour} fill={held.fill ?? 1} glass={glass} />}
         {held.kind === "gas" && (
           <group position={[0.35, -0.55, 0]}>
             <mesh castShadow>
@@ -1569,22 +2430,84 @@ function Held({ held, view, quality, reducedMotion }: { held: NonNullable<Playgr
           </group>
         )}
       </group>
-      {held.flowing && held.kind === "bottle" && <Stream from={mouth} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
-      {held.flowing && held.kind === "dropper" && <Drops from={mouth} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
-      {held.flowing && held.kind === "spatula" && <Drops from={new THREE.Vector3(mouth.x - 0.05, mouth.y - 0.06, mouth.z)} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} grains />}
+      {held.flowing && held.kind === "bottle" && <Stream from={mouth} toY={liquidTop} endX={LIQ_R * 0.35 * sx} colour={held.colour} reducedMotion={reducedMotion} />}
+      {held.flowing && (held.kind === "dropper" || held.kind === "burette") && <Drops from={tip} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} />}
+      {held.flowing && held.kind === "spatula" && <Drops from={tip} toY={liquidTop} colour={held.colour} reducedMotion={reducedMotion} grains />}
       {held.kind === "gas" && <GasHose from={new THREE.Vector3(mouth.x + 0.35, mouth.y - 0.1, mouth.z)} />}
     </>
   );
 }
 
+/**
+ * A burette in a clamp on a retort stand, drawn from its jet (the origin) upwards: jet, tap, then the graduated
+ * tube with the liquid still in it. The stand is off to the right, behind where a bottle would be held.
+ */
+function Burette({ colour, fill, glass }: { colour: string; fill: number; glass: THREE.Material }) {
+  const tube0 = BURETTE_JET + 0.05;
+  const level = Math.max(0, Math.min(1, fill)) * (BURETTE_L - 0.06);
+  const standX = 0.62;
+  const standZ = -0.2;
+  const clampY = tube0 + BURETTE_L * 0.45;
+  const arm = Math.hypot(standX, standZ);
+  return (
+    <group>
+      {/* jet and tap */}
+      <mesh position={[0, BURETTE_JET / 2, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[0.012, 0.006, BURETTE_JET, 10]} />
+      </mesh>
+      <mesh position={[0, BURETTE_JET + 0.025, 0]} rotation-x={Math.PI / 2}>
+        <cylinderGeometry args={[0.018, 0.018, 0.11, 10]} />
+        <meshStandardMaterial color="#3d8bff" roughness={0.4} />
+      </mesh>
+      {/* the graduated tube, the liquid in it, and a few marks */}
+      <mesh position={[0, tube0 + BURETTE_L / 2, 0]} material={glass} renderOrder={3}>
+        <cylinderGeometry args={[BURETTE_R, BURETTE_R, BURETTE_L, 20, 1, true]} />
+      </mesh>
+      {level > 0.002 && (
+        <mesh position={[0, tube0 + level / 2, 0]}>
+          <cylinderGeometry args={[BURETTE_R * 0.82, BURETTE_R * 0.82, level, 16]} />
+          <meshStandardMaterial color={colour} transparent opacity={0.78} roughness={0.1} />
+        </mesh>
+      )}
+      {Array.from({ length: 11 }, (_, i) => (
+        <mesh key={i} position={[0, tube0 + 0.03 + (i / 10) * (BURETTE_L - 0.06), 0]} rotation-x={Math.PI / 2}>
+          <torusGeometry args={[BURETTE_R + 0.001, i % 5 === 0 ? 0.0035 : 0.002, 4, 20, Math.PI]} />
+          <meshBasicMaterial color="#dbe7ff" transparent opacity={0.75} />
+        </mesh>
+      ))}
+      {/* the stand: base, rod, and the boss and arm that hold the burette */}
+      <mesh position={[standX, 0.02 - (PLATE_H + BEAKER_H + 0.08), standZ]} castShadow>
+        <boxGeometry args={[0.4, 0.04, 0.5]} />
+        <meshStandardMaterial color="#2a3350" roughness={0.5} metalness={0.5} />
+      </mesh>
+      <mesh position={[standX, (tube0 + BURETTE_L * 0.7 - (PLATE_H + BEAKER_H + 0.08)) / 2, standZ]}>
+        <cylinderGeometry args={[0.018, 0.018, tube0 + BURETTE_L * 0.7 + PLATE_H + BEAKER_H + 0.08, 12]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      <mesh position={[standX, clampY, standZ]}>
+        <boxGeometry args={[0.06, 0.06, 0.06]} />
+        <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+      </mesh>
+      <mesh position={[standX / 2, clampY, standZ / 2]} rotation-y={Math.atan2(-standZ, standX)} rotation-z={Math.PI / 2}>
+        <cylinderGeometry args={[0.012, 0.012, arm, 8]} />
+        <meshStandardMaterial color="#aab4c8" roughness={0.3} metalness={0.9} />
+      </mesh>
+      <mesh position={[0, clampY, 0]} rotation-x={Math.PI / 2}>
+        <torusGeometry args={[BURETTE_R + 0.012, 0.012, 8, 20]} />
+        <meshStandardMaterial color="#6b7690" roughness={0.4} metalness={0.8} />
+      </mesh>
+    </group>
+  );
+}
+
 /** The pour: a tube whose surface texture scrolls, so the stream visibly flows. */
-function Stream({ from, toY, colour, reducedMotion }: { from: THREE.Vector3; toY: number; colour: string; reducedMotion: boolean }) {
+function Stream({ from, toY, endX, colour, reducedMotion }: { from: THREE.Vector3; toY: number; endX: number; colour: string; reducedMotion: boolean }) {
   const geom = useMemo(() => {
     const start = new THREE.Vector3(from.x - 0.04, from.y - 0.02, from.z);
-    const end = new THREE.Vector3(LIQ_R * 0.35, toY, 0.02);
+    const end = new THREE.Vector3(endX, toY, 0.02);
     const mid = new THREE.Vector3((start.x + end.x) / 2 + 0.02, (start.y + end.y) / 2 + 0.06, 0.03);
     return new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(start, mid, end), 32, 0.014, 10, false);
-  }, [from, toY]);
+  }, [from, toY, endX]);
   useEffect(() => () => geom.dispose(), [geom]);
   const tex = useMemo(() => {
     const c = document.createElement("canvas");
@@ -1618,7 +2541,7 @@ function Drops({ from, toY, colour, reducedMotion, grains }: { from: THREE.Vecto
     if (!g) return;
     g.children.forEach((c, i) => {
       const t = reducedMotion ? 0.5 : (clock.elapsedTime * (grains ? 2.2 : 1.4) + i / g.children.length) % 1;
-      c.position.set(from.x - 0.03 + (grains ? Math.sin(i * 3.1) * 0.03 : 0), from.y - 0.02 - t * t * (from.y - toY), from.z + (grains ? Math.cos(i * 1.7) * 0.03 : 0));
+      c.position.set(from.x + (grains ? Math.sin(i * 3.1) * 0.03 : 0), from.y - 0.02 - t * t * (from.y - toY), from.z + (grains ? Math.cos(i * 1.7) * 0.03 : 0));
       if (!grains) c.scale.set(1, 1 + t * 0.6, 1);
     });
   });

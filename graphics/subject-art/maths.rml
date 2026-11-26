@@ -1,0 +1,284 @@
+<Rive version="1" kind="fragment">
+    <!-- maths: a sine curve that draws itself across a pair of axes.
+         Shapes are declared front to back (first declared paints on top). -->
+    <Artboard defaultStateMachineId="0:602" styleId="0:601" width="240" height="240" x="640" y="0" name="maths" id="0:600">
+        <LayoutComponentStyle name="Artboard Style" id="0:601"/>
+
+        <!-- The dot rides the leading end: its distance along the curve is
+             keyed with the same frames and easing as the trim's end. -->
+        <Node x="28" y="120" opacity="0" name="Dot" id="0:620">
+            <FollowPathConstraint targetId="0:610" distance="0" orient="false" name="Ride" id="0:621"/>
+            <Shape name="Core">
+                <Ellipse width="11" height="11" originX="0.5" originY="0.5" name="Path"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FFFFF7ED" name="Color"/>
+                </Fill>
+            </Shape>
+            <Shape name="Halo" id="0:622">
+                <Ellipse width="36" height="36" originX="0.5" originY="0.5" name="Path"/>
+                <Fill name="Fill">
+                    <RadialGradient startX="0" startY="0" endX="18" endY="0" name="Gradient">
+                        <GradientStop colorValue="B3FDBA74" position="0"/>
+                        <GradientStop colorValue="59FDBA74" position="0.45"/>
+                        <GradientStop colorValue="00FDBA74" position="1"/>
+                    </RadialGradient>
+                </Fill>
+            </Shape>
+        </Node>
+
+        <!-- Two periods of sin x, each half-wave one cubic (peak = 0.75 * handle rise). -->
+        <Shape name="Curve" id="0:610">
+            <PointsPath name="Sine" id="0:611">
+                <CubicDetachedVertex x="28" y="120" outRotation="-1.3246" outDistance="68.74"/>
+                <CubicMirroredVertex x="74" y="120" rotation="1.3246" distance="68.74"/>
+                <CubicMirroredVertex x="120" y="120" rotation="-1.3246" distance="68.74"/>
+                <CubicMirroredVertex x="166" y="120" rotation="1.3246" distance="68.74"/>
+                <CubicDetachedVertex x="212" y="120" inRotation="1.8170" inDistance="68.74"/>
+            </PointsPath>
+            <Stroke thickness="24" cap="round" join="round" name="Glow Far" id="0:612">
+                <SolidColor colorValue="14FB923C" name="Color" id="0:616"/>
+                <TargetEffect targetId="0:630" name="Use Draw"/>
+            </Stroke>
+            <Stroke thickness="18" cap="round" join="round" name="Glow Mid" id="0:613">
+                <SolidColor colorValue="1CFB923C" name="Color" id="0:617"/>
+                <TargetEffect targetId="0:630" name="Use Draw"/>
+            </Stroke>
+            <Stroke thickness="13" cap="round" join="round" name="Glow Near" id="0:618">
+                <SolidColor colorValue="26FB923C" name="Color" id="0:619"/>
+                <TargetEffect targetId="0:630" name="Use Draw"/>
+            </Stroke>
+            <Stroke thickness="8" cap="round" join="round" name="Line" id="0:614">
+                <SolidColor colorValue="FFFB923C" name="Color" id="0:615"/>
+                <TargetEffect targetId="0:630" name="Use Draw"/>
+            </Stroke>
+        </Shape>
+
+        <!-- One trim shared by the three strokes, so one pair of keyed
+             properties draws and undraws all of them together. -->
+        <GroupEffect name="Draw" id="0:630">
+            <TrimPath start="0" end="0" name="Trim" id="0:631"/>
+        </GroupEffect>
+
+        <Shape name="Axes">
+            <PointsPath name="X Axis">
+                <StraightVertex x="14" y="120"/>
+                <StraightVertex x="226" y="120"/>
+            </PointsPath>
+            <PointsPath name="Y Axis">
+                <StraightVertex x="120" y="24"/>
+                <StraightVertex x="120" y="216"/>
+            </PointsPath>
+            <PointsPath name="Tick -pi">
+                <StraightVertex x="74" y="114"/>
+                <StraightVertex x="74" y="126"/>
+            </PointsPath>
+            <PointsPath name="Tick pi">
+                <StraightVertex x="166" y="114"/>
+                <StraightVertex x="166" y="126"/>
+            </PointsPath>
+            <PointsPath name="Tick 1">
+                <StraightVertex x="114" y="70"/>
+                <StraightVertex x="126" y="70"/>
+            </PointsPath>
+            <PointsPath name="Tick -1">
+                <StraightVertex x="114" y="170"/>
+                <StraightVertex x="126" y="170"/>
+            </PointsPath>
+            <Stroke thickness="3" cap="round" name="Stroke">
+                <SolidColor colorValue="40FDBA74" name="Color"/>
+            </Stroke>
+        </Shape>
+
+        <!-- Invisible, but still hit-testable: the hover target for the whole artboard. -->
+        <Shape x="120" y="120" name="Hit Area" id="0:650">
+            <Rectangle width="240" height="240" originX="0.5" originY="0.5" name="Path"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="00000000" name="Color"/>
+            </Fill>
+        </Shape>
+
+        <StateMachine name="main" id="0:602">
+            <StateMachineBool name="hover" id="0:603"/>
+            <StateMachineListenerSingle targetId="0:650" listenerTypeValue="enter" name="Pointer Enter">
+                <ListenerBoolChange inputId="0:603" value="true"/>
+            </StateMachineListenerSingle>
+            <StateMachineListenerSingle targetId="0:650" listenerTypeValue="exit" name="Pointer Exit">
+                <ListenerBoolChange inputId="0:603" value="false"/>
+            </StateMachineListenerSingle>
+            <StateMachineLayer name="Idle" id="0:604">
+                <AnyState x="400" y="0"/>
+                <ExitState x="520" y="0"/>
+                <EntryState x="0" y="0">
+                    <StateTransition stateToId="0:605"/>
+                </EntryState>
+                <AnimationState x="160" y="0" animationId="0:640" id="0:605"/>
+            </StateMachineLayer>
+            <StateMachineLayer name="Hover" id="0:606">
+                <AnyState x="560" y="0"/>
+                <ExitState x="680" y="0"/>
+                <EntryState x="0" y="0">
+                    <StateTransition stateToId="0:607"/>
+                </EntryState>
+                <AnimationState x="160" y="0" animationId="0:641" id="0:607">
+                    <StateTransition stateToId="0:608" duration="250" enableEarlyExit="true">
+                        <TransitionBoolCondition inputId="0:603" opValue="equal"/>
+                    </StateTransition>
+                </AnimationState>
+                <AnimationState x="360" y="0" animationId="0:642" id="0:608">
+                    <StateTransition stateToId="0:607" duration="450" enableEarlyExit="true">
+                        <TransitionBoolCondition inputId="0:603" opValue="notEqual"/>
+                    </StateTransition>
+                </AnimationState>
+            </StateMachineLayer>
+        </StateMachine>
+
+        <!-- 4 s: the curve draws on (end 0 to 1), rests, is erased from its tail
+             (start 0 to 1), then both reset while nothing is visible. -->
+        <LinearAnimation loopValue="loop" duration="240" name="idle" id="0:640">
+            <KeyedObject objectId="0:631">
+                <KeyedProperty property="end">
+                    <KeyFrameDouble value="0" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.45" y1="0" x2="0.55" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="100" interpolationType="hold"/>
+                    <KeyFrameDouble value="0" frame="228" interpolationType="hold"/>
+                    <KeyFrameDouble value="0" frame="240" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="start">
+                    <KeyFrameDouble value="0" frame="0" interpolationType="hold"/>
+                    <KeyFrameDouble value="0" frame="130" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.45" y1="0" x2="0.55" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="214" interpolationType="hold"/>
+                    <KeyFrameDouble value="0" frame="228" interpolationType="hold"/>
+                    <KeyFrameDouble value="0" frame="240" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <!-- Fade the last stub of the curve out rather than letting it pop off;
+                 opacity resets while the trim is zero-length and draws nothing. -->
+            <KeyedObject objectId="0:610">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="hold"/>
+                    <KeyFrameDouble value="1" frame="202" interpolationType="linear"/>
+                    <KeyFrameDouble value="0" frame="214" interpolationType="hold"/>
+                    <KeyFrameDouble value="1" frame="228" interpolationType="hold"/>
+                    <KeyFrameDouble value="1" frame="240" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:621">
+                <KeyedProperty property="distance">
+                    <KeyFrameDouble value="0" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.45" y1="0" x2="0.55" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="100" interpolationType="hold"/>
+                    <KeyFrameDouble value="0" frame="228" interpolationType="hold"/>
+                    <KeyFrameDouble value="0" frame="240" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:620">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="0" frame="0" interpolationType="linear"/>
+                    <KeyFrameDouble value="1" frame="8" interpolationType="hold"/>
+                    <KeyFrameDouble value="1" frame="196" interpolationType="linear"/>
+                    <KeyFrameDouble value="0" frame="214" interpolationType="hold"/>
+                    <KeyFrameDouble value="0" frame="240" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="hold"/>
+                    <KeyFrameDouble value="1" frame="98" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.4" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.35" frame="110" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="130" interpolationType="hold"/>
+                    <KeyFrameDouble value="1" frame="240" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="hold"/>
+                    <KeyFrameDouble value="1" frame="98" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.2" y1="0" x2="0.4" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1.35" frame="110" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="1" frame="130" interpolationType="hold"/>
+                    <KeyFrameDouble value="1" frame="240" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Hover layer poses: one held key each; the transition between the two states does the blending. -->
+        <LinearAnimation duration="60" name="rest" id="0:641">
+            <KeyedObject objectId="0:614">
+                <KeyedProperty property="thickness">
+                    <KeyFrameDouble value="8" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:615">
+                <KeyedProperty property="colorValue">
+                    <KeyFrameColor value="FFFB923C" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:616">
+                <KeyedProperty property="colorValue">
+                    <KeyFrameColor value="14FB923C" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:617">
+                <KeyedProperty property="colorValue">
+                    <KeyFrameColor value="1CFB923C" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:619">
+                <KeyedProperty property="colorValue">
+                    <KeyFrameColor value="26FB923C" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:622">
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <LinearAnimation duration="60" name="hovered" id="0:642">
+            <KeyedObject objectId="0:614">
+                <KeyedProperty property="thickness">
+                    <KeyFrameDouble value="10" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:615">
+                <KeyedProperty property="colorValue">
+                    <KeyFrameColor value="FFFDBA74" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:616">
+                <KeyedProperty property="colorValue">
+                    <KeyFrameColor value="26FB923C" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:617">
+                <KeyedProperty property="colorValue">
+                    <KeyFrameColor value="33FB923C" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:619">
+                <KeyedProperty property="colorValue">
+                    <KeyFrameColor value="45FB923C" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:622">
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble value="1.2" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble value="1.2" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+    </Artboard>
+</Rive>

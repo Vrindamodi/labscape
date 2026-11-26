@@ -1,5 +1,5 @@
 import { Stagger, StaggerItem } from "@labscape/motion";
-import { AdSlot, Button, cx, EmptyState, ErrorState, inputClass, Segmented, Skeleton, SUBJECTS, type SubjectKey } from "@labscape/ui";
+import { AdSlot, Blob, Button, cx, EmptyState, ErrorState, inputClass, Segmented, Skeleton, SUBJECTS, type SubjectKey } from "@labscape/ui";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { FlaskConical, Search, SlidersHorizontal, X } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -54,31 +54,37 @@ export default function Library() {
 
   return (
     <div className="mx-auto max-w-[1240px]">
-      {/* hero */}
-      <div
-        className="relative mb-6 overflow-hidden rounded-2xl border border-white/[0.08] p-6 sm:p-8"
-        style={{ background: `radial-gradient(700px 300px at 100% 0%, ${meta?.color ?? "#2F80FF"}40, transparent 60%), linear-gradient(160deg,#18233f,#0e1529)` }}
-      >
-        <div className="absolute -right-2 -top-4 hidden opacity-90 sm:block">
-          {subject ? <SubjectArt subject={subject} size={190} /> : (
-            <div className="flex -space-x-10"><SubjectArt subject="chemistry" size={150} /><SubjectArt subject="physics" size={150} /><SubjectArt subject="maths" size={150} /></div>
-          )}
-        </div>
+      {/* hero: a white panel with flat colour blobs in the subject's tint */}
+      <div className="relative mb-8 overflow-hidden rounded-panel bg-card p-6 sm:p-10">
+        {meta && subject ? (
+          <>
+            <Blob shape="cloud" color={meta.tint} size={380} className="absolute -right-20 -top-32 hidden sm:block" />
+            <div data-surface="dark" className="absolute right-12 top-10 hidden h-44 w-44 place-items-center rounded-full bg-[#141414] lg:grid">
+              <SubjectArt subject={subject} size={150} />
+            </div>
+          </>
+        ) : (
+          <>
+            <Blob shape="cloud" color="#48F08B" size={300} className="absolute -right-16 -top-28 hidden sm:block" />
+            <Blob shape="hex" color="#5E9BFF" size={200} rotate={10} className="absolute right-[220px] -bottom-24 hidden lg:block" />
+            <Blob shape="pebble" color="#FCC934" size={150} className="absolute right-10 bottom-6 hidden lg:block" />
+          </>
+        )}
         <div className="relative max-w-xl">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: meta?.color ?? "#22D3EE" }}>{meta ? `${meta.label} lab` : "Experiment library"}</div>
-          <h1 className="mt-2 font-heading text-3xl font-bold tracking-tight sm:text-4xl">{meta ? `${meta.label} experiments` : "Every experiment, one bench"}</h1>
-          <p className="mt-2 text-white/60">Search by name or concept. Typos and synonyms are fine: try “neutralization” or “pendlum”.</p>
-          <div className="relative mt-5">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40" />
+          <div className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: meta?.ink ?? "rgb(var(--ls-ink-muted))" }}>{meta ? `${meta.label} lab` : "Experiment library"}</div>
+          <h1 className="mt-3 font-heading text-[38px] font-normal leading-[1.05] tracking-[-0.03em] text-ink-strong sm:text-[56px]">{meta ? `${meta.label} experiments` : "Every experiment, one bench"}</h1>
+          <p className="mt-3 text-[15px] text-ink-muted">Search by name or concept. Typos and synonyms are fine: try “neutralization” or “pendlum”.</p>
+          <div className="relative mt-6">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search experiments and concepts"
-              className={cx(inputClass, "h-12 pl-11 text-base")}
+              className={cx(inputClass, "h-14 bg-surface pl-12 text-base")}
               aria-label="Search experiments and concepts"
             />
             {q && (
-              <button onClick={() => setQ("")} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 hover:text-white">
+              <button onClick={() => setQ("")} aria-label="Clear search" className="absolute right-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-ink-muted hover:bg-line hover:text-ink-strong">
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -87,7 +93,7 @@ export default function Library() {
       </div>
 
       {/* filters */}
-      <div className="mb-5 flex flex-wrap items-center gap-3">
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <Segmented
           label="Subject"
           value={subject ?? "all"}
@@ -103,14 +109,14 @@ export default function Library() {
           Filters{active.length ? ` · ${active.length}` : ""}
         </Button>
         {active.map((k) => (
-          <button key={k} onClick={() => set(k, null)} className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2.5 py-1 text-xs font-medium text-[#8cbcff] ring-1 ring-inset ring-accent/30 hover:bg-accent/25">
-            {label(k, params.get(k) ?? "")} <X className="h-3 w-3" />
+          <button key={k} onClick={() => set(k, null)} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ink-strong px-3.5 text-xs font-medium text-on-ink transition hover:bg-ink-strong/85" aria-label={`Remove filter ${label(k, params.get(k) ?? "")}`}>
+            {label(k, params.get(k) ?? "")} <X className="h-3.5 w-3.5" />
           </button>
         ))}
-        <span className="tabular ml-auto text-sm text-white/45">{lib.data ? `${lib.data.total} experiment${lib.data.total === 1 ? "" : "s"}` : ""}</span>
+        <span className="tabular ml-auto text-sm text-ink-muted">{lib.data ? `${lib.data.total} experiment${lib.data.total === 1 ? "" : "s"}` : ""}</span>
       </div>
       {showFilters && (
-        <div className="mb-6 grid gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="mb-6 grid gap-4 rounded-card bg-card p-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Select label="Chapter" value={params.get("chapter")} onChange={(v) => set("chapter", v)} options={(lib.data?.facets.chapters ?? []).map((c) => [c, c])} />
           <Select label="Difficulty" value={params.get("difficulty")} onChange={(v) => set("difficulty", v)} options={[["beginner", "Beginner"], ["intermediate", "Intermediate"], ["advanced", "Advanced"]]} />
           <Select label="Learning level" value={params.get("level")} onChange={(v) => set("level", v)} options={[["beginner", "Beginner"], ["school", "School"], ["high_school", "High school"], ["undergraduate", "Undergraduate"], ["advanced", "Advanced"], ["exploring", "Exploring"]]} />
@@ -123,7 +129,7 @@ export default function Library() {
       {lib.isError ? (
         <ErrorState onRetry={() => void lib.refetch()} />
       ) : lib.isLoading ? (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-[300px] rounded-xl" />)}</div>
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-[320px] rounded-card" />)}</div>
       ) : lib.data?.items.length ? (
         <Stagger key={query} className={cx("grid gap-5 sm:grid-cols-2 xl:grid-cols-3 transition-opacity", lib.isPlaceholderData && "opacity-60")}>
           {lib.data.items.map((e, i) => (
@@ -157,11 +163,11 @@ function label(k: string, v: string) {
 function Select({ label: l, value, onChange, options }: { label: string; value: string | null; onChange: (v: string | null) => void; options: string[][] }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-white/50">{l}</span>
+      <span className="mb-1.5 block px-1 text-xs font-medium text-ink-muted">{l}</span>
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
-        className="h-10 w-full rounded-md border border-white/10 bg-[#0f1628] px-3 text-sm text-white outline-none focus:border-accent/70"
+        className="h-10 w-full rounded-full border border-line bg-surface px-4 text-sm text-ink-strong outline-none transition hover:border-line-strong focus:border-ink/40"
       >
         <option value="">Any</option>
         {options.map(([v, t]) => (

@@ -1,9 +1,15 @@
 import { motion } from "framer-motion";
 import { useMotion } from "@labscape/motion";
+import { useId } from "react";
 
 /** LABscape mark: a flask whose liquid is an orbiting atom. `draw` plays the stroke-draw reveal. */
 export function LogoMark({ size = 32, draw = false }: { size?: number; draw?: boolean }) {
   const { d, reduced } = useMotion();
+  // Per-instance gradient ids: a shared id resolves to the first copy in the DOM, and when that copy
+  // sits in a hidden subtree (the sidebar on phones) the gradient never paints.
+  const uid = useId().replace(/:/g, "");
+  const g = `lm-g-${uid}`;
+  const l = `lm-l-${uid}`;
   const animateDraw = draw && !reduced;
   const stroke = {
     initial: animateDraw ? { pathLength: 0, opacity: 0 } : false,
@@ -13,12 +19,13 @@ export function LogoMark({ size = 32, draw = false }: { size?: number; draw?: bo
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
       <defs>
-        <linearGradient id="lm-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7ef3ff" />
-          <stop offset=".5" stopColor="#2f80ff" />
+        {/* On light surfaces the pale cyan end would vanish, so the stroke starts at blue there. */}
+        <linearGradient id={g} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" className="[stop-color:#2f80ff] dark:[stop-color:#7ef3ff]" />
+          <stop offset=".5" className="[stop-color:#2f6bff] dark:[stop-color:#2f80ff]" />
           <stop offset="1" stopColor="#8b5cf6" />
         </linearGradient>
-        <linearGradient id="lm-l" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={l} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#22d3ee" stopOpacity=".9" />
           <stop offset="1" stopColor="#2f80ff" stopOpacity=".9" />
         </linearGradient>
@@ -26,7 +33,7 @@ export function LogoMark({ size = 32, draw = false }: { size?: number; draw?: bo
       <motion.path
         d="M19 6h10M20.5 6v11.5L9.6 36.3A4 4 0 0 0 13.1 42h21.8a4 4 0 0 0 3.5-5.7L27.5 17.5V6"
         fill="none"
-        stroke="url(#lm-g)"
+        stroke={`url(#${g})`}
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -34,7 +41,7 @@ export function LogoMark({ size = 32, draw = false }: { size?: number; draw?: bo
       />
       <motion.path
         d="M13.2 33h21.6l3 5.2a2.4 2.4 0 0 1-2.1 3.6H12.3a2.4 2.4 0 0 1-2.1-3.6z"
-        fill="url(#lm-l)"
+        fill={`url(#${l})`}
         initial={animateDraw ? { opacity: 0 } : false}
         animate={{ opacity: 1 }}
         transition={{ delay: d(900), duration: d(300) }}
@@ -54,8 +61,8 @@ export function LogoMark({ size = 32, draw = false }: { size?: number; draw?: bo
 
 export function Wordmark({ size = 20 }: { size?: number }) {
   return (
-    <span className="font-heading font-bold tracking-tight text-white" style={{ fontSize: size }}>
-      LAB<span className="bg-gradient-to-r from-[#7ef3ff] via-accent to-ai-violet bg-clip-text text-transparent">scape</span>
+    <span className="font-heading font-semibold tracking-[-0.02em] text-ink-strong" style={{ fontSize: size }}>
+      LAB<span className="font-normal dark:bg-gradient-to-r dark:from-[#7ef3ff] dark:via-accent dark:to-ai-violet dark:bg-clip-text dark:text-transparent">scape</span>
     </span>
   );
 }
@@ -64,8 +71,8 @@ export function Wordmark({ size = 20 }: { size?: number }) {
 export function StreakFlame({ days, size = 22, frozen }: { days: number; size?: number; frozen?: boolean }) {
   const { reduced } = useMotion();
   const on = days > 0;
-  const outer = frozen ? "#7dd3fc" : on ? "#ff8a3d" : "#475069";
-  const inner = frozen ? "#e0f2fe" : on ? "#ffd56b" : "#6b7590";
+  const outer = frozen ? "#7dd3fc" : on ? "#ff8a3d" : "#a39c93";
+  const inner = frozen ? "#e0f2fe" : on ? "#ffd56b" : "#c9c1b6";
   return (
     <motion.svg
       width={size}

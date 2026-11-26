@@ -530,6 +530,71 @@ class SafetyPipelineTest {
         return Math.round(v * 100) / 100.0;
     }
 
+    // ------------------------------------------------------------------ try-next hints
+
+    private List<SafetyPipeline.TryNext> hints(double tempC, boolean ignition, In... inputs) {
+        List<SimulationRequest.Input> list = new ArrayList<>();
+        for (In i : inputs) {
+            Substance s = CATALOGUE.find(i.ref()).orElseThrow();
+            list.add(new SimulationRequest.Input(i.ref(), i.amount(), s.limits().unit(), null));
+        }
+        return pipeline.tryNext(new SimulationRequest("hint-" + IDS.incrementAndGet(), "chemistry", "sandbox", "att-1", null, null,
+                null, list, new SimulationRequest.Conditions(tempC, null, null, ignition)));
+    }
+
+    /** The amount the playground picks up by default for a shelf item. */
+    private static In sample(String ref) {
+        Substance s = CATALOGUE.find(ref).orElseThrow();
+        double want = s.isSolid() ? 1 : "drops".equals(s.limits().unit()) ? 3 : s.isGas() ? 50 : 10;
+        return in(ref, Math.min(want, s.limits().max()));
+    }
+
+    @Test
+    void hintsOnlyNameMixesThatAreAllowedAndReallyReact() {
+        for (String start : List.of("hcl", "cuso4", "water", "agno3", "vinegar", "mg-ribbon", "bleach", "ethanol")) {
+            List<SafetyPipeline.TryNext> hints = hints(22, false, sample(start));
+            assertThat(hints).as(start).isNotEmpty().hasSizeLessThanOrEqualTo(8);
+            assertThat(hints.stream().map(h -> h.kind() + ":" + h.ref()).distinct().count()).as(start).isEqualTo(hints.size());
+            for (SafetyPipeline.TryNext h : hints) {
+                assertThat(h.teaser()).as(start).isNotBlank();
+                if (!"add".equals(h.kind())) continue;
+                SimulationResult r = mix(sample(start), sample(h.ref()));
+                assertThat(r.outcome()).as(start + " + " + h.ref()).isEqualTo(Outcome.REACTION);
+                assertThat(r.cues()).as(start + " + " + h.ref())
+                        .noneMatch(c -> c.has("hazard") && "toxic".equals(c.get("hazard").asText()));
+            }
+        }
+    }
+
+    @Test
+    void hintsNeverLeadTowardsABlockedMix() {
+        // acid + bleach is prohibited: neither side may ever be suggested to the other
+        assertThat(hints(22, false, sample("hcl"))).noneMatch(h -> "bleach".equals(h.ref()));
+        assertThat(hints(22, false, sample("bleach"))).noneMatch(h -> "hcl".equals(h.ref()) || "vinegar".equals(h.ref()));
+        // asking for hints is not an attempt: it never starts a cooldown
+        for (int i = 0; i < 10; i++) hints(22, false, in("bleach", 5 + i * 0.5));
+        assertThat(mix(in("hcl", 10), in("naoh", 10)).outcome()).isEqualTo(Outcome.REACTION);
+    }
+
+    @Test
+    void hintsOfferTheBenchToolsWhenTheyWouldStartSomething() {
+        assertThat(hints(22, false, sample("ethanol"))).anyMatch(h -> "spark".equals(h.kind()));
+        assertThat(hints(22, true, sample("ethanol"))).noneMatch(h -> "spark".equals(h.kind()));
+        assertThat(hints(22, false, sample("glucose"), sample("benedicts"))).anyMatch(h -> "heat".equals(h.kind()));
+        assertThat(hints(22, false, sample("water"))).noneMatch(h -> "heat".equals(h.kind()) || "spark".equals(h.kind()));
+    }
+
+    @Test
+    void hintsAreEmptyForUnknownRefsAndWhenTheEngineIsOff() {
+        var bad = new SimulationRequest("hint-x", "chemistry", "sandbox", "att-1", null, null, null,
+                List.of(new SimulationRequest.Input("mystery", 5, "mL", null)), null);
+        assertThat(pipeline.tryNext(bad)).isEmpty();
+        SafetyPipeline off = newPipeline(false, new ProbeGuard(3, Duration.ofMinutes(10), Duration.ofMinutes(2), Clock.systemUTC()));
+        var ok = new SimulationRequest("hint-y", "chemistry", "sandbox", "att-1", null, null, null,
+                List.of(new SimulationRequest.Input("hcl", 10, "mL", null)), null);
+        assertThat(off.tryNext(ok)).isEmpty();
+    }
+
     private static void assertSane(SimulationResult r, String label) {
         assertThat(r.outcome()).as(label).isNotNull();
         assertThat(r.presentation()).as(label).isNotNull();

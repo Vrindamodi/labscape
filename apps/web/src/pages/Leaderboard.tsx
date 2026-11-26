@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { ChevronDown, ChevronUp, Crown, Minus, Trophy, Users } from "lucide-react";
 import { useState } from "react";
+import { PageHeader } from "../components/PageHeader";
 import { api } from "../lib/api";
 import type { Board, BoardRow } from "../lib/types";
 
@@ -15,14 +16,18 @@ export default function Leaderboard() {
 
   return (
     <div className="mx-auto max-w-[920px]">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-heading text-3xl font-bold tracking-tight">Leaderboard</h1>
-          <p className="mt-1 text-white/55">
+      <PageHeader
+        eyebrow="You"
+        title="Leaderboard"
+        sub={
+          <>
             {scope === "weekly" && q.data?.resetsAt ? `Resets ${new Date(q.data.resetsAt).toLocaleString([], { weekday: "long", hour: "2-digit", minute: "2-digit" })}` : "All-time XP"}
             {q.data ? ` · ${q.data.participants} scientists` : ""}
-          </p>
-        </div>
+          </>
+        }
+      />
+      {/* On phones the scope pills scroll sideways, edge to edge, without a visible scrollbar. */}
+      <div className="-mx-4 -mt-2 mb-6 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
         <Segmented
           label="Leaderboard scope"
           value={scope}
@@ -41,7 +46,7 @@ export default function Leaderboard() {
       {q.isError ? (
         <ErrorState onRetry={() => void q.refetch()} />
       ) : q.isLoading ? (
-        <div className="space-y-2">{Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-16" />)}</div>
+        <div className="space-y-2">{Array.from({ length: 6 }, (_, i) => <Skeleton key={i} className="h-16 rounded-[20px]" />)}</div>
       ) : !q.data?.rows.length ? (
         <Card><EmptyState icon={<Trophy className="h-6 w-6" />} title="No scores yet" body="Earn XP to be the first on this board." /></Card>
       ) : (
@@ -60,12 +65,12 @@ export default function Leaderboard() {
               </ol>
             </LayoutGroup>
             {q.data.me && q.data.me.rank > 50 && (
-              <div className="sticky bottom-2 mt-2 border-t border-white/[0.06] pt-2">
+              <div className="sticky bottom-2 mt-2 border-t border-line pt-2">
                 <Row r={q.data.me} />
               </div>
             )}
           </Card>
-          <p className="mt-4 flex items-center gap-2 text-xs text-white/40">
+          <p className="mt-4 flex items-center gap-2 text-xs text-ink-muted">
             <Users className="h-3.5 w-3.5" /> Under-18 scientists appear by username only. You can hide yourself in Settings.
           </p>
         </>
@@ -74,17 +79,20 @@ export default function Leaderboard() {
   );
 }
 
+/** Podium steps use the flat accent tints: gold, blue, peach. */
+const PLACE = { 1: { tint: "#FCC934", ring: "#E0A020" }, 2: { tint: "#C9D7F2", ring: "#8D9BB3" }, 3: { tint: "#F9B896", ring: "#A8642C" } } as const;
+
 function Podium({ r, place }: { r: BoardRow; place: 1 | 2 | 3 }) {
-  const colors = { 1: ["#ffe07a", "#e0a020"], 2: ["#e7edf7", "#8d9bb3"], 3: ["#f0b27a", "#a8642c"] }[place];
+  const c = PLACE[place];
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: place * 0.08, type: "spring", stiffness: 220, damping: 26 }} className="flex flex-col items-center">
-      {place === 1 && <Crown className="mb-1 h-6 w-6 text-[#ffd77a] drop-shadow-[0_0_10px_#ffc23d]" />}
-      <Avatar name={r.name} size={place === 1 ? 64 : 52} ring={colors[0]} />
-      <div className={cx("mt-2 max-w-full truncate text-sm font-semibold", r.me && "text-accent-cyan")}>{r.name}</div>
-      <div className="tabular text-xs text-white/50">{r.xp.toLocaleString()} XP</div>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: place * 0.08, type: "spring", stiffness: 220, damping: 26 }} className="flex min-w-0 flex-col items-center">
+      {place === 1 && <Crown className="mb-1 h-6 w-6 text-[#B07C00]" />}
+      <Avatar name={r.name} size={place === 1 ? 64 : 52} ring={c.ring} />
+      <div className={cx("mt-2 max-w-full truncate text-sm font-medium text-ink-strong", r.me && "text-link")}>{r.name}</div>
+      <div className="tabular text-xs text-ink-muted">{r.xp.toLocaleString()} XP</div>
       <div
-        className="mt-3 grid w-full place-items-center rounded-t-xl font-heading text-2xl font-bold text-[#1b1305]"
-        style={{ height: place === 1 ? 96 : place === 2 ? 72 : 56, background: `linear-gradient(180deg, ${colors[0]}, ${colors[1]})`, boxShadow: `0 0 40px -10px ${colors[0]}` }}
+        className="mt-3 grid w-full place-items-center rounded-t-[24px] font-heading text-[28px] font-medium text-[#1a1a1a]"
+        style={{ height: place === 1 ? 104 : place === 2 ? 78 : 60, background: c.tint }}
       >
         {place}
       </div>
@@ -101,23 +109,23 @@ function Row({ r }: { r: BoardRow }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ type: "spring", stiffness: 220, damping: 26 }}
-      className={cx("flex items-center gap-3 rounded-lg px-3 py-2.5", r.me && "bg-accent/15 shadow-[inset_0_0_0_1px_rgba(110,170,255,.45),0_0_30px_-12px_#2f80ff]")}
+      className={cx("flex items-center gap-3 rounded-[18px] px-3 py-2.5", r.me ? "bg-[#E1EBFF]" : "hover:bg-surface")}
     >
-      <span className="tabular w-8 text-center font-heading font-bold text-white/70">{r.rank}</span>
+      <span className="tabular w-8 text-center font-heading font-medium text-ink-muted">{r.rank}</span>
       <span className="w-5" aria-label={delta === null ? "new" : delta > 0 ? `up ${delta}` : delta < 0 ? `down ${-delta}` : "no change"}>
         {delta === null ? null : delta > 0 ? (
-          <motion.span initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }}><ChevronUp className="h-4 w-4 text-state-success" /></motion.span>
+          <motion.span initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }}><ChevronUp className="h-4 w-4 text-[#1E8E3E]" /></motion.span>
         ) : delta < 0 ? (
-          <motion.span initial={{ y: -6, opacity: 0 }} animate={{ y: 0, opacity: 1 }}><ChevronDown className="h-4 w-4 text-state-danger" /></motion.span>
+          <motion.span initial={{ y: -6, opacity: 0 }} animate={{ y: 0, opacity: 1 }}><ChevronDown className="h-4 w-4 text-[#C5221F]" /></motion.span>
         ) : (
-          <Minus className="h-4 w-4 text-white/20" />
+          <Minus className="h-4 w-4 text-ink/25" />
         )}
       </span>
       <Avatar name={r.name} size={34} />
-      <span className={cx("flex-1 truncate text-sm font-medium", r.me && "text-white")}>
-        {r.name} {r.me && <span className="text-xs text-accent-cyan">(you)</span>}
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink-strong">
+        {r.name} {r.me && <span className="text-xs font-normal text-link">(you)</span>}
       </span>
-      <span className="tabular text-sm font-semibold">{r.xp.toLocaleString()} <span className="text-white/40">XP</span></span>
+      <span className="tabular text-sm font-semibold text-ink-strong">{r.xp.toLocaleString()} <span className="font-normal text-ink-muted">XP</span></span>
     </motion.li>
   );
 }

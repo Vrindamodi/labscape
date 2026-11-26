@@ -3,66 +3,100 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { idealFlight, pendulumPeriod, pendulumStep, PLANETS, PROJECTILES, simulateFlight, smallAnglePeriod, type Planet, type ProjectileKind } from "../core/mechanics";
 import { GuideCard, Hint, Narration } from "../ui/explain";
 import { Btn, LiveGraph, Panel, ParamSlider, Readout, sf, Vector } from "../ui/kit";
+import { CollisionLab } from "./motion/CollisionLab";
+import { RampLab } from "./motion/RampLab";
+import { GRAV, gravityWords, PlanetPicker, VX, VY } from "./motion/shared";
+import { SpringLab } from "./motion/SpringLab";
+import { DEFAULT_COLLISION, DEFAULT_RAMP, DEFAULT_SPRING, type CollisionParams, type RampParams, type SpringParams } from "./motionScenes";
+
+export { gravityWords };
+export type { CollisionParams, RampParams, SpringParams };
 
 export type ProjectileParams = { speed: number; angleDeg: number; heightM: number; planet: Planet; projectile: ProjectileKind; drag: boolean };
 export type PendulumParams = { lengthM: number; amplitudeDeg: number; planet: Planet; damping: number };
-export type MotionBuild = { tab: "projectile" | "pendulum"; projectile: ProjectileParams; pendulum: PendulumParams };
+
+/** The scenes, in tab order. The ids are what a saved build and a `?tab=` deep link use. */
+export const MOTION_TABS = ["projectile", "pendulum", "collisions", "spring", "ramp"] as const;
+export type MotionTab = (typeof MOTION_TABS)[number];
+const TAB_LABELS: Record<MotionTab, string> = { projectile: "Projectile", pendulum: "Pendulum", collisions: "Collisions", spring: "Spring", ramp: "Ramp" };
+
+export type MotionBuild = { tab: MotionTab; projectile: ProjectileParams; pendulum: PendulumParams; collisions: CollisionParams; spring: SpringParams; ramp: RampParams };
 
 export const DEFAULT_MOTION: MotionBuild = {
   tab: "projectile",
   projectile: { speed: 20, angleDeg: 45, heightM: 0, planet: "earth", projectile: "ball", drag: false },
   pendulum: { lengthM: 1, amplitudeDeg: 20, planet: "earth", damping: 0 },
+  collisions: DEFAULT_COLLISION,
+  spring: DEFAULT_SPRING,
+  ramp: DEFAULT_RAMP,
 };
 
-const TRAIL_COLOURS = ["#ffd43b", "#7cf3ff", "#f472b6", "#a78bfa", "#51cf66", "#ff922b"];
-const VX = "#7cf3ff", VY = "#f472b6", GRAV = "#ffd43b";
+/**
+ * Anything a build can be started from: a full save, an older save that only knows some of the
+ * scenes, or just `{ tab }` from a deep link.
+ */
+export type MotionSnapshot = { tab?: string | null; projectile?: Partial<ProjectileParams> | null; pendulum?: Partial<PendulumParams> | null; collisions?: Partial<CollisionParams> | null; spring?: Partial<SpringParams> | null; ramp?: Partial<RampParams> | null };
+
+/** One scene's saved settings over its defaults. A value of the wrong kind (or an unknown planet or ball) falls back to the default. */
+function mergeScene<T extends Record<string, unknown>>(defaults: T, saved: unknown): T {
+  const out: Record<string, unknown> = { ...defaults };
+  if (!saved || typeof saved !== "object") return out as T;
+  for (const key of Object.keys(defaults)) {
+    const v = (saved as Record<string, unknown>)[key];
+    if (typeof v !== typeof defaults[key] || (typeof v === "number" && !Number.isFinite(v))) continue;
+    if (key === "planet" && !Object.hasOwn(PLANETS, v as string)) continue;
+    if (key === "projectile" && !Object.hasOwn(PROJECTILES, v as string)) continue;
+    out[key] = v;
+  }
+  return out as T;
+}
 
 /**
- * Motion sandbox (build plan 4.9): projectile and pendulum with every parameter unlocked, other
- * planets and air resistance included. Uses the same integrators the experiments are scored with,
- * and says in plain words what is happening as it happens.
+ * A complete build from whatever was saved: every scene gets its defaults with the saved settings
+ * on top, so old saves (projectile and pendulum only) and bare `{ tab }` links both load. An
+ * unknown tab opens the projectile.
  */
-export function MotionSandbox({ initial, onChange }: { initial?: MotionBuild | null; onChange?: (b: MotionBuild) => void }) {
-  const [b, setB] = useState<MotionBuild>(() => ({ ...DEFAULT_MOTION, ...initial, projectile: { ...DEFAULT_MOTION.projectile, ...initial?.projectile }, pendulum: { ...DEFAULT_MOTION.pendulum, ...initial?.pendulum } }));
+export function mergeMotionBuild(initial?: MotionSnapshot | null): MotionBuild {
+  const tab = MOTION_TABS.find((t) => t === initial?.tab) ?? "projectile";
+  return {
+    tab,
+    projectile: mergeScene(DEFAULT_MOTION.projectile, initial?.projectile),
+    pendulum: mergeScene(DEFAULT_MOTION.pendulum, initial?.pendulum),
+    collisions: mergeScene(DEFAULT_MOTION.collisions, initial?.collisions),
+    spring: mergeScene(DEFAULT_MOTION.spring, initial?.spring),
+    ramp: mergeScene(DEFAULT_MOTION.ramp, initial?.ramp),
+  };
+}
+
+const TRAIL_COLOURS = ["#ffd43b", "#7cf3ff", "#f472b6", "#a78bfa", "#51cf66", "#ff922b"];
+
+/**
+ * Motion sandbox (build plan 4.9): projectile, pendulum, collisions, a mass on a spring and a block
+ * on a ramp, with every parameter unlocked and other planets included. The projectile and pendulum
+ * use the same integrators the experiments are scored with; every scene says in plain words what
+ * is happening as it happens.
+ */
+export function MotionSandbox({ initial, onChange }: { initial?: MotionSnapshot | null; onChange?: (b: MotionBuild) => void }) {
+  const [b, setB] = useState<MotionBuild>(() => mergeMotionBuild(initial));
   const cb = useRef(onChange);
   cb.current = onChange;
   useEffect(() => cb.current?.(b), [b]);
   return (
     <div className="space-y-3">
-      <div className="flex gap-1.5" role="tablist" aria-label="Motion">
-        {(["projectile", "pendulum"] as const).map((t) => (
+      <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Motion">
+        {MOTION_TABS.map((t) => (
           <Btn key={t} tone={b.tab === t ? "primary" : "secondary"} pressed={b.tab === t} onClick={() => setB((x) => ({ ...x, tab: t }))}>
-            {t === "projectile" ? "Projectile" : "Pendulum"}
+            {TAB_LABELS[t]}
           </Btn>
         ))}
       </div>
-      {b.tab === "projectile" ? (
-        <ProjectileLab p={b.projectile} set={(p) => setB((x) => ({ ...x, projectile: { ...x.projectile, ...p } }))} />
-      ) : (
-        <PendulumLab p={b.pendulum} set={(p) => setB((x) => ({ ...x, pendulum: { ...x.pendulum, ...p } }))} />
-      )}
+      {b.tab === "projectile" && <ProjectileLab p={b.projectile} set={(p) => setB((x) => ({ ...x, projectile: { ...x.projectile, ...p } }))} />}
+      {b.tab === "pendulum" && <PendulumLab p={b.pendulum} set={(p) => setB((x) => ({ ...x, pendulum: { ...x.pendulum, ...p } }))} />}
+      {b.tab === "collisions" && <CollisionLab p={b.collisions} set={(p) => setB((x) => ({ ...x, collisions: { ...x.collisions, ...p } }))} />}
+      {b.tab === "spring" && <SpringLab p={b.spring} set={(p) => setB((x) => ({ ...x, spring: { ...x.spring, ...p } }))} />}
+      {b.tab === "ramp" && <RampLab p={b.ramp} set={(p) => setB((x) => ({ ...x, ramp: { ...x.ramp, ...p } }))} />}
     </div>
   );
-}
-
-function PlanetPicker({ value, onChange }: { value: Planet; onChange: (p: Planet) => void }) {
-  return (
-    <div className="flex flex-wrap gap-1" role="radiogroup" aria-label="Gravity">
-      {(Object.keys(PLANETS) as Planet[]).map((k) => (
-        <Btn key={k} tone={value === k ? "primary" : "ghost"} pressed={value === k} onClick={() => onChange(k)}>
-          {PLANETS[k].label} <span className="text-white/50">{PLANETS[k].g}</span>
-        </Btn>
-      ))}
-    </div>
-  );
-}
-
-/** How gravity here compares with Earth's, in words. */
-export function gravityWords(planet: Planet): string {
-  const g = PLANETS[planet].g;
-  if (planet === "earth") return "Earth's gravity: every second, a falling thing speeds up by 9.81 m/s.";
-  const k = g / PLANETS.earth.g;
-  return k < 1 ? `${PLANETS[planet].label}'s gravity is about ${sf(1 / k, 2)}× weaker than Earth's (${g} m/s² instead of 9.81).` : `${PLANETS[planet].label}'s gravity is about ${sf(k, 2)}× stronger than Earth's (${g} m/s² instead of 9.81).`;
 }
 
 /* ------------------------------------------------------------------ projectile */
@@ -232,7 +266,7 @@ function ProjectileLab({ p, set }: { p: ProjectileParams; set: (p: Partial<Proje
               <PlanetPicker value={p.planet} onChange={(planet) => set({ planet })} />
               <Hint>
                 {gravityWords(p.planet)}
-                {earth ? ` Weaker gravity takes longer to stop it rising, so it flies ${sf(preview.range / earth.range, 2)}× as far as on Earth.` : " Try the Moon: the same throw goes about 6× further."}
+                {!earth ? " Try the Moon: the same throw goes about 6× further." : earth.range < 0.01 ? "" : g < PLANETS.earth.g ? ` Weaker gravity takes longer to stop it rising, so it flies ${sf(preview.range / earth.range, 2)}× as far as on Earth.` : ` Stronger gravity pulls it down sooner, so it only flies ${sf(preview.range / earth.range, 2)}× as far as on Earth.`}
               </Hint>
             </div>
             <div className="flex flex-wrap gap-1">
@@ -256,7 +290,7 @@ function ProjectileLab({ p, set }: { p: ProjectileParams; set: (p: Partial<Proje
             <Readout label="Max height" value={sf(preview.maxHeight)} unit="m" />
           </div>
           <Hint>Range = how far along the ground it lands. Flight time = how long it is in the air. Max height = the top of the curve.</Hint>
-          {p.drag && <p className="mt-2 text-xs text-white/55">Without air the range would be {sf(ideal.range)} m: drag costs {sf(Math.max(0, 100 * (1 - preview.range / ideal.range)), 2)}%.</p>}
+          {p.drag && ideal.range > 0.01 && <p className="mt-2 text-xs text-white/55">Without air the range would be {sf(ideal.range)} m: drag costs {sf(Math.max(0, 100 * (1 - preview.range / ideal.range)), 2)}%.</p>}
         </Panel>
       </div>
     </div>
@@ -315,11 +349,17 @@ function PendulumLab({ p, set }: { p: PendulumParams; set: (p: Partial<PendulumP
     return () => cancelAnimationFrame(raf);
   }, [running, p.lengthM, p.damping, g]);
 
-  const L = 40 + 260 * Math.min(1, p.lengthM / 5);
-  const bx = 300 + L * Math.sin(view.theta), by = 40 + L * Math.cos(view.theta);
+  // A swing past 90° rises above the pivot and reaches a full string-length sideways, so the string
+  // is drawn shorter and the pivot lower when needed: the bob stays in the picture at any release angle.
+  const a0 = (p.amplitudeDeg * Math.PI) / 180;
+  const rise = Math.max(0, -Math.cos(a0)), reach = a0 > Math.PI / 2 ? 1 : Math.sin(a0);
+  const L = Math.min(40 + 260 * Math.min(1, p.lengthM / 5), 316 / (1 + rise), 280 / reach);
+  const py = 40 + L * rise;
+  const bx = 300 + L * Math.sin(view.theta), by = py + L * Math.cos(view.theta);
   const measured = view.periods.length ? view.periods.reduce((a, b) => a + b, 0) / view.periods.length : null;
   const exact = pendulumPeriod(p.lengthM, p.amplitudeDeg, g);
   const small = smallAnglePeriod(p.lengthM, g);
+  // The graph keeps the last 12 s. LiveGraph always draws from x = 0, so the trace is shifted to start there.
   const traceMin = Math.max(0, view.t - 12);
   // Energy per kg: height energy g L (1 - cos) and movement energy (L omega)^2 / 2.
   const pe = g * p.lengthM * (1 - Math.cos(view.theta));
@@ -338,10 +378,10 @@ function PendulumLab({ p, set }: { p: PendulumParams; set: (p: Partial<PendulumP
         <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="relative overflow-hidden rounded-xl bg-[#0a1020] ring-1 ring-inset ring-white/[0.08]">
             <svg viewBox="0 0 600 380" className="block w-full" role="img" aria-label={`Pendulum ${p.lengthM} metres long swinging, now at ${sf((view.theta * 180) / Math.PI, 2)} degrees`}>
-              <rect x={220} y={30} width={160} height={10} rx={3} fill="#3b4a6b" />
-              <line x1={300} y1={40} x2={300} y2={40 + L + 24} stroke="#ffffff14" strokeDasharray="3 5" />
-              <path d={`M300 40 L${300 + L * Math.sin((p.amplitudeDeg * Math.PI) / 180)} ${40 + L * Math.cos((p.amplitudeDeg * Math.PI) / 180)}`} stroke="#ffffff18" strokeDasharray="4 4" />
-              <line x1={300} y1={40} x2={bx} y2={by} stroke="#c9d1e4" strokeWidth={2} />
+              <rect x={220} y={py - 10} width={160} height={10} rx={3} fill="#3b4a6b" />
+              <line x1={300} y1={py} x2={300} y2={py + L + 24} stroke="#ffffff14" strokeDasharray="3 5" />
+              <path d={`M300 ${py} L${300 + L * Math.sin(a0)} ${py + L * Math.cos(a0)}`} stroke="#ffffff18" strokeDasharray="4 4" />
+              <line x1={300} y1={py} x2={bx} y2={by} stroke="#c9d1e4" strokeWidth={2} />
               <circle cx={bx} cy={by} r={16} fill="#ffd43b" stroke="#7a5200" strokeWidth={2} />
               <g pointerEvents="none">
                 <Vector x={bx} y={by} dx={vdx} dy={vdy} colour={VX} label="v" />
@@ -363,7 +403,7 @@ function PendulumLab({ p, set }: { p: PendulumParams; set: (p: Partial<PendulumP
             </div>
           </div>
           <div className="rounded-xl bg-[#0a1020] p-2 ring-1 ring-inset ring-white/[0.08]">
-            <LiveGraph series={[{ label: "angle", colour: "#ffd43b", points: view.trace }]} xLabel="time (s)" yLabel="angle (°)" height={220} xMin={traceMin} yMin={-Math.max(5, p.amplitudeDeg)} ariaLabel="Angle against time" />
+            <LiveGraph series={[{ label: "angle", colour: "#ffd43b", points: traceMin > 0 ? view.trace.map((q) => ({ x: q.x - traceMin, y: q.y })) : view.trace }]} xLabel={traceMin > 0 ? "last 12 s" : "time (s)"} yLabel="angle (°)" height={220} yMin={-Math.max(5, p.amplitudeDeg)} ariaLabel="Angle against time" />
             <Hint>Up = swung to the right, down = to the left, the middle = hanging straight down. One full wave (peak to peak) is one period.</Hint>
           </div>
         </div>

@@ -5,9 +5,10 @@ import { Button, cx, ErrorState, Skeleton } from "@labscape/ui";
 import { useQuery } from "@tanstack/react-query";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { Columns2, Pause, Play, RotateCcw } from "lucide-react";
+import { Pause, Play, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
+import { PageHeader } from "../components/PageHeader";
 import { api } from "../lib/api";
 
 type Preset = { id: string; label: string; subject: "physics" | "maths" | "chemistry"; left: string; right: string };
@@ -28,16 +29,10 @@ export default function Compare() {
   const preset = PRESETS.find((p) => p.id === params.get("preset")) ?? PRESETS[0]!;
   return (
     <div className="mx-auto max-w-[1200px] space-y-5">
-      <header>
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-accent-cyan">
-          <Columns2 className="h-4 w-4" /> Labs
-        </p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Compare</h1>
-        <p className="mt-1 max-w-2xl text-sm text-white/60">Change one thing and watch both sides respond. The table underneath spells out what is different and why.</p>
-      </header>
+      <PageHeader eyebrow="Labs" title="Compare" sub="Change one thing and watch both sides respond. The table underneath spells out what is different and why." className="mb-2" />
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Comparisons">
         {PRESETS.map((p) => (
-          <button key={p.id} role="tab" aria-selected={p.id === preset.id} onClick={() => setParams({ preset: p.id }, { replace: true })} className={cx("rounded-full px-4 py-2 text-sm font-semibold ring-1 ring-inset transition", p.id === preset.id ? "bg-white/[0.12] text-white ring-white/25" : "text-white/60 ring-white/[0.08] hover:text-white")}>
+          <button key={p.id} role="tab" aria-selected={p.id === preset.id} onClick={() => setParams({ preset: p.id }, { replace: true })} className={cx("rounded-full px-4 py-2 text-sm font-medium transition", p.id === preset.id ? "bg-ink-strong text-on-ink" : "bg-card text-ink-muted ring-1 ring-inset ring-line hover:text-ink-strong")}>
             <span className="mr-2 inline-block h-2 w-2 rounded-full" style={{ background: TINT[p.subject] }} />
             {p.label}
           </button>
@@ -55,8 +50,8 @@ export default function Compare() {
 
 function Side({ title, tone, children }: { title: string; tone: string; children: ReactNode }) {
   return (
-    <section className="min-w-0 rounded-2xl bg-white/[0.03] p-4 ring-1 ring-inset ring-white/[0.08]">
-      <h2 className="mb-2 flex items-center gap-2 font-heading text-lg font-semibold text-white">
+    <section data-surface="dark" className="min-w-0 rounded-card bg-[#0f1528] p-5 text-white">
+      <h2 className="mb-3 flex items-center gap-2 font-heading text-lg font-medium text-white">
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: tone }} />
         {title}
       </h2>
@@ -67,8 +62,8 @@ function Side({ title, tone, children }: { title: string; tone: string; children
 
 function Controls({ children }: { children: ReactNode }) {
   return (
-    <div className="grid gap-4 rounded-2xl bg-[#0d1426]/80 p-4 ring-1 ring-inset ring-white/[0.08] sm:grid-cols-2 lg:grid-cols-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45 sm:col-span-2 lg:col-span-3">Linked controls · both sides change together</p>
+    <div data-surface="dark" className="grid gap-4 rounded-card bg-[#0f1528] p-5 text-white sm:grid-cols-2 lg:grid-cols-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55 sm:col-span-2 lg:col-span-3">Linked controls · both sides change together</p>
       {children}
     </div>
   );
@@ -77,9 +72,9 @@ function Controls({ children }: { children: ReactNode }) {
 type Row = { label: string; left: ReactNode; right: ReactNode; why?: string };
 function DiffTable({ left, right, rows }: { left: string; right: string; rows: Row[] }) {
   return (
-    <div className="overflow-x-auto rounded-2xl ring-1 ring-inset ring-white/[0.08]">
+    <div className="overflow-x-auto rounded-card bg-card">
       <table className="w-full text-sm">
-        <thead className="bg-white/[0.04] text-left text-xs uppercase tracking-wide text-white/50">
+        <thead className="bg-surface-sunken/60 text-left text-xs uppercase tracking-wide text-ink-muted">
           <tr>
             <th className="px-4 py-2.5"> </th>
             <th className="px-4 py-2.5">{left}</th>
@@ -89,11 +84,11 @@ function DiffTable({ left, right, rows }: { left: string; right: string; rows: R
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.label} className="border-t border-white/[0.06] align-top">
-              <th className="px-4 py-2.5 text-left font-medium text-white/60">{r.label}</th>
-              <td className="px-4 py-2.5 font-mono text-white">{r.left}</td>
-              <td className="px-4 py-2.5 font-mono text-white">{r.right}</td>
-              <td className="hidden px-4 py-2.5 text-white/60 md:table-cell">{r.why}</td>
+            <tr key={r.label} className="border-t border-line align-top">
+              <th className="px-4 py-3 text-left font-medium text-ink-muted">{r.label}</th>
+              <td className="px-4 py-3 font-mono text-ink-strong">{r.left}</td>
+              <td className="px-4 py-3 font-mono text-ink-strong">{r.right}</td>
+              <td className="hidden px-4 py-3 text-ink-muted md:table-cell">{r.why}</td>
             </tr>
           ))}
         </tbody>
@@ -357,9 +352,9 @@ function Reactions() {
   const b = useQuery({ queryKey: ["experiment-full", right], queryFn: () => api<{ content: ExperimentContent }>(`/v1/experiments/${right}`) });
   if (a.isError || b.isError) return <ErrorState title="Couldn't load those experiments" onRetry={() => void (a.refetch(), b.refetch())} />;
   const pick = (value: string, set: (s: string) => void, other: string) => (
-    <select value={value} onChange={(e) => set(e.target.value)} className="rounded-md bg-white/[0.06] px-2 py-1.5 text-sm text-white ring-1 ring-inset ring-white/10">
+    <select value={value} onChange={(e) => set(e.target.value)} className="h-10 rounded-full border border-line bg-surface px-4 text-sm text-ink-strong outline-none transition hover:border-line-strong focus:border-accent/70">
       {REACTIONS.filter((r) => r.slug !== other).map((r) => (
-        <option key={r.slug} value={r.slug} className="bg-[#111827]">
+        <option key={r.slug} value={r.slug}>
           {r.label}
         </option>
       ))}
@@ -368,10 +363,10 @@ function Reactions() {
   const ca = a.data?.content, cb = b.data?.content;
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-[#0d1426]/80 p-4 ring-1 ring-inset ring-white/[0.08]">
-        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/45">Linked playback</span>
+      <div className="flex flex-wrap items-center gap-3 rounded-card bg-card p-4">
+        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-muted">Linked playback</span>
         {pick(left, setLeft, right)}
-        <span className="text-white/40">vs</span>
+        <span className="text-ink-muted">vs</span>
         {pick(right, setRight, left)}
         <span className="flex-1" />
         <Button size="sm" variant="secondary" icon={playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} onClick={() => setPlaying((p) => !p)}>
@@ -394,8 +389,8 @@ function Reactions() {
           right={REACTIONS.find((r) => r.slug === right)!.label}
           rows={[
             { label: "Equation", left: <Tex tex={ca.observations.equationLatex ?? ""} />, right: <Tex tex={cb.observations.equationLatex ?? ""} /> },
-            { label: "What you see", left: <span className="font-sans text-white/85">{ca.observations.whatHappened}</span>, right: <span className="font-sans text-white/85">{cb.observations.whatHappened}</span> },
-            { label: "Why", left: <span className="font-sans text-white/70">{firstSentence(ca.observations.why)}</span>, right: <span className="font-sans text-white/70">{firstSentence(cb.observations.why)}</span> },
+            { label: "What you see", left: <span className="font-sans text-ink">{ca.observations.whatHappened}</span>, right: <span className="font-sans text-ink">{cb.observations.whatHappened}</span> },
+            { label: "Why", left: <span className="font-sans text-ink-muted">{firstSentence(ca.observations.why)}</span>, right: <span className="font-sans text-ink-muted">{firstSentence(cb.observations.why)}</span> },
           ]}
         />
       )}

@@ -1,0 +1,184 @@
+<Rive version="1" kind="fragment">
+    <!-- physics: a pendulum swinging about its pivot.
+         Shapes are declared front to back (first declared paints on top). -->
+    <Artboard defaultStateMachineId="0:402" styleId="0:401" width="240" height="240" x="320" y="0" name="physics" id="0:400">
+        <LayoutComponentStyle name="Artboard Style" id="0:401"/>
+
+        <Shape x="120" y="36" name="Pivot">
+            <Ellipse width="16" height="16" originX="0.5" originY="0.5" name="Path"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="FFE0F2FE" name="Color"/>
+            </Fill>
+        </Shape>
+
+        <!-- The bob rides the tip of the string through a constraint, so it
+             stays round and its highlight stays put while the rig swings. -->
+        <Node x="120" y="184" name="Bob" id="0:420">
+            <TranslationConstraint targetId="0:412" name="Follow Tip"/>
+            <Shape x="-8" y="-8" name="Highlight">
+                <Ellipse width="14" height="14" originX="0.5" originY="0.5" name="Path"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="CCFFFFFF" name="Color"/>
+                </Fill>
+            </Shape>
+            <Shape name="Ball">
+                <Ellipse width="48" height="48" originX="0.5" originY="0.5" name="Path"/>
+                <Fill name="Fill">
+                    <RadialGradient startX="-7.2" startY="-9.6" endX="16.8" endY="-9.6" name="Gradient">
+                        <GradientStop colorValue="FFE0F2FE" position="0"/>
+                        <GradientStop colorValue="FF38BDF8" position="0.5"/>
+                        <GradientStop colorValue="FF075985" position="1"/>
+                    </RadialGradient>
+                </Fill>
+            </Shape>
+            <Shape opacity="0.75" name="Glow" id="0:421">
+                <Ellipse width="112" height="112" originX="0.5" originY="0.5" name="Path"/>
+                <Fill name="Fill">
+                    <RadialGradient startX="0" startY="0" endX="56" endY="0" name="Gradient">
+                        <GradientStop colorValue="A638BDF8" position="0"/>
+                        <GradientStop colorValue="9438BDF8" position="0.43"/>
+                        <GradientStop colorValue="3D38BDF8" position="0.68"/>
+                        <GradientStop colorValue="0038BDF8" position="1"/>
+                    </RadialGradient>
+                </Fill>
+            </Shape>
+        </Node>
+
+        <!-- The idle loop rotates Swing. The hover layer only stretches Rig
+             sideways, which widens the swing without touching its timing. -->
+        <Node x="120" y="36" name="Rig" id="0:410">
+            <Node rotation="0.31415927" name="Swing" id="0:411">
+                <Node x="0" y="148" name="Tip" id="0:412"/>
+                <Shape name="String">
+                    <PointsPath name="Path">
+                        <StraightVertex x="0" y="0"/>
+                        <StraightVertex x="0" y="148"/>
+                    </PointsPath>
+                    <Stroke thickness="3.5" cap="round" transformAffectsStroke="false" name="Stroke">
+                        <SolidColor colorValue="FFE0F2FE" name="Color"/>
+                    </Stroke>
+                </Shape>
+            </Node>
+
+            <!-- The path the bottom of the bob sweeps: a 52 degree arc of radius
+                 180 about the pivot, as one cubic. It sits in Rig so that it
+                 widens with the swing. -->
+            <Shape opacity="0.5" name="Arc" id="0:430">
+                <PointsPath name="Path">
+                    <CubicDetachedVertex x="-78.91" y="161.78" outRotation="0.4537856" outDistance="55.41"/>
+                    <CubicDetachedVertex x="78.91" y="161.78" inRotation="2.6878071" inDistance="55.41"/>
+                </PointsPath>
+                <Stroke thickness="2" transformAffectsStroke="false" name="Stroke">
+                    <SolidColor colorValue="9938BDF8" name="Color"/>
+                    <DashPath name="Dashes">
+                        <Dash length="6" name="On"/>
+                        <Dash length="10" name="Off"/>
+                    </DashPath>
+                </Stroke>
+            </Shape>
+        </Node>
+
+        <Shape x="120" y="34" name="Support">
+            <Rectangle width="160" height="12" cornerRadiusTL="6" originX="0.5" originY="0.5" name="Path"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="807DD3FC" name="Color"/>
+            </Fill>
+        </Shape>
+
+        <!-- Invisible, but still hit-testable: the hover target for the whole artboard. -->
+        <Shape x="120" y="120" name="Hit Area" id="0:450">
+            <Rectangle width="240" height="240" originX="0.5" originY="0.5" name="Path"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="00000000" name="Color"/>
+            </Fill>
+        </Shape>
+
+        <StateMachine name="main" id="0:402">
+            <StateMachineBool name="hover" id="0:403"/>
+            <StateMachineListenerSingle targetId="0:450" listenerTypeValue="enter" name="Pointer Enter">
+                <ListenerBoolChange inputId="0:403" value="true"/>
+            </StateMachineListenerSingle>
+            <StateMachineListenerSingle targetId="0:450" listenerTypeValue="exit" name="Pointer Exit">
+                <ListenerBoolChange inputId="0:403" value="false"/>
+            </StateMachineListenerSingle>
+            <StateMachineLayer name="Idle" id="0:404">
+                <AnyState x="400" y="0"/>
+                <ExitState x="520" y="0"/>
+                <EntryState x="0" y="0">
+                    <StateTransition stateToId="0:405"/>
+                </EntryState>
+                <AnimationState x="160" y="0" animationId="0:440" id="0:405"/>
+            </StateMachineLayer>
+            <StateMachineLayer name="Hover" id="0:406">
+                <AnyState x="560" y="0"/>
+                <ExitState x="680" y="0"/>
+                <EntryState x="0" y="0">
+                    <StateTransition stateToId="0:407"/>
+                </EntryState>
+                <AnimationState x="160" y="0" animationId="0:441" id="0:407">
+                    <StateTransition stateToId="0:408" duration="250" enableEarlyExit="true">
+                        <TransitionBoolCondition inputId="0:403" opValue="equal"/>
+                    </StateTransition>
+                </AnimationState>
+                <AnimationState x="360" y="0" animationId="0:442" id="0:408">
+                    <StateTransition stateToId="0:407" duration="450" enableEarlyExit="true">
+                        <TransitionBoolCondition inputId="0:403" opValue="notEqual"/>
+                    </StateTransition>
+                </AnimationState>
+            </StateMachineLayer>
+        </StateMachine>
+
+        <!-- One full swing in 2.2 s: extreme to extreme and back, each half on a
+             sine ease, so it is slow at the ends and fastest through the middle. -->
+        <LinearAnimation loopValue="loop" duration="132" name="idle" id="0:440">
+            <KeyedObject objectId="0:411">
+                <KeyedProperty property="rotation">
+                    <KeyFrameDouble value="0.31415927" frame="0" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.37" y1="0" x2="0.63" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="-0.31415927" frame="66" interpolationType="cubic">
+                        <CubicEaseInterpolator x1="0.37" y1="0" x2="0.63" y2="1"/>
+                    </KeyFrameDouble>
+                    <KeyFrameDouble value="0.31415927" frame="132" interpolationType="linear"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Hover layer poses: one held key each; the transition between the two states does the blending. -->
+        <LinearAnimation duration="60" name="rest" id="0:441">
+            <KeyedObject objectId="0:410">
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:421">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="0.75" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:430">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="0.5" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <LinearAnimation duration="60" name="hovered" id="0:442">
+            <KeyedObject objectId="0:410">
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble value="1.3" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:421">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:430">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="1" frame="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+    </Artboard>
+</Rive>

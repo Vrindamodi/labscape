@@ -32,6 +32,7 @@ public class Catalogue {
     private final String version;
     private final Map<String, Substance> byId;
     private final Set<String> gaps;
+    private final Map<String, Substance> solidByFormula;
 
     public Catalogue(ObjectMapper mapper) {
         File file = read(mapper, RESOURCE);
@@ -56,6 +57,17 @@ public class Catalogue {
             }
             gapKeys.add(pairKey(pair.get(0), pair.get(1)));
         }
+        // "CaCO3" -> the shelf solid that is exactly that compound; a powder is preferred over chips or ribbon.
+        Map<String, Substance> solids = new LinkedHashMap<>();
+        for (Substance s : map.values()) {
+            if (!s.isSolid() || s.species() == null || s.species().size() != 1 || s.molarMass() == null) continue;
+            Map.Entry<String, Double> only = s.species().entrySet().iterator().next();
+            if (!only.getKey().endsWith("(s)") || Math.abs(only.getValue() - 1) > 1e-9) continue;
+            String formula = only.getKey().substring(0, only.getKey().length() - 3);
+            Substance had = solids.get(formula);
+            if (had == null || !"powder".equals(had.solidForm()) && "powder".equals(s.solidForm()) && !s.isElement()) solids.put(formula, s);
+        }
+        this.solidByFormula = Collections.unmodifiableMap(solids);
         this.version = file.version();
         this.byId = Collections.unmodifiableMap(map);
         this.gaps = Collections.unmodifiableSet(gapKeys);
@@ -67,6 +79,11 @@ public class Catalogue {
 
     public Optional<Substance> find(String id) {
         return Optional.ofNullable(byId.get(id));
+    }
+
+    /** The shelf solid that is exactly this compound ("CaCO3", "MgO", "Cu"), if the shelf has one. */
+    public Optional<Substance> solidFor(String formula) {
+        return Optional.ofNullable(solidByFormula.get(formula));
     }
 
     public Collection<Substance> all() {

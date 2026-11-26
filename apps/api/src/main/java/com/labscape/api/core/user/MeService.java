@@ -129,7 +129,7 @@ public class MeService {
         ZonedDateTime now = ZonedDateTime.now(u.zone());
         Streaks.State exp = streaks.get(u.id(), "experiment");
         if (now.getHour() >= 20 && exp.current() > 1 && today.minusDays(1).equals(exp.lastDay())) {
-            notifications.notify(u.id(), "streak", "Your " + exp.current() + "-day streak is at risk 🔥",
+            notifications.notify(u.id(), "streak", "Your " + exp.current() + "-day streak is at risk",
                     "Finish one experiment before midnight to keep it.", "/library", "streak-risk:" + today);
         }
     }

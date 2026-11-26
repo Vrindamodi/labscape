@@ -1,4 +1,4 @@
-import { Clock, Flame, Power, Thermometer } from "lucide-react";
+import { Clock, Flame, Power, Thermometer, Timer } from "lucide-react";
 import { cFromReadings, thermoShown, type HeatSetup, type HeatState } from "../labs/thermal";
 import { GhostHand, LabStyles, paramOf, Stage, Tag, useDemoPreview, useFocusStep, V3, type Pt } from "./interact";
 import { AnalogMeter, Btn, LiveGraph, Panel, ReadingInput, Readout, sf } from "./kit";
@@ -105,8 +105,9 @@ export function HeatCapacityWorkspace({ session }: { session: SimSession<HeatSta
                 {shown.toFixed(1)} °C
               </text>
               <rect x={BX + BW + 40} y={BY - 18} width={120} height={30} rx={8} fill="#060d1f" stroke="rgba(140,180,255,.3)" />
-              <text x={BX + BW + 100} y={BY + 2} fontSize={14} textAnchor="middle" fill={V3.cyan} fontFamily="JetBrains Mono, monospace">
-                ⏱ {clock(sinceOn ?? 0)}
+              <Timer x={BX + BW + 54} y={BY - 10} width={14} height={14} color={V3.cyan} strokeWidth={2.25} aria-hidden />
+              <text x={BX + BW + 108} y={BY + 2} fontSize={14} textAnchor="middle" fill={V3.cyan} fontFamily="JetBrains Mono, monospace">
+                {clock(sinceOn ?? 0)}
               </text>
             </g>
             {live && <Tag x={BX + BW / 2} y={BY - 128} text="Hot! Do not touch" colour={V3.red} />}

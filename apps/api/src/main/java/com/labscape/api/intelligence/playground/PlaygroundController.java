@@ -1,11 +1,15 @@
 package com.labscape.api.intelligence.playground;
 
+import com.labscape.api.contracts.SimulationRequest;
 import com.labscape.api.intelligence.chem.Catalogue;
 import com.labscape.api.intelligence.chem.Discovery;
 import com.labscape.api.intelligence.chem.Substance;
 import com.labscape.api.intelligence.safety.SafetyPipeline;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -51,6 +55,17 @@ public class PlaygroundController {
             List<ShelfItem> substances,
             List<Discovery> discoveries,
             Conditions conditions) {}
+
+    public record TryNextResponse(List<SafetyPipeline.TryNext> suggestions) {}
+
+    /**
+     * POST /v1/playground/try-next - what would react with the beaker as it stands. Same body as
+     * /v1/safety/resolve; nothing is mixed, so it never blocks, audits or counts as a prohibited attempt.
+     */
+    @PostMapping("/try-next")
+    public TryNextResponse tryNext(@Valid @RequestBody SimulationRequest request) {
+        return new TryNextResponse(pipeline.tryNext(request));
+    }
 
     @GetMapping("/catalogue")
     public CatalogueResponse catalogue() {

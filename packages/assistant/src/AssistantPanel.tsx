@@ -130,6 +130,7 @@ export function AssistantPanel({
         },
         abort.current.signal,
       );
+      patch((m) => (m.streaming ? (m.text ? { ...m, streaming: false } : { ...m, text: "No answer came back. Try again.", streaming: false, error: true }) : m));
       if (speak && ttsAvailable && full) {
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(speakable(full)));
@@ -172,16 +173,16 @@ export function AssistantPanel({
       <div className="flex items-center gap-2.5 pb-3">
         <Orb state={orb} reduced={!!reduced} />
         <div className="min-w-0 flex-1">
-          <div className="font-heading text-sm font-semibold text-white">{title}</div>
-          <div className="truncate text-[11px] text-white/50">{subtitle}</div>
+          <div className="font-heading text-sm font-semibold text-ink-strong dark:text-white">{title}</div>
+          <div className="truncate text-[11px] text-ink-muted dark:text-white/50">{subtitle}</div>
         </div>
         {ttsAvailable && (
-          <button onClick={() => setSpeak((s) => !s)} aria-pressed={speak} className={`grid h-8 w-8 place-items-center rounded-md ${speak ? "text-[#c4b1ff]" : "text-white/40"} hover:bg-white/[0.06]`} aria-label={speak ? "Stop reading answers aloud" : "Read answers aloud"} title="Read answers aloud">
+          <button onClick={() => setSpeak((s) => !s)} aria-pressed={speak} className={`grid h-8 w-8 place-items-center rounded-full dark:rounded-md ${speak ? "text-[#6D28D9] dark:text-[#c4b1ff]" : "text-ink-muted dark:text-white/40"} hover:bg-line dark:hover:bg-white/[0.06]`} aria-label={speak ? "Stop reading answers aloud" : "Read answers aloud"} title="Read answers aloud">
             {speak ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           </button>
         )}
         {onClose && (
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-white/60 hover:bg-white/[0.08] hover:text-white" aria-label={closeLabel}>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full text-ink-muted hover:bg-line hover:text-ink-strong dark:rounded-md dark:text-white/60 dark:hover:bg-white/[0.08] dark:hover:text-white" aria-label={closeLabel}>
             <X className="h-4 w-4" />
           </button>
         )}
@@ -189,20 +190,20 @@ export function AssistantPanel({
 
       <div ref={scroller} className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1" aria-live="polite">
         {msgs.length === 0 && (
-          <div className="rounded-xl bg-[linear-gradient(160deg,rgba(139,92,246,.16),rgba(232,121,249,.05))] p-4 text-[15px] text-white/70 ring-1 ring-inset ring-ai-violet/25">
+          <div className="rounded-[20px] bg-[#EFE9FF] p-4 text-[15px] text-ink dark:rounded-xl dark:bg-[linear-gradient(160deg,rgba(139,92,246,.16),rgba(232,121,249,.05))] dark:text-white/70 dark:ring-1 dark:ring-inset dark:ring-ai-violet/25">
             {intro}
           </div>
         )}
         {msgs.map((m) =>
           m.role === "user" ? (
-            <div key={m.id} className="ml-8 rounded-xl rounded-br-sm bg-accent/25 px-3 py-2 text-[15px] text-white">
+            <div key={m.id} className="ml-8 rounded-[20px] rounded-br-md bg-[#E3ECFF] px-4 py-2.5 text-[15px] text-ink-strong dark:rounded-xl dark:rounded-br-sm dark:bg-accent/25 dark:px-3 dark:py-2 dark:text-white">
               {m.text}
             </div>
           ) : (
-            <div key={m.id} className={`mr-2 rounded-xl rounded-bl-sm px-3 py-2.5 text-[15px] ring-1 ring-inset ${m.error ? "bg-red-500/10 text-red-100 ring-red-400/30" : m.meta?.flagged ? "bg-amber-400/10 text-amber-50 ring-amber-300/30" : "bg-white/[0.045] text-white/90 ring-white/10"}`}>
+            <div key={m.id} className={`mr-2 rounded-[20px] rounded-bl-md px-4 py-3 text-[15px] dark:rounded-xl dark:rounded-bl-sm dark:px-3 dark:py-2.5 dark:ring-1 dark:ring-inset ${m.error ? "bg-[#FDE3E0] text-[#7A1D16] dark:bg-red-500/10 dark:text-red-100 dark:ring-red-400/30" : m.meta?.flagged ? "bg-[#FEF3C7] text-[#5C3B00] dark:bg-amber-400/10 dark:text-amber-50 dark:ring-amber-300/30" : "bg-surface text-ink dark:bg-white/[0.045] dark:text-white/90 dark:ring-white/10"}`}>
               {m.text ? <Rich text={m.text} streaming={!!m.streaming} /> : <Thinking reduced={!!reduced} />}
               {m.error && fallback && (
-                <button onClick={fallback.onClick} className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-300/15 px-2.5 py-1 text-xs font-semibold text-amber-100 ring-1 ring-inset ring-amber-300/40 hover:bg-amber-300/25">
+                <button onClick={fallback.onClick} className="mt-2 inline-flex items-center gap-1 rounded-full bg-tint-yellow px-3 py-1 text-xs font-semibold text-[#3d2a00] hover:brightness-95 dark:bg-amber-300/15 dark:px-2.5 dark:text-amber-100 dark:ring-1 dark:ring-inset dark:ring-amber-300/40 dark:hover:bg-amber-300/25">
                   {fallback.label}
                 </button>
               )}
@@ -219,7 +220,7 @@ export function AssistantPanel({
       <div className="pt-3">
         <div className="mb-2 flex flex-wrap gap-1.5">
           {suggestions.map((s) => (
-            <button key={s} onClick={() => void send(s)} disabled={busy} className="rounded-full bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium text-white/75 ring-1 ring-inset ring-white/10 hover:bg-white/[0.09] disabled:opacity-40">
+            <button key={s} onClick={() => void send(s)} disabled={busy} className="rounded-full bg-surface px-3 py-1.5 text-xs font-medium text-ink ring-1 ring-inset ring-line hover:bg-line disabled:opacity-40 dark:bg-white/[0.05] dark:px-2.5 dark:py-1 dark:text-[11px] dark:text-white/75 dark:ring-white/10 dark:hover:bg-white/[0.09]">
               {s}
             </button>
           ))}
@@ -243,25 +244,25 @@ export function AssistantPanel({
             rows={1}
             placeholder={listening ? "Listening…" : placeholder}
             aria-label="Ask the assistant"
-            className="max-h-28 min-h-[40px] flex-1 resize-none rounded-lg bg-black/30 px-3 py-2.5 text-[15px] text-white ring-1 ring-inset ring-white/15 placeholder:text-white/30 focus:outline-none focus:ring-ai-violet"
+            className="max-h-28 min-h-[44px] flex-1 resize-none rounded-[22px] bg-surface px-4 py-2.5 text-[15px] text-ink-strong ring-1 ring-inset ring-line placeholder:text-ink-muted focus:outline-none focus:ring-ink-strong/50 dark:min-h-[40px] dark:rounded-lg dark:bg-black/30 dark:px-3 dark:text-white dark:ring-white/15 dark:placeholder:text-white/30 dark:focus:ring-ai-violet"
           />
           {voiceAvailable && (
-            <button type="button" onClick={ptt} aria-pressed={listening} className={`grid h-10 w-10 place-items-center rounded-lg ring-1 ring-inset ${listening ? "bg-red-500/80 text-white ring-red-400" : "text-white/70 ring-white/15 hover:bg-white/[0.06]"}`} aria-label={listening ? "Stop listening" : "Ask by voice"}>
+            <button type="button" onClick={ptt} aria-pressed={listening} className={`grid h-11 w-11 place-items-center rounded-full ring-1 ring-inset dark:h-10 dark:w-10 dark:rounded-lg ${listening ? "bg-red-500/80 text-white ring-red-400" : "text-ink-muted ring-line hover:bg-line dark:text-white/70 dark:ring-white/15 dark:hover:bg-white/[0.06]"}`} aria-label={listening ? "Stop listening" : "Ask by voice"}>
               {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             </button>
           )}
           {busy ? (
-            <button type="button" onClick={() => abort.current?.abort()} className="grid h-10 w-10 place-items-center rounded-lg bg-white/10 text-white" aria-label="Stop">
+            <button type="button" onClick={() => abort.current?.abort()} className="grid h-11 w-11 place-items-center rounded-full bg-line text-ink-strong dark:h-10 dark:w-10 dark:rounded-lg dark:bg-white/10 dark:text-white" aria-label="Stop">
               <Square className="h-4 w-4" />
             </button>
           ) : (
-            <button type="submit" disabled={!input.trim()} className="grid h-10 w-10 place-items-center rounded-lg bg-ai-violet text-white disabled:opacity-40" aria-label="Send">
+            <button type="submit" disabled={!input.trim()} className="grid h-11 w-11 place-items-center rounded-full bg-ink-strong text-on-ink disabled:opacity-40 dark:h-10 dark:w-10 dark:rounded-lg dark:bg-ai-violet dark:text-white" aria-label="Send">
               <Send className="h-4 w-4" />
             </button>
           )}
         </form>
         {ttsAvailable && guideText !== undefined && (
-          <label className="mt-2 flex items-center gap-2 text-[11px] text-white/55">
+          <label className="mt-2 flex items-center gap-2 text-[11px] text-ink-muted dark:text-white/55">
             <input type="checkbox" checked={guided} onChange={(e) => setGuided(e.target.checked)} className="accent-[#8b5cf6]" /> Voice-guided: read each step aloud
           </label>
         )}
@@ -269,6 +270,9 @@ export function AssistantPanel({
     </div>
   );
 }
+
+/** Small icon buttons under an answer. */
+const HOVER = "hover:bg-line hover:text-ink-strong dark:hover:bg-white/[0.06] dark:hover:text-white";
 
 function Extras({ m, onAction, onSave, onRate }: { m: Msg; onAction: (a: AiAction) => void; onSave: ((t: string) => void) | undefined; onRate: ((r: 1 | -1) => Promise<void>) | undefined }) {
   const [copied, setCopied] = useState(false);
@@ -278,7 +282,7 @@ function Extras({ m, onAction, onSave, onRate }: { m: Msg; onAction: (a: AiActio
       {meta.actions.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {meta.actions.map((a) => (
-            <button key={`${a.type}-${a.target}`} onClick={() => onAction(a)} className="inline-flex items-center gap-1 rounded-full bg-accent-cyan/10 px-2.5 py-1 text-[11px] font-semibold text-accent-cyan ring-1 ring-inset ring-accent-cyan/30 hover:bg-accent-cyan/20">
+            <button key={`${a.type}-${a.target}`} onClick={() => onAction(a)} className="inline-flex items-center gap-1 rounded-full bg-card px-2.5 py-1 text-[11px] font-semibold text-link ring-1 ring-inset ring-line hover:bg-[#E3ECFF] dark:bg-accent-cyan/10 dark:text-accent-cyan dark:ring-accent-cyan/30 dark:hover:bg-accent-cyan/20">
               {a.type === "highlight" ? <Sparkles className="h-3 w-3" /> : a.type === "openFormula" ? <FunctionSquare className="h-3 w-3" /> : <ExternalLink className="h-3 w-3" />}
               {a.label}
             </button>
@@ -286,26 +290,26 @@ function Extras({ m, onAction, onSave, onRate }: { m: Msg; onAction: (a: AiActio
         </div>
       )}
       {meta.sources.length > 0 && <Sources sources={meta.sources} />}
-      <div className="flex items-center gap-1 text-white/40">
-        <button onClick={() => void navigator.clipboard.writeText(m.text).then(() => setCopied(true))} className="grid h-7 w-7 place-items-center rounded hover:bg-white/[0.06] hover:text-white" aria-label="Copy answer">
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+      <div className="flex items-center gap-1 text-ink-muted dark:text-white/40">
+        <button onClick={() => void navigator.clipboard.writeText(m.text).then(() => setCopied(true))} className={`grid h-7 w-7 place-items-center rounded-full ${HOVER}`} aria-label="Copy answer">
+          {copied ? <Check className="h-3.5 w-3.5 text-[#1E8E3E] dark:text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
         </button>
         {onSave && (
-          <button onClick={() => onSave(m.text)} className="rounded px-1.5 py-1 text-[11px] hover:bg-white/[0.06] hover:text-white">
+          <button onClick={() => onSave(m.text)} className={`rounded-full px-2 py-1 text-[11px] ${HOVER}`}>
             Save to notebook
           </button>
         )}
         {onRate && (
           <>
-            <button onClick={() => void onRate(1)} aria-pressed={m.rated === 1} className={`grid h-7 w-7 place-items-center rounded hover:bg-white/[0.06] ${m.rated === 1 ? "text-emerald-300" : "hover:text-white"}`} aria-label="Helpful">
+            <button onClick={() => void onRate(1)} aria-pressed={m.rated === 1} className={`grid h-7 w-7 place-items-center rounded-full hover:bg-line dark:hover:bg-white/[0.06] ${m.rated === 1 ? "text-[#1E8E3E] dark:text-emerald-300" : "hover:text-ink-strong dark:hover:text-white"}`} aria-label="Helpful">
               <ThumbsUp className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => void onRate(-1)} aria-pressed={m.rated === -1} className={`grid h-7 w-7 place-items-center rounded hover:bg-white/[0.06] ${m.rated === -1 ? "text-red-300" : "hover:text-white"}`} aria-label="Not helpful">
+            <button onClick={() => void onRate(-1)} aria-pressed={m.rated === -1} className={`grid h-7 w-7 place-items-center rounded-full hover:bg-line dark:hover:bg-white/[0.06] ${m.rated === -1 ? "text-[#B3261E] dark:text-red-300" : "hover:text-ink-strong dark:hover:text-white"}`} aria-label="Not helpful">
               <ThumbsDown className="h-3.5 w-3.5" />
             </button>
           </>
         )}
-        {meta.grounding.source === "engine" && <span className="ml-auto text-[10px] text-white/35">from the chemistry engine</span>}
+        {meta.grounding.source === "engine" && <span className="ml-auto text-[10px] text-ink-muted dark:text-white/35">from the chemistry engine</span>}
       </div>
     </div>
   );
@@ -313,12 +317,12 @@ function Extras({ m, onAction, onSave, onRate }: { m: Msg; onAction: (a: AiActio
 
 function Sources({ sources }: { sources: AiSource[] }) {
   return (
-    <div className="text-[11px] text-white/45">
+    <div className="text-[11px] text-ink-muted dark:text-white/45">
       Sources:{" "}
       {sources.map((s, i) => (
         <Fragment key={s.url + i}>
           {i > 0 && " · "}
-          <a href={s.url} className="underline decoration-white/20 hover:text-white">
+          <a href={s.url} className="underline decoration-ink/20 hover:text-ink-strong dark:decoration-white/20 dark:hover:text-white">
             {s.title}
           </a>
         </Fragment>
@@ -331,7 +335,7 @@ function Thinking({ reduced }: { reduced: boolean }) {
   return (
     <span className="inline-flex gap-1" aria-label="Thinking">
       {[0, 1, 2].map((i) => (
-        <motion.span key={i} className="h-1.5 w-1.5 rounded-full bg-white/50" animate={reduced ? {} : { opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.15 }} />
+        <motion.span key={i} className="h-1.5 w-1.5 rounded-full bg-ink/40 dark:bg-white/50" animate={reduced ? {} : { opacity: [0.2, 1, 0.2] }} transition={{ repeat: Infinity, duration: 1, delay: i * 0.15 }} />
       ))}
     </span>
   );
@@ -357,7 +361,7 @@ function tex(src: string, display: boolean) {
 
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /(\$[^$\n]+\$|\*\*[^*]+\*\*)/g;
+  const re = /(\$[^$\n]+\$|\*\*[^*]+\*\*|`[^`\n]+`)/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let k = 0;
@@ -365,35 +369,76 @@ function inline(text: string): ReactNode[] {
     if (m.index > last) out.push(text.slice(last, m.index));
     const tok = m[0];
     if (tok.startsWith("$")) out.push(<span key={k++} dangerouslySetInnerHTML={{ __html: tex(tok.slice(1, -1), false) }} />);
-    else out.push(<strong key={k++} className="font-semibold text-white">{tok.slice(2, -2)}</strong>);
+    else if (tok.startsWith("`")) out.push(<code key={k++} className="rounded bg-ink/10 px-1 font-mono text-[0.9em] dark:bg-white/10">{tok.slice(1, -1)}</code>);
+    else out.push(<strong key={k++} className="font-semibold text-ink-strong dark:text-white">{tok.slice(2, -2)}</strong>);
     last = m.index + tok.length;
   }
   if (last < text.length) out.push(text.slice(last));
   return out;
 }
 
-/** Paragraphs, "- " lists, **bold**, $inline$ and $$display$$ maths (display maths shows once complete). */
+const BULLET = /^\s*[-*•]\s+/;
+const NUMBERED = /^\s*\d+[.)]\s+/;
+
+/**
+ * Paragraphs, "- " and "1." lists (also straight after a line of text), "# " headings shown as bold
+ * lines, **bold**, `code`, $inline$ and $$display$$ maths (display maths shows once complete).
+ */
 export function Rich({ text, streaming }: { text: string; streaming?: boolean }) {
   const blocks = text.split(/\n\n+/);
-  return (
-    <div className="space-y-2 leading-relaxed">
-      {blocks.map((b, i) => {
-        const display = /^\$\$([\s\S]*)\$\$$/.exec(b.trim());
-        if (display) return <div key={i} className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: tex(display[1]!, true) }} />;
-        if (b.trim().startsWith("$$") && streaming) return <div key={i} className="text-white/40">…</div>;
-        if (b.trim().startsWith("- "))
-          return (
-            <ul key={i} className="list-disc space-y-1 pl-4">
-              {b
-                .split(/\n/)
-                .filter((l) => l.trim())
-                .map((l, j) => (
-                  <li key={j}>{inline(l.replace(/^- /, ""))}</li>
-                ))}
-            </ul>
+  const out: ReactNode[] = [];
+  blocks.forEach((b, i) => {
+    const display = /^\$\$([\s\S]*)\$\$$/.exec(b.trim());
+    if (display) {
+      out.push(<div key={i} className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: tex(display[1]!, true) }} />);
+      return;
+    }
+    if (b.trim().startsWith("$$") && streaming) {
+      out.push(<div key={i} className="text-ink-muted dark:text-white/40">…</div>);
+      return;
+    }
+    // runs of list lines become lists; everything between them stays a paragraph
+    let para: string[] = [];
+    let items: string[] = [];
+    let ordered = false;
+    let n = 0;
+    const flush = () => {
+      if (para.length) out.push(<p key={`${i}p${n++}`}>{inline(para.join(" "))}</p>);
+      if (items.length) {
+        const List = ordered ? "ol" : "ul";
+        out.push(
+          <List key={`${i}l${n++}`} className={`${ordered ? "list-decimal" : "list-disc"} space-y-1 pl-5`}>
+            {items.map((l, j) => (
+              <li key={j}>{inline(l)}</li>
+            ))}
+          </List>,
+        );
+      }
+      para = [];
+      items = [];
+    };
+    for (const line of b.split(/\n/)) {
+      if (!line.trim()) continue;
+      const bullet = BULLET.test(line);
+      const numbered = !bullet && NUMBERED.test(line);
+      if (bullet || numbered) {
+        if (para.length || (items.length && ordered !== numbered)) flush();
+        ordered = numbered;
+        items.push(line.replace(bullet ? BULLET : NUMBERED, ""));
+      } else {
+        if (items.length) flush();
+        const heading = /^#{1,6}\s+(.*)$/.exec(line.trim());
+        if (heading) {
+          flush();
+          out.push(
+            <p key={`${i}h${n++}`} className="font-semibold text-ink-strong dark:text-white">
+              {inline(heading[1]!.replace(/\*\*/g, ""))}
+            </p>,
           );
-        return <p key={i}>{inline(b)}</p>;
-      })}
-    </div>
-  );
+        } else para.push(line.trim());
+      }
+    }
+    flush();
+  });
+  return <div className="space-y-2 leading-relaxed">{out}</div>;
 }

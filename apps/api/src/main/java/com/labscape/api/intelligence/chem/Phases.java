@@ -76,8 +76,11 @@ final class Phases {
             double solubility = s.sol20() + (s.sol90() - s.sol20()) * t;
             double capacity = solubility * waterMl / 100.0 / s.mm();
             if (s.acid()) {
-                // Bases pull a weak solid acid into solution as its salt.
-                capacity += m.get("OH-") + m.get("CO3^2-") + m.get("HCO3-") + m.get("NH3") + m.get("PO4^3-");
+                // Bases pull a weak solid acid into solution as its salt - but only the base that any strong
+                // acid in the same beaker will not use up first (otherwise it "dissolves" and then crystallises
+                // straight back out of a mixture that was never alkaline).
+                double base = m.get("OH-") + m.get("CO3^2-") + m.get("HCO3-") + m.get("NH3") + m.get("PO4^3-");
+                capacity += Math.max(0, base - m.get("H+"));
             }
             double d = Math.min(n, capacity);
             if (d <= EPS) continue;
@@ -103,13 +106,29 @@ final class Phases {
         }
     }
 
+    /** Solubility (mol/L at this temperature) of the solid that dissolves to give species {@code key}, or 0 if none does. */
+    private static double dissolvedLimitM(String key, double tempC) {
+        double t = Math.max(0, Math.min(1, (tempC - 20) / 70));
+        double best = 0;
+        for (Soluble s : SOLUBLE.values()) {
+            Double perUnit = s.ions().get(key);
+            if (perUnit == null) continue;
+            double gPer100 = s.sol20() + (s.sol90() - s.sol20()) * t;
+            best = Math.max(best, gPer100 * 10 / s.mm() * perUnit);
+        }
+        return best;
+    }
+
     /** Weak acids only sparingly soluble in water crystallise out when there is more than water can hold. */
     static void acidCrystals(MixtureOps m) {
         if (m.aqMl() <= 0) return;
         double litres = m.aqMl() / 1000.0;
         for (Acids.Weak w : Acids.WEAK) {
-            if (w.crystalHex() == null || m.molar(w.key()) <= w.solubilityM() * 1.05) continue;
-            double excess = m.get(w.key()) - w.solubilityM() * litres;
+            if (w.crystalHex() == null) continue;
+            // The same limit dissolve() used at this temperature: what dissolved from the solid can never be "too much".
+            double limit = Math.max(w.solubilityM(), dissolvedLimitM(w.key(), m.tempC()));
+            if (m.molar(w.key()) <= limit * 1.05) continue;
+            double excess = m.get(w.key()) - limit * litres;
             if (excess <= EPS) continue;
             // Only acid made by protonating its salt here counts: undissolved solid never left the solid state.
             m.take(w.key(), excess);
@@ -203,7 +222,24 @@ final class Phases {
         lower.addAll(polar);
         if (water) lower.addAll(both);
         boolean twoPhases = !top.isEmpty() && !lower.isEmpty() && (water || !polar.isEmpty());
-        if (twoPhases) {
+        // Detergent or soap wraps the oil in tiny droplets, so the layers never form: an emulsion.
+        boolean emulsifier = water && (m.presentTag("detergent") || m.get("St-") > EPS);
+        if (twoPhases && emulsifier) {
+            double oilMl = top.stream().mapToDouble(Liquid::ml).sum();
+            String oil = top.size() == 1 ? Lore.lower(top.get(0).s().name()) : "oily liquids";
+            long start = m.nextStart();
+            Map<String, Object> c = m.cue("colour", "vessel", start);
+            c.put("from", Colour.hex("#eef6fb", 0.2).toJson());
+            c.put("to", Colour.hex("#f1eedd", 0.9).toJson());
+            c.put("durationMs", 1600);
+            c.put("curve", "sigmoid");
+            m.reaction("emulsifier", "Detergent emulsifies the oil", "physical",
+                    "\\text{oil} + \\text{water} \\xrightarrow{\\text{detergent}} \\text{emulsion (tiny oil droplets in water)}",
+                    "emulsifier", oilMl / 1000.0);
+            m.observe("Instead of floating as a layer, the " + oil + " breaks into tiny droplets and the whole liquid turns milky: "
+                    + "each detergent particle has an oil-loving tail and a water-loving head, so it holds oil and water together.");
+            m.reason("This is an emulsion - a physical mixture, not a new substance. It is how washing-up liquid lifts grease off plates.");
+        } else if (twoPhases) {
             double topMl = top.stream().mapToDouble(Liquid::ml).sum();
             double topDensity = top.stream().mapToDouble(l -> l.ml() * l.s().densityOr(0.85)).sum() / Math.max(topMl, 1e-9);
             double lowMl = lower.stream().mapToDouble(Liquid::ml).sum();

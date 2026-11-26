@@ -46,6 +46,19 @@ export type CatalogueResponse = {
 
 export type TrayItem = { key: string; item: ShelfItem; amount: number };
 
+/**
+ * One suggestion from POST /v1/playground/try-next: add a shelf item (`ref` is its catalogue id) or
+ * use a bench tool. `teaser` hints at what to look for; `discoveryId` is the journal entry it unlocks.
+ */
+export type TryNextHint = {
+  kind: "add" | "heat" | "spark";
+  ref?: string;
+  name: string;
+  teaser: string;
+  discoveryId?: string;
+  type?: string;
+};
+
 /** How a substance is dispensed by hand. */
 export type DispenseMode = "pour" | "dropper" | "spatula" | "gas";
 

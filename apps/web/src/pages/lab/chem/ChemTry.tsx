@@ -1078,7 +1078,11 @@ function ShowMeInPlace({ content, step, onClose }: { content: ExperimentContent;
         <span className="flex min-w-0 flex-1 items-center gap-2 text-[15px] font-semibold text-white">
           <Play className="h-4 w-4 shrink-0 text-[#39d6ff]" />
           <span className="truncate">Show me: {step.title}</span>
-          {lapse && !over && <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[13px] text-[#9fd8ff]">⏩ time-lapse</span>}
+          {lapse && !over && (
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[13px] text-[#9fd8ff]">
+              <FastForward className="h-3.5 w-3.5 fill-current" aria-hidden /> time-lapse
+            </span>
+          )}
         </span>
         <GhostButton className="h-9" onClick={() => setRun((n) => n + 1)}>
           <RotateCcw className="h-4 w-4" /> Again

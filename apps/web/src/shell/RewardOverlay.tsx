@@ -139,7 +139,7 @@ function BadgeReveal({ id, name, onDone }: { id: string; name: string; onDone: (
     return () => window.clearTimeout(t);
   }, [reduced]);
   return (
-    <motion.div className="fixed inset-0 z-[96] grid place-items-center p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <motion.div data-surface="dark" className="fixed inset-0 z-[96] grid place-items-center p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <div className="absolute inset-0 bg-[#03060f]/75 backdrop-blur-sm" onClick={onDone} />
       <div className="relative flex flex-col items-center text-center" style={{ perspective: 900 }}>
         <motion.div
@@ -195,6 +195,7 @@ function LevelUp({ index, name, onDone }: { index: number; name: string; onDone:
   const dots = Array.from({ length: 36 }, (_, i) => i);
   return (
     <motion.div
+      data-surface="dark"
       className="fixed inset-0 z-[97] grid place-items-center overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

@@ -18,6 +18,9 @@ export type Component = {
   setting?: number;
   closed?: boolean;
   blown?: boolean;
+  /** Diode-like parts (kind "led") only: forward voltage (V) and on-resistance (ohm). Unset means the LED values. */
+  forwardV?: number;
+  onOhm?: number;
 };
 
 /** Terminal names: "<id>.a" and "<id>.b". For sources a = positive, for LEDs a = anode. */
@@ -209,10 +212,10 @@ function solveOnce(components: Component[], wires: Wire[]): CircuitResult {
       }
       if (c.kind === "led") {
         if (ledOn[c.id]) {
-          const g = 1 / LED.onOhm;
+          const g = 1 / (c.onOhm ?? LED.onOhm);
           stampG(na, nb, g);
           // i = g (Va - Vb - Vf): the -g Vf part is a source pushing current from b to a
-          stampI(na, nb, -LED.forwardV * g);
+          stampI(na, nb, -(c.forwardV ?? LED.forwardV) * g);
         } else stampG(na, nb, 1e-9);
         continue;
       }
@@ -242,7 +245,8 @@ function solveOnce(components: Component[], wires: Wire[]): CircuitResult {
     let changed = false;
     for (const c of components.filter((c) => c.kind === "led")) {
       const v = voltages[nodeOf[`${c.id}.a`]!]! - voltages[nodeOf[`${c.id}.b`]!]!;
-      const shouldBeOn = ledOn[c.id] ? v >= LED.forwardV - 1e-9 : v > LED.forwardV;
+      const vf = c.forwardV ?? LED.forwardV;
+      const shouldBeOn = ledOn[c.id] ? v >= vf - 1e-9 : v > vf;
       if (shouldBeOn !== ledOn[c.id]) {
         ledOn[c.id] = shouldBeOn;
         changed = true;
@@ -260,7 +264,7 @@ function solveOnce(components: Component[], wires: Wire[]): CircuitResult {
     if (isSource(c)) {
       if (c.internal && c.internal > 0) i = ((c.value ?? 1.5) - v) / c.internal;
       else i = srcCurrents[c.id] ?? 0;
-    } else if (c.kind === "led") i = ledOn[c.id] ? Math.max(0, (v - LED.forwardV) / LED.onOhm) : 0;
+    } else if (c.kind === "led") i = ledOn[c.id] ? Math.max(0, (v - (c.forwardV ?? LED.forwardV)) / (c.onOhm ?? LED.onOhm)) : 0;
     else {
       const R = resistanceOf(c);
       i = R === null ? 0 : v / R;

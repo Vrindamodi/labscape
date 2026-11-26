@@ -71,9 +71,14 @@ labscape:
     scenarios: true
     molecular-view: true
   ai:
-    # Claude answers when a key is set; otherwise the built-in grounded tutor does. Same guard either way.
-    anthropic-api-key: ${ANTHROPIC_API_KEY:}
-    model: ${AI_MODEL:claude-opus-5-5}
+    # Gemini answers when a key is set; otherwise the built-in grounded tutor does. Same guard either way.
+    gemini-api-key: ${GEMINI_API_KEY:${GOOGLE_API_KEY:}}
+    model: ${AI_MODEL:gemini-3.8-flash}
+    # How hard the model thinks before it answers: minimal, low, medium or high. Low keeps a chat
+    # answer quick. Leave it blank for the model's own default.
+    thinking: ${AI_THINKING:low}
+    # Only for tests and proxies; blank means Google's own endpoint.
+    base-url: ${AI_BASE_URL:}
   safety:
     # R1 ships the safety engine behind this flag. Off => /v1/safety/resolve returns 503 and the
     # playground shows no reactions at all.

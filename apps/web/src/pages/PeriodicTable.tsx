@@ -18,9 +18,10 @@ import { useMotion } from "@labscape/motion";
 import { Button, Chip, cx, ErrorState, inputClass, Modal, Segmented, Skeleton } from "@labscape/ui";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { Atom, FlaskConical, Play, Plus, Radiation, Scale, Search, Thermometer, X } from "lucide-react";
+import { FlaskConical, Play, Plus, Radiation, Scale, Search, Thermometer, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { PageHeader } from "../components/PageHeader";
 import { api } from "../lib/api";
 
 type Mode = "category" | "trend" | "state" | "block";
@@ -34,6 +35,10 @@ const TEMPS: [string, number][] = [
   ["Bunsen flame", 1773],
   ["Sun's surface", 5778],
 ];
+
+/** Pastel tile fill: the category/trend colour mixed into white, so dark text reads on every tile. */
+const tint = (c: string, pct = 42) => `color-mix(in srgb, ${c} ${pct}%, white)`;
+const edge = (c: string) => `color-mix(in srgb, ${c} 70%, #1a1a1a 12%)`;
 
 export default function PeriodicTable() {
   const q = useQuery({ queryKey: ["elements"], queryFn: () => api<{ items: Element[] }>("/v1/elements"), staleTime: Infinity });
@@ -100,61 +105,58 @@ export default function PeriodicTable() {
 
   return (
     <div className="mx-auto max-w-[1380px] pb-24">
-      <header className="relative mb-5 overflow-hidden rounded-2xl border border-white/[0.08] p-6 sm:p-7" style={{ background: "radial-gradient(700px 300px at 100% 0%, #7c3aed40, transparent 60%), radial-gradient(500px 260px at 0% 100%, #2f80ff30, transparent 60%), linear-gradient(160deg,#18233f,#0e1529)" }}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#a5b4fc]">
-              <Atom className="h-4 w-4" /> Resources
-            </p>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Periodic table</h1>
-            <p className="mt-1 max-w-xl text-sm text-white/65">All 118 elements. Colour them by family, trend, block or state at any temperature, open one to watch its electrons fill, and compare up to four side by side.</p>
-          </div>
+      <PageHeader
+        eyebrow="Resources"
+        title="Periodic table"
+        sub="All 118 elements. Colour them by family, trend, block or state at any temperature, open one to watch its electrons fill, and compare up to four side by side."
+        aside={
           <label className="relative w-full max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find: Fe, iron or 26" className={cx(inputClass, "pl-9")} aria-label="Find an element" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find: Fe, iron or 26" className={cx(inputClass, "pl-10")} aria-label="Find an element" />
           </label>
-        </div>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Segmented<Mode>
-            label="Colour by"
-            value={mode}
-            onChange={setMode}
-            options={[
-              { value: "category", label: "Families" },
-              { value: "trend", label: "Trends" },
-              { value: "state", label: "States" },
-              { value: "block", label: "Blocks" },
-            ]}
-          />
-          {mode === "trend" && (
-            <div className="flex flex-wrap gap-1.5">
-              {(Object.keys(TRENDS) as TrendKey[]).map((k) => (
-                <button key={k} onClick={() => setTrend(k)} className={cx("rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset transition", trend === k ? "bg-accent text-white ring-accent" : "text-white/65 ring-white/15 hover:text-white")}>
-                  {TRENDS[k].label}
+        }
+        className="mb-5"
+      />
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <Segmented<Mode>
+          label="Colour by"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "category", label: "Families" },
+            { value: "trend", label: "Trends" },
+            { value: "state", label: "States" },
+            { value: "block", label: "Blocks" },
+          ]}
+        />
+        {mode === "trend" && (
+          <div className="flex flex-wrap gap-1.5">
+            {(Object.keys(TRENDS) as TrendKey[]).map((k) => (
+              <button key={k} onClick={() => setTrend(k)} className={cx("rounded-full px-3 py-1.5 text-xs font-medium transition", trend === k ? "bg-ink-strong text-on-ink" : "bg-card text-ink-muted ring-1 ring-inset ring-line hover:text-ink-strong")}>
+                {TRENDS[k].label}
+              </button>
+            ))}
+          </div>
+        )}
+        {mode === "state" && (
+          <div className="flex min-w-[280px] flex-1 flex-wrap items-center gap-3">
+            <Thermometer className="h-4 w-4 text-[#C2410C]" />
+            <input type="range" min={0} max={6000} step={1} value={kelvin} onChange={(e) => setKelvin(Number(e.target.value))} className="h-1 min-w-[160px] flex-1 accent-[#ff922b]" aria-label="Temperature in kelvin" />
+            <span className="w-36 font-mono text-sm text-ink-strong">
+              {kelvin} K · {Math.round(kelvin - 273.15)} °C
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {TEMPS.map(([label, k]) => (
+                <button key={label} onClick={() => setKelvin(k)} className={cx("rounded-full px-2.5 py-1 text-[11px] font-medium transition", kelvin === k ? "bg-[#FDE7D6] text-[#9A3412]" : "bg-card text-ink-muted ring-1 ring-inset ring-line hover:text-ink-strong")}>
+                  {label}
                 </button>
               ))}
             </div>
-          )}
-          {mode === "state" && (
-            <div className="flex min-w-[280px] flex-1 flex-wrap items-center gap-3">
-              <Thermometer className="h-4 w-4 text-orange-300" />
-              <input type="range" min={0} max={6000} step={1} value={kelvin} onChange={(e) => setKelvin(Number(e.target.value))} className="h-1 min-w-[160px] flex-1 accent-[#ff922b]" aria-label="Temperature in kelvin" />
-              <span className="w-36 font-mono text-sm text-white">
-                {kelvin} K · {Math.round(kelvin - 273.15)} °C
-              </span>
-              <div className="flex flex-wrap gap-1">
-                {TEMPS.map(([label, k]) => (
-                  <button key={label} onClick={() => setKelvin(k)} className={cx("rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset", kelvin === k ? "bg-orange-400/20 text-orange-200 ring-orange-300/50" : "text-white/55 ring-white/10 hover:text-white")}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
+          </div>
+        )}
+      </div>
 
-      <div className="overflow-x-auto pb-2">
+      <div className="overflow-x-auto rounded-panel bg-card p-4 sm:p-6">
         <div className="min-w-[980px]">
           {/* the info strip sits in the empty space above the transition metals, like a printed table's key */}
           <div ref={grid} className="relative grid grid-cols-[repeat(18,minmax(0,1fr))] gap-[5px]" style={{ gridTemplateRows: "repeat(7, minmax(0,1fr)) 14px repeat(2, minmax(0,1fr))" }} role="grid" aria-label="Periodic table">
@@ -163,7 +165,7 @@ export default function PeriodicTable() {
               {preview ? <PreviewCard e={preview} colour={colourOf(preview)} mode={mode} trend={trend} kelvin={kelvin} /> : <Legend mode={mode} trend={trend} range={range} onFocus={setFocusCat} focus={focusCat} />}
             </div>
             {[["Lanthanides", 9], ["Actinides", 10]].map(([label, row]) => (
-              <div key={label} className="col-span-2 flex items-center justify-end pr-2 text-right text-[10px] font-bold uppercase tracking-wide text-white/40" style={{ gridRow: row as number, gridColumn: "1 / span 2" }}>
+              <div key={label} className="col-span-2 flex items-center justify-end pr-2 text-right text-[10px] font-semibold uppercase tracking-wide text-ink-muted" style={{ gridRow: row as number, gridColumn: "1 / span 2" }}>
                 {label}
               </div>
             ))}
@@ -186,36 +188,34 @@ export default function PeriodicTable() {
                   aria-label={`${e.name}, ${e.z}`}
                   aria-selected={isSel}
                   className={cx(
-                    "group relative aspect-[0.86] rounded-md p-1 text-left outline-none transition-[transform,opacity,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-white",
-                    dim ? "opacity-20" : "hover:z-10 hover:-translate-y-0.5 hover:scale-[1.12]",
-                    isSel && "z-10 scale-[1.08] ring-2 ring-white",
+                    "group relative aspect-[0.86] rounded-lg p-1 text-left text-[#1a1a1a] outline-none transition-[transform,opacity,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-accent",
+                    dim ? "opacity-25" : "hover:z-10 hover:-translate-y-0.5 hover:scale-[1.12] hover:shadow-lift",
+                    isSel && "z-10 scale-[1.08] shadow-lift ring-2 ring-ink-strong",
                   )}
                   style={{
                     gridRow: e.row,
                     gridColumn: e.col,
-                    background: `linear-gradient(160deg, ${colour}38, ${colour}14)`,
-                    boxShadow: `inset 0 0 0 1px ${colour}70${isSel ? `, 0 0 22px ${colour}90` : ""}`,
+                    background: tint(colour),
+                    boxShadow: isSel ? undefined : `inset 0 0 0 1px ${edge(colour)}`,
                   }}
                 >
-                  <span className="block text-[9px] font-semibold leading-none text-white/60">{e.z}</span>
-                  <span className="mt-0.5 block text-center text-[17px] font-extrabold leading-none text-white" style={{ textShadow: `0 0 12px ${colour}` }}>
-                    {e.symbol}
-                  </span>
-                  <span className="mt-0.5 block truncate text-center text-[8.5px] leading-none text-white/60">{mode === "trend" ? (v === null ? "-" : fmt(v, trend)) : e.name}</span>
-                  {compare.includes(e.z) && <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-accent-cyan shadow-[0_0_6px_#22d3ee]" />}
-                  {e.experiments.length > 0 && <FlaskConical className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 text-white/45" aria-hidden />}
+                  <span className="block text-[9px] font-semibold leading-none opacity-60">{e.z}</span>
+                  <span className="mt-0.5 block text-center text-[17px] font-bold leading-none">{e.symbol}</span>
+                  <span className="mt-0.5 block truncate text-center text-[8.5px] leading-none opacity-70">{mode === "trend" ? (v === null ? "-" : fmt(v, trend)) : e.name}</span>
+                  {compare.includes(e.z) && <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-[#1a1a1a]" />}
+                  {e.experiments.length > 0 && <FlaskConical className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 opacity-50" aria-hidden />}
                 </button>
               );
             })}
           </div>
         </div>
       </div>
-      <p className="mt-2 flex items-center gap-1.5 text-[11px] text-white/40">
+      <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
         <FlaskConical className="h-3 w-3" /> marks elements you can work with in a LABscape experiment. Use the arrow keys to move around the table.
       </p>
 
       {/* below lg the legend has no space inside the grid */}
-      <div className="mt-4 lg:hidden">
+      <div className="mt-4 rounded-card bg-card p-3 lg:hidden">
         <Legend mode={mode} trend={trend} range={range} onFocus={setFocusCat} focus={focusCat} />
       </div>
 
@@ -236,15 +236,15 @@ export default function PeriodicTable() {
 
       <AnimatePresence>
         {compare.length > 0 && (
-          <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/10 bg-[#0e1529f2] p-2 pl-4 shadow-2xl backdrop-blur">
-            <Scale className="h-4 w-4 text-accent-cyan" />
-            <span className="mr-1 text-xs font-semibold text-white/60">Compare</span>
+          <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} className="fixed bottom-24 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-card p-2 pl-4 text-ink shadow-pop ring-1 ring-inset ring-line lg:bottom-6">
+            <Scale className="h-4 w-4 text-link" />
+            <span className="mr-1 text-xs font-semibold text-ink-muted">Compare</span>
             {compare.map((z) => {
               const e = elements[z - 1]!;
               return (
-                <span key={z} className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-bold text-white" style={{ background: `${CATEGORIES[e.category].colour}30` }}>
+                <span key={z} className="flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-bold text-[#1a1a1a]" style={{ background: tint(CATEGORIES[e.category].colour) }}>
                   {e.symbol}
-                  <button onClick={() => toggleCompare(z)} aria-label={`Remove ${e.name}`} className="text-white/50 hover:text-white">
+                  <button onClick={() => toggleCompare(z)} aria-label={`Remove ${e.name}`} className="text-[#1a1a1a]/50 hover:text-[#1a1a1a]">
                     <X className="h-3 w-3" />
                   </button>
                 </span>
@@ -275,42 +275,42 @@ function Legend({ mode, trend, range, onFocus, focus }: { mode: Mode; trend: Tre
   if (mode === "trend") {
     const t = TRENDS[trend];
     return (
-      <div className="pointer-events-auto w-full max-w-[560px] rounded-xl bg-[#0e1529cc] p-3 ring-1 ring-inset ring-white/10">
-        <p className="text-sm font-bold text-white">
-          {t.label} <span className="font-normal text-white/50">{t.unit && `(${t.unit})`}</span>
+      <div className="pointer-events-auto w-full max-w-[560px] rounded-[20px] bg-surface p-4">
+        <p className="text-sm font-semibold text-ink-strong">
+          {t.label} <span className="font-normal text-ink-muted">{t.unit && `(${t.unit})`}</span>
         </p>
         <div className="mt-2 h-2.5 rounded-full" style={{ background: `linear-gradient(90deg, ${t.ramp.join(",")})` }} />
-        <div className="mt-1 flex justify-between font-mono text-[10px] text-white/50">
+        <div className="mt-1 flex justify-between font-mono text-[10px] text-ink-muted">
           <span>{fmt(range[0], trend)}</span>
           <span>{t.log ? "log scale" : ""}</span>
           <span>{fmt(range[1], trend)}</span>
         </div>
-        <p className="mt-2 text-xs leading-relaxed text-white/70">{t.explain}</p>
+        <p className="mt-2 text-xs leading-relaxed text-ink">{t.explain}</p>
       </div>
     );
   }
   if (mode === "state")
     return (
-      <div className="pointer-events-auto flex flex-wrap gap-2 rounded-xl bg-[#0e1529cc] p-3 ring-1 ring-inset ring-white/10">
+      <div className="pointer-events-auto flex flex-wrap gap-2 rounded-[20px] bg-surface p-4">
         {(Object.keys(PHASE_COLOUR) as (keyof typeof PHASE_COLOUR)[]).map((p) => (
-          <span key={p} className="flex items-center gap-1.5 text-xs capitalize text-white/80">
+          <span key={p} className="flex items-center gap-1.5 text-xs capitalize text-ink">
             <span className="h-3 w-3 rounded" style={{ background: PHASE_COLOUR[p] }} /> {p === "unknown" ? "Not known" : p}
           </span>
         ))}
-        <p className="w-full text-xs text-white/55">At 1 atmosphere. Drag the temperature and watch mercury and bromine melt first, tungsten last.</p>
+        <p className="w-full text-xs text-ink-muted">At 1 atmosphere. Drag the temperature and watch mercury and bromine melt first, tungsten last.</p>
       </div>
     );
   if (mode === "block")
     return (
-      <div className="pointer-events-auto rounded-xl bg-[#0e1529cc] p-3 ring-1 ring-inset ring-white/10">
+      <div className="pointer-events-auto rounded-[20px] bg-surface p-4">
         <div className="flex gap-3">
           {(Object.keys(BLOCK_COLOUR) as (keyof typeof BLOCK_COLOUR)[]).map((b) => (
-            <span key={b} className="flex items-center gap-1.5 text-xs text-white/80">
+            <span key={b} className="flex items-center gap-1.5 text-xs text-ink">
               <span className="h-3 w-3 rounded" style={{ background: BLOCK_COLOUR[b] }} /> {b}-block
             </span>
           ))}
         </div>
-        <p className="mt-2 max-w-md text-xs text-white/55">The block is the subshell the last electron goes into. That is why the table has this shape: 2 columns of s, 6 of p, 10 of d and 14 of f.</p>
+        <p className="mt-2 max-w-md text-xs text-ink-muted">The block is the subshell the last electron goes into. That is why the table has this shape: 2 columns of s, 6 of p, 10 of d and 14 of f.</p>
       </div>
     );
   return (
@@ -322,8 +322,8 @@ function Legend({ mode, trend, range, onFocus, focus }: { mode: Mode; trend: Tre
           onFocus={() => onFocus(c)}
           onBlur={() => onFocus(null)}
           onClick={() => onFocus(focus === c ? null : c)}
-          className={cx("flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset transition", focus === c ? "text-white ring-white/40" : "text-white/70 ring-white/10")}
-          style={{ background: `${CATEGORIES[c].colour}${focus === c ? "40" : "18"}` }}
+          className={cx("flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium text-[#1a1a1a] ring-1 ring-inset transition", focus === c ? "ring-ink-strong" : "ring-transparent")}
+          style={{ background: tint(CATEGORIES[c].colour, focus === c ? 55 : 30) }}
         >
           <span className="h-2 w-2 rounded-full" style={{ background: CATEGORIES[c].colour }} />
           {CATEGORIES[c].label}
@@ -337,22 +337,22 @@ function PreviewCard({ e, colour, mode, trend, kelvin }: { e: Element; colour: s
   const conf = configuration(e.z);
   const v = trendValue(e, trend);
   return (
-    <div className="flex w-full max-w-[600px] items-center gap-4 rounded-xl bg-[#0e1529d9] p-3 ring-1 ring-inset ring-white/10">
-      <div className="grid h-[86px] w-[78px] shrink-0 place-items-center rounded-lg" style={{ background: `linear-gradient(160deg, ${colour}55, ${colour}18)`, boxShadow: `inset 0 0 0 1px ${colour}` }}>
+    <div className="flex w-full max-w-[600px] items-center gap-4 rounded-[20px] bg-surface p-3">
+      <div className="grid h-[86px] w-[78px] shrink-0 place-items-center rounded-[16px] text-[#1a1a1a]" style={{ background: tint(colour, 50), boxShadow: `inset 0 0 0 1px ${edge(colour)}` }}>
         <div className="text-center">
-          <div className="text-[10px] text-white/70">{e.z}</div>
-          <div className="text-3xl font-black text-white">{e.symbol}</div>
-          <div className="text-[10px] text-white/70">{e.mass.toFixed(e.mass > 200 ? 0 : 2)}</div>
+          <div className="text-[10px] opacity-70">{e.z}</div>
+          <div className="text-3xl font-bold">{e.symbol}</div>
+          <div className="text-[10px] opacity-70">{e.mass.toFixed(e.mass > 200 ? 0 : 2)}</div>
         </div>
       </div>
       <div className="min-w-0">
-        <p className="text-lg font-bold text-white">{e.name}</p>
-        <p className="text-xs text-white/60">
+        <p className="text-lg font-medium text-ink-strong">{e.name}</p>
+        <p className="text-xs text-ink-muted">
           {CATEGORIES[e.category].label} · period {e.period}
           {e.group ? ` · group ${e.group}` : ""} · {e.block}-block
         </p>
-        <p className="mt-1 font-mono text-xs text-[#bcd6ff]">{configText(conf)}</p>
-        <p className="mt-1 text-xs text-white/70">
+        <p className="mt-1 font-mono text-xs text-link">{configText(conf)}</p>
+        <p className="mt-1 text-xs text-ink">
           {mode === "trend" ? `${TRENDS[trend].label}: ${v === null ? "not known" : `${fmt(v, trend)} ${TRENDS[trend].unit}`}` : mode === "state" ? `At ${kelvin} K: ${phaseAt(e, kelvin)}` : e.fact}
         </p>
       </div>
@@ -381,29 +381,29 @@ function Detail({ e, colour, onClose, inCompare, onCompare, reduced, onJump }: {
   const neighbours = [e.z - 1, e.z + 1].filter((z) => z >= 1 && z <= 118);
   return (
     <>
-      <motion.div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+      <motion.div className="fixed inset-0 z-40 bg-[#1a1a1a]/30 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
       <motion.aside
         role="dialog"
         aria-label={e.name}
-        className="fixed bottom-0 right-0 top-0 z-50 w-full max-w-[460px] overflow-y-auto border-l border-white/10 bg-[#0c1326] shadow-2xl"
+        className="fixed bottom-0 right-0 top-0 z-50 w-full max-w-[460px] overflow-y-auto bg-card text-ink shadow-pop sm:rounded-l-[28px]"
         initial={reduced ? { opacity: 0 } : { x: 480 }}
         animate={reduced ? { opacity: 1 } : { x: 0 }}
         exit={reduced ? { opacity: 0 } : { x: 480 }}
         transition={{ type: "spring", stiffness: 380, damping: 38 }}
       >
-        <div className="relative p-6" style={{ background: `radial-gradient(420px 260px at 80% 0%, ${colour}40, transparent 70%)` }}>
-          <button onClick={onClose} className="absolute right-4 top-4 rounded-full p-1.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label="Close">
+        <div className="relative p-6" style={{ background: `radial-gradient(420px 260px at 80% 0%, ${tint(colour, 35)}, transparent 70%)` }}>
+          <button onClick={onClose} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-ink/[0.06] hover:text-ink-strong" aria-label="Close">
             <X className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-4">
-            <div className="grid h-24 w-[84px] shrink-0 place-items-center rounded-xl" style={{ background: `linear-gradient(160deg, ${colour}66, ${colour}1a)`, boxShadow: `inset 0 0 0 1px ${colour}, 0 0 30px ${colour}55` }}>
+            <div className="grid h-24 w-[84px] shrink-0 place-items-center rounded-[18px] text-[#1a1a1a]" style={{ background: tint(colour, 50), boxShadow: `inset 0 0 0 1px ${edge(colour)}` }}>
               <div className="text-center">
-                <div className="text-xs text-white/75">{e.z}</div>
-                <div className="text-4xl font-black text-white">{e.symbol}</div>
+                <div className="text-xs opacity-70">{e.z}</div>
+                <div className="text-4xl font-bold">{e.symbol}</div>
               </div>
             </div>
             <div>
-              <h2 className="text-2xl font-extrabold text-white">{e.name}</h2>
+              <h2 className="font-heading text-[28px] font-normal tracking-[-0.02em] text-ink-strong">{e.name}</h2>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 <Chip>{CATEGORIES[e.category].label}</Chip>
                 {e.radioactive && (
@@ -415,43 +415,43 @@ function Detail({ e, colour, onClose, inCompare, onCompare, reduced, onJump }: {
               </div>
             </div>
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-white/80">{e.fact}</p>
+          <p className="mt-4 text-sm leading-relaxed text-ink">{e.fact}</p>
         </div>
 
         <div className="space-y-6 px-6 pb-8">
           <section>
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-white/45">Bohr model</h3>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">Bohr model</h3>
             <div className="flex items-center gap-4">
               <BohrModel z={e.z} symbol={e.symbol} colour={colour} size={170} animate={!reduced} />
-              <div className="text-sm text-white/75">
+              <div className="text-sm text-ink">
                 <p>
-                  <b className="text-white">{configuration(e.z).shells.join(", ")}</b> electrons per shell.
+                  <b className="text-ink-strong">{configuration(e.z).shells.join(", ")}</b> electrons per shell.
                 </p>
-                <p className="mt-1 text-xs text-white/55">The outermost shell holds the electrons that take part in reactions.</p>
+                <p className="mt-1 text-xs text-ink-muted">The outermost shell holds the electrons that take part in reactions.</p>
               </div>
             </div>
           </section>
 
           <section>
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-white/45">Electron filling (Aufbau)</h3>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">Electron filling (Aufbau)</h3>
             <OrbitalFill z={e.z} reducedMotion={reduced} />
           </section>
 
           <section>
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-white/45">Properties</h3>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">Properties</h3>
             <dl className="grid grid-cols-2 gap-2">
               {props.map(([k, v]) => (
-                <div key={k} className="rounded-lg bg-white/[0.04] p-2.5 ring-1 ring-inset ring-white/[0.06]">
-                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-white/45">{k}</dt>
-                  <dd className="mt-0.5 text-sm font-semibold capitalize text-white">{v ?? <span className="font-normal normal-case text-white/40">Not known</span>}</dd>
+                <div key={k} className="rounded-[14px] bg-surface p-3">
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">{k}</dt>
+                  <dd className="mt-0.5 text-sm font-semibold capitalize text-ink-strong">{v ?? <span className="font-normal normal-case text-ink-muted">Not known</span>}</dd>
                 </div>
               ))}
             </dl>
             {e.oxidationStates.length > 0 && (
-              <p className="mt-3 text-xs text-white/60">
+              <p className="mt-3 text-xs text-ink-muted">
                 Common oxidation states:{" "}
                 {e.oxidationStates.map((o, i) => (
-                  <b key={i} className={cx("ml-1 font-mono", i === 0 ? "text-white" : "text-white/70")}>
+                  <b key={i} className={cx("ml-1 font-mono", i === 0 ? "text-ink-strong" : "text-ink")}>
                     {o > 0 ? `+${o}` : o}
                   </b>
                 ))}
@@ -460,29 +460,29 @@ function Detail({ e, colour, onClose, inCompare, onCompare, reduced, onJump }: {
           </section>
 
           <section>
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-white/45">In the lab</h3>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">In the lab</h3>
             {e.experiments.length ? (
               <ul className="space-y-1.5">
                 {e.experiments.map((x) => (
                   <li key={x.slug}>
-                    <Link to={x.playable ? `/lab/${x.subject}/${x.slug}` : `/library/${x.slug}`} className="flex items-center justify-between rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-white ring-1 ring-inset ring-white/[0.06] hover:bg-white/[0.08]">
+                    <Link to={x.playable ? `/lab/${x.subject}/${x.slug}` : `/library/${x.slug}`} className="flex items-center justify-between rounded-[14px] bg-surface px-3 py-2.5 text-sm text-ink-strong transition hover:bg-line">
                       <span className="flex items-center gap-2">
-                        <FlaskConical className="h-4 w-4 text-teal-300" />
+                        <FlaskConical className="h-4 w-4 text-[#0F766E]" />
                         {x.title}
                       </span>
                       {x.playable ? (
-                        <span className="flex items-center gap-1 text-xs font-semibold text-accent-cyan">
+                        <span className="flex items-center gap-1 text-xs font-semibold text-link">
                           <Play className="h-3 w-3" /> Play
                         </span>
                       ) : (
-                        <span className="text-xs text-white/40">Coming</span>
+                        <span className="text-xs text-ink-muted">Coming</span>
                       )}
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-white/50">No LABscape experiment uses {e.name} yet.</p>
+              <p className="text-sm text-ink-muted">No LABscape experiment uses {e.name} yet.</p>
             )}
           </section>
 
@@ -517,26 +517,26 @@ function CompareTable({ items }: { items: Element[] }) {
     { key: "density", label: "Density (g/cm³)" },
   ];
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto p-5">
       <table className="w-full text-sm">
         <thead>
           <tr>
             <th className="w-48" />
             {items.map((e) => (
               <th key={e.z} className="px-2 pb-3 text-center">
-                <div className="mx-auto grid h-14 w-14 place-items-center rounded-lg text-2xl font-black text-white" style={{ background: `${CATEGORIES[e.category].colour}35`, boxShadow: `inset 0 0 0 1px ${CATEGORIES[e.category].colour}` }}>
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-[14px] text-2xl font-bold text-[#1a1a1a]" style={{ background: tint(CATEGORIES[e.category].colour, 50), boxShadow: `inset 0 0 0 1px ${edge(CATEGORIES[e.category].colour)}` }}>
                   {e.symbol}
                 </div>
-                <div className="mt-1 text-xs font-semibold text-white/80">{e.name}</div>
+                <div className="mt-1 text-xs font-medium text-ink">{e.name}</div>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          <tr className="border-t border-white/[0.06]">
-            <td className="py-2 pr-3 text-xs text-white/55">Configuration</td>
+          <tr className="border-t border-line">
+            <td className="py-2 pr-3 text-xs text-ink-muted">Configuration</td>
             {items.map((e) => (
-              <td key={e.z} className="px-2 py-2 text-center font-mono text-xs text-[#bcd6ff]">
+              <td key={e.z} className="px-2 py-2 text-center font-mono text-xs text-link">
                 {configText(configuration(e.z))}
               </td>
             ))}
@@ -545,14 +545,14 @@ function CompareTable({ items }: { items: Element[] }) {
             const vals = items.map((e) => trendValue(e, r.key));
             const max = Math.max(...vals.map((v) => v ?? 0));
             return (
-              <tr key={r.key} className="border-t border-white/[0.06]">
-                <td className="py-2 pr-3 text-xs text-white/55">{r.label}</td>
+              <tr key={r.key} className="border-t border-line">
+                <td className="py-2 pr-3 text-xs text-ink-muted">{r.label}</td>
                 {items.map((e, i) => {
                   const v = vals[i];
                   return (
                     <td key={e.z} className="px-2 py-2">
-                      <div className="text-center font-semibold text-white">{v == null ? "-" : fmt(v, r.key)}</div>
-                      <div className="mt-1 h-1.5 rounded-full bg-white/[0.06]">
+                      <div className="text-center font-semibold text-ink-strong">{v == null ? "-" : fmt(v, r.key)}</div>
+                      <div className="mt-1 h-1.5 rounded-full bg-ink/10">
                         <div className="h-full rounded-full" style={{ width: `${v && max ? (v / max) * 100 : 0}%`, background: CATEGORIES[e.category].colour }} />
                       </div>
                     </td>

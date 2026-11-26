@@ -761,11 +761,14 @@ final class Organic {
     /** Null when this portion catches fire; otherwise the reason it doesn't. */
     private static String burns(MixtureOps m, Portion p) {
         Substance s = p.substance();
-        if (!s.hasTag("fuel") || s.flashPointC() == null || s.isSolid()) return "n/a";
+        // Candle wax is the one solid fuel here: the flame melts it and burns the vapour, as a wick does.
+        boolean wax = s.isSolid() && s.species().containsKey("org:wax");
+        if (!s.hasTag("fuel") || !wax && (s.flashPointC() == null || s.isSolid())) return "n/a";
         String key = s.species().keySet().iterator().next();
         Compound c = Organics.get(key);
         if (c == null || c.c() == 0 || m.get(key) <= EPS) return "n/a";
         if (s.isGas()) return null;
+        if (wax) return m.aqMl() > 0 ? "The wax is floating on water, which keeps it too cool to catch light." : null;
         if (m.tempC() < s.flashPointC() - 3) {
             return s.name() + " won't catch light at " + Math.round(m.tempC()) + " °C: its flash point is about "
                     + Math.round(s.flashPointC()) + " °C, so not enough vapour forms above it for a flame to ignite.";
@@ -831,7 +834,10 @@ final class Organic {
             m.reaction("combustion-" + key.substring(4), lower(c.name()) + " burns", "combustion",
                     Latex.eq((fuel > 1 ? fuel + " " : "") + formula + " + " + ox + " O2(g) -> " + co2 + " CO2(g) + " + water + " H2O(l)"),
                     "combustion", burned);
-            m.observe(methanol ? "Methanol burns with an almost invisible pale blue flame - dangerous, because you can hardly see it."
+            m.observe("org:wax".equals(key)
+                    ? "The wax melts, its hot vapour catches light and it burns with a steady yellow flame - a candle without a wick. "
+                            + "A wisp of black soot shows that not all of the carbon gets enough oxygen to burn."
+                    : methanol ? "Methanol burns with an almost invisible pale blue flame - dangerous, because you can hardly see it."
                     : sooty ? "It burns with a smoky yellow-orange flame, giving off black soot: there isn't enough oxygen to burn all the carbon."
                     : blue ? lower(c.name()).substring(0, 1).toUpperCase(Locale.ROOT) + lower(c.name()).substring(1)
                             + " burns with a clean blue flame, making carbon dioxide and water."

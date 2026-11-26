@@ -13,6 +13,9 @@ import { NAV } from "./nav";
 
 type Result = { id: string; group: string; title: string; sub?: string | undefined; to: string; icon: React.ReactNode; color?: string | undefined };
 
+/** Result accents are bright (made for dark); mix them toward ink so the icons read on white. */
+const deepen = (hex: string) => `color-mix(in srgb, ${hex} 62%, #1a1a1a)`;
+
 /** Ctrl/Cmd+K: experiments, concepts, elements, formulas and pages in one list. */
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [q, setQ] = useState("");
@@ -85,7 +88,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[80] flex items-start justify-center p-4 pt-[12vh]">
-          <motion.div className="absolute inset-0 bg-[#03060f]/70 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+          <motion.div className="absolute inset-0 bg-[#1a1a1a]/40 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div
             role="dialog"
             aria-modal="true"
@@ -94,7 +97,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 500, damping: 34 }}
-            className="relative w-full max-w-xl overflow-hidden rounded-xl border border-white/10 bg-[#121a2e]/98 shadow-[0_40px_120px_-30px_rgba(0,0,0,.95),0_0_0_1px_rgba(47,128,255,.15)]"
+            className="relative w-full max-w-xl overflow-hidden rounded-[28px] bg-card text-ink shadow-pop ring-1 ring-inset ring-line"
             onKeyDown={(e) => {
               if (e.key === "Escape") onClose();
               else if (e.key === "ArrowDown") {
@@ -106,14 +109,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               } else if (e.key === "Enter") go(results[cursor]);
             }}
           >
-            <div className="flex items-center gap-3 border-b border-white/[0.07] px-4">
-              <Search className="h-5 w-5 text-white/40" />
+            <div className="flex items-center gap-3 border-b border-line px-5">
+              <Search className="h-5 w-5 text-ink-muted" />
               <input
                 ref={input}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search experiments, concepts, elements, formulas…"
-                className="h-14 flex-1 bg-transparent text-[15px] text-white outline-none placeholder:text-white/35"
+                className="h-16 flex-1 bg-transparent text-[17px] text-ink-strong outline-none placeholder:text-ink-faint focus-visible:outline-none"
                 aria-label="Search"
                 role="combobox"
                 aria-expanded="true"
@@ -123,13 +126,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               <Kbd>Esc</Kbd>
             </div>
             <div ref={list} id="palette-list" role="listbox" className="ls-scroll max-h-[min(440px,60vh)] overflow-y-auto p-2">
-              {results.length === 0 && <div className="px-4 py-10 text-center text-sm text-white/45">No matches. Try “titration” or “pendulum”.</div>}
+              {results.length === 0 && <div className="px-4 py-10 text-center text-sm text-ink-muted">No matches. Try “titration” or “pendulum”.</div>}
               {results.map((r, i) => {
                 const header = r.group !== lastGroup ? r.group : null;
                 lastGroup = r.group;
                 return (
                   <div key={r.id}>
-                    {header && <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">{header}</div>}
+                    {header && <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">{header}</div>}
                     <button
                       id={r.id}
                       data-i={i}
@@ -137,22 +140,25 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                       aria-selected={i === cursor}
                       onMouseMove={() => setCursor(i)}
                       onClick={() => go(r)}
-                      className={cx("flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left", i === cursor ? "bg-accent/20 shadow-[inset_0_0_0_1px_rgba(110,170,255,.35)]" : "")}
+                      className={cx("flex w-full items-center gap-3 rounded-[18px] px-3 py-2.5 text-left transition-colors", i === cursor ? "bg-surface" : "")}
                     >
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-white/[0.06]" style={{ color: r.color }}>
+                      <span
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-full"
+                        style={{ color: r.color ? deepen(r.color) : undefined, background: r.color ? `${r.color}26` : "rgb(var(--ls-line))" }}
+                      >
                         {r.icon}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-white">{r.title}</span>
-                        {r.sub && <span className="block truncate text-xs text-white/45">{r.sub}</span>}
+                        <span className="block truncate text-sm font-medium text-ink-strong">{r.title}</span>
+                        {r.sub && <span className="block truncate text-xs text-ink-muted">{r.sub}</span>}
                       </span>
-                      {i === cursor ? <CornerDownLeft className="h-4 w-4 text-white/40" /> : <ArrowRight className="h-4 w-4 text-white/15" />}
+                      {i === cursor ? <CornerDownLeft className="h-4 w-4 text-ink-muted" /> : <ArrowRight className="h-4 w-4 text-ink/20" />}
                     </button>
                   </div>
                 );
               })}
             </div>
-            <div className="flex items-center gap-4 border-t border-white/[0.07] px-4 py-2.5 text-[11px] text-white/40">
+            <div className="flex items-center gap-4 border-t border-line px-5 py-3 text-[11px] text-ink-muted">
               <span className="flex items-center gap-1"><Kbd>↑</Kbd><Kbd>↓</Kbd> move</span>
               <span className="flex items-center gap-1"><Kbd>Enter</Kbd> open</span>
               <span className="ml-auto">Ctrl K to toggle</span>

@@ -10,44 +10,30 @@ body,
   height: 100%;
 }
 
+/* Surface tokens (tokens.css) drive the page colour, so <html data-surface="dark"> turns the
+   whole document dark for the full-screen labs and the screens outside the shell. */
 body {
-  background: var(--ls-bg-base);
-  color: #e6e9f2;
+  background: rgb(var(--ls-surface));
+  color: rgb(var(--ls-ink));
   font-family: var(--ls-font-body);
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: rgb(47 128 255 / 0.45);
+  background: rgb(94 155 255 / 0.35);
 }
 
+/* The ring follows each element's own radius (pills stay pills); no forced border-radius here. */
 :focus-visible {
   outline: 2px solid #2f80ff;
   outline-offset: 2px;
-  border-radius: 6px;
 }
 
-/* App background: deep navy with soft aurora glows and a faint lab grid */
+/* App background: plain warm cream, like paper. No glow, no grid. */
 .ls-app-bg {
-  background:
-    radial-gradient(1200px 600px at 85% -10%, rgb(47 128 255 / 0.14), transparent 60%),
-    radial-gradient(900px 500px at -10% 30%, rgb(139 92 246 / 0.1), transparent 60%),
-    radial-gradient(800px 500px at 50% 110%, rgb(34 211 238 / 0.07), transparent 60%),
-    var(--ls-bg-base);
-  background-attachment: fixed;
-}
-.ls-app-bg::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 75%);
-  z-index: 0;
+  background: rgb(var(--ls-surface));
 }
 .ls-app-bg > * {
   position: relative;
@@ -64,7 +50,27 @@ body {
 
 .ls-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+  scrollbar-color: rgb(var(--ls-ink) / 0.16) transparent;
+}
+
+/* Dark stage: a rounded navy panel that hosts pages not yet moved to the light look (and keeps
+   their original aurora + grid backdrop), the way a dark media card sits on the cream page. */
+/* No stacking context here (no isolation, z-index or transform): fixed sheets and popovers inside
+   the pages must still layer against the shell (header, context panel) as they did before. */
+.ls-stage {
+  border-radius: 32px;
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgb(47 128 255 / 0.14), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, rgb(139 92 246 / 0.1), transparent 60%),
+    radial-gradient(800px 500px at 50% 110%, rgb(34 211 238 / 0.07), transparent 60%),
+    linear-gradient(rgb(255 255 255 / 0.02) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, rgb(255 255 255 / 0.02) 1px, transparent 1px) 0 0 / 48px 48px,
+    rgb(var(--ls-surface));
+}
+@media (max-width: 639px) {
+  .ls-stage {
+    border-radius: 24px;
+  }
 }
 
 /* AI orb: slow swirling violet / magenta */

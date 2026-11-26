@@ -362,7 +362,7 @@ public class Billing {
                                 invoiceNumber())
                         .update();
                 if (firstPayment) {
-                    notifications.notify(userId, "subscription", "Welcome to Premium ✨",
+                    notifications.notify(userId, "subscription", "Welcome to Premium",
                             "Every experiment, scenario and theme is now unlocked.", "/plans", "sub-active:" + eventId);
                 } else {
                     notifications.notify(userId, "subscription", "Premium renewed",

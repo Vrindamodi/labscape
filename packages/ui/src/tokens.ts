@@ -1,6 +1,26 @@
 /** Design tokens from the build plan ("Design tokens"). Single source for TS; mirrored in tokens.css. */
 
 export const colors = {
+  /** Light app surfaces (dark equivalents live in tokens.css under [data-surface="dark"]). */
+  surface: {
+    page: "#F3EFEA", // warm cream
+    sunken: "#EAE4DC",
+    card: "#FFFFFF",
+    ink: "#323232",
+    inkStrong: "#1A1A1A",
+    inkMuted: "#64615C",
+    line: "#E8DFD5",
+    lineStrong: "#DDD3C7",
+  },
+  /** Flat accent tints for blobs, tiles and category pills. */
+  tint: {
+    green: "#48F08B",
+    pink: "#FFBDF9",
+    blue: "#5E9BFF",
+    yellow: "#FCC934",
+    peach: "#F9B896",
+    lilac: "#C9B8FF",
+  },
   bg: {
     base: "#0B1020", // navy - app background
     surface: "#121829", // charcoal - cards, sidebar
@@ -29,12 +49,24 @@ export const colors = {
     physics: "#38BDF8", // sky
     maths: "#FB923C", // orange
   },
+  /** Subject colours dark enough for text and icons on cream or white (AA). */
+  subjectInk: {
+    chemistry: "#0F766E",
+    physics: "#0369A1",
+    maths: "#C2410C",
+  },
+  /** Subject tiles on light surfaces use the flat tints. */
+  subjectTint: {
+    chemistry: "#48F08B",
+    physics: "#5E9BFF",
+    maths: "#FCC934",
+  },
 } as const;
 
 export const typography = {
   fontFamily: {
-    heading: '"Space Grotesk", system-ui, sans-serif',
-    body: '"Inter", system-ui, sans-serif',
+    heading: '"DM Sans", system-ui, sans-serif',
+    body: '"DM Sans", system-ui, sans-serif',
     /** Tabular figures for every instrument readout. */
     mono: '"JetBrains Mono", ui-monospace, monospace',
   },
@@ -42,7 +74,7 @@ export const typography = {
   bodySizes: [16, 14, 12],
 } as const;
 
-export const radius = { sm: 8, md: 12, lg: 16, xl: 24 } as const;
+export const radius = { sm: 8, md: 12, lg: 16, xl: 24, card: 24, panel: 32, pill: 9999 } as const;
 
 /** 4 px spacing grid. */
 export const spacingUnit = 4;

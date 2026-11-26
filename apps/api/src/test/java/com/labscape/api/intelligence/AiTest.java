@@ -87,6 +87,90 @@ class AiTest {
         }
     }
 
+    private String say(String question, String level) {
+        return tutor.compose(tutor.analyse(question, null, level, null, java.util.UUID.randomUUID()));
+    }
+
+    @Test
+    void theBuiltInTutorExplainsCoreIdeas() {
+        // each of these used to come back as "I'm not sure" or as an unrelated entry
+        Map<String, String> expected = new java.util.LinkedHashMap<>();
+        expected.put("What is a mole?", "6.022");
+        expected.put("Why is the sky blue?", "scatter");
+        expected.put("Explain Ohm's law", "proportional");
+        expected.put("How do I balance a chemical equation?", "coefficients");
+        expected.put("what is photosynthesis", "chlorophyll");
+        expected.put("What is the derivative of x squared?", "2x");
+        expected.put("What is pH?", "acidic");
+        expected.put("why does ice float on water", "less dense");
+        expected.put("How do acids react with metals?", "hydrogen");
+        expected.put("what's the difference between speed and velocity", "direction");
+        expected.put("What is a catalyst?", "activation energy");
+        expected.put("explain newton's second law", "mass x acceleration");
+        expected.put("What does precipitate mean?", "insoluble");
+        expected.put("What is the mean?", "divided by");
+        expected.put("What is the formula for kinetic energy?", "kinetic energy");
+        expected.forEach((q, phrase) -> assertThat(say(q, null)).as(q).contains(phrase).doesNotContain(AiTutor.NOT_COVERED).doesNotContain(AiTutor.NOT_MODELLED));
+        // the formula itself comes with the explanation, with the card's own symbols
+        AiTutor.Facts ohm = tutor.analyse("Explain Ohm's law", null, null, null, java.util.UUID.randomUUID());
+        assertThat(ohm.equationLatex()).contains("V = IR");
+        assertThat(ohm.sources()).isNotEmpty();
+        assertThat(tutor.analyse("What is the formula for pH?", null, null, null, null).equationLatex()).contains("pH").doesNotContain("\\v{");
+        // a beginner gets the everyday version, with no equation
+        assertThat(say("What is a mole?", "beginner")).contains("dozen").doesNotContain("6.022");
+        assertThat(tutor.analyse("Explain Ohm's law", null, "beginner", null, null).equationLatex()).isNull();
+    }
+
+    @Test
+    void saysSoWhenNothingInLabscapeAnswersTheQuestion() {
+        // one shared word ("blue", "float", "balance") must not drag in an unrelated entry
+        for (String q : List.of("Who won the world cup in 2018?", "What is the capital of France?", "Tell me about black holes", "How do I cook pasta?", "What is the blue whale?")) {
+            AiTutor.Facts f = tutor.analyse(q, null, null, null, java.util.UUID.randomUUID());
+            assertThat(tutor.compose(f)).as(q).startsWith(AiTutor.NOT_COVERED);
+            assertThat(f.grounding().source()).as(q).isEqualTo("none");
+            assertThat(f.sources()).as(q).isEmpty();
+        }
+        // "add" in a question that is not about chemicals is not a mixture
+        assertThat(say("How do I add fractions?", null)).doesNotContain(AiTutor.NOT_MODELLED);
+        // a protocol step never answers a question about an idea
+        assertThat(say("Explain Ohm's law", null)).doesNotContain("Close the switch");
+    }
+
+    @Test
+    void greetsAndSaysWhatItCanDo() {
+        for (String q : List.of("hi", "Hello!", "hey there", "what can you do?", "who are you", "help")) {
+            assertThat(AiTutor.intent(q)).as(q).isEqualTo(AiTutor.Intent.SMALLTALK);
+            assertThat(say(q, null)).as(q).contains("science assistant").contains("What is a mole?");
+        }
+        assertThat(say("thanks!", null)).startsWith("You're welcome");
+        // a greeting inside a real question is still a question, and so is "what do you know about ..."
+        assertThat(AiTutor.intent("hi, what is a burette used for?")).isEqualTo(AiTutor.Intent.CONCEPT);
+        assertThat(AiTutor.intent("what do you know about acids?")).isEqualTo(AiTutor.Intent.CONCEPT);
+        assertThat(say("what do you know about acids?", null)).contains("hydrogen ions");
+    }
+
+    @Test
+    void everydayNamesReachTheChemistryEngine() {
+        AiTutor.Facts fizz = tutor.analyse("What happens when I mix vinegar and baking soda?", null, null, null, java.util.UUID.randomUUID());
+        assertThat(fizz.intent()).isEqualTo(AiTutor.Intent.MIX);
+        assertThat(fizz.grounding().source()).isEqualTo("engine");
+        assertThat(fizz.grounding().outcome()).isEqualTo("reaction");
+        assertThat(tutor.compose(fizz).toLowerCase(Locale.ROOT)).contains("carbon dioxide");
+        AiTutor.Facts blue = tutor.analyse("what if I add sodium hydroxide to copper sulfate?", null, null, null, java.util.UUID.randomUUID());
+        assertThat(blue.grounding().source()).isEqualTo("engine");
+        assertThat(blue.grounding().outcome()).isEqualTo("reaction");
+        // substances the catalogue does not hold are an unmodelled mixture, never a lesson lookup that a model could embroider
+        for (String q : List.of("What forms when chlorine reacts with ammonia?", "what happens when nitroglycerin reacts with kieselguhr","What is made by combining thermite and ice?")) {
+            AiTutor.Facts unknown = tutor.analyse(q, null, null, null, java.util.UUID.randomUUID());
+            assertThat(unknown.intent()).as(q).isEqualTo(AiTutor.Intent.MIX);
+            assertThat(unknown.grounding().modelled()).as(q).isFalse();
+            assertThat(tutor.compose(unknown)).as(q).contains(AiTutor.NOT_MODELLED);
+        }
+        // the engine still refuses what it must, whatever the substances are called
+        AiTutor.Facts no = tutor.analyse("What do you get when you combine bleach and vinegar?", null, null, null, java.util.UUID.randomUUID());
+        assertThat(tutor.compose(no)).isEqualTo(com.labscape.api.intelligence.safety.OutcomeCopy.PROHIBITED_MESSAGE);
+    }
+
     @Test
     void answersFromTheLabContextAndTheEngine() throws Exception {
         Cookie c = guest();
